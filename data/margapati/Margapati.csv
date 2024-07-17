@@ -1,0 +1,187 @@
+tag	1	2	3	4	5	6	7	8	9	10	11	12	13
+metadata	{"type": "tempo", "bpm": 80}
+gangsa p	....	....	....	....	....	....	..z'à	z/z--
+gangsa s	....	....	....	....	....	....	..e'é	e/e--
+
+gangsa p	....	....	....	....	jjjj	iiii	zzzz	oooo
+gangsa s	....	....	....	....	oooo	uuuu	eeee	aaaa
+
+gangsa p	iiii	oooo	iiii	zzzz	jjjj	iiii	z/ïo	----
+gangsa s	uuuu	aaaa	uuuu	eeee	oooo	uuuu	e/üa	----
+
+gangsa p	....	oooo	iiii	zzzz	jjjj	iiii	zzzz	oooo
+gangsa s	....	aaaa	uuuu	eeee	oooo	uuuu	eeee	aaaa
+
+gangsa p	iiii	....	iiii	zzzz	jjjj	iiii	-z/z-	ZzZ.
+gangsa s	uuuu	....	uuuu	eeee	oooo	uuuu	-e/e-	EeE.
+
+metadata	{"type": "tempo-change", "factor": 1.25, "steps": 0}
+gangsa p	i.i.iOo.	o.o.oIi.	i.i.iZz.	z.z.zJj.	j.j.jIi.	i.i.iZz.	z.i.i.e.	
+gangsa s	.o.o.Ooe	.e.e.Iio	.o.o.Zzi	.i.i.Jjz	.z.z.Iio	.o.o.Zzi	.z.z.o.i	
+
+metadata	{"type": "tempo-change", "factor": 0.4, "steps": 1}
+gangsa p	o.i.e...
+gangsa s	.z.o....
+
+gangsa p	ioioiOoe	oeoeoIio	ioioiZzi	zizizJjz	jzjzjzio	ioioiZzi	Zzizioei	ozioeioz
+gangsa s	uauauAai	aiaiaUua	uauauEeu	eueueOoe	odododua	uauauEeu	Eeueuaiu	aeuaiuae
+
+metadata	{"type": "tempo-change", "factor": 2, "steps": 12}
+gangsa p	ioioiOoe	oeoeoIio	ioioiZzi	zizizJjz	jzjzjzio	ioioiZzi	Zzizioei	ozioeioz
+gangsa s	uauauAai	aiaiaUua	uauauEeu	eueueOoe	odododua	uauauEeu	Eeueuaiu	aeuaiuae
+
+gangsa p	i.i.iOo.	o.o.oii.	i.i.izz.	z.z..jj.	
+gangsa s	.o.o.Ooe	.e.e.iio	.o.o.zzi	.i.i.jjz	
+
+metadata	{"type": "tempo-change", "factor": 0.75, "steps": 4}
+gangsa p	j.j.j.i.	i.i.izz.	z.i.i.e.	o.i.e...
+gangsa s	.z.z.z.o	.o.o.zzi	.z.z.o.i	.z.o....
+
+metadata	{"type": "tempo-change", "factor": 0.75, "steps": 4}
+gangsa p	.....Jjz	jzjzjZzi	z----Ddj	djdjdJjz	jzjzjzio	ioioiZzi	Azizioei	ozioeioz
+gangsa s	.....Ooe	oeoeoEeu	e----Iio	ioioiOoe	oeoeoeua	uauauEeu	Eeueuaiu	aeuaiuae
+
+gangsa p	ioioiJjz	jzjzjZzi	zizizDdj	djdjdJjz
+gangsa s	uauauOoe	oeoeoEeu	eueueIio	ioioiOoe
+
+metadata	{"type": "tempo-change", "factor": 2, "steps": 8}
+gangsa p	jzjzjzio	ioioiZzi	Azizioei	ozioeioz
+gangsa s	oeoeoeua	uauauEeu	Eeueuaiu	aeuaiuae
+
+gangsa p	i.i.ijj.	j.j.jzz.	z.z.zdd.	d.d..jj.	j.j.j.i.	i.i.izz.	z.i.i.e.
+gangsa s	.o.o.jjz	.z.z.zzi	.i.i.ddj	.j.j.jjz	.z.z.z.o	.o.o.zzi	.z.z.o.i
+
+metadata	{"type": "tempo-change", "factor": 0.5, "steps": 1}
+gangsa p	o.i.e...	
+gangsa s	.z.o....	
+
+metadata	{"type": "tempo-change", "factor": 0.8, "steps": 3}
+gangsa p	.....Eeu	eueueIio	i----Uua	uauauEeu	eueueIio	ioioiJjz	jzjzjZzi	zizizIio
+gangsa s	.....*8u	8u8u8Uua	u----Uua	uauau*8u	8u8u8Uua	uauauOoe	oeoeoEeu	eueueUua
+
+metadata	{"type": "tempo-change", "factor": 2, "steps": 8}
+gangsa p	ioioiEeu	eueueIio	ioioiUua	uauauEeu	eueueIio	ioioiJjz	jajajZzi	zizizIio
+gangsa s	uauau*8u	8u8u8Uua	uauauUua	uauau*8u	8u8u8Uua	uauauOoe	oeoeoEeu	eueueUua
+
+gangsa p	i.i.iEe.	e.e.eIi.	i.i.iUu.	u.u..Ee.	e.e.eIi.	i.i.iJj.	j.j.jZz.	z.......
+gangsa s	.o.o.Eeu	.u.u.Iio	.o.o.Uua	.a.a.Eeu	.u.u.Iio	.o.o.Jjz	.z.z.Zzi	........
+
+gangsa p	i.i.iOo.	o.o.oIi.	i.i.iZz.	z.z.zJj.	j.j.jIi.	i.i.iZz.	z.i.i.e.	o.i.e.o.
+gangsa s	.o.o.Ooe	.e.e.Iio	.o.o.Zzi	.i.i.Jjz	.z.z.Iio	.o.o.Zzi	.z.z.o.i	.z.o.i.z
+
+gangsa p	i...u.u.	o...e.e.	i...o.o.	z...i.i.	j.j.jIi.	i.i.iZz.	z.i.i.e.	o.i.e.o.
+gangsa s	i..a.a.e	...u.u.o	...e.e.i	...o.o.z	.z.z.Iio	.o.o.Zzi	.z.z.o.i	.z.o.i.z
+
+gangsa p	i.i.iOo.	o.o.oIi.	i.i.iZz.	z.z.zJj.	j.j.jIi.	i.i.iZz.	z.i.i.e.	o.i.e.o.
+gangsa s	.o.o.Ooe	.e.e.Iio	.o.o.Zzi	.i.i.Jjz	.z.z.Iio	.o.o.Zzi	.z.z.o.i	.z.o.i.z
+
+gangsa p	i.i.iOo.	o.o.oIi.	i.i.iZz.	z.z.zJj.	j.j.jIi.	i.i.iZz.	z.i.i.e.	o.i.e.o.
+gangsa s	.o.o.Ooe	.e.e.Iio	.o.o.Zzi	.i.i.Jjz	.z.z.Iio	.o.o.Zzi	.z.z.o.i	.z.o.i.z
+
+gangsa p	i.i.iOo.	o.o.oIi.	i.i.iZz.	z.z.zJj.	j.j.jIi.	i.i.iZz.	z.i.i.e.	o.i.e.o.
+gangsa s	.o.o.Ooe	.e.e.Iio	.o.o.Zzi	.i.i.Jjz	.z.z.Iio	.o.o.Zzi	.z.z.o.i	.z.o.i.z
+
+gangsa p	i.i.iOo.	o.o.oIi.	i.i.iZz.	z.z.zJj.	j.j.jIi.	i.i.iZz.	z.i.i.e.	o.i.e.o.
+gangsa s	.o.o.Ooe	.e.e.Iio	.o.o.Zzi	.i.i.Jjz	.z.z.Iio	.o.o.Zzi	.z.z.o.i	.z.o.i.z
+
+gangsa p	i.i.iOo.	o.o.oIi.	i.i.iZz.	z.z.zJj.	j.j.jIi.	i.i.iZz.	z.i.i.e.	o.i.e.o.
+gangsa s	.o.o.Ooe	.e.e.Iio	.o.o.Zzi	.i.i.Jjz	.z.z.Iio	.o.o.Zzi	.z.z.o.i	.z.o.i.z
+
+gangsa p	i.i.iOo.	o.o.oIi.	i.i.iZz.	z.z.zJj.	j.j.jIi.	i.i.iZz.	z.......
+gangsa s	.o.o.Ooe	.e.e.Iio	.o.o.Zzi	.i.i.Jjz	.z.z.Iio	.o.o.Zzi	z.......
+
+gangsa p	o.o.
+gangsa s	a.a.
+
+gangsa p	iiii	oooo	iiii	zzzz	jjjj	iiii	zzzz	oooo
+gangsa s	uuuu	aaaa	uuuu	eeee	oooo	uuuu	eeee	aaaa
+
+gangsa p	iiii	oooo	iiii	zzzz	jjjj	iiii	zzzz	oooo
+gangsa s	uuuu	aaaa	uuuu	eeee	oooo	uuuu	eeee	aaaa
+
+gangsa p	iiii	....	iiii	zzzz	jjjj	iiii	Za-àÀ	a---
+gangsa s	uuuu	....	uuuu	eeee	oooo	uuuu	Ee-éÉ	d---
+
+gangsa p	....	....	....	....	jjjj	iiii	zzzz	oooo
+gangsa s	....	....	....	....	oooo	uuuu	eeee	aaaa
+
+gangsa p	iiii	oooo	iiii	zzzz	jjjj	iiii	z/ïo	----
+gangsa s	uuuu	aaaa	uuuu	eeee	oooo	uuuu	e/üa	----
+
+gangsa p	....	oooo	iiii	zzzz	jjjj	iiii	z/zz	ooo-
+gangsa s	....	aaaa	uuuu	eeee	oooo	uuuu	e/ee	aaa-
+
+gangsa p	iiii	....	iiii	zzzz	jjjj	iiii	-z/z-	ZzZ.
+gangsa s	uuuu	....	uuuu	eeee	oooo	uuuu	-e/e-	EeE.
+
+gangsa p	....	....	....	..iI	i-j-â	i-z-	j-z-ï	o---
+gangsa s	....	....	....	..uU	u-o-ë	u-e-	o-e-ü	a---
+
+gangsa p	i...	....	....	..iI	i-j-â	i-z-	j-i-ö	e---
+gangsa s	u...	....	....	..uU	u-o-ë	u-e-	o-e-ä	8---
+
+gangsa p	o...	....	....	..oO	o-z-ï	o-i-	z-i-ö	e---
+gangsa s	a...	....	....	..aA	a-e-ü	a-u-	e-u-ä	8---
+
+gangsa p	o...	j-z-	ii-o	-iz-	j---	--z-	ii-o	-zi-	oo-e	-io-	ee-u	-eo-
+gangsa s	a...	o-e-	uu-a	-ue-	o---	--e-	uu-a	-eu-	aa-8	-ua-	88-u	-8a-
+
+gangsa p	....	....	....	..iI	i-j-â	i-z-	j-z-ï	o---
+gangsa s	....	....	....	..uU	u-o-ë	u-e-	o-e-ü	a---
+
+gangsa p	i...	....	....	..iI	i-j-â	i-z-	j-i-ö	e---
+gangsa s	u...	....	....	..uU	u-o-ë	u-e-	o-e-ä	8---
+
+gangsa p	o...	....	....	..oO	o-z-ï	o-i-	z-i-ö	e---
+gangsa s	a...	....	....	..aA	a-e-ü	a-u-	e-u-ä	8---
+
+gangsa p	o...	j-z-	ii-o	-iz-	j---	--z-	ii-o	-zi-	oo-e	-io-	ee-u	-eo-
+gangsa s	a...	o-e-	uu-a	-ue-	o---	--e-	uu-a	-eu-	aa-8	-ua-	88-u	-8a-
+
+gangsa p	....	....	....	..iI	i-j-â	i-z-	j-z-ï	o---
+gangsa s	....	....	....	..uU	u-o-ë	u-e-	o-e-ü	a---
+
+gangsa p	i...	....	....	..iI	i-j-â	i-z-	j-i-ö	e---
+gangsa s	u...	....	....	..uU	u-o-ë	u-e-	o-e-ä	8---
+
+gangsa p	o...	....	....	..oO	o-z-ï	o-i-	z-i-ö	e---
+gangsa s	a...	....	....	..aA	a-e-ü	a-u-	e-u-ä	8---
+
+metadata	{"type": "tempo-change", "factor": 1.5, "steps": 8}
+gangsa p	o...	j-z-	ii-o	-iz-	j---	--z-	ii-o	-zi-	oo-e	-io-	ee-u	-eo-
+gangsa s	a...	o-e-	uu-a	-ue-	o---	--e-	uu-a	-eu-	aa-8	-ua-	88-u	-8a-
+
+gangsa p	i-i-	i-i-	z-z-	z-z-	j...	..o.	.O--	----
+gangsa s	u-u-	u-u-	e-e-	e-e-	o...	..a.	.A--	----
+
+gangsa p	i-i-	i-i-	z-z-	z-z-	j...	..o.	.O--	----
+gangsa s	u-u-	u-u-	e-e-	e-e-	o...	..a.	.A--	----
+
+gangsa p	....	....	....	....	....	....	....	....
+gangsa s	....	....	....	....	....	....	....	....
+
+gangsa p	i.i.	izz.	z.z.	zjj.	j.j.	joo.	o.o.	oii.
+gangsa s	.o.o	.zzi	.i.i	.jjz	.z.z	.ooe	.e.e	.iio
+
+gangsa p	i.i.	izz.	z.z.	zjj.	j.j.	joo.	o.o.	oii.
+gangsa s	.o.o	.zzi	.i.i	.jjz	.z.z	.ooe	.e.e	.iio
+
+gangsa p	i.i.	izz.	z.z.	zjj.	j.j.	joo.	o.o.	oii.
+gangsa s	.o.o	.zzi	.i.i	.jjz	.z.z	.ooe	.e.e	.iio
+
+gangsa p	i.i.	izz.	z.z.	zjj.	j.j.	joo.	o.o.	oii.
+gangsa s	.o.o	.zzi	.i.i	.jjz	.z.z	.ooe	.e.e	.iio
+
+gangsa p	i.i.	izz.	z.z.	zjj.	j.j.	joo.	o.o.	oii.
+gangsa s	.o.o	.zzi	.i.i	.jjz	.z.z	.ooe	.e.e	.iio
+
+gangsa p	i.i.	izz.	z...	
+gangsa s	.o.o	.zzi	....	
+
+metadata	{"type": "tempo-change", "factor": 0.66, "steps": 2}
+gangsa p	....	....	z-z-	Z.z.
+gangsa s	....	....	e-e-	E.e.
+
+metadata	{"type": "tempo-change", "factor": 0.5, "steps": 6}
+gangsa p	Z...	....	.zzi	zizi	zJjz	j---	-jzi	oeoe	oIio	i---
+gangsa s	E...	....	.eeu	eueu	eOoe	o---	-oeu	a8a8	aUua	u---
