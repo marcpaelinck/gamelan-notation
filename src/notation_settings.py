@@ -1,8 +1,9 @@
 import codecs
-from dataclasses import dataclass
-from typing import Literal, Union
+from collections import defaultdict
+from dataclasses import dataclass, field
+from typing import Literal, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 
 @dataclass
@@ -34,44 +35,88 @@ class Note:
     balifont_symbol_description: str = ""
 
 
-#
 # Metadata
-#
-
-
-class Gongan(BaseModel):
-    type: Literal["gongan"]
-
-
 class Tempo(BaseModel):
     type: Literal["tempo"]
     bpm: int
+    first_beat: Optional[int] = 1
+    beats: Optional[int] = 0
+    passes: Optional[list[int]] = field(default_factory=list)  # On which pass(es) should goto be performed?
 
-
-class TempoChange(BaseModel):
-    type: Literal["tempo-change"]
-    factor: float
-    steps: int = 0
+    @computed_field
+    @property
+    def first_beat_seq(self) -> int:
+        # Returns the pythonic sequence id (numbered from 0)
+        return self.first_beat - 1
 
 
 class Label(BaseModel):
     type: Literal["label"]
-    value: str
-
-
-class Loop(BaseModel):
-    type: Literal["loop"]
     label: str
-    repeat: int
+    beat_nr: Optional[int] = 1
+
+    @computed_field
+    @property
+    def beat_seq(self) -> int:
+        # Returns the pythonic sequence id (numbered from 0)
+        return self.beat_nr - 1
+
+
+class GoTo(BaseModel):
+    type: Literal["goto"]
+    label: str
+    beat_nr: Optional[int] | None = None  # Beat number from which to goto. Default is last beat of the system.
+    passes: Optional[list[int]] = field(default_factory=list)  # On which pass(es) should goto be performed?
+
+    @computed_field
+    @property
+    def beat_seq(self) -> int:
+        # Returns the pythonic sequence id (numbered from 0)
+        return self.beat_nr - 1 if self.beat_nr else -1
 
 
 class MetaData(BaseModel):
-    data: Union[Gongan, Tempo, TempoChange, Label, Loop] = Field(..., discriminator="type")
+    data: Union[Tempo, Label, GoTo] = Field(..., discriminator="type")
 
 
-#
-# End Metadata
-#
+# Flow
+Instrument = str
+BPM = int
+Pass = int
+
+
+@dataclass
+class Beat:
+    id: int
+    bpm: BPM
+    # bpm_alt: dict[Pass, BPM]  # TODO Not implemented yet. First need to find out how to combine with next_bpm
+    next_bpm: BPM
+    duration: float
+    notes: dict[Instrument, list[Note]] = field(default_factory=dict)
+    next: "Beat" = field(default=None, repr=False)
+    goto: dict[Pass, "Beat"] = field(default_factory=dict)
+    _pass_: int = 0  # Counts the number of times the beat is passed during generation of MIDI file.
+
+
+@dataclass
+class System:
+    # A set of beats.
+    # A System will usually span one gongan.
+    id: int
+    beats: list[Beat] = field(default_factory=list)
+
+
+@dataclass
+class Score:
+    title: str
+    systems: list[System] = field(default_factory=list)
+
+
+@dataclass
+class FlowInfo:
+    labels: dict[str, Beat] = field(default_factory=dict)
+    gotos: dict[str, tuple[System, GoTo]] = field(default_factory=lambda: defaultdict(list))
+
 
 MIDI_TO_COURIER = {
     36: "\u1ECD",
