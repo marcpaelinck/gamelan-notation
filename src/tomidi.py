@@ -238,12 +238,15 @@ def create_score(datapath: str, infilename: str, title: str) -> Score:
     return score
 
 
-DATAPATH = ".\\data\\cendrawasih"
-FILENAMECSV = "Cendrawasih.csv"
-MIDIFILENAME = "Cendrawasih {instrument}.mid"
+# DATAPATH = ".\\data\\cendrawasih"
+# FILENAMECSV = "Cendrawasih.csv"
+# MIDIFILENAME = "Cendrawasih {instrument}.mid"
 # DATAPATH = ".\\data\\margapati"
 # FILENAMECSV = "Margapati-UTF8.csv"
 # MIDIFILENAME = "Margapati {instrument}.mid"
+DATAPATH = ".\\data\\test"
+FILENAMECSV = "Gending Anak-Anak.csv"
+MIDIFILENAME = "Gending Anak-Anak {instrument}.mid"
 
 
 if __name__ == "__main__":
