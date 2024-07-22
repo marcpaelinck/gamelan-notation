@@ -53,7 +53,7 @@ def generate_metadata(meta_info: dict, track: MidiTrack) -> dict:
 
 
 def notation_to_track(score: Score, instrument: str, piano_version=False) -> MidiTrack:
-    def reset_score():
+    def reset_pass_counters():
         for system in score.systems:
             for beat in system.beats:
                 beat._pass_ = 0
@@ -69,12 +69,14 @@ def notation_to_track(score: Score, instrument: str, piano_version=False) -> Mid
     time_since_last_note_end = 0
 
     current_bpm = 0
-    reset_score()
+    reset_pass_counters()
     beat = score.systems[0].beats[0]
     while beat:
-        if beat.bpm != current_bpm:
-            track.append(MetaMessage("set_tempo", tempo=bpm2tempo(beat.bpm)))
-            current_bpm = beat.bpm
+        beat._pass_ += 1
+        beat_bpm = beat.get_bpm()
+        if beat_bpm != current_bpm:
+            track.append(MetaMessage("set_tempo", tempo=bpm2tempo(beat_bpm)))
+            current_bpm = beat_bpm
         for note in beat.notes.get(instrument, []):
             if note.note > 30:
                 track.append(
@@ -82,7 +84,7 @@ def notation_to_track(score: Score, instrument: str, piano_version=False) -> Mid
                         type="note_on",
                         channel=0,
                         note=TO_PIANO[note.note] if piano_version else note.note,
-                        velocity=70,
+                        velocity=100,
                         time=time_since_last_note_end,
                     )
                 )
@@ -107,7 +109,6 @@ def notation_to_track(score: Score, instrument: str, piano_version=False) -> Mid
                 # Note duration extension: add duration to last note
                 track[-1].time += int(note.duration * BASE_NOTE_TIME)
 
-        beat._pass_ += 1
         beat = beat.goto.get(beat._pass_, beat.next)
 
     return track
@@ -141,20 +142,28 @@ def apply_metadata(metadata: list[MetaData], system: System, flowinfo: FlowInfo)
                 if meta.data.beats == 0:
                     # immediate bpm change
                     for beat in system.beats[start_beat_seq:]:
-                        beat.bpm = beat.next_bpm = meta.data.bpm
+                        for p in meta.data.passes:
+                            beat.bpm[p] = beat.next_bpm[p] = meta.data.bpm
                 else:
                     # gradual bpm change over meta.data.beats beats.
                     # first bpm change is after first beat.
                     end_beat_seq = start_beat_seq + meta.data.beats
-                    start_bpm = system.beats[start_beat_seq].next_bpm
+                    start_bpm = system.beats[start_beat_seq].get_next_bpm()
                     step_increment = (meta.data.bpm - start_bpm) / meta.data.beats
                     # Gradually increase bpm for given range of beats
                     bpm = start_bpm
                     for beat in system.beats[start_beat_seq:]:
                         bpm = bpm + (step_increment if beat in system.beats[start_beat_seq:end_beat_seq] else 0)
-                        beat.next_bpm = bpm
-                    for prev_beat, next_beat in zip(system.beats, system.beats[1:]):
-                        next_beat.bpm = prev_beat.next_bpm
+                        for p in meta.data.passes:
+                            beat.next_bpm[p] = bpm
+                    if meta.data.first_beat_seq + 1 < len(system.beats):
+                        for prev_beat, next_beat in zip(
+                            system.beats[meta.data.first_beat_seq :], system.beats[meta.data.first_beat_seq + 1 :]
+                        ):
+                            for p in meta.data.passes:
+                                next_beat.bpm[p] = prev_beat.next_bpm.get(
+                                    p,
+                                )
             case Label():
                 # Add the label to flowinfo
                 flowinfo.labels[meta.data.label] = system.beats[meta.data.beat_seq]
@@ -215,8 +224,8 @@ def create_score(datapath: str, infilename: str, title: str) -> Score:
                         if tag not in [METADATA, COMMENT]
                     }
                 ),
-                bpm=(bpm := score.systems[-1].beats[-1].next_bpm if score.systems else 0),
-                next_bpm=bpm,
+                bpm={-1: (bpm := score.systems[-1].beats[-1].next_bpm[-1] if score.systems else 0)},
+                next_bpm={-1: bpm},
                 duration=sum(note.duration for note in list(notes.values())[0]),
             )
             prev_beat = beats[-1] if beats else score.systems[-1].beats[-1] if score.systems else None
@@ -238,15 +247,15 @@ def create_score(datapath: str, infilename: str, title: str) -> Score:
     return score
 
 
-# DATAPATH = ".\\data\\cendrawasih"
-# FILENAMECSV = "Cendrawasih.csv"
-# MIDIFILENAME = "Cendrawasih {instrument}.mid"
+DATAPATH = ".\\data\\cendrawasih"
+FILENAMECSV = "Cendrawasih.csv"
+MIDIFILENAME = "Cendrawasih {instrument}.mid"
 # DATAPATH = ".\\data\\margapati"
 # FILENAMECSV = "Margapati-UTF8.csv"
 # MIDIFILENAME = "Margapati {instrument}.mid"
-DATAPATH = ".\\data\\test"
-FILENAMECSV = "Gending Anak-Anak.csv"
-MIDIFILENAME = "Gending Anak-Anak {instrument}.mid"
+# DATAPATH = ".\\data\\test"
+# FILENAMECSV = "Gending Anak-Anak.csv"
+# MIDIFILENAME = "Gending Anak-Anak {instrument}.mid"
 
 
 if __name__ == "__main__":

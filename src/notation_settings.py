@@ -3,7 +3,14 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Literal, Optional, Union
 
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
+
+Instrument = str
+BPM = int
+Pass = int
+DEFAULT = -1
+
+# MIDI to Notation
 
 
 @dataclass
@@ -20,6 +27,9 @@ class TimingData:
     unit_duration: int
     units_per_beat: int
     beats_per_gongan: int
+
+
+# Notation to MIDI
 
 
 @dataclass
@@ -39,6 +49,7 @@ class Note:
 class Tempo(BaseModel):
     type: Literal["tempo"]
     bpm: int
+    passes: list[Pass] = field(default_factory=list)
     first_beat: Optional[int] = 1
     beats: Optional[int] = 0
     passes: Optional[list[int]] = field(default_factory=list)  # On which pass(es) should goto be performed?
@@ -48,6 +59,12 @@ class Tempo(BaseModel):
     def first_beat_seq(self) -> int:
         # Returns the pythonic sequence id (numbered from 0)
         return self.first_beat - 1
+
+    @model_validator(mode="after")
+    def set_default_pass(self):
+        if not self.passes:
+            self.passes.append(DEFAULT)
+        return self
 
 
 class Label(BaseModel):
@@ -80,22 +97,25 @@ class MetaData(BaseModel):
 
 
 # Flow
-Instrument = str
-BPM = int
-Pass = int
 
 
 @dataclass
 class Beat:
     id: int
-    bpm: BPM
+    bpm: dict[int, BPM]
     # bpm_alt: dict[Pass, BPM]  # TODO Not implemented yet. First need to find out how to combine with next_bpm
-    next_bpm: BPM
+    next_bpm: dict[int, BPM]
     duration: float
     notes: dict[Instrument, list[Note]] = field(default_factory=dict)
     next: "Beat" = field(default=None, repr=False)
     goto: dict[Pass, "Beat"] = field(default_factory=dict)
     _pass_: int = 0  # Counts the number of times the beat is passed during generation of MIDI file.
+
+    def get_bpm(self):
+        return self.bpm.get(self._pass_, self.bpm.get(DEFAULT, None))
+
+    def get_next_bpm(self):
+        return self.next_bpm.get(self._pass_, self.next_bpm.get(DEFAULT, None))
 
 
 @dataclass
