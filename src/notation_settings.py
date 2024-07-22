@@ -5,9 +5,9 @@ from typing import Literal, Optional, Union
 
 from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 
-Instrument = str
+INSTRUMENT = str
 BPM = int
-Pass = int
+PASS = int
 DEFAULT = -1
 
 # MIDI to Notation
@@ -49,7 +49,7 @@ class Note:
 class Tempo(BaseModel):
     type: Literal["tempo"]
     bpm: int
-    passes: list[Pass] = field(default_factory=list)
+    passes: list[PASS] = field(default_factory=list)
     first_beat: Optional[int] = 1
     beats: Optional[int] = 0
     passes: Optional[list[int]] = field(default_factory=list)  # On which pass(es) should goto be performed?
@@ -102,20 +102,19 @@ class MetaData(BaseModel):
 @dataclass
 class Beat:
     id: int
-    bpm: dict[int, BPM]
-    # bpm_alt: dict[Pass, BPM]  # TODO Not implemented yet. First need to find out how to combine with next_bpm
-    next_bpm: dict[int, BPM]
+    bpm_start: dict[PASS, BPM]  # tempo at beginning of beat (can vary per pass)
+    bpm_end: dict[PASS, BPM]  # tempo at end of beat (can vary per pass)
     duration: float
-    notes: dict[Instrument, list[Note]] = field(default_factory=dict)
+    notes: dict[INSTRUMENT, list[Note]] = field(default_factory=dict)
     next: "Beat" = field(default=None, repr=False)
-    goto: dict[Pass, "Beat"] = field(default_factory=dict)
-    _pass_: int = 0  # Counts the number of times the beat is passed during generation of MIDI file.
+    goto: dict[PASS, "Beat"] = field(default_factory=dict)
+    _pass_: PASS = 0  # Counts the number of times the beat is passed during generation of MIDI file.
 
-    def get_bpm(self):
-        return self.bpm.get(self._pass_, self.bpm.get(DEFAULT, None))
+    def get_bpm_start(self):
+        return self.bpm_start.get(self._pass_, self.bpm_start.get(DEFAULT, None))
 
-    def get_next_bpm(self):
-        return self.next_bpm.get(self._pass_, self.next_bpm.get(DEFAULT, None))
+    def get_bpm_end(self):
+        return self.bpm_end.get(self._pass_, self.bpm_end.get(DEFAULT, None))
 
 
 @dataclass
@@ -129,6 +128,7 @@ class System:
 @dataclass
 class Score:
     title: str
+    instruments: list[INSTRUMENT]
     systems: list[System] = field(default_factory=list)
 
 

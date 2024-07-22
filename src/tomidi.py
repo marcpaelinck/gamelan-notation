@@ -12,11 +12,11 @@ from more_itertools import flatten
 
 from notation_settings import (
     BALIMUSIC4_TO_MIDI,
+    INSTRUMENT,
     TO_PIANO,
     Beat,
     FlowInfo,
     GoTo,
-    Instrument,
     Label,
     MetaData,
     Score,
@@ -73,7 +73,7 @@ def notation_to_track(score: Score, instrument: str, piano_version=False) -> Mid
     beat = score.systems[0].beats[0]
     while beat:
         beat._pass_ += 1
-        beat_bpm = beat.get_bpm()
+        beat_bpm = beat.get_bpm_start()
         if beat_bpm != current_bpm:
             track.append(MetaMessage("set_tempo", tempo=bpm2tempo(beat_bpm)))
             current_bpm = beat_bpm
@@ -114,12 +114,12 @@ def notation_to_track(score: Score, instrument: str, piano_version=False) -> Mid
     return track
 
 
-def create_midifiles(score, outfilepath: str, piano_version=False, separate_files=False) -> None:
+def create_midifiles(score: Score, outfilepath: str, piano_version=False, separate_files=False) -> None:
     columns = ["tag"] + [str(i) for i in range(1, 33)]
     if not separate_files:
         mid = MidiFile(ticks_per_beat=96, type=1)
 
-    for instrument in INSTRUMENTS:
+    for instrument in score.instruments:
         if separate_files:
             mid = MidiFile(ticks_per_beat=96, type=0)
         track = notation_to_track(score, instrument, piano_version)
@@ -143,25 +143,25 @@ def apply_metadata(metadata: list[MetaData], system: System, flowinfo: FlowInfo)
                     # immediate bpm change
                     for beat in system.beats[start_beat_seq:]:
                         for p in meta.data.passes:
-                            beat.bpm[p] = beat.next_bpm[p] = meta.data.bpm
+                            beat.bpm_start[p] = beat.bpm_end[p] = meta.data.bpm
                 else:
                     # gradual bpm change over meta.data.beats beats.
                     # first bpm change is after first beat.
                     end_beat_seq = start_beat_seq + meta.data.beats
-                    start_bpm = system.beats[start_beat_seq].get_next_bpm()
+                    start_bpm = system.beats[start_beat_seq].get_bpm_end()
                     step_increment = (meta.data.bpm - start_bpm) / meta.data.beats
                     # Gradually increase bpm for given range of beats
                     bpm = start_bpm
                     for beat in system.beats[start_beat_seq:]:
                         bpm = bpm + (step_increment if beat in system.beats[start_beat_seq:end_beat_seq] else 0)
                         for p in meta.data.passes:
-                            beat.next_bpm[p] = bpm
+                            beat.bpm_end[p] = bpm
                     if meta.data.first_beat_seq + 1 < len(system.beats):
                         for prev_beat, next_beat in zip(
                             system.beats[meta.data.first_beat_seq :], system.beats[meta.data.first_beat_seq + 1 :]
                         ):
                             for p in meta.data.passes:
-                                next_beat.bpm[p] = prev_beat.next_bpm.get(
+                                next_beat.bpm_start[p] = prev_beat.bpm_end.get(
                                     p,
                                 )
             case Label():
@@ -185,6 +185,22 @@ def apply_metadata(metadata: list[MetaData], system: System, flowinfo: FlowInfo)
 SYSTEM_LAST = "system_last"
 METADATA = "metadata"
 COMMENT = "comment"
+NON_INSTRUMENT_TAGS = [METADATA, COMMENT]
+
+
+def create_missing_staves(beat: Beat, all_instruments: set[INSTRUMENT]) -> dict[INSTRUMENT, str]:
+    if missing_instruments := all_instruments - set(beat.notes.keys()):
+        rests = int(beat.duration)
+        half_rests = int((beat.duration - rests) * 2)
+        quarter_rests = int((beat.duration - rests - 0.5 * half_rests) * 4)
+        notes = (
+            [BALIMUSIC4_TO_MIDI["-"]] * rests
+            + [BALIMUSIC4_TO_MIDI["µ"]] * half_rests
+            + [BALIMUSIC4_TO_MIDI["ª"]] * quarter_rests
+        )
+        return {instrument: notes for instrument in missing_instruments}
+    else:
+        return dict()
 
 
 def create_score(datapath: str, infilename: str, title: str) -> Score:
@@ -207,8 +223,10 @@ def create_score(datapath: str, infilename: str, title: str) -> Score:
     for (sysnr, beat_nr, tag), beat in df_dict.items():
         notation[sysnr][beat_nr][tag] = beat
 
-    # TODO: extend all systems to contain all instruments
-    score = Score(title=title)
+    # create a list of all instruments
+    all_instruments = set(df[~df["tag"].isin(NON_INSTRUMENT_TAGS)]["tag"].unique())
+
+    score = Score(title=title, instruments=all_instruments)
     beats = []
     metadata = []
     flowinfo = FlowInfo()
@@ -219,15 +237,20 @@ def create_score(datapath: str, infilename: str, title: str) -> Score:
                 id=f"{int(sys_id)}-{beat_nr}",
                 notes=(
                     notes := {
-                        tag: [BALIMUSIC4_TO_MIDI[note] for note in notes[0]]
-                        for tag, notes in beat_info.items()
+                        tag: [BALIMUSIC4_TO_MIDI[note] for note in notechars[0]]
+                        for tag, notechars in beat_info.items()
                         if tag not in [METADATA, COMMENT]
                     }
                 ),
-                bpm={-1: (bpm := score.systems[-1].beats[-1].next_bpm[-1] if score.systems else 0)},
-                next_bpm={-1: bpm},
+                bpm_start={-1: (bpm := score.systems[-1].beats[-1].bpm_end[-1] if score.systems else 0)},
+                bpm_end={-1: bpm},
                 duration=sum(note.duration for note in list(notes.values())[0]),
             )
+            # Not all instruments occur in each system.
+            # Therefore we need to add blank staves (all rests) for missing instruments.
+            missing_staves = create_missing_staves(new_beat, score.instruments)
+            new_beat.notes.update(missing_staves)
+
             prev_beat = beats[-1] if beats else score.systems[-1].beats[-1] if score.systems else None
             if prev_beat:
                 prev_beat.next = new_beat
@@ -247,15 +270,15 @@ def create_score(datapath: str, infilename: str, title: str) -> Score:
     return score
 
 
-DATAPATH = ".\\data\\cendrawasih"
-FILENAMECSV = "Cendrawasih.csv"
-MIDIFILENAME = "Cendrawasih {instrument}.mid"
+# DATAPATH = ".\\data\\cendrawasih"
+# FILENAMECSV = "Cendrawasih.csv"
+# MIDIFILENAME = "Cendrawasih {instrument}.mid"
 # DATAPATH = ".\\data\\margapati"
 # FILENAMECSV = "Margapati-UTF8.csv"
 # MIDIFILENAME = "Margapati {instrument}.mid"
-# DATAPATH = ".\\data\\test"
-# FILENAMECSV = "Gending Anak-Anak.csv"
-# MIDIFILENAME = "Gending Anak-Anak {instrument}.mid"
+DATAPATH = ".\\data\\test"
+FILENAMECSV = "Gending Anak-Anak.csv"
+MIDIFILENAME = "Gending Anak-Anak {instrument}.mid"
 
 
 if __name__ == "__main__":
