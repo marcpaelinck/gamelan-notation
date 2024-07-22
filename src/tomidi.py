@@ -12,6 +12,7 @@ from more_itertools import flatten
 
 from notation_settings import (
     BALIMUSIC4_TO_MIDI,
+    DEFAULT,
     INSTRUMENT,
     TO_PIANO,
     Beat,
@@ -68,15 +69,15 @@ def notation_to_track(score: Score, instrument: str, piano_version=False) -> Mid
 
     time_since_last_note_end = 0
 
-    current_bpm = 0
     reset_pass_counters()
     beat = score.systems[0].beats[0]
+    current_tempo = 0
     while beat:
         beat._pass_ += 1
-        beat_bpm = beat.get_bpm_start()
-        if beat_bpm != current_bpm:
-            track.append(MetaMessage("set_tempo", tempo=bpm2tempo(beat_bpm)))
-            current_bpm = beat_bpm
+        # beat_bpm = beat.get_bpm_start()
+        if new_tempo := beat.get_changed_tempo(current_tempo):
+            track.append(MetaMessage("set_tempo", tempo=bpm2tempo(new_tempo)))
+            current_tempo = new_tempo
         for note in beat.notes.get(instrument, []):
             if note.note > 30:
                 track.append(
@@ -138,32 +139,54 @@ def apply_metadata(metadata: list[MetaData], system: System, flowinfo: FlowInfo)
     for meta in metadata:
         match meta.data:
             case Tempo():
-                start_beat_seq = meta.data.first_beat_seq
+                # start_beat_seq = meta.data.first_beat_seq
                 if meta.data.beats == 0:
                     # immediate bpm change
-                    for beat in system.beats[start_beat_seq:]:
-                        for p in meta.data.passes:
-                            beat.bpm_start[p] = beat.bpm_end[p] = meta.data.bpm
+                    system.beats[meta.data.first_beat_seq].tempo_changes.update(
+                        {
+                            pass_: Beat.TempoChange(new_tempo=meta.data.bpm, incremental=False)
+                            for pass_ in meta.data.passes or [DEFAULT]
+                        }
+                    )
+                    # immediate bpm change
+                    # for beat in system.beats[start_beat_seq:]:
+                    #     for p in meta.data.passes:
+                    #         beat.bpm_start[p] = beat.bpm_end[p] = meta.data.bpm
                 else:
                     # gradual bpm change over meta.data.beats beats.
                     # first bpm change is after first beat.
-                    end_beat_seq = start_beat_seq + meta.data.beats
-                    start_bpm = system.beats[start_beat_seq].get_bpm_end()
-                    step_increment = (meta.data.bpm - start_bpm) / meta.data.beats
                     # Gradually increase bpm for given range of beats
-                    bpm = start_bpm
-                    for beat in system.beats[start_beat_seq:]:
-                        bpm = bpm + (step_increment if beat in system.beats[start_beat_seq:end_beat_seq] else 0)
-                        for p in meta.data.passes:
-                            beat.bpm_end[p] = bpm
-                    if meta.data.first_beat_seq + 1 < len(system.beats):
-                        for prev_beat, next_beat in zip(
-                            system.beats[meta.data.first_beat_seq :], system.beats[meta.data.first_beat_seq + 1 :]
-                        ):
-                            for p in meta.data.passes:
-                                next_beat.bpm_start[p] = prev_beat.bpm_end.get(
-                                    p,
-                                )
+                    beat = system.beats[meta.data.first_beat_seq]
+                    # step_increment = (meta.data.bpm - system.beats[start_beat_seq].get_bpm_end()) / meta.data.beats
+                    steps = meta.data.beats
+                    for _ in range(meta.data.beats):
+                        beat = beat.next
+                        if not beat:  # end of score
+                            break
+                        beat.tempo_changes.update(
+                            {
+                                pass_: Beat.TempoChange(new_tempo=meta.data.bpm, steps=steps, incremental=True)
+                                for pass_ in meta.data.passes or [DEFAULT]
+                            }
+                        )
+                        steps -= 1
+
+                    # end_beat_seq = start_beat_seq + meta.data.beats
+                    # start_bpm = system.beats[start_beat_seq].get_bpm_end()
+                    # step_increment = (meta.data.bpm - start_bpm) / meta.data.beats
+                    # bpm = start_bpm
+                    # for beat in system.beats[start_beat_seq:]:
+                    #     bpm = bpm + (step_increment if beat in system.beats[start_beat_seq:end_beat_seq] else 0)
+                    #     for p in meta.data.passes:
+                    #         beat.bpm_end[p] = bpm
+                    # if meta.data.first_beat_seq + 1 < len(system.beats):
+                    #     for prev_beat, next_beat in zip(
+                    #         system.beats[meta.data.first_beat_seq :], system.beats[meta.data.first_beat_seq + 1 :]
+                    #     ):
+                    #         for p in meta.data.passes:
+                    #             next_beat.bpm_start[p] = prev_beat.bpm_end.get(
+                    #                 p,
+                    #             )
             case Label():
                 # Add the label to flowinfo
                 flowinfo.labels[meta.data.label] = system.beats[meta.data.beat_seq]
@@ -210,7 +233,7 @@ def create_score(datapath: str, infilename: str, title: str) -> Score:
     # Drop all empty columns
     df.dropna(how="all", axis=1, inplace=True)
     # Number the systems: blank lines denote start of new system. Then delete blank lines.
-    df["sysnr"] = df["tag"].isna().cumsum()[~df["tag"].isna()]
+    df["sysnr"] = df["tag"].isna().cumsum()[~df["tag"].isna()] + 1
     # Reshape dataframe so that there is one beat per row. Column "BEAT" will contain the beat content.
     df = pd.wide_to_long(df, ["BEAT"], i=["sysnr", "tag", "id"], j="beat_nr").reset_index(inplace=False)
     df = df[~df["BEAT"].isna()]
@@ -270,15 +293,15 @@ def create_score(datapath: str, infilename: str, title: str) -> Score:
     return score
 
 
-# DATAPATH = ".\\data\\cendrawasih"
-# FILENAMECSV = "Cendrawasih.csv"
-# MIDIFILENAME = "Cendrawasih {instrument}.mid"
+DATAPATH = ".\\data\\cendrawasih"
+FILENAMECSV = "Cendrawasih.csv"
+MIDIFILENAME = "Cendrawasih {instrument}.mid"
 # DATAPATH = ".\\data\\margapati"
 # FILENAMECSV = "Margapati-UTF8.csv"
 # MIDIFILENAME = "Margapati {instrument}.mid"
-DATAPATH = ".\\data\\test"
-FILENAMECSV = "Gending Anak-Anak.csv"
-MIDIFILENAME = "Gending Anak-Anak {instrument}.mid"
+# DATAPATH = ".\\data\\test"
+# FILENAMECSV = "Gending Anak-Anak.csv"
+# MIDIFILENAME = "Gending Anak-Anak {instrument}.mid"
 
 
 if __name__ == "__main__":

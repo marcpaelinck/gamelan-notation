@@ -4,10 +4,10 @@ metadata	{"type": "goto", "label": "A", "passes": [1]}
 
 metadata	{"type": "label", "label": "A", "beat_nr": 3}
 metadata	{"type": "label", "label": "B"}
-metadata	{"type": "tempo", "bpm": 120, "passes": [3]}
+metadata	{"type": "tempo", "bpm": 120, "passes": [2]}
+metadata	{"type": "goto", "label": "C", "beat_nr": 1, "passes": [3]}
 gangsa p	i---	....	..u-	a-e-	u--u	u-u-	e-a-	u-e-	
 gangsa s	i---	....	..u-	a-8-	u--u	u-u-	8-a-	u-i-	
-metadata	{"type": "goto", "label": "C", "beat_nr": 1, "passes": [3]}
 
 gangsa p	o---	....	....	i-o-	e--e	e-e-	u-ua	u-e-	
 gangsa s	a---	....	....	u-a-	i--i	i-i-	u-ua	u-8-	

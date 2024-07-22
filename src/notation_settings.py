@@ -101,10 +101,17 @@ class MetaData(BaseModel):
 
 @dataclass
 class Beat:
+    @dataclass
+    class TempoChange:
+        new_tempo: BPM
+        steps: int = 0
+        incremental: bool = False
+
     id: int
     bpm_start: dict[PASS, BPM]  # tempo at beginning of beat (can vary per pass)
     bpm_end: dict[PASS, BPM]  # tempo at end of beat (can vary per pass)
     duration: float
+    tempo_changes: dict[PASS, TempoChange] = field(default_factory=dict)
     notes: dict[INSTRUMENT, list[Note]] = field(default_factory=dict)
     next: "Beat" = field(default=None, repr=False)
     goto: dict[PASS, "Beat"] = field(default_factory=dict)
@@ -115,6 +122,15 @@ class Beat:
 
     def get_bpm_end(self):
         return self.bpm_end.get(self._pass_, self.bpm_end.get(DEFAULT, None))
+
+    def get_changed_tempo(self, current_tempo: BPM) -> BPM | None:
+        tempo_change = self.tempo_changes.get(self._pass_, self.tempo_changes.get(DEFAULT, None))
+        if tempo_change and tempo_change.new_tempo != current_tempo:
+            if tempo_change.incremental:
+                return current_tempo + int((tempo_change.new_tempo - current_tempo) / tempo_change.steps)
+            else:
+                return tempo_change.new_tempo
+        return None
 
 
 @dataclass
