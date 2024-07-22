@@ -36,24 +36,22 @@ class MetaInfo:
     bpm: int = 0
 
 
-INSTRUMENTS = ["gangsa p", "gangsa s"]
-
 BASE_NOTE_TIME = 24
 
 
-# meta_info[0].append(MetaMessage("set_tempo", tempo=tempo))
-
-
-def generate_metadata(meta_info: dict, track: MidiTrack) -> dict:
-    for msg in meta_info[0]:
-        print(msg)
-        track.append(msg)
-    for key in sorted([key for key in meta_info.keys() if isinstance(key, int)]):
-        meta_info[key] = meta_info.get(key + 1, [])
-    return meta_info
-
-
 def notation_to_track(score: Score, instrument: str, piano_version=False) -> MidiTrack:
+    """Generates the MIDI content for a single instrument.
+
+    Args:
+        score (Score): The object model containing the notation.
+        instrument (str): Instrument
+        piano_version (bool, optional): If True, a version for standard piano is generated.
+                                Otherwise a version for the gong kebyar instrument rack is created. Defaults to False.
+
+    Returns:
+        MidiTrack: MIDI track for the instrument.
+    """
+
     def reset_pass_counters():
         for system in score.systems:
             for beat in system.beats:
@@ -74,7 +72,6 @@ def notation_to_track(score: Score, instrument: str, piano_version=False) -> Mid
     current_tempo = 0
     while beat:
         beat._pass_ += 1
-        # beat_bpm = beat.get_bpm_start()
         if new_tempo := beat.get_changed_tempo(current_tempo):
             track.append(MetaMessage("set_tempo", tempo=bpm2tempo(new_tempo)))
             current_tempo = new_tempo
@@ -115,23 +112,17 @@ def notation_to_track(score: Score, instrument: str, piano_version=False) -> Mid
     return track
 
 
-def create_midifiles(score: Score, outfilepath: str, piano_version=False, separate_files=False) -> None:
-    columns = ["tag"] + [str(i) for i in range(1, 33)]
-    if not separate_files:
-        mid = MidiFile(ticks_per_beat=96, type=1)
-
-    for instrument in score.instruments:
-        if separate_files:
-            mid = MidiFile(ticks_per_beat=96, type=0)
-        track = notation_to_track(score, instrument, piano_version)
-        mid.tracks.append(track)
-        if separate_files:
-            mid.save(outfilepath.format(instrument=instrument))
-    if not separate_files:
-        mid.save(outfilepath.format(instrument=""))
-
-
 def apply_metadata(metadata: list[MetaData], system: System, flowinfo: FlowInfo) -> None:
+    """Processes the metadata of a system into the object model.
+
+    Args:
+        metadata (list[MetaData]): The metadata to process.
+        system (System): The system to which the metadata applies.
+        flowinfo (FlowInfo): Auxiliary object used to process "goto" statements. It keeps
+                            track of the labels and "goto" statements that point to labels
+                            that have not yet been encountered.
+    """
+
     def process_goto(system: System, goto: MetaData) -> None:
         for rep in goto.data.passes:
             system.beats[goto.data.beat_seq].goto[rep] = flowinfo.labels[goto.data.label]
@@ -139,9 +130,8 @@ def apply_metadata(metadata: list[MetaData], system: System, flowinfo: FlowInfo)
     for meta in metadata:
         match meta.data:
             case Tempo():
-                # start_beat_seq = meta.data.first_beat_seq
                 if meta.data.beats == 0:
-                    # immediate bpm change
+                    # immediate tempo change.
                     system.beats[meta.data.first_beat_seq].tempo_changes.update(
                         {
                             pass_: Beat.TempoChange(new_tempo=meta.data.bpm, incremental=False)
@@ -149,19 +139,14 @@ def apply_metadata(metadata: list[MetaData], system: System, flowinfo: FlowInfo)
                         }
                     )
                     # immediate bpm change
-                    # for beat in system.beats[start_beat_seq:]:
-                    #     for p in meta.data.passes:
-                    #         beat.bpm_start[p] = beat.bpm_end[p] = meta.data.bpm
                 else:
-                    # gradual bpm change over meta.data.beats beats.
-                    # first bpm change is after first beat.
-                    # Gradually increase bpm for given range of beats
+                    # Stepwise tempo change over meta.data.beats beats. The first tempo change is after first beat.
+                    # This emulates a gradual tempo change.
                     beat = system.beats[meta.data.first_beat_seq]
-                    # step_increment = (meta.data.bpm - system.beats[start_beat_seq].get_bpm_end()) / meta.data.beats
                     steps = meta.data.beats
                     for _ in range(meta.data.beats):
                         beat = beat.next
-                        if not beat:  # end of score
+                        if not beat:  # End of score. This should not happen unless notation error.
                             break
                         beat.tempo_changes.update(
                             {
@@ -171,22 +156,6 @@ def apply_metadata(metadata: list[MetaData], system: System, flowinfo: FlowInfo)
                         )
                         steps -= 1
 
-                    # end_beat_seq = start_beat_seq + meta.data.beats
-                    # start_bpm = system.beats[start_beat_seq].get_bpm_end()
-                    # step_increment = (meta.data.bpm - start_bpm) / meta.data.beats
-                    # bpm = start_bpm
-                    # for beat in system.beats[start_beat_seq:]:
-                    #     bpm = bpm + (step_increment if beat in system.beats[start_beat_seq:end_beat_seq] else 0)
-                    #     for p in meta.data.passes:
-                    #         beat.bpm_end[p] = bpm
-                    # if meta.data.first_beat_seq + 1 < len(system.beats):
-                    #     for prev_beat, next_beat in zip(
-                    #         system.beats[meta.data.first_beat_seq :], system.beats[meta.data.first_beat_seq + 1 :]
-                    #     ):
-                    #         for p in meta.data.passes:
-                    #             next_beat.bpm_start[p] = prev_beat.bpm_end.get(
-                    #                 p,
-                    #             )
             case Label():
                 # Add the label to flowinfo
                 flowinfo.labels[meta.data.label] = system.beats[meta.data.beat_seq]
@@ -212,6 +181,16 @@ NON_INSTRUMENT_TAGS = [METADATA, COMMENT]
 
 
 def create_missing_staves(beat: Beat, all_instruments: set[INSTRUMENT]) -> dict[INSTRUMENT, str]:
+    """Returns staves for missing instruments, containing rests (silence) for the duration of the given beat.
+    This ensures that instruments that do not occur in all the systems will remain in sync.
+
+    Args:
+        beat (Beat): The beat that should be complemented.
+        all_instruments (set[INSTRUMENT]): List of all the instruments that occur in the notation.
+
+    Returns:
+        dict[INSTRUMENT, str]: A dict with the generated staves.
+    """
     if missing_instruments := all_instruments - set(beat.notes.keys()):
         rests = int(beat.duration)
         half_rests = int((beat.duration - rests) * 2)
@@ -226,7 +205,18 @@ def create_missing_staves(beat: Beat, all_instruments: set[INSTRUMENT]) -> dict[
         return dict()
 
 
-def create_score(datapath: str, infilename: str, title: str) -> Score:
+def create_score_object_model(datapath: str, infilename: str, title: str) -> Score:
+    """Creates an object model of the notation.
+    This will simplify the generation of the MIDI file content.
+
+    Args:
+        datapath (str): path to the data folder
+        infilename (str): name of the csv input file
+        title (str): Title for the notation
+
+    Returns:
+        Score: Object model containing the notation information.
+    """
     columns = ["tag"] + ["BEAT" + str(i) for i in range(1, 33)]
     df = pd.read_csv(path.join(datapath, infilename), sep="\t", names=columns, skip_blank_lines=False, encoding="UTF-8")
     df["id"] = df.index
@@ -293,6 +283,30 @@ def create_score(datapath: str, infilename: str, title: str) -> Score:
     return score
 
 
+def create_midifiles(score: Score, outfilepath: str, piano_version=False, separate_files=False) -> None:
+    """Generates the MIDI content and saves it to file.
+
+    Args:
+        score (Score): The object model.
+        outfilepath (str): Path to the destination folder.
+        piano_version (bool, optional): If True, a version for standard piano is generated.
+                                Otherwise a version for the gong kebyar instrument rack is created. Defaults to False.
+        separate_files (bool, optional): If True, a separate file will be created for each instrument. Defaults to False.
+    """
+    if not separate_files:
+        mid = MidiFile(ticks_per_beat=96, type=1)
+
+    for instrument in score.instruments:
+        if separate_files:
+            mid = MidiFile(ticks_per_beat=96, type=0)
+        track = notation_to_track(score, instrument, piano_version)
+        mid.tracks.append(track)
+        if separate_files:
+            mid.save(outfilepath.format(instrument=instrument))
+    if not separate_files:
+        mid.save(outfilepath.format(instrument=""))
+
+
 DATAPATH = ".\\data\\cendrawasih"
 FILENAMECSV = "Cendrawasih.csv"
 MIDIFILENAME = "Cendrawasih {instrument}.mid"
@@ -307,6 +321,6 @@ MIDIFILENAME = "Cendrawasih {instrument}.mid"
 if __name__ == "__main__":
     PIANOVERSION = True
     SEPARATE_FILES = False
-    score = create_score(DATAPATH, FILENAMECSV, FILENAMECSV)
+    score = create_score_object_model(DATAPATH, FILENAMECSV, FILENAMECSV)
     outfilepath = os.path.join(DATAPATH, MIDIFILENAME)
     create_midifiles(score, outfilepath, piano_version=PIANOVERSION, separate_files=SEPARATE_FILES)
