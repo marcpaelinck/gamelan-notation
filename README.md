@@ -1,3 +1,6 @@
+# Gamelan Notation
+This application creates MIDI files from the notation of Balinese gamelan.
+
 ## installation
     This project uses pyenv-win and pyenv-win-venv for Windows
     See https://pyenv-win.github.io/pyenv-win/ and https://github.com/pyenv-win/pyenv-win-venv

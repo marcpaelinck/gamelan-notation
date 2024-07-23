@@ -1,0 +1,31 @@
+metadata	{"type": "tempo", "bpm": 80}
+ugal	i---	o-e-
+metadata	{"type": "goto", "label": "A", "passes": [1]}
+
+metadata	{"type": "label", "label": "A", "beat_nr": 3}
+metadata	{"type": "label", "label": "B"}
+metadata	{"type": "tempo", "bpm": 120, "passes": [2]}
+metadata	{"type": "goto", "label": "C", "beat_nr": 1, "passes": [3]}
+gangsa p	i---	....	..u-	a-e-	u--u	u-u-	e-a-	u-e-	
+gangsa s	i---	....	..u-	a-8-	u--u	u-u-	8-a-	u-i-	
+
+gangsa p	o---	....	....	i-o-	e--e	e-e-	u-ua	u-e-	
+gangsa s	a---	....	....	u-a-	i--i	i-i-	u-ua	u-8-	
+
+gangsa p	o---	....	....	e-u-	a--a	a-a-	a-u-	e-u-	
+gangsa s	a---	....	....	8-u-	a--a	a-a-	a-u-	8-u-	
+
+gangsa p	a---	....	..u-	a-e-	u--u	u-u-	e-a-	u-e-	
+gangsa s	a---	....	..u-	a-8-	u--u	u-u-	8-a-	u-i-	
+
+gangsa p	o---	....	....	e-u-	a--a	a-a-	a-u-	e-o-	
+gangsa s	a---	....	....	8-u-	a--a	a-a-	a-u-	8-a-	
+
+gangsa p	i.oi	.io.	i.oi	.ioe	u.eu	.ue.	u.eu	.ueo
+gangsa s	.eo.	e.oe	.eo.	e.oe	.oe.	a.eo	.oe.	a.eo
+metadata	{"type": "goto", "label": "B", "passes": [1, 2, 3]}
+
+metadata	{"type": "label", "label": "C"}
+ugal	zzzz	z---
+gangsa p	----	----
+gangsa s	----	----
