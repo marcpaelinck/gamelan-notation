@@ -6,13 +6,8 @@ from itertools import batched, pairwise
 
 from mido import Message, MetaMessage, MidiFile
 
-from notation_settings import (
-    FROM_PIANO,
-    MIDI_TO_COURIER,
-    VALID_MIDI_MESSAGE_TYPES,
-    TimedMessage,
-    TimingData,
-)
+from notation_classes import TimedMessage, TimingData
+from notation_constants import FROM_PIANO, MIDI_TO_COURIER, VALID_MIDI_MESSAGE_TYPES
 
 # datafolder = ".\\data\\puspanjali\\"
 datafolder = ".\\data\\cendrawasih\\"

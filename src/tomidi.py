@@ -7,16 +7,10 @@ from dataclasses import dataclass
 from enum import Enum
 from os import path
 
-import numpy as np
 import pandas as pd
-from mido import Message, MetaMessage, MidiFile, MidiTrack, bpm2tempo, tempo2bpm
-from more_itertools import flatten
+from mido import Message, MetaMessage, MidiFile, MidiTrack, bpm2tempo
 
-from notation_settings import (
-    BALIMUSIC4_TO_MIDI,
-    DEFAULT,
-    INSTRUMENT,
-    TO_PIANO,
+from notation_classes import (
     Beat,
     FlowInfo,
     Gongan,
@@ -27,16 +21,13 @@ from notation_settings import (
     System,
     Tempo,
 )
+from notation_constants import DEFAULT, INSTRUMENT, TO_PIANO
+from pianoroll import BALIMUSIC4_TO_MIDI
 
 
 class InstrumentType(Enum):
     GANGSA_P = "gangsa p"
     GANGSA_S = "gangsa s"
-
-
-@dataclass
-class MetaInfo:
-    bpm: int = 0
 
 
 BASE_NOTE_TIME = 24
