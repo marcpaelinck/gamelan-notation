@@ -1,6 +1,8 @@
 import json
+import math
 import os
 from collections import defaultdict
+from copy import copy
 from dataclasses import dataclass
 from enum import Enum
 from os import path
@@ -17,6 +19,7 @@ from notation_settings import (
     TO_PIANO,
     Beat,
     FlowInfo,
+    Gongan,
     GoTo,
     Label,
     MetaData,
@@ -59,24 +62,46 @@ def notation_to_track(score: Score, instrument: str, piano_version=False) -> Mid
 
     track = MidiTrack()
     track.append(MetaMessage("track_name", name=instrument, time=0))
-    track.append(
-        MetaMessage(
-            "time_signature", numerator=4, denominator=4, clocks_per_click=36, notated_32nd_notes_per_beat=8, time=0
-        )
-    )
+    # track.append(
+    #     MetaMessage(
+    #         "time_signature", numerator=4, denominator=4, clocks_per_click=36, notated_32nd_notes_per_beat=8, time=0
+    #     )
+    # )
 
     time_since_last_note_end = 0
 
     reset_pass_counters()
     beat = score.systems[0].beats[0]
     current_tempo = 0
+    current_signature = 0
     while beat:
         beat._pass_ += 1
+        # Set new not signature if the beat's system has a different beat length
+        if new_signature := (
+            round(score.systems[beat.sys_seq].beat_duration)
+            if score.systems[beat.sys_seq].beat_duration != current_signature
+            else None
+        ):
+            track.append(
+                MetaMessage(
+                    "time_signature",
+                    numerator=new_signature,
+                    denominator=4,
+                    clocks_per_click=36,
+                    notated_32nd_notes_per_beat=8,
+                    time=time_since_last_note_end,
+                )
+            )
+            time_since_last_note_end = 0
+            current_signature = new_signature
+        # Set new tempo
         if new_tempo := beat.get_changed_tempo(current_tempo):
             track.append(MetaMessage("set_tempo", tempo=bpm2tempo(new_tempo)))
             current_tempo = new_tempo
-        for note in beat.notes.get(instrument, []):
+        # Process individual notes
+        for note in beat.staves.get(instrument, []):
             if note.note > 30:
+                # Set ON and OFF messages for actual note
                 track.append(
                     Message(
                         type="note_on",
@@ -169,6 +194,9 @@ def apply_metadata(metadata: list[MetaData], system: System, flowinfo: FlowInfo)
                 else:
                     # Label not yet encountered: store GoTo obect in flowinfo
                     flowinfo.gotos[meta.data.label].append((system, meta))
+            case Gongan():
+                # Meant for validation
+                system.gongan = meta.data
             case _:
                 raise ValueError(f"Metadata value {meta.data.type} is not supported.")
     return
@@ -191,14 +219,14 @@ def create_missing_staves(beat: Beat, all_instruments: set[INSTRUMENT]) -> dict[
     Returns:
         dict[INSTRUMENT, str]: A dict with the generated staves.
     """
-    if missing_instruments := all_instruments - set(beat.notes.keys()):
+    if missing_instruments := all_instruments - set(beat.staves.keys()):
         rests = int(beat.duration)
         half_rests = int((beat.duration - rests) * 2)
         quarter_rests = int((beat.duration - rests - 0.5 * half_rests) * 4)
         notes = (
-            [BALIMUSIC4_TO_MIDI["-"]] * rests
-            + [BALIMUSIC4_TO_MIDI["µ"]] * half_rests
-            + [BALIMUSIC4_TO_MIDI["ª"]] * quarter_rests
+            [copy(BALIMUSIC4_TO_MIDI["-"])] * rests
+            + [copy(BALIMUSIC4_TO_MIDI["µ"])] * half_rests
+            + [copy(BALIMUSIC4_TO_MIDI["ª"])] * quarter_rests
         )
         return {instrument: notes for instrument in missing_instruments}
     else:
@@ -245,24 +273,45 @@ def create_score_object_model(datapath: str, infilename: str, title: str) -> Sco
     flowinfo = FlowInfo()
     for sys_id, sys_info in notation.items():
         for beat_nr, beat_info in sys_info.items():
+            # create the staves
+            staves = {
+                tag: [copy(BALIMUSIC4_TO_MIDI[note]) for note in notechars[0]]
+                for tag, notechars in beat_info.items()
+                if tag not in [METADATA, COMMENT]
+            }
+            # Merge notes with negative valuewith previous note(s)
+            for stave in staves.values():
+                notes_to_remove = []
+                for note in stave:
+                    if note.note == -1:
+                        prevnote = stave[stave.index(note) - 1]
+                        prevnote.duration = note.duration
+                        prevnote.rest_before = note.rest_before
+                        prevnote.rest_after = note.rest_after
+                        notes_to_remove.append(note)
+                    if note.note == -2:
+                        prev1note = stave[stave.index(note) - 1]
+                        prev1note.duration = note.duration
+                        prev2note = stave[stave.index(note) - 2]
+                        prev2note.duration = note.rest_before
+                        prev2note.rest_after = 0
+                        notes_to_remove.append(note)
+                for note in notes_to_remove:
+                    stave.remove(note)
+
             # Create the beat and add it to the list of beats
             new_beat = Beat(
-                id=f"{int(sys_id)}-{beat_nr}",
-                notes=(
-                    notes := {
-                        tag: [BALIMUSIC4_TO_MIDI[note] for note in notechars[0]]
-                        for tag, notechars in beat_info.items()
-                        if tag not in [METADATA, COMMENT]
-                    }
-                ),
+                id=beat_nr,
+                sys_id=sys_id,
+                staves=staves,
                 bpm_start={-1: (bpm := score.systems[-1].beats[-1].bpm_end[-1] if score.systems else 0)},
                 bpm_end={-1: bpm},
-                duration=sum(note.duration for note in list(notes.values())[0]),
+                duration=sum(note.duration + note.rest_before + note.rest_after for note in list(staves.values())[0]),
             )
             # Not all instruments occur in each system.
             # Therefore we need to add blank staves (all rests) for missing instruments.
             missing_staves = create_missing_staves(new_beat, score.instruments)
-            new_beat.notes.update(missing_staves)
+            new_beat.staves.update(missing_staves)
 
             prev_beat = beats[-1] if beats else score.systems[-1].beats[-1] if score.systems else None
             if prev_beat:
@@ -274,7 +323,7 @@ def create_score_object_model(datapath: str, infilename: str, title: str) -> Sco
 
         # Create a new system
         if beats:
-            system = System(id=int(sys_id), beats=beats)
+            system = System(id=int(sys_id), beats=beats, beat_duration=beats[0].duration)
             score.systems.append(system)
             apply_metadata(metadata, system, flowinfo)
             metadata = []
@@ -307,20 +356,60 @@ def create_midifiles(score: Score, outfilepath: str, piano_version=False, separa
         mid.save(outfilepath.format(instrument=""))
 
 
-DATAPATH = ".\\data\\cendrawasih"
-FILENAMECSV = "Cendrawasih.csv"
-MIDIFILENAME = "Cendrawasih {instrument}.mid"
-# DATAPATH = ".\\data\\margapati"
-# FILENAMECSV = "Margapati-UTF8.csv"
-# MIDIFILENAME = "Margapati {instrument}.mid"
-# DATAPATH = ".\\data\\test"
-# FILENAMECSV = "Gending Anak-Anak.csv"
-# MIDIFILENAME = "Gending Anak-Anak {instrument}.mid"
+def validate_model(score: Score) -> None:
+    """Performs consistency checks and prints results.
+
+    Args:
+        score (Score): the score to analyze.
+    """
+    beat_not_pow2 = []
+    beat_unequal_lengths = []
+
+    for system in score.systems:
+        for beat in system.beats:
+            # Determine if the beat duration is a power of 2 (ignore kebyar)
+            if system.gongan.kind != "kebyar" and 2 ** int(math.log2(beat.duration)) != beat.duration:
+                beat_not_pow2.append((beat.full_id, beat.duration))
+            # Check if the length of all staves in a beat are equal.
+            if any(
+                sum(note.duration + note.rest_after for note in notes) != beat.duration
+                for notes in beat.staves.values()
+            ):
+                beat_unequal_lengths.append(
+                    (
+                        beat.full_id,
+                        beat.duration,
+                        [sum(note.duration + note.rest_after for note in notes) for notes in beat.staves.values()],
+                    )
+                )
+    print(f"INCORRECT LENGTHS: {beat_not_pow2}")
+    print(f"UNEQUAL LENGTHS: {beat_unequal_lengths}")
+
+
+@dataclass
+class Source:
+    datapath: str
+    csvfilename: str
+    midifilename: str
+
+
+CENDRAWASIH = Source(
+    datapath=".\\data\\cendrawasih", csvfilename="Cendrawasih.csv", midifilename="Cendrawasih {instrument}.mid"
+)
+MARGAPATI = Source(
+    datapath=".\\data\\margapati", csvfilename="Margapati-UTF8.csv", midifilename="Margapati {instrument}.mid"
+)
+GENDINGANAK2 = Source(
+    datapath=".\\data\\test", csvfilename="Gending Anak-Anak.csv", midifilename="Gending Anak-Anak {instrument}.mid"
+)
+DEMO = Source(datapath=".\\data\\test", csvfilename="demo.csv", midifilename="Demo {instrument}.mid")
 
 
 if __name__ == "__main__":
     PIANOVERSION = True
     SEPARATE_FILES = False
-    score = create_score_object_model(DATAPATH, FILENAMECSV, FILENAMECSV)
-    outfilepath = os.path.join(DATAPATH, MIDIFILENAME)
+    source = CENDRAWASIH
+    score = create_score_object_model(source.datapath, source.csvfilename, source.midifilename)
+    validate_model(score)
+    outfilepath = os.path.join(source.datapath, source.midifilename)
     create_midifiles(score, outfilepath, piano_version=PIANOVERSION, separate_files=SEPARATE_FILES)
