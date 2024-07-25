@@ -4,7 +4,15 @@ from typing import Literal, Optional, Union
 
 from pydantic import BaseModel, Field, computed_field, model_validator
 
-from notation_constants import BPM, DEFAULT, INSTRUMENT, PASS
+from notation_constants import (
+    BPM,
+    DEFAULT,
+    INSTRUMENT,
+    PASS,
+    InstrumentGroup,
+    InstrumentType,
+    NoteValue,
+)
 
 
 @dataclass
@@ -27,17 +35,24 @@ class TimingData:
 
 
 @dataclass
-class Note:
-    note: int
-    rest_before: float
+class Character:
+    symbol: str
+    unicode: int
+    symbol_description: str
+    balifont_symbol_description: str
+    meaning: NoteValue
     duration: float
     rest_after: float
     description: str
-    symbol: str
-    unicodes: str = ""
-    unicode: int = 0
-    symbol_description: str = ""
-    balifont_symbol_description: str = ""
+
+
+@dataclass
+class MidiNote:
+    instrumentgroup: InstrumentGroup
+    instrumenttype: InstrumentType
+    notevalue: NoteValue
+    midi: int
+    pianomidi: Optional[int] = -1
 
 
 #
@@ -103,6 +118,12 @@ class MetaData(BaseModel):
 #
 
 
+@dataclass(frozen=True)
+class Instrument:
+    tag: str
+    instrumenttype: InstrumentType
+
+
 @dataclass
 class Beat:
     @dataclass
@@ -117,7 +138,7 @@ class Beat:
     bpm_end: dict[PASS, BPM]  # tempo at end of beat (can vary per pass)
     duration: float
     tempo_changes: dict[PASS, TempoChange] = field(default_factory=dict)
-    staves: dict[INSTRUMENT, list[Note]] = field(default_factory=dict)
+    staves: dict[INSTRUMENT, list[Character]] = field(default_factory=dict)
     next: "Beat" = field(default=None, repr=False)
     goto: dict[PASS, "Beat"] = field(default_factory=dict)
     _pass_: PASS = 0  # Counts the number of times the beat is passed during generation of MIDI file.
@@ -162,7 +183,7 @@ class System:
 @dataclass
 class Score:
     title: str
-    instruments: list[INSTRUMENT]
+    instruments: set[Instrument]
     systems: list[System] = field(default_factory=list)
 
 
