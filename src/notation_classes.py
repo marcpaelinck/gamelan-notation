@@ -1,8 +1,11 @@
+import inspect
 from collections import defaultdict
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Literal, Optional, Union
 
-from pydantic import BaseModel, Field, computed_field, model_validator
+from eth_pydantic_types import HexBytes
+from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 
 from notation_constants import (
     BPM,
@@ -11,7 +14,7 @@ from notation_constants import (
     PASS,
     InstrumentGroup,
     InstrumentType,
-    NoteValue,
+    SymbolValue,
 )
 
 
@@ -34,23 +37,21 @@ class TimingData:
 # Notation to MIDI
 
 
-@dataclass
-class Character:
+class Character(BaseModel):
     symbol: str
-    unicode: int
+    unicode: str
     symbol_description: str
     balifont_symbol_description: str
-    meaning: NoteValue
+    meaning: SymbolValue
     duration: float
     rest_after: float
     description: str
 
 
-@dataclass
-class MidiNote:
+class MidiNote(BaseModel):
     instrumentgroup: InstrumentGroup
     instrumenttype: InstrumentType
-    notevalue: NoteValue
+    notevalue: SymbolValue
     midi: int
     pianomidi: Optional[int] = -1
 

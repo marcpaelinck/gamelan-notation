@@ -1,5 +1,5 @@
 import codecs
-from enum import Enum, auto
+from enum import Enum, StrEnum, auto
 
 INSTRUMENT = str
 BPM = int
@@ -7,98 +7,105 @@ PASS = int
 DEFAULT = -1
 
 
-class InstrumentGroup(Enum):
-    GONG_KEBYAR = auto()
-    SEMAR_PAGULINGAN = auto()
+class EnumX(StrEnum):
+    def __str__(self):
+        return self.name
 
 
-class InstrumentType(Enum):
-    GONGS = auto()
-    KEMPLI = auto()
-    CENGCENG = auto()
-    KENDANG = auto()
-    JEGOGAN = auto()
-    CALUNG = auto()
-    PENYACAH = auto()
-    PEMADE = auto()
-    KANTILAN = auto()
-    UGAL = auto()
-    GENDERRAMBAT = auto()
-    REYONG = auto()
-    TROMPONG = auto()
+class InstrumentGroup(StrEnum):
+    GONG_KEBYAR = "GONG_KEBYAR"
+    SEMAR_PAGULINGAN = "SEMAR_PAGULINGAN"
 
 
-class NoteValue(Enum):
-    DING0 = auto()
-    DONG0 = auto()
-    DENG0 = auto()
-    DEUNG0 = auto()
-    DUNG0 = auto()
-    DANG0 = auto()
-    DAING0 = auto()
-    DING1 = auto()
-    DONG1 = auto()
-    DENG1 = auto()
-    DEUNG1 = auto()
-    DUNG1 = auto()
-    DANG1 = auto()
-    DAING1 = auto()
-    DING2 = auto()
-    DONG2 = auto()
-    DENG2 = auto()
-    DEUNG2 = auto()
-    DUNG2 = auto()
-    DANG2 = auto()
-    DAING2 = auto()
-    DING0_MUTED = auto()
-    DONG0_MUTED = auto()
-    DENG0_MUTED = auto()
-    DEUNG0_MUTED = auto()
-    DUNG0_MUTED = auto()
-    DANG0_MUTED = auto()
-    DAING0_MUTED = auto()
-    DING1_MUTED = auto()
-    DONG1_MUTED = auto()
-    DENG1_MUTED = auto()
-    DEUNG1_MUTED = auto()
-    DUNG1_MUTED = auto()
-    DANG1_MUTED = auto()
-    DAING1_MUTED = auto()
-    DING2_MUTED = auto()
-    DONG2_MUTED = auto()
-    DENG2_MUTED = auto()
-    DEUNG2_MUTED = auto()
-    DUNG2_MUTED = auto()
-    DANG2_MUTED = auto()
-    DAING2_MUTED = auto()
-    GIR = auto()
-    PUR = auto()
-    TONG = auto()
-    KEP = auto()
-    PAK = auto()
-    DUT = auto()
-    TUT = auto()
-    KRUM = auto()
-    PUNG = auto()
-    BYONG = auto()
-    BYOT = auto()
-    JET = auto()
-    TICK_1_PANGGUL = auto()
-    TICK_2_PANGGUL = auto()
-    KAP = auto()
-    PEK = auto()
-    DAG = auto()
-    DUG = auto()
-    TAK = auto()
-    TEK = auto()
-    PLAK = auto()
-    MUTED = auto()
-    OPEN = auto()
-    MODIFIER_PREV1 = auto()
-    MODIFIER_PREV2 = auto()
-    SILENCE = auto()
-    EXTENSION = auto()
-    NOT_IMPLEMENTED = auto()
+class InstrumentType(StrEnum):
+    GONGS = "GONGS"
+    KEMPLI = "KEMPLI"
+    CENGCENG = "CENGCENG"
+    KENDANG = "KENDANG"
+    JEGOGAN = "JEGOGAN"
+    CALUNG = "CALUNG"
+    PENYACAH = "PENYACAH"
+    PEMADE = "PEMADE"
+    KANTILAN = "KANTILAN"
+    UGAL = "UGAL"
+    GENDERRAMBAT = "GENDERRAMBAT"
+    REYONG = "REYONG"
+    TROMPONG = "TROMPONG"
+
+
+class SymbolValue(StrEnum):
+    # 0=lower instrument octave, 1=central instrument octave, 2=higher instrument octave.
+    # The octave numbering is relative to the instrument's range.
+    DING0 = "DING0"
+    DONG0 = "DONG0"
+    DENG0 = "DENG0"
+    DEUNG0 = "DEUNG0"
+    DUNG0 = "DUNG0"
+    DANG0 = "DANG0"
+    DAING0 = "DAING0"
+    DING1 = "DING1"
+    DONG1 = "DONG1"
+    DENG1 = "DENG1"
+    DEUNG1 = "DEUNG1"
+    DUNG1 = "DUNG1"
+    DANG1 = "DANG1"
+    DAING1 = "DAING1"
+    DING2 = "DING2"
+    DONG2 = "DONG2"
+    DENG2 = "DENG2"
+    DEUNG2 = "DEUNG2"
+    DUNG2 = "DUNG2"
+    DANG2 = "DANG2"
+    DAING2 = "DAING2"
+    DING0_MUTED = "DING0_MUTED"
+    DONG0_MUTED = "DONG0_MUTED"
+    DENG0_MUTED = "DENG0_MUTED"
+    DEUNG0_MUTED = "DEUNG0_MUTED"
+    DUNG0_MUTED = "DUNG0_MUTED"
+    DANG0_MUTED = "DANG0_MUTED"
+    DAING0_MUTED = "DAING0_MUTED"
+    DING1_MUTED = "DING1_MUTED"
+    DONG1_MUTED = "DONG1_MUTED"
+    DENG1_MUTED = "DENG1_MUTED"
+    DEUNG1_MUTED = "DEUNG1_MUTED"
+    DUNG1_MUTED = "DUNG1_MUTED"
+    DANG1_MUTED = "DANG1_MUTED"
+    DAING1_MUTED = "DAING1_MUTED"
+    DING2_MUTED = "DING2_MUTED"
+    DONG2_MUTED = "DONG2_MUTED"
+    DENG2_MUTED = "DENG2_MUTED"
+    DEUNG2_MUTED = "DEUNG2_MUTED"
+    DUNG2_MUTED = "DUNG2_MUTED"
+    DANG2_MUTED = "DANG2_MUTED"
+    DAING2_MUTED = "DAING2_MUTED"
+    GIR = "GIR"
+    PUR = "PUR"
+    TONG = "TONG"
+    KEP = "KEP"
+    PAK = "PAK"
+    DUT = "DUT"
+    TUT = "TUT"
+    KRUM = "KRUM"
+    PUNG = "PUNG"
+    BYONG = "BYONG"
+    BYOT = "BYOT"
+    JET = "JET"
+    TICK_1_PANGGUL = "TICK_1_PANGGUL"
+    TICK_2_PANGGUL = "TICK_2_PANGGUL"
+    KAP = "KAP"
+    PEK = "PEK"
+    DAG = "DAG"
+    DUG = "DUG"
+    TAK = "TAK"
+    TEK = "TEK"
+    PLAK = "PLAK"
+    MUTED = "MUTED"
+    OPEN = "OPEN"
+    MODIFIER_PREV1 = "MODIFIER_PREV1"
+    MODIFIER_PREV2 = "MODIFIER_PREV2"
+    SILENCE = "SILENCE"
+    EXTENSION = "EXTENSION"
+    NOT_IMPLEMENTED = "NOT_IMPLEMENTED"
 
     @property
     def isnote(self):

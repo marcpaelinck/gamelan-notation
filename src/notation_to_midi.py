@@ -4,21 +4,21 @@ import os
 from collections import defaultdict
 from copy import copy
 from dataclasses import dataclass
-from enum import Enum
 from os import path
 
 import pandas as pd
 from mido import Message, MetaMessage, MidiFile, MidiTrack, bpm2tempo
 
-from balimusic_font import BALIMUSIC4_FONT
 from notation_classes import (
     Beat,
+    Character,
     FlowInfo,
     Gongan,
     GoTo,
     Instrument,
     Label,
     MetaData,
+    MidiNote,
     Score,
     System,
     Tempo,
@@ -27,14 +27,38 @@ from notation_constants import (
     DEFAULT,
     INSTRUMENT,
     TAG_TO_INSTRUMENTTYPE_DICT,
-    TO_PIANO,
     InstrumentGroup,
-    NoteValue,
+    InstrumentType,
+    SymbolValue,
 )
-from pianoroll import MIDI_NOTES
 
 BASE_NOTE_TIME = 24
-BALIMUSIC4_FONT_DICT = {character.symbol: character for character in BALIMUSIC4_FONT}
+MIDI_NOTES_DEF_FILE = "./settings/midinotes.csv"
+BALIMUSIC4_DEF_FILE = "./settings/balimusic4font.csv"
+BALIMUSIC4_FONT_DICT = None
+MIDI_NOTES_DICT = None
+
+
+def initialize_lookups(pianoversion: bool, instrumentgroup: InstrumentGroup) -> None:
+    """Initializes dicts BALIMUSIC4_FONT_DICT and MIDI_NOTES_DICT
+
+    Args:
+        pianoversion (bool): if True, the midi values for a piano will be returned, otherwise the values for a gamelan orchestra.
+        instrumentgroup (InstrumentGroup): The type of orchestra (e.g. gong kebyar, semar pagulingan)
+
+    """
+    global BALIMUSIC4_FONT_DICT, MIDI_NOTES_DICT
+    midinotes_obj = pd.read_csv(MIDI_NOTES_DEF_FILE, sep="\t").to_dict(orient="records")
+    midinotes = [MidiNote.model_validate(note) for note in midinotes_obj]
+    MIDI_NOTES_DICT = {
+        (note.instrumenttype, note.notevalue): (note.pianomidi if pianoversion else note.midi)
+        for note in midinotes
+        if note.instrumentgroup == instrumentgroup
+    }
+
+    balifont_obj = pd.read_csv(BALIMUSIC4_DEF_FILE, sep="\t").to_dict(orient="records")
+    balifont = [Character.model_validate(character) for character in balifont_obj]
+    BALIMUSIC4_FONT_DICT = {character.symbol: character for character in balifont}
 
 
 def notation_to_track(score: Score, instrument: Instrument) -> MidiTrack:
@@ -116,15 +140,15 @@ def notation_to_track(score: Score, instrument: Instrument) -> MidiTrack:
                     )
                 )
                 time_since_last_note_end = int(note.rest_after * BASE_NOTE_TIME)
-            elif note.meaning in [NoteValue.MODIFIER_PREV1, NoteValue.MODIFIER_PREV2]:
+            elif note.meaning in [SymbolValue.MODIFIER_PREV1, SymbolValue.MODIFIER_PREV2]:
                 # Should not occur because processed in create_score_object_model
                 # track[-1].time = int(note.duration * BASE_NOTE_TIME)
                 # time_since_last_note_end += int(note.rest_after * BASE_NOTE_TIME)
                 raise ValueError(f"Unexpected note value {note.meaning}")
-            elif note.meaning is NoteValue.SILENCE:
+            elif note.meaning is SymbolValue.SILENCE:
                 # Increment time since last note ended
                 time_since_last_note_end += int(note.duration * BASE_NOTE_TIME)
-            elif note.meaning is NoteValue.EXTENSION:
+            elif note.meaning is SymbolValue.EXTENSION:
                 # Extension of note duration: add duration to last note
                 track[-1].time += int(note.duration * BASE_NOTE_TIME)
 
@@ -203,7 +227,7 @@ COMMENT = "comment"
 NON_INSTRUMENT_TAGS = [METADATA, COMMENT]
 
 
-def create_missing_staves(beat: Beat, all_instruments: set[INSTRUMENT]) -> dict[INSTRUMENT, str]:
+def create_missing_staves(beat: Beat, all_instruments: set[INSTRUMENT]) -> dict[INSTRUMENT, list[Character]]:
     """Returns staves for missing instruments, containing rests (silence) for the duration of the given beat.
     This ensures that instruments that do not occur in all the systems will remain in sync.
 
@@ -212,7 +236,7 @@ def create_missing_staves(beat: Beat, all_instruments: set[INSTRUMENT]) -> dict[
         all_instruments (set[INSTRUMENT]): List of all the instruments that occur in the notation.
 
     Returns:
-        dict[INSTRUMENT, str]: A dict with the generated staves.
+        dict[INSTRUMENT, list[Character]]: A dict with the generated staves.
     """
     if missing_instruments := all_instruments - set(beat.staves.keys()):
         rests = int(beat.duration)
@@ -288,12 +312,12 @@ def create_score_object_model(datapath: str, infilename: str, title: str) -> Sco
             for stave in staves.values():
                 notes_to_remove = []
                 for note in stave:
-                    if note.meaning is NoteValue.MODIFIER_PREV1:
+                    if note.meaning is SymbolValue.MODIFIER_PREV1:
                         prevnote = stave[stave.index(note) - 1]
                         prevnote.duration = note.duration
                         prevnote.rest_after = note.rest_after
                         notes_to_remove.append(note)
-                    if note.meaning is NoteValue.MODIFIER_PREV2:
+                    if note.meaning is SymbolValue.MODIFIER_PREV2:
                         prev1note = stave[stave.index(note) - 1]
                         prev1note.duration = note.rest_after
                         prev2note = stave[stave.index(note) - 2]
@@ -414,12 +438,8 @@ if __name__ == "__main__":
     PIANOVERSION = True
     SEPARATE_FILES = False
     INSTRUMENTGROUP = InstrumentGroup.GONG_KEBYAR
-    MIDI_NOTES_DICT = {
-        (note.instrumenttype, note.notevalue): (note.pianomidi if PIANOVERSION else note.midi)
-        for note in MIDI_NOTES
-        if note.instrumentgroup == INSTRUMENTGROUP
-    }
 
+    initialize_lookups(PIANOVERSION, INSTRUMENTGROUP)
     score = create_score_object_model(source.datapath, source.csvfilename, source.midifilename)
     validate_model(score)
     outfilepath = os.path.join(source.datapath, source.midifilename)
