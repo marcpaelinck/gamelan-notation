@@ -1,18 +1,17 @@
-import inspect
+import json
 from collections import defaultdict
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Literal, Optional, Union
 
-from eth_pydantic_types import HexBytes
 from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 
 from notation_constants import (
     BPM,
     DEFAULT,
-    INSTRUMENT,
     PASS,
     InstrumentGroup,
+    InstrumentPosition,
     InstrumentType,
     SymbolValue,
 )
@@ -34,9 +33,7 @@ class TimingData:
     beats_per_gongan: int
 
 
-# Notation to MIDI
-
-
+# Settings
 class Character(BaseModel):
     symbol: str
     unicode: str
@@ -54,6 +51,25 @@ class MidiNote(BaseModel):
     notevalue: SymbolValue
     midi: int
     pianomidi: Optional[int] = -1
+
+
+class InstrumentTag(BaseModel):
+    tag: str
+    infile: str
+    positions: list[InstrumentPosition]
+
+    @classmethod
+    def to_list(cls, value, enumtype: StrEnum):
+        if isinstance(value, str):
+            val = value.replace("[", '["').replace("]", '"]').replace(", ", '", "')
+            lst = json.loads(val)
+            return [enumtype[instr] for instr in lst]
+        return value
+
+    @field_validator("positions", mode="before")
+    @classmethod
+    def validate_pos(cls, value):
+        return cls.to_list(value, InstrumentPosition)
 
 
 #
@@ -139,7 +155,7 @@ class Beat:
     bpm_end: dict[PASS, BPM]  # tempo at end of beat (can vary per pass)
     duration: float
     tempo_changes: dict[PASS, TempoChange] = field(default_factory=dict)
-    staves: dict[INSTRUMENT, list[Character]] = field(default_factory=dict)
+    staves: dict[InstrumentPosition, list[Character]] = field(default_factory=dict)
     next: "Beat" = field(default=None, repr=False)
     goto: dict[PASS, "Beat"] = field(default_factory=dict)
     _pass_: PASS = 0  # Counts the number of times the beat is passed during generation of MIDI file.
@@ -184,7 +200,7 @@ class System:
 @dataclass
 class Score:
     title: str
-    instruments: set[Instrument]
+    instrument_positions: set[InstrumentPosition]
     systems: list[System] = field(default_factory=list)
 
 

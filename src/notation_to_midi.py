@@ -6,6 +6,7 @@ from copy import copy
 from dataclasses import dataclass
 from os import path
 
+import numpy as np
 import pandas as pd
 from mido import Message, MetaMessage, MidiFile, MidiTrack, bpm2tempo
 
@@ -15,7 +16,7 @@ from notation_classes import (
     FlowInfo,
     Gongan,
     GoTo,
-    Instrument,
+    InstrumentTag,
     Label,
     MetaData,
     MidiNote,
@@ -23,20 +24,15 @@ from notation_classes import (
     System,
     Tempo,
 )
-from notation_constants import (
-    DEFAULT,
-    INSTRUMENT,
-    TAG_TO_INSTRUMENTTYPE_DICT,
-    InstrumentGroup,
-    InstrumentType,
-    SymbolValue,
-)
+from notation_constants import DEFAULT, InstrumentGroup, InstrumentPosition, SymbolValue
 
 BASE_NOTE_TIME = 24
 MIDI_NOTES_DEF_FILE = "./settings/midinotes.csv"
 BALIMUSIC4_DEF_FILE = "./settings/balimusic4font.csv"
+TAGS_DEF_FILE = "./settings/instrumenttags.csv"
 BALIMUSIC4_FONT_DICT = None
 MIDI_NOTES_DICT = None
+TAGS_TO_POSITIONS_DICT = None
 
 
 def initialize_lookups(pianoversion: bool, instrumentgroup: InstrumentGroup) -> None:
@@ -47,7 +43,7 @@ def initialize_lookups(pianoversion: bool, instrumentgroup: InstrumentGroup) -> 
         instrumentgroup (InstrumentGroup): The type of orchestra (e.g. gong kebyar, semar pagulingan)
 
     """
-    global BALIMUSIC4_FONT_DICT, MIDI_NOTES_DICT
+    global BALIMUSIC4_FONT_DICT, MIDI_NOTES_DICT, TAGS_TO_POSITIONS_DICT
     midinotes_obj = pd.read_csv(MIDI_NOTES_DEF_FILE, sep="\t").to_dict(orient="records")
     midinotes = [MidiNote.model_validate(note) for note in midinotes_obj]
     MIDI_NOTES_DICT = {
@@ -60,13 +56,17 @@ def initialize_lookups(pianoversion: bool, instrumentgroup: InstrumentGroup) -> 
     balifont = [Character.model_validate(character) for character in balifont_obj]
     BALIMUSIC4_FONT_DICT = {character.symbol: character for character in balifont}
 
+    tags_dict = pd.read_csv(TAGS_DEF_FILE, sep="\t").to_dict(orient="records")
+    tags = [InstrumentTag.model_validate(record) for record in tags_dict]
+    TAGS_TO_POSITIONS_DICT = {t.tag: t.positions for t in tags}
 
-def notation_to_track(score: Score, instrument: Instrument) -> MidiTrack:
-    """Generates the MIDI content for a single instrument.
+
+def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
+    """Generates the MIDI content for a single instrument position.
 
     Args:
         score (Score): The object model containing the notation.
-        instrument (str): Instrument
+        position (InstrumentPosition): the instrument position
         piano_version (bool, optional): If True, a version for standard piano is generated.
                                 Otherwise a version for the gong kebyar instrument rack is created. Defaults to False.
 
@@ -80,7 +80,7 @@ def notation_to_track(score: Score, instrument: Instrument) -> MidiTrack:
                 beat._pass_ = 0
 
     track = MidiTrack()
-    track.append(MetaMessage("track_name", name=instrument.tag, time=0))
+    track.append(MetaMessage("track_name", name=position.value, time=0))
     # track.append(
     #     MetaMessage(
     #         "time_signature", numerator=4, denominator=4, clocks_per_click=36, notated_32nd_notes_per_beat=8, time=0
@@ -118,14 +118,14 @@ def notation_to_track(score: Score, instrument: Instrument) -> MidiTrack:
             track.append(MetaMessage("set_tempo", tempo=bpm2tempo(new_tempo)))
             current_tempo = new_tempo
         # Process individual notes
-        for note in beat.staves.get(instrument, []):
+        for note in beat.staves.get(position, []):
             if note.meaning.isnote:
                 # Set ON and OFF messages for actual note
                 track.append(
                     Message(
                         type="note_on",
                         channel=0,
-                        note=MIDI_NOTES_DICT[instrument.instrumenttype, note.meaning],
+                        note=MIDI_NOTES_DICT[position.instrumenttype, note.meaning],
                         velocity=100,
                         time=time_since_last_note_end,
                     )
@@ -134,7 +134,7 @@ def notation_to_track(score: Score, instrument: Instrument) -> MidiTrack:
                     Message(
                         type="note_off",
                         channel=0,
-                        note=MIDI_NOTES_DICT[instrument.instrumenttype, note.meaning],
+                        note=MIDI_NOTES_DICT[position.instrumenttype, note.meaning],
                         velocity=70,
                         time=int(note.duration * BASE_NOTE_TIME),
                     )
@@ -227,18 +227,20 @@ COMMENT = "comment"
 NON_INSTRUMENT_TAGS = [METADATA, COMMENT]
 
 
-def create_missing_staves(beat: Beat, all_instruments: set[INSTRUMENT]) -> dict[INSTRUMENT, list[Character]]:
-    """Returns staves for missing instruments, containing rests (silence) for the duration of the given beat.
-    This ensures that instruments that do not occur in all the systems will remain in sync.
+def create_missing_staves(
+    beat: Beat, all_positions: set[InstrumentPosition]
+) -> dict[InstrumentPosition, list[Character]]:
+    """Returns staves for missing positions, containing rests (silence) for the duration of the given beat.
+    This ensures that positions that do not occur in all the systems will remain in sync.
 
     Args:
         beat (Beat): The beat that should be complemented.
-        all_instruments (set[INSTRUMENT]): List of all the instruments that occur in the notation.
+        all_positions (set[InstrumentPosition]): List of all the positions that occur in the notation.
 
     Returns:
-        dict[INSTRUMENT, list[Character]]: A dict with the generated staves.
+        dict[InstrumentPosition, list[Character]]: A dict with the generated staves.
     """
-    if missing_instruments := all_instruments - set(beat.staves.keys()):
+    if missing_positions := all_positions - set(beat.staves.keys()):
         rests = int(beat.duration)
         half_rests = int((beat.duration - rests) * 2)
         quarter_rests = int((beat.duration - rests - 0.5 * half_rests) * 4)
@@ -247,16 +249,16 @@ def create_missing_staves(beat: Beat, all_instruments: set[INSTRUMENT]) -> dict[
             + [copy(BALIMUSIC4_FONT_DICT["µ"])] * half_rests
             + [copy(BALIMUSIC4_FONT_DICT["ª"])] * quarter_rests
         )
-        return {instrument: notes for instrument in missing_instruments}
+        return {position: notes for position in missing_positions}
     else:
         return dict()
 
 
-def instrument_from_tag(tag: str) -> Instrument:
-    if tag in TAG_TO_INSTRUMENTTYPE_DICT:
-        return Instrument(tag=tag, instrumenttype=TAG_TO_INSTRUMENTTYPE_DICT[tag])
+def position_from_tag(tag: str) -> InstrumentPosition:
+    if tag in TAGS_TO_POSITIONS_DICT:
+        return TAGS_TO_POSITIONS_DICT[tag]
     else:
-        raise ValueError(f"unknown instrument {tag}")
+        raise ValueError(f"unrecognized instrument position {tag}")
 
 
 def create_score_object_model(datapath: str, infilename: str, title: str) -> Score:
@@ -271,9 +273,15 @@ def create_score_object_model(datapath: str, infilename: str, title: str) -> Sco
     Returns:
         Score: Object model containing the notation information.
     """
-    columns = ["tag"] + ["BEAT" + str(i) for i in range(1, 33)]
+    # Create enough column titles to accommodate all the notation columns, then read the notation
+    columns = ["orig_tag"] + ["BEAT" + str(i) for i in range(1, 33)]
     df = pd.read_csv(path.join(datapath, infilename), sep="\t", names=columns, skip_blank_lines=False, encoding="UTF-8")
     df["id"] = df.index
+    # insert a column with the normalized instrument/position names and duplicate rows that contain multiple positions
+    df.insert(1, "tag", df["orig_tag"].apply(lambda val: TAGS_TO_POSITIONS_DICT.get(val, [])))
+    df = df.explode("tag", ignore_index=True)
+    df["tag"] = np.where(df["tag"].isnull(), df["orig_tag"], df["tag"])
+    df.drop("orig_tag", axis="columns", inplace=True)
     # Drop all empty columns
     df.dropna(how="all", axis=1, inplace=True)
     # Number the systems: blank lines denote start of new system. Then delete blank lines.
@@ -290,11 +298,10 @@ def create_score_object_model(datapath: str, infilename: str, title: str) -> Sco
     for (sysnr, beat_nr, tag), beat in df_dict.items():
         notation[sysnr][beat_nr][tag] = beat
 
-    # create a list of all instruments
-    all_instruments_tags = set(df[~df["tag"].isin(NON_INSTRUMENT_TAGS)]["tag"].unique())
-    all_instruments = set(instrument_from_tag(tag) for tag in all_instruments_tags)
+    # create a list of all instrument positions
+    all_positions = set(df[~df["tag"].isin(NON_INSTRUMENT_TAGS)]["tag"].unique())
 
-    score = Score(title=title, instruments=all_instruments)
+    score = Score(title=title, instrument_positions=all_positions)
     beats: list[Beat] = []
     metadata: list[MetaData] = []
     flowinfo = FlowInfo()
@@ -302,9 +309,7 @@ def create_score_object_model(datapath: str, infilename: str, title: str) -> Sco
         for beat_nr, beat_info in sys_info.items():
             # create the staves
             staves = {
-                Instrument(tag=tag, instrumenttype=TAG_TO_INSTRUMENTTYPE_DICT[tag]): [
-                    copy(BALIMUSIC4_FONT_DICT[note]) for note in notechars[0]
-                ]
+                tag: [copy(BALIMUSIC4_FONT_DICT[note]) for note in notechars[0]]
                 for tag, notechars in beat_info.items()
                 if tag not in NON_INSTRUMENT_TAGS
             }
@@ -336,9 +341,9 @@ def create_score_object_model(datapath: str, infilename: str, title: str) -> Sco
                 bpm_end={-1: bpm},
                 duration=sum(note.duration + note.rest_after for note in list(staves.values())[0]),
             )
-            # Not all instruments occur in each system.
-            # Therefore we need to add blank staves (all rests) for missing instruments.
-            missing_staves = create_missing_staves(new_beat, score.instruments)
+            # Not all positions occur in each system.
+            # Therefore we need to add blank staves (all rests) for missing positions.
+            missing_staves = create_missing_staves(new_beat, score.instrument_positions)
             new_beat.staves.update(missing_staves)
 
             prev_beat = beats[-1] if beats else score.systems[-1].beats[-1] if score.systems else None
@@ -360,7 +365,7 @@ def create_score_object_model(datapath: str, infilename: str, title: str) -> Sco
     return score
 
 
-def create_midifiles(score: Score, outfilepath: str, piano_version=False, separate_files=False) -> None:
+def create_midifiles(score: Score, outfilepath: str, separate_files=False) -> None:
     """Generates the MIDI content and saves it to file.
 
     Args:
@@ -373,15 +378,15 @@ def create_midifiles(score: Score, outfilepath: str, piano_version=False, separa
     if not separate_files:
         mid = MidiFile(ticks_per_beat=96, type=1)
 
-    for instrument in score.instruments:
+    for position in score.instrument_positions:
         if separate_files:
             mid = MidiFile(ticks_per_beat=96, type=0)
-        track = notation_to_track(score, instrument)
+        track = notation_to_track(score, position)
         mid.tracks.append(track)
         if separate_files:
-            mid.save(outfilepath.format(instrument=instrument.tag))
+            mid.save(outfilepath.format(position=position.value))
     if not separate_files:
-        mid.save(outfilepath.format(instrument=""))
+        mid.save(outfilepath.format(position=""))
 
 
 def validate_model(score: Score) -> None:
@@ -422,15 +427,15 @@ class Source:
 
 
 CENDRAWASIH = Source(
-    datapath=".\\data\\cendrawasih", csvfilename="Cendrawasih.csv", midifilename="Cendrawasih {instrument}.mid"
+    datapath=".\\data\\cendrawasih", csvfilename="Cendrawasih.csv", midifilename="Cendrawasih {position}.mid"
 )
 MARGAPATI = Source(
-    datapath=".\\data\\margapati", csvfilename="Margapati-UTF8.csv", midifilename="Margapati {instrument}.mid"
+    datapath=".\\data\\margapati", csvfilename="Margapati-UTF8.csv", midifilename="Margapati {position}.mid"
 )
 GENDINGANAK2 = Source(
-    datapath=".\\data\\test", csvfilename="Gending Anak-Anak.csv", midifilename="Gending Anak-Anak {instrument}.mid"
+    datapath=".\\data\\test", csvfilename="Gending Anak-Anak.csv", midifilename="Gending Anak-Anak {position}.mid"
 )
-DEMO = Source(datapath=".\\data\\test", csvfilename="demo.csv", midifilename="Demo {instrument}.mid")
+DEMO = Source(datapath=".\\data\\test", csvfilename="demo.csv", midifilename="Demo {position}.mid")
 
 
 if __name__ == "__main__":
@@ -443,4 +448,4 @@ if __name__ == "__main__":
     score = create_score_object_model(source.datapath, source.csvfilename, source.midifilename)
     validate_model(score)
     outfilepath = os.path.join(source.datapath, source.midifilename)
-    create_midifiles(score, outfilepath, piano_version=PIANOVERSION, separate_files=SEPARATE_FILES)
+    create_midifiles(score, outfilepath, separate_files=SEPARATE_FILES)

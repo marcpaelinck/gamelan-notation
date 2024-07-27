@@ -1,15 +1,8 @@
-import codecs
-from enum import Enum, StrEnum, auto
+from enum import StrEnum
 
-INSTRUMENT = str
 BPM = int
 PASS = int
 DEFAULT = -1
-
-
-class EnumX(StrEnum):
-    def __str__(self):
-        return self.name
 
 
 class InstrumentGroup(StrEnum):
@@ -31,6 +24,39 @@ class InstrumentType(StrEnum):
     GENDERRAMBAT = "GENDERRAMBAT"
     REYONG = "REYONG"
     TROMPONG = "TROMPONG"
+
+    def __repr__(self):
+        # Enables to decode list of values
+        return self.value
+
+
+class InstrumentPosition(StrEnum):
+    GONGS = "GONGS"
+    KEMPLI = "KEMPLI"
+    CENGCENG = "CENGCENG"
+    KENDANG = "KENDANG"
+    JEGOGAN = "JEGOGAN"
+    CALUNG = "CALUNG"
+    PENYACAH = "PENYACAH"
+    PEMADE_POLOS = "PEMADE_POLOS"
+    PEMADE_SANGSIH = "PEMADE_SANGSIH"
+    KANTILAN_POLOS = "KANTILAN_POLOS"
+    KANTILAN_SANGSIH = "KANTILAN_SANGSIH"
+    UGAL = "UGAL"
+    GENDERRAMBAT = "GENDERRAMBAT"
+    REYONG_1 = "REYONG_1"
+    REYONG_2 = "REYONG_2"
+    REYONG_3 = "REYONG_3"
+    REYONG_4 = "REYONG_4"
+    TROMPONG = "TROMPONG"
+
+    def __repr__(self):
+        # Enables to decode list of values
+        return self.value
+
+    @property
+    def instrumenttype(self):
+        return InstrumentType[self.split("_")[0]]
 
 
 class SymbolValue(StrEnum):
@@ -144,3 +170,8 @@ VALID_MIDI_MESSAGE_TYPES = ["note_on", "note_off", "rest"]
 
 TO_PIANO = {36: 53, 37: 55, 38: 59, 39: 60, 40: 64, 41: 65, 42: 67, 43: 71, 44: 72, 45: 76}
 FROM_PIANO = {53: 36, 55: 37, 59: 38, 60: 39, 64: 40, 65: 41, 67: 42, 71: 43, 72: 44, 76: 45}
+
+if __name__ == "__main__":
+    for val in InstrumentPosition:
+        x = InstrumentPosition.CALUNG
+        print(f"{val} - {val.instrumenttype}")
