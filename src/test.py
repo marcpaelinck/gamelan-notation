@@ -141,7 +141,7 @@ def map_positions():
 
 
 if __name__ == "__main__":
-    tags_dict = pd.read_csv("./settings/instrumenttags.csv", sep="\t").to_dict(orient="records")
+    instr_dict = pd.read_csv("./settings/instruments.csv", sep="\t").to_dict(orient="records")
     tags = [InstrumentTag.model_validate(record) for record in tags_dict]
     tags_dict = {t.tag: t.positions for t in tags}
     pprint(tags_dict)

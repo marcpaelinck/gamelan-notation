@@ -1,5 +1,4 @@
 import json
-import math
 import os
 from collections import defaultdict
 from copy import copy
@@ -25,6 +24,7 @@ from notation_classes import (
     Tempo,
 )
 from notation_constants import DEFAULT, InstrumentGroup, InstrumentPosition, SymbolValue
+from score_validation import validate_score
 
 BASE_NOTE_TIME = 24
 MIDI_NOTES_DEF_FILE = "./settings/midinotes.csv"
@@ -33,6 +33,8 @@ TAGS_DEF_FILE = "./settings/instrumenttags.csv"
 BALIMUSIC4_FONT_DICT = None
 MIDI_NOTES_DICT = None
 TAGS_TO_POSITIONS_DICT = None
+KEMPYUNG = None
+INSTRUMENTGROUP = None
 
 
 def initialize_lookups(pianoversion: bool, instrumentgroup: InstrumentGroup) -> None:
@@ -119,7 +121,7 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
             current_tempo = new_tempo
         # Process individual notes
         for note in beat.staves.get(position, []):
-            if note.meaning.isnote:
+            if not note.meaning.is_nonnote:
                 # Set ON and OFF messages for actual note
                 track.append(
                     Message(
@@ -389,36 +391,6 @@ def create_midifiles(score: Score, outfilepath: str, separate_files=False) -> No
         mid.save(outfilepath.format(position=""))
 
 
-def validate_model(score: Score) -> None:
-    """Performs consistency checks and prints results.
-
-    Args:
-        score (Score): the score to analyze.
-    """
-    beat_not_pow2 = []
-    beat_unequal_lengths = []
-
-    for system in score.systems:
-        for beat in system.beats:
-            # Determine if the beat duration is a power of 2 (ignore kebyar)
-            if system.gongan.kind != "kebyar" and 2 ** int(math.log2(beat.duration)) != beat.duration:
-                beat_not_pow2.append((beat.full_id, beat.duration))
-            # Check if the length of all staves in a beat are equal.
-            if any(
-                sum(note.duration + note.rest_after for note in notes) != beat.duration
-                for notes in beat.staves.values()
-            ):
-                beat_unequal_lengths.append(
-                    (
-                        beat.full_id,
-                        beat.duration,
-                        [sum(note.duration + note.rest_after for note in notes) for notes in beat.staves.values()],
-                    )
-                )
-    print(f"INCORRECT LENGTHS: {beat_not_pow2}")
-    print(f"UNEQUAL LENGTHS: {beat_unequal_lengths}")
-
-
 @dataclass
 class Source:
     datapath: str
@@ -443,9 +415,11 @@ if __name__ == "__main__":
     PIANOVERSION = True
     SEPARATE_FILES = False
     INSTRUMENTGROUP = InstrumentGroup.GONG_KEBYAR
+    VALIDATE_ONLY = True
 
     initialize_lookups(PIANOVERSION, INSTRUMENTGROUP)
     score = create_score_object_model(source.datapath, source.csvfilename, source.midifilename)
-    validate_model(score)
-    outfilepath = os.path.join(source.datapath, source.midifilename)
-    create_midifiles(score, outfilepath, separate_files=SEPARATE_FILES)
+    validate_score(score, INSTRUMENTGROUP)
+    if not VALIDATE_ONLY:
+        outfilepath = os.path.join(source.datapath, source.midifilename)
+        create_midifiles(score, outfilepath, separate_files=SEPARATE_FILES)

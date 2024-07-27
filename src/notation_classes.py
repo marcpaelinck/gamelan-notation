@@ -44,6 +44,10 @@ class Character(BaseModel):
     rest_after: float
     description: str
 
+    @property
+    def total_duration(self):
+        return self.duration + self.rest_after
+
 
 class MidiNote(BaseModel):
     instrumentgroup: InstrumentGroup

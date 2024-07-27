@@ -12,6 +12,16 @@
             "program": "${file}",
             "env": { "PYTHONPATH": "${workspaceFolder}" },
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: toMIDI",
+            "type": "debugpy",
+            "cwd": "${workspaceFolder}",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/notation_to_midi.py",
+            "env": { "PYTHONPATH": "${workspaceFolder}" },
+            "console": "integratedTerminal"
         }
+
     ]
 }
