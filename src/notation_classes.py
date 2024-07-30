@@ -4,9 +4,16 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Literal, Optional, Union
 
-from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 
-from notation_constants import (
+from src.notation_constants import (
     BPM,
     DEFAULT,
     PASS,
@@ -35,11 +42,13 @@ class TimingData:
 
 # Settings
 class Character(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     symbol: str
     unicode: str
     symbol_description: str
     balifont_symbol_description: str
-    meaning: SymbolValue
+    value: SymbolValue
     duration: float
     rest_after: float
     description: str
@@ -192,6 +201,13 @@ class Beat:
 
 
 @dataclass
+class Source:
+    datapath: str
+    infilename: str
+    outfilefmt: str  # should contain 'position' and 'ext' arguments
+
+
+@dataclass
 class System:
     # A set of beats.
     # A System will usually span one gongan.
@@ -203,9 +219,12 @@ class System:
 
 @dataclass
 class Score:
-    title: str
-    instrument_positions: set[InstrumentPosition]
+    source: Source
+    instrumentgroup: InstrumentGroup = None
+    instrument_positions: set[InstrumentPosition] = None
     systems: list[System] = field(default_factory=list)
+    balimusic4_font_dict: dict[str, Character] = None
+    midi_notes_dict: dict[tuple[InstrumentType, SymbolValue] : int] = None
 
 
 @dataclass

@@ -5,7 +5,8 @@ from pprint import pprint
 import pandas as pd
 
 from notation_classes import Character, InstrumentTag, MidiNote
-from notation_constants import InstrumentPosition, InstrumentType
+from notation_to_midi import Source
+from src.notation_constants import InstrumentPosition, InstrumentType
 
 
 def get_all_tags():
@@ -140,8 +141,57 @@ def map_positions():
     tags_df.to_csv("./settings/instrumenttags.csv", sep="\t", index=False)
 
 
+def merge_parts(datapath: str, basefile: str, mergefile: str, resultfile: str):
+    columns = ["tag"] + ["BEAT" + str(i) for i in range(1, 33)]
+    sortingorder = [
+        "comment",
+        "metadata",
+        "ugal",
+        "gangsa p",
+        "gangsa s",
+        "reyong1-4",
+        "reyong1",
+        "reyong2",
+        "reyong3",
+        "reyong4",
+        "calung",
+        "jegog",
+        "gong",
+        "kendang",
+    ]
+    # Load the scores in dataframes
+    base_df = pd.read_csv(
+        path.join(datapath, basefile), sep="\t", names=columns, skip_blank_lines=False, encoding="UTF-8"
+    )
+    merge_df = pd.read_csv(
+        path.join(datapath, mergefile), sep="\t", names=columns, skip_blank_lines=False, encoding="UTF-8"
+    )
+    # Drop all empty columns
+    base_df.dropna(how="all", axis="columns", inplace=True)
+    merge_df.dropna(how="all", axis="columns", inplace=True)
+    # Number the systems: blank lines denote start of new system. Then delete blank lines.
+    base_df["sysnr"] = base_df["tag"].isna().cumsum()[~base_df["tag"].isna()] + 1
+    merge_df["sysnr"] = merge_df["tag"].isna().cumsum()[~merge_df["tag"].isna()] + 1
+    merge_df = merge_df[~merge_df["tag"].isin(["gangsa p", "gangsa s"])]
+    # Drop all empty rows
+    base_df.dropna(how="all", axis="rows", inplace=True)
+    merge_df.dropna(how="all", axis="rows", inplace=True)
+    # Concatenate both tables
+    new_df = pd.concat([base_df, merge_df], ignore_index=True)
+    # Sort the new table
+    new_df["tagid"] = new_df["tag"].apply(lambda tag: sortingorder.index(tag))
+    new_df.sort_values(by=["sysnr", "tagid"], inplace=True, ignore_index=True)
+    # Add empty lines between systems
+    mask = new_df["sysnr"].ne(new_df["sysnr"].shift(-1))
+    empties = pd.DataFrame("", index=mask.index[mask] + 0.5, columns=new_df.columns)
+    new_df = pd.concat([new_df, empties]).sort_index().reset_index(drop=True).iloc[:-1]
+    # Drop sysnr and tagid columns
+    new_df.drop(["sysnr", "tagid"], axis="columns", inplace=True)
+    new_df.to_csv(path.join(datapath, resultfile), sep="\t", index=False, header=False)
+
+
+CENDRAWASIH = Source(
+    datapath=".\\data\\cendrawasih", infilename="Cendrawasih.csv", outfilefmt="Cendrawasih {position}.mid"
+)
 if __name__ == "__main__":
-    instr_dict = pd.read_csv("./settings/instruments.csv", sep="\t").to_dict(orient="records")
-    tags = [InstrumentTag.model_validate(record) for record in tags_dict]
-    tags_dict = {t.tag: t.positions for t in tags}
-    pprint(tags_dict)
+    merge_parts(CENDRAWASIH.datapath, CENDRAWASIH.infilename, "overige_instrumenten.csv", "Cendrawasih_complete.csv")

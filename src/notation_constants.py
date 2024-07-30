@@ -1,4 +1,4 @@
-from enum import IntEnum, StrEnum, auto
+from enum import Enum, StrEnum, auto
 
 BPM = int
 PASS = int
@@ -64,156 +64,150 @@ class InstrumentPosition(StrEnum):
         return InstrumentType[self.split("_")[0]]
 
 
-class Note(StrEnum):
-    DING = "DING"
-    DONG = "DONG"
-    DENG = "DENG"
-    DEUNG = "DEUNG"
-    DUNG = "DUNG"
-    DANG = "DANG"
-    DAING = "DAING"
-    BYONG = "BYONG"
-    BYOT = "BYOT"
-    DAG = "DAG"
-    DUG = "DUG"
-    DUT = "DUT"
-    GIR = "GIR"
-    JET = "JET"
-    KAP = "KAP"
-    KEP = "KEP"
-    KRUM = "KRUM"
-    MUTED = "MUTED"
-    OPEN = "OPEN"
-    PAK = "PAK"
-    PEK = "PEK"
-    PLAK = "PLAK"
-    PUNG = "PUNG"
-    PUR = "PUR"
-    TAK = "TAK"
-    TEK = "TEK"
-    TICK = "TICK"
-    TONG = "TONG"
-    TUT = "TUT"
-
-    # TODO: better to make this explicit per instrument
-    def kempyung(self, octave: int, instrumentgroup: InstrumentGroup):
-        if instrumentgroup == InstrumentGroup.GONG_KEBYAR:
-            pairs = {
-                (self.DONG, 0): (self.DANG, 0),
-                (self.DENG, 0): (self.DING, 1),
-                (self.DUNG, 0): (self.DONG, 1),
-                (self.DANG, 0): (self.DENG, 1),
-                (self.DING, 1): (self.DUNG, 1),
-                (self.DONG, 1): (self.DANG, 1),
-                (self.DENG, 1): (self.DING, 2),
-                (self.DUNG, 1): (self.DUNG, 1),
-                (self.DANG, 1): (self.DANG, 1),
-                (self.DING, 2): (self.DANG, 2),
-            }
-            return pairs.get((self, octave), None)
-        return None
+class NoteType(StrEnum):
+    MELODIC = "MELODIC"
+    PERCUSSION = "PERCUSSION"
 
 
-class SymbolValue(StrEnum):
+class MutingType(StrEnum):
+    OPEN = auto()
+    MUTED = auto()
+
+
+class Note(Enum):
+    DING = "DING", NoteType.MELODIC, auto()
+    DONG = "DONG", NoteType.MELODIC, auto()
+    DENG = "DENG", NoteType.MELODIC, auto()
+    DEUNG = "DEUNG", NoteType.MELODIC, auto()
+    DUNG = "DUNG", NoteType.MELODIC, auto()
+    DANG = "DANG", NoteType.MELODIC, auto()
+    DAING = "DAING", NoteType.MELODIC, auto()
+    BYONG = "BYONG", NoteType.PERCUSSION, auto()
+    BYOT = "BYOT", NoteType.PERCUSSION, auto()
+    DAG = "DAG", NoteType.PERCUSSION, auto()
+    DUG = "DUG", NoteType.PERCUSSION, auto()
+    DUT = "DUT", NoteType.PERCUSSION, auto()
+    GIR = "GIR", NoteType.PERCUSSION, auto()
+    JET = "JET", NoteType.PERCUSSION, auto()
+    KAP = "KAP", NoteType.PERCUSSION, auto()
+    KEP = "KEP", NoteType.PERCUSSION, auto()
+    KRUM = "KRUM", NoteType.PERCUSSION, auto()
+    MUTED = "MUTED", NoteType.PERCUSSION, auto()
+    OPEN = "OPEN", NoteType.PERCUSSION, auto()
+    PAK = "PAK", NoteType.PERCUSSION, auto()
+    PEK = "PEK", NoteType.PERCUSSION, auto()
+    PLAK = "PLAK", NoteType.PERCUSSION, auto()
+    PUNG = "PUNG", NoteType.PERCUSSION, auto()
+    PUR = "PUR", NoteType.PERCUSSION, auto()
+    TAK = "TAK", NoteType.PERCUSSION, auto()
+    TEK = "TEK", NoteType.PERCUSSION, auto()
+    TICK = "TICK", NoteType.PERCUSSION, auto()
+    TONG = "TONG", NoteType.PERCUSSION, auto()
+    TUT = "TUT", NoteType.PERCUSSION, auto()
+
+    def __init__(self, notename: str, notetype: NoteType, sequence: int):
+        self._value_ = notename
+        self.type = notetype
+        self.sequence = sequence
+
+    def __repr__(self):
+        return self.value
+
+    def __str__(self):
+        return self.value
+
+
+class SymbolValue(Enum):
     # 0=lower instrument octave, 1=central instrument octave, 2=higher instrument octave.
     # The octave numbering is relative to the instrument's range.
-    DING_0 = "DING_0"
-    DONG_0 = "DONG_0"
-    DENG_0 = "DENG_0"
-    DEUNG_0 = "DEUNG_0"
-    DUNG_0 = "DUNG_0"
-    DANG_0 = "DANG_0"
-    DAING_0 = "DAING_0"
-    DING_1 = "DING_1"
-    DONG_1 = "DONG_1"
-    DENG_1 = "DENG_1"
-    DEUNG_1 = "DEUNG_1"
-    DUNG_1 = "DUNG_1"
-    DANG_1 = "DANG_1"
-    DAING_1 = "DAING_1"
-    DING_2 = "DING_2"
-    DONG_2 = "DONG_2"
-    DENG_2 = "DENG_2"
-    DEUNG_2 = "DEUNG_2"
-    DUNG_2 = "DUNG_2"
-    DANG_2 = "DANG_2"
-    DAING_2 = "DAING_2"
-    DING_0_MUTED = "DING_0_MUTED"
-    DONG_0_MUTED = "DONG_0_MUTED"
-    DENG_0_MUTED = "DENG_0_MUTED"
-    DEUNG_0_MUTED = "DEUNG_0_MUTED"
-    DUNG_0_MUTED = "DUNG_0_MUTED"
-    DANG_0_MUTED = "DANG_0_MUTED"
-    DAING_0_MUTED = "DAING_0_MUTED"
-    DING_1_MUTED = "DING_1_MUTED"
-    DONG_1_MUTED = "DONG_1_MUTED"
-    DENG_1_MUTED = "DENG_1_MUTED"
-    DEUNG_1_MUTED = "DEUNG_1_MUTED"
-    DUNG_1_MUTED = "DUNG_1_MUTED"
-    DANG_1_MUTED = "DANG_1_MUTED"
-    DAING_1_MUTED = "DAING_1_MUTED"
-    DING_2_MUTED = "DING_2_MUTED"
-    DONG_2_MUTED = "DONG_2_MUTED"
-    DENG_2_MUTED = "DENG_2_MUTED"
-    DEUNG_2_MUTED = "DEUNG_2_MUTED"
-    DUNG_2_MUTED = "DUNG_2_MUTED"
-    DANG_2_MUTED = "DANG_2_MUTED"
-    DAING_2_MUTED = "DAING_2_MUTED"
-    GIR = "GIR"
-    PUR = "PUR"
-    TONG = "TONG"
-    KEP = "KEP"
-    PAK = "PAK"
-    DUT = "DUT"
-    TUT = "TUT"
-    KRUM = "KRUM"
-    PUNG = "PUNG"
-    BYONG = "BYONG"
-    BYOT = "BYOT"
-    JET = "JET"
-    TICK = "TICK"
-    TICK_1_PANGGUL = "TICK_1_PANGGUL"
-    TICK_2_PANGGUL = "TICK_2_PANGGUL"
-    KAP = "KAP"
-    PEK = "PEK"
-    DAG = "DAG"
-    DUG = "DUG"
-    TAK = "TAK"
-    TEK = "TEK"
-    PLAK = "PLAK"
-    MUTED = "MUTED"
-    OPEN = "OPEN"
-    MODIFIER_PREV1 = "MODIFIER_PREV1"
-    MODIFIER_PREV2 = "MODIFIER_PREV2"
-    SILENCE = "SILENCE"
-    EXTENSION = "EXTENSION"
-    NOT_IMPLEMENTED = "NOT_IMPLEMENTED"
+    DING0 = "DING0", Note.DING, 0, MutingType.OPEN, auto()
+    DONG0 = "DONG0", Note.DONG, 0, MutingType.OPEN, auto()
+    DENG0 = "DENG0", Note.DENG, 0, MutingType.OPEN, auto()
+    DEUNG0 = "DEUNG0", Note.DEUNG, 0, MutingType.OPEN, auto()
+    DUNG0 = "DUNG0", Note.DUNG, 0, MutingType.OPEN, auto()
+    DANG0 = "DANG0", Note.DANG, 0, MutingType.OPEN, auto()
+    DAING0 = "DAING0", Note.DAING, 0, MutingType.OPEN, auto()
+    DING1 = "DING1", Note.DING, 1, MutingType.OPEN, auto()
+    DONG1 = "DONG1", Note.DONG, 1, MutingType.OPEN, auto()
+    DENG1 = "DENG1", Note.DENG, 1, MutingType.OPEN, auto()
+    DEUNG1 = "DEUNG1", Note.DEUNG, 1, MutingType.OPEN, auto()
+    DUNG1 = "DUNG1", Note.DUNG, 1, MutingType.OPEN, auto()
+    DANG1 = "DANG1", Note.DANG, 1, MutingType.OPEN, auto()
+    DAING1 = "DAING1", Note.DAING, 1, MutingType.OPEN, auto()
+    DING2 = "DING2", Note.DING, 2, MutingType.OPEN, auto()
+    DONG2 = "DONG2", Note.DONG, 2, MutingType.OPEN, auto()
+    DENG2 = "DENG2", Note.DENG, 2, MutingType.OPEN, auto()
+    DEUNG2 = "DEUNG2", Note.DEUNG, 2, MutingType.OPEN, auto()
+    DUNG2 = "DUNG2", Note.DUNG, 2, MutingType.OPEN, auto()
+    DANG2 = "DANG2", Note.DANG, 2, MutingType.OPEN, auto()
+    DAING2 = "DAING2", Note.DAING, 2, MutingType.OPEN, auto()
+    DING0_MUTED = "DING0_MUTED", Note.DING, 0, MutingType.MUTED, auto()
+    DONG0_MUTED = "DONG0_MUTED", Note.DONG, 0, MutingType.MUTED, auto()
+    DENG0_MUTED = "DENG0_MUTED", Note.DENG, 0, MutingType.MUTED, auto()
+    DEUNG0_MUTED = "DEUNG0_MUTED", Note.DEUNG, 0, MutingType.MUTED, auto()
+    DUNG0_MUTED = "DUNG0_MUTED", Note.DUNG, 0, MutingType.MUTED, auto()
+    DANG0_MUTED = "DANG0_MUTED", Note.DANG, 0, MutingType.MUTED, auto()
+    DAING0_MUTED = "DAING0_MUTED", Note.DAING, 0, MutingType.MUTED, auto()
+    DING1_MUTED = "DING1_MUTED", Note.DING, 1, MutingType.MUTED, auto()
+    DONG1_MUTED = "DONG1_MUTED", Note.DONG, 1, MutingType.MUTED, auto()
+    DENG1_MUTED = "DENG1_MUTED", Note.DENG, 1, MutingType.MUTED, auto()
+    DEUNG1_MUTED = "DEUNG1_MUTED", Note.DEUNG, 1, MutingType.MUTED, auto()
+    DUNG1_MUTED = "DUNG1_MUTED", Note.DUNG, 1, MutingType.MUTED, auto()
+    DANG1_MUTED = "DANG1_MUTED", Note.DANG, 1, MutingType.MUTED, auto()
+    DAING1_MUTED = "DAING1_MUTED", Note.DAING, 1, MutingType.MUTED, auto()
+    DING2_MUTED = "DING2_MUTED", Note.DING, 2, MutingType.MUTED, auto()
+    DONG2_MUTED = "DONG2_MUTED", Note.DONG, 2, MutingType.MUTED, auto()
+    DENG2_MUTED = "DENG2_MUTED", Note.DENG, 2, MutingType.MUTED, auto()
+    DEUNG2_MUTED = "DEUNG2_MUTED", Note.DEUNG, 2, MutingType.MUTED, auto()
+    DUNG2_MUTED = "DUNG2_MUTED", Note.DUNG, 2, MutingType.MUTED, auto()
+    DANG2_MUTED = "DANG2_MUTED", Note.DANG, 2, MutingType.MUTED, auto()
+    DAING2_MUTED = "DAING2_MUTED", Note.DAING, 2, MutingType.MUTED, auto()
+    GIR = "GIR", Note.GIR, None, MutingType.OPEN, auto()
+    PUR = "PUR", Note.PUR, None, MutingType.OPEN, auto()
+    TONG = "TONG", Note.TONG, None, MutingType.OPEN, auto()
+    KEP = "KEP", Note.KEP, None, MutingType.OPEN, auto()
+    PAK = "PAK", Note.PAK, None, MutingType.OPEN, auto()
+    DUT = "DUT", Note.DUT, None, MutingType.OPEN, auto()
+    TUT = "TUT", Note.TUT, None, MutingType.OPEN, auto()
+    KRUM = "KRUM", Note.KRUM, None, MutingType.OPEN, auto()
+    PUNG = "PUNG", Note.PUNG, None, MutingType.OPEN, auto()
+    BYONG = "BYONG", Note.BYONG, None, MutingType.OPEN, auto()
+    BYOT = "BYOT", Note.BYOT, None, MutingType.OPEN, auto()
+    JET = "JET", Note.JET, None, MutingType.OPEN, auto()
+    TICK = "TICK", Note.TICK, None, MutingType.OPEN, auto()
+    TICK_1_PANGGUL = "TICK_1_PANGGUL", Note.TICK, None, MutingType.OPEN, auto()
+    TICK_2_PANGGUL = "TICK_2_PANGGUL", Note.TICK, None, MutingType.OPEN, auto()
+    KAP = "KAP", Note.KAP, None, MutingType.OPEN, auto()
+    PEK = "PEK", Note.PEK, None, MutingType.OPEN, auto()
+    DAG = "DAG", Note.DAG, None, MutingType.OPEN, auto()
+    DUG = "DUG", Note.DUG, None, MutingType.OPEN, auto()
+    TAK = "TAK", Note.TAK, None, MutingType.OPEN, auto()
+    TEK = "TEK", Note.TEK, None, MutingType.OPEN, auto()
+    PLAK = "PLAK", Note.PLAK, None, MutingType.OPEN, auto()
+    MUTED = "MUTED", Note.MUTED, None, MutingType.OPEN, auto()
+    OPEN = "OPEN", Note.OPEN, None, MutingType.OPEN, auto()
+    MODIFIER_PREV1 = "MODIFIER_PREV1", None, None, MutingType.OPEN, auto()
+    MODIFIER_PREV2 = "MODIFIER_PREV2", None, None, MutingType.OPEN, auto()
+    SILENCE = "SILENCE", None, None, MutingType.OPEN, auto()
+    EXTENSION = "EXTENSION", None, None, MutingType.OPEN, auto()
+    NOT_IMPLEMENTED = "NOT_IMPLEMENTED", None, None, MutingType.OPEN, auto()
 
-    @property
-    def note(self):
-        # TODO: safer to make this property explicit
-        basicvalue = self.value.split("_")[0]
-        return Note[basicvalue] if basicvalue in Note else None
+    def __init__(self, symbolname, note, octave, mutingtype, sequence):
+        self._value_ = symbolname
+        self.note = note
+        self.octave = octave
+        self.mutingtype = mutingtype
+        self.sequence = sequence
 
-    @property
-    def octave(self):
-        # TODO: safer to make this property explicit
-        parts = self.value.split("_")
-        if not len(parts) > 1 and not (parts[0].startswith("D") and parts[0].endswith("NG")):
-            return None
-        else:
-            return int(parts[1])
+    def __repr__(self):
+        return self.value
+
+    def __str__(self):
+        return self.value
 
     @property
     def is_nonnote(self):
-        non_notes = [
-            self.MODIFIER_PREV1,
-            self.MODIFIER_PREV2,
-            self.SILENCE,
-            self.EXTENSION,
-            self.NOT_IMPLEMENTED,
-        ]
-        return self in non_notes
+        return not self.note
 
     @property
     def isnote(self):
@@ -223,19 +217,6 @@ class SymbolValue(StrEnum):
     def isrest(self):
         return self in [self.SILENCE, self.EXTENSION]
 
-    # TODO: better to make this explicit per instrument
-    def iskempyungof(self, other: "SymbolValue", instrumentgroup: InstrumentGroup) -> bool:
-        if self.octave and other.octave:
-            return other.note.kempyung(other.octave, instrumentgroup) == (self.note, self.octave)
-        return False
-
-
-TAG_TO_INSTRUMENTTYPE_DICT = {
-    "gangsa p": InstrumentType.PEMADE,
-    "gangsa s": InstrumentType.PEMADE,
-    "ugal": InstrumentType.UGAL,
-    "gying": InstrumentType.UGAL,
-}
 
 # MIDI to Notation
 
@@ -256,7 +237,11 @@ VALID_MIDI_MESSAGE_TYPES = ["note_on", "note_off", "rest"]
 TO_PIANO = {36: 53, 37: 55, 38: 59, 39: 60, 40: 64, 41: 65, 42: 67, 43: 71, 44: 72, 45: 76}
 FROM_PIANO = {53: 36, 55: 37, 59: 38, 60: 39, 64: 40, 65: 41, 67: 42, 71: 43, 72: 44, 76: 45}
 
+# if __name__ == "__main__":
+#     for val in SymbolValue:
+#         print(f"{val} - {val.note}{val.octave if val.octave is not None else ""}")
+
+
 if __name__ == "__main__":
     for val in SymbolValue:
-        if not val.note:
-            print(f"{val} - {val.note}")
+        print(val, val.seq)

@@ -13,4 +13,6 @@
     "python.testing.cwd": "${workspaceFolder}",
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
-}
+    "python.testing.pytestArgs": [
+        "--cache-clear"
+    ]}

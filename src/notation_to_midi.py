@@ -1,3 +1,4 @@
+import csv
 import json
 import os
 from collections import defaultdict
@@ -9,35 +10,40 @@ import numpy as np
 import pandas as pd
 from mido import Message, MetaMessage, MidiFile, MidiTrack, bpm2tempo
 
-from notation_classes import (
+from src.notation_classes import (
     Beat,
     Character,
     FlowInfo,
     Gongan,
     GoTo,
-    InstrumentTag,
     Label,
     MetaData,
-    MidiNote,
     Score,
+    Source,
     System,
     Tempo,
 )
-from notation_constants import DEFAULT, InstrumentGroup, InstrumentPosition, SymbolValue
-from score_validation import validate_score
+from src.notation_constants import (
+    DEFAULT,
+    InstrumentGroup,
+    InstrumentPosition,
+    SymbolValue,
+)
+from src.score_validation import validate_score
+from src.settings import BASE_NOTE_TIME, CENDRAWASIH
+from src.utils import (
+    create_balimusic4_font_lookup,
+    create_midi_notes_lookup,
+    create_tags_to_position_lookup,
+)
 
-BASE_NOTE_TIME = 24
-MIDI_NOTES_DEF_FILE = "./settings/midinotes.csv"
-BALIMUSIC4_DEF_FILE = "./settings/balimusic4font.csv"
-TAGS_DEF_FILE = "./settings/instrumenttags.csv"
 BALIMUSIC4_FONT_DICT = None
 MIDI_NOTES_DICT = None
 TAGS_TO_POSITIONS_DICT = None
-KEMPYUNG = None
 INSTRUMENTGROUP = None
 
 
-def initialize_lookups(pianoversion: bool, instrumentgroup: InstrumentGroup) -> None:
+def initialize_lookups(instrumentgroup: InstrumentGroup, pianoversion: bool) -> None:
     """Initializes dicts BALIMUSIC4_FONT_DICT and MIDI_NOTES_DICT
 
     Args:
@@ -46,21 +52,10 @@ def initialize_lookups(pianoversion: bool, instrumentgroup: InstrumentGroup) -> 
 
     """
     global BALIMUSIC4_FONT_DICT, MIDI_NOTES_DICT, TAGS_TO_POSITIONS_DICT
-    midinotes_obj = pd.read_csv(MIDI_NOTES_DEF_FILE, sep="\t").to_dict(orient="records")
-    midinotes = [MidiNote.model_validate(note) for note in midinotes_obj]
-    MIDI_NOTES_DICT = {
-        (note.instrumenttype, note.notevalue): (note.pianomidi if pianoversion else note.midi)
-        for note in midinotes
-        if note.instrumentgroup == instrumentgroup
-    }
-
-    balifont_obj = pd.read_csv(BALIMUSIC4_DEF_FILE, sep="\t").to_dict(orient="records")
-    balifont = [Character.model_validate(character) for character in balifont_obj]
-    BALIMUSIC4_FONT_DICT = {character.symbol: character for character in balifont}
-
-    tags_dict = pd.read_csv(TAGS_DEF_FILE, sep="\t").to_dict(orient="records")
-    tags = [InstrumentTag.model_validate(record) for record in tags_dict]
-    TAGS_TO_POSITIONS_DICT = {t.tag: t.positions for t in tags}
+    BALIMUSIC4_FONT_DICT = create_balimusic4_font_lookup()
+    MIDI_NOTES_DICT = create_midi_notes_lookup(instrumentgroup, pianoversion)
+    TAGS_TO_POSITIONS_DICT = create_tags_to_position_lookup()
+    x = 1
 
 
 def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
@@ -121,13 +116,13 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
             current_tempo = new_tempo
         # Process individual notes
         for note in beat.staves.get(position, []):
-            if not note.meaning.is_nonnote:
+            if not note.value.is_nonnote:
                 # Set ON and OFF messages for actual note
                 track.append(
                     Message(
                         type="note_on",
                         channel=0,
-                        note=MIDI_NOTES_DICT[position.instrumenttype, note.meaning],
+                        note=MIDI_NOTES_DICT[position.instrumenttype, note.value],
                         velocity=100,
                         time=time_since_last_note_end,
                     )
@@ -136,21 +131,21 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
                     Message(
                         type="note_off",
                         channel=0,
-                        note=MIDI_NOTES_DICT[position.instrumenttype, note.meaning],
+                        note=MIDI_NOTES_DICT[position.instrumenttype, note.value],
                         velocity=70,
                         time=int(note.duration * BASE_NOTE_TIME),
                     )
                 )
                 time_since_last_note_end = int(note.rest_after * BASE_NOTE_TIME)
-            elif note.meaning in [SymbolValue.MODIFIER_PREV1, SymbolValue.MODIFIER_PREV2]:
+            elif note.value in [SymbolValue.MODIFIER_PREV1, SymbolValue.MODIFIER_PREV2]:
                 # Should not occur because processed in create_score_object_model
                 # track[-1].time = int(note.duration * BASE_NOTE_TIME)
                 # time_since_last_note_end += int(note.rest_after * BASE_NOTE_TIME)
-                raise ValueError(f"Unexpected note value {note.meaning}")
-            elif note.meaning is SymbolValue.SILENCE:
+                raise ValueError(f"Unexpected note value {note.value}")
+            elif note.value is SymbolValue.SILENCE:
                 # Increment time since last note ended
                 time_since_last_note_end += int(note.duration * BASE_NOTE_TIME)
-            elif note.meaning is SymbolValue.EXTENSION:
+            elif note.value is SymbolValue.EXTENSION:
                 # Extension of note duration: add duration to last note
                 track[-1].time += int(note.duration * BASE_NOTE_TIME)
 
@@ -263,7 +258,7 @@ def position_from_tag(tag: str) -> InstrumentPosition:
         raise ValueError(f"unrecognized instrument position {tag}")
 
 
-def create_score_object_model(datapath: str, infilename: str, title: str) -> Score:
+def create_score_object_model(source: Source) -> Score:
     """Creates an object model of the notation.
     This will simplify the generation of the MIDI file content.
 
@@ -277,7 +272,8 @@ def create_score_object_model(datapath: str, infilename: str, title: str) -> Sco
     """
     # Create enough column titles to accommodate all the notation columns, then read the notation
     columns = ["orig_tag"] + ["BEAT" + str(i) for i in range(1, 33)]
-    df = pd.read_csv(path.join(datapath, infilename), sep="\t", names=columns, skip_blank_lines=False, encoding="UTF-8")
+    filepath = path.join(source.datapath, source.infilename)
+    df = pd.read_csv(filepath, sep="\t", names=columns, skip_blank_lines=False, encoding="UTF-8")
     df["id"] = df.index
     # insert a column with the normalized instrument/position names and duplicate rows that contain multiple positions
     df.insert(1, "tag", df["orig_tag"].apply(lambda val: TAGS_TO_POSITIONS_DICT.get(val, [])))
@@ -303,36 +299,47 @@ def create_score_object_model(datapath: str, infilename: str, title: str) -> Sco
     # create a list of all instrument positions
     all_positions = set(df[~df["tag"].isin(NON_INSTRUMENT_TAGS)]["tag"].unique())
 
-    score = Score(title=title, instrument_positions=all_positions)
+    score = Score(
+        source=source,
+        instrument_positions=all_positions,
+        balimusic4_font_dict=BALIMUSIC4_FONT_DICT,
+        midi_notes_dict=MIDI_NOTES_DICT,
+    )
     beats: list[Beat] = []
     metadata: list[MetaData] = []
     flowinfo = FlowInfo()
     for sys_id, sys_info in notation.items():
         for beat_nr, beat_info in sys_info.items():
             # create the staves
-            staves = {
-                tag: [copy(BALIMUSIC4_FONT_DICT[note]) for note in notechars[0]]
-                for tag, notechars in beat_info.items()
-                if tag not in NON_INSTRUMENT_TAGS
-            }
+            try:
+                staves = {
+                    tag: [BALIMUSIC4_FONT_DICT[note].model_copy() for note in notechars[0]]
+                    for tag, notechars in beat_info.items()
+                    if tag not in NON_INSTRUMENT_TAGS
+                }
+            except Exception as e:
+                raise ValueError(f"unexpected character in beat {sys_id}-{beat_nr}: {e}")
+
             # Merge notes with negative valuewith previous note(s)
             for stave in staves.values():
-                notes_to_remove = []
-                for note in stave:
-                    if note.meaning is SymbolValue.MODIFIER_PREV1:
-                        prevnote = stave[stave.index(note) - 1]
-                        prevnote.duration = note.duration
-                        prevnote.rest_after = note.rest_after
-                        notes_to_remove.append(note)
-                    if note.meaning is SymbolValue.MODIFIER_PREV2:
-                        prev1note = stave[stave.index(note) - 1]
-                        prev1note.duration = note.rest_after
-                        prev2note = stave[stave.index(note) - 2]
-                        prev2note.duration = note.duration
-                        prev2note.rest_after = 0
-                        notes_to_remove.append(note)
-                for note in notes_to_remove:
-                    stave.remove(note)
+                stave_cpy = stave.copy()
+                stave.clear()
+                for note in stave_cpy:
+                    if note.value is SymbolValue.MODIFIER_PREV1:
+                        prevnote = stave[-1]
+                        stave.remove(prevnote)
+                        stave.append(
+                            prevnote.model_copy(update={"duration": note.duration, "rest_after": note.rest_after})
+                        )
+                    elif note.value is SymbolValue.MODIFIER_PREV2:
+                        prev2note = stave[-2]
+                        prev1note = stave[-1]
+                        stave.remove(prev2note)
+                        stave.remove(prev1note)
+                        stave.append(prev2note.model_copy(update={"duration": note.duration}))
+                        stave.append(prev1note.model_copy(update={"duration": note.rest_after}))
+                    else:
+                        stave.append(note)
 
             # Create the beat and add it to the list of beats
             new_beat = Beat(
@@ -341,7 +348,7 @@ def create_score_object_model(datapath: str, infilename: str, title: str) -> Sco
                 staves=staves,
                 bpm_start={-1: (bpm := score.systems[-1].beats[-1].bpm_end[-1] if score.systems else 0)},
                 bpm_end={-1: bpm},
-                duration=sum(note.duration + note.rest_after for note in list(staves.values())[0]),
+                duration=max(sum(note.total_duration for note in notes) for notes in list(staves.values())),
             )
             # Not all positions occur in each system.
             # Therefore we need to add blank staves (all rests) for missing positions.
@@ -367,7 +374,7 @@ def create_score_object_model(datapath: str, infilename: str, title: str) -> Sco
     return score
 
 
-def create_midifiles(score: Score, outfilepath: str, separate_files=False) -> None:
+def create_midifiles(score: Score, separate_files=False) -> None:
     """Generates the MIDI content and saves it to file.
 
     Args:
@@ -377,6 +384,7 @@ def create_midifiles(score: Score, outfilepath: str, separate_files=False) -> No
                                 Otherwise a version for the gong kebyar instrument rack is created. Defaults to False.
         separate_files (bool, optional): If True, a separate file will be created for each instrument. Defaults to False.
     """
+    outfilepathfmt = os.path.join(source.datapath, source.outfilefmt)
     if not separate_files:
         mid = MidiFile(ticks_per_beat=96, type=1)
 
@@ -386,40 +394,22 @@ def create_midifiles(score: Score, outfilepath: str, separate_files=False) -> No
         track = notation_to_track(score, position)
         mid.tracks.append(track)
         if separate_files:
-            mid.save(outfilepath.format(position=position.value))
+            mid.save(outfilepathfmt.format(position=position.value, ext="mid"))
     if not separate_files:
-        mid.save(outfilepath.format(position=""))
-
-
-@dataclass
-class Source:
-    datapath: str
-    csvfilename: str
-    midifilename: str
-
-
-CENDRAWASIH = Source(
-    datapath=".\\data\\cendrawasih", csvfilename="Cendrawasih.csv", midifilename="Cendrawasih {position}.mid"
-)
-MARGAPATI = Source(
-    datapath=".\\data\\margapati", csvfilename="Margapati-UTF8.csv", midifilename="Margapati {position}.mid"
-)
-GENDINGANAK2 = Source(
-    datapath=".\\data\\test", csvfilename="Gending Anak-Anak.csv", midifilename="Gending Anak-Anak {position}.mid"
-)
-DEMO = Source(datapath=".\\data\\test", csvfilename="demo.csv", midifilename="Demo {position}.mid")
+        mid.save(outfilepathfmt.format(position="", ext="mid"))
 
 
 if __name__ == "__main__":
-    source = GENDINGANAK2
+    source = CENDRAWASIH
     PIANOVERSION = True
     SEPARATE_FILES = False
     INSTRUMENTGROUP = InstrumentGroup.GONG_KEBYAR
     VALIDATE_ONLY = True
+    AUTOCORRECT = True
+    SAVE_CORRECTED_TO_FILE = True
 
-    initialize_lookups(PIANOVERSION, INSTRUMENTGROUP)
-    score = create_score_object_model(source.datapath, source.csvfilename, source.midifilename)
-    validate_score(score, INSTRUMENTGROUP)
+    initialize_lookups(INSTRUMENTGROUP, PIANOVERSION)
+    score = create_score_object_model(source)
+    validate_score(score=score, autocorrect=AUTOCORRECT, save_corrected=SAVE_CORRECTED_TO_FILE)
     if not VALIDATE_ONLY:
-        outfilepath = os.path.join(source.datapath, source.midifilename)
-        create_midifiles(score, outfilepath, separate_files=SEPARATE_FILES)
+        create_midifiles(score, separate_files=SEPARATE_FILES)
