@@ -1,3 +1,4 @@
 data/*
 !data/test
 __pycache__
+.pytest_cache/*
