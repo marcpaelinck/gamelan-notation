@@ -3,7 +3,6 @@ import json
 import os
 from collections import defaultdict
 from copy import copy
-from dataclasses import dataclass
 from os import path
 
 import numpy as np
@@ -40,7 +39,6 @@ from src.utils import (
 BALIMUSIC4_FONT_DICT = None
 MIDI_NOTES_DICT = None
 TAGS_TO_POSITIONS_DICT = None
-INSTRUMENTGROUP = None
 
 
 def initialize_lookups(instrumentgroup: InstrumentGroup, pianoversion: bool) -> None:
@@ -326,16 +324,13 @@ def create_score_object_model(source: Source) -> Score:
                 stave.clear()
                 for note in stave_cpy:
                     if note.value is SymbolValue.MODIFIER_PREV1:
-                        prevnote = stave[-1]
-                        stave.remove(prevnote)
+                        prevnote = stave.pop(-1)
                         stave.append(
                             prevnote.model_copy(update={"duration": note.duration, "rest_after": note.rest_after})
                         )
                     elif note.value is SymbolValue.MODIFIER_PREV2:
-                        prev2note = stave[-2]
-                        prev1note = stave[-1]
-                        stave.remove(prev2note)
-                        stave.remove(prev1note)
+                        prev1note = stave.pop(-1)
+                        prev2note = stave.pop(-1)
                         stave.append(prev2note.model_copy(update={"duration": note.duration}))
                         stave.append(prev1note.model_copy(update={"duration": note.rest_after}))
                     else:
