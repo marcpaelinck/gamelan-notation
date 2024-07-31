@@ -1,12 +1,19 @@
+import os
 from glob import glob
 from os import path
 from pprint import pprint
 
 import pandas as pd
 
-from notation_classes import Character, InstrumentTag, MidiNote
-from notation_to_midi import Source
-from src.notation_constants import InstrumentPosition, InstrumentType
+from notation_classes import Instrument, InstrumentTag
+from notation_constants import (
+    InstrumentGroup,
+    InstrumentPosition,
+    InstrumentType,
+    MutingType,
+    NoteType,
+)
+from src.utils import create_instrumentrange_lookup, create_midi_notes_lookup
 
 
 def get_all_tags():
@@ -190,8 +197,62 @@ def merge_parts(datapath: str, basefile: str, mergefile: str, resultfile: str):
     new_df.to_csv(path.join(datapath, resultfile), sep="\t", index=False, header=False)
 
 
-CENDRAWASIH = Source(
-    datapath=".\\data\\cendrawasih", infilename="Cendrawasih.csv", outfilefmt="Cendrawasih {position}.mid"
-)
+def rename_files(folderpath: str, filter: str, findtext: str, replacetext: str, print_only: bool = True):
+    filelist = glob(path.join(folderpath, filter))
+    if isinstance(findtext, str) and isinstance(replacetext, str):
+        findtext = [findtext]
+        replacetext = [replacetext]
+    for filename in filelist:
+        newfilename = filename
+        for pos, find in enumerate(findtext):
+            newfilename = newfilename.replace(find, replacetext[pos])
+            if newfilename != filename:
+                break
+        if print_only:
+            print(f"{os.path.basename(filename)} -> {os.path.basename(newfilename)}")
+        else:
+            os.rename(filename, newfilename)
+    if print_only:
+        print("No files were renamed (print_only==True)")
+
+
+def rename_notes_in_filenames(folderpath: str, group: InstrumentGroup, print_only: bool = True):
+    # In the filenames of Bali Gamelan Samples, Ding 1 is always the first note in an instrument's range.
+    # This function renames the files according to the (relative) naming in this application.
+    instrdict = {
+        "Kantil": InstrumentType.KANTILAN,
+        "Pemade": InstrumentType.PEMADE,
+        "Rejong": InstrumentType.REYONG,
+        "Ugal": InstrumentType.UGAL,
+    }
+    filenotes = sum([[f"Ding {i}", f"Dong {i}", f"Deng {i}", f"Dung {i}", f"Dang {i}"] for i in range(1, 4)], [])
+    lookup = create_instrumentrange_lookup(group)
+    lookup = {
+        instrtype: [
+            note
+            for note in notes
+            if note.isnote and note.note.type == NoteType.MELODIC and note.mutingtype == MutingType.OPEN
+        ]
+        for instrtype, notes in lookup.items()
+        if instrtype in instrdict.values()
+    }
+    for instr_name, instr_type in instrdict.items():
+        notedict = {filenotes[lookup[instr_type].index(note)]: note.value for note in lookup[instr_type]}
+        rename_files(
+            folderpath,
+            filter=f"*{instr_name}*.wav",
+            findtext=list(notedict.keys()),
+            replacetext=list(notedict.values()),
+            print_only=print_only,
+        )
+
+
 if __name__ == "__main__":
-    merge_parts(CENDRAWASIH.datapath, CENDRAWASIH.infilename, "overige_instrumenten.csv", "Cendrawasih_complete.csv")
+    foldername = "G:/Marc/documents-backup-2jun24-08h00/Documents/administratie/_VRIJETIJD_REIZEN/Gamelangroepen/Studiemateriaal/audio-samples/GONG KEBYAR"
+    # rename_files(
+    #     foldername,
+    #     "Bali Gamelan Samples - GONG KEBYAR . Balinese Gamelan Sample Pack - *.*",
+    #     "Bali Gamelan Samples - GONG KEBYAR . Balinese Gamelan Sample Pack - ",
+    #     "",
+    # )
+    rename_notes_in_filenames(foldername, InstrumentGroup.GONG_KEBYAR, print_only=False)

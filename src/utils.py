@@ -4,7 +4,14 @@ from os import path
 import pandas as pd
 
 from src.notation_classes import Character, InstrumentTag, MidiNote, Score, System
-from src.notation_constants import InstrumentGroup, InstrumentPosition
+from src.notation_constants import (
+    InstrumentGroup,
+    InstrumentPosition,
+    InstrumentType,
+    MutingType,
+    Note,
+    SymbolValue,
+)
 from src.settings import (
     BALIMUSIC4_DEF_FILE,
     MIDI_NOTES_DEF_FILE,
@@ -68,7 +75,9 @@ def create_balimusic4_font_lookup(fromfile: str = BALIMUSIC4_DEF_FILE):
     return {character.symbol: character for character in balifont}
 
 
-def create_midi_notes_lookup(instrumentgroup: InstrumentGroup, pianoversion: bool, fromfile: str = MIDI_NOTES_DEF_FILE):
+def create_midi_notes_lookup(
+    instrumentgroup: InstrumentGroup, pianoversion: bool, fromfile: str = MIDI_NOTES_DEF_FILE
+) -> dict[tuple[InstrumentType, SymbolValue], Note]:
     midinotes_df = pd.read_csv(fromfile, sep="\t")
     # Drop unrequired instrument groups
     midinotes_obj = midinotes_df[midinotes_df[MidiNotesFields.INSTRUMENTGROUP] == instrumentgroup.value].to_dict(
@@ -81,7 +90,26 @@ def create_midi_notes_lookup(instrumentgroup: InstrumentGroup, pianoversion: boo
     }
 
 
+def create_instrumentrange_lookup(instrumentgroup: InstrumentGroup, fromfile: str = MIDI_NOTES_DEF_FILE):
+    midinotes_df = pd.read_csv(fromfile, sep="\t")
+    # Drop unrequired instrument groups
+    midinotes_obj = midinotes_df[midinotes_df[MidiNotesFields.INSTRUMENTGROUP] == instrumentgroup.value].to_dict(
+        orient="records"
+    )
+    # Convert to MidiNote objects
+    midinotes = [MidiNote.model_validate(note) for note in midinotes_obj]
+    instrumenttypes = {note.instrumenttype for note in midinotes}
+    return {
+        instr_type: [note.notevalue for note in midinotes if note.instrumenttype == instr_type]
+        for instr_type in instrumenttypes
+    }
+
+
 def create_tags_to_position_lookup(fromfile: str = TAGS_DEF_FILE):
     tags_dict = pd.read_csv(fromfile, sep="\t").to_dict(orient="records")
     tags = [InstrumentTag.model_validate(record) for record in tags_dict]
     return {t.tag: t.positions for t in tags}
+
+
+if __name__ == "__main__":
+    print(create_instrumentrange_lookup(InstrumentGroup.GONG_KEBYAR))

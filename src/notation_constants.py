@@ -184,7 +184,7 @@ class SymbolValue(Enum):
     TAK = "TAK", Note.TAK, None, MutingType.OPEN, auto()
     TEK = "TEK", Note.TEK, None, MutingType.OPEN, auto()
     PLAK = "PLAK", Note.PLAK, None, MutingType.OPEN, auto()
-    MUTED = "MUTED", Note.MUTED, None, MutingType.OPEN, auto()
+    MUTED = "MUTED", Note.MUTED, None, MutingType.MUTED, auto()
     OPEN = "OPEN", Note.OPEN, None, MutingType.OPEN, auto()
     MODIFIER_PREV1 = "MODIFIER_PREV1", None, None, MutingType.OPEN, auto()
     MODIFIER_PREV2 = "MODIFIER_PREV2", None, None, MutingType.OPEN, auto()
