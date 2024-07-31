@@ -63,6 +63,10 @@ class InstrumentPosition(StrEnum):
     def instrumenttype(self):
         return InstrumentType[self.split("_")[0]]
 
+    @property
+    def order(self):
+        return list(InstrumentPosition).index(self)
+
 
 class NoteType(StrEnum):
     MELODIC = "MELODIC"
@@ -243,5 +247,5 @@ FROM_PIANO = {53: 36, 55: 37, 59: 38, 60: 39, 64: 40, 65: 41, 67: 42, 71: 43, 72
 
 
 if __name__ == "__main__":
-    for val in SymbolValue:
-        print(val, val.seq)
+    for val in InstrumentPosition:
+        print(f"{val} {val.order}")

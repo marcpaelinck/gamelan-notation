@@ -221,7 +221,7 @@ class System:
 class Score:
     source: Source
     instrumentgroup: InstrumentGroup = None
-    instrument_positions: set[InstrumentPosition] = None
+    instrument_positions: list[InstrumentPosition] = None
     systems: list[System] = field(default_factory=list)
     balimusic4_font_dict: dict[str, Character] = None
     midi_notes_dict: dict[tuple[InstrumentType, SymbolValue] : int] = None
