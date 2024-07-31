@@ -235,7 +235,7 @@ def create_missing_staves(
     Returns:
         dict[InstrumentPosition, list[Character]]: A dict with the generated staves.
     """
-    if missing_positions := all_positions - set(beat.staves.keys()):
+    if missing_positions := set(all_positions) - set(beat.staves.keys()):
         rests = int(beat.duration)
         half_rests = int((beat.duration - rests) * 2)
         quarter_rests = int((beat.duration - rests - 0.5 * half_rests) * 4)
@@ -295,7 +295,8 @@ def create_score_object_model(source: Source) -> Score:
         notation[sysnr][beat_nr][tag] = beat
 
     # create a list of all instrument positions
-    all_positions = set(df[~df["tag"].isin(NON_INSTRUMENT_TAGS)]["tag"].unique())
+    positions_str = set(df[~df["tag"].isin(NON_INSTRUMENT_TAGS)]["tag"].unique())
+    all_positions = sorted([InstrumentPosition[pos] for pos in positions_str], key=lambda p: p.order)
 
     score = Score(
         source=source,
@@ -399,9 +400,9 @@ if __name__ == "__main__":
     PIANOVERSION = True
     SEPARATE_FILES = False
     INSTRUMENTGROUP = InstrumentGroup.GONG_KEBYAR
-    VALIDATE_ONLY = True
+    VALIDATE_ONLY = False
     AUTOCORRECT = True
-    SAVE_CORRECTED_TO_FILE = True
+    SAVE_CORRECTED_TO_FILE = False
 
     initialize_lookups(INSTRUMENTGROUP, PIANOVERSION)
     score = create_score_object_model(source)
