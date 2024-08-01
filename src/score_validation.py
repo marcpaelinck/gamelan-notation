@@ -20,9 +20,16 @@ POSITIONS_VALIDATE_AND_CORRECT_KEMPYUNG = [
     (InstrumentPosition.KANTILAN_POLOS, InstrumentPosition.KANTILAN_SANGSIH),
 ]
 
+INSTRUMENT_TO_RANGE_LOOKUP = None
+
 
 def initialize_lookups(score: Score):
-    pass
+    global INSTRUMENT_TO_RANGE_LOOKUP
+    instrumentnotes = list(score.midi_notes_dict.keys())
+    INSTRUMENT_TO_RANGE_LOOKUP = {
+        instrument: [note for instr, note in instrumentnotes if instr == instrument]
+        for instrument in set(i for i, _ in instrumentnotes)
+    }
 
 
 def invalid_beat_lengths(system: System, autocorrect: bool) -> list[tuple[BeatId, Duration]]:
@@ -225,11 +232,6 @@ def validate_score(
     count_beats_with_incorrect_ubitan = 0
 
     initialize_lookups(score)
-    instrumentnotes = list(score.midi_notes_dict.keys())
-    instrumentranges = {
-        instrument: [note for instr, note in instrumentnotes if instr == instrument]
-        for instrument in set(i for i, _ in instrumentnotes)
-    }
 
     filler = next(
         char
@@ -247,11 +249,13 @@ def validate_score(
         beats_with_unequal_stave_lengths.extend(invalids)
         count_corrected_stave_lengths += count
 
-        invalids, count = out_of_range(system, ranges=instrumentranges, autocorrect=autocorrect)
+        invalids, count = out_of_range(system, ranges=INSTRUMENT_TO_RANGE_LOOKUP, autocorrect=autocorrect)
         beats_with_note_out_of_instrument_range.extend(invalids)
         count_corrected_notes_out_of_range += count
 
-        invalids, count = incorrect_kempyung(system, score=score, ranges=instrumentranges, autocorrect=autocorrect)
+        invalids, count = incorrect_kempyung(
+            system, score=score, ranges=INSTRUMENT_TO_RANGE_LOOKUP, autocorrect=autocorrect
+        )
         beats_with_incorrect_kempyung.extend(invalids)
         count_corrected_invalid_kempyung += count
 
