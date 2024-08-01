@@ -8,15 +8,19 @@ BALIMUSIC4_DEF_FILE = "./settings/balimusic4font.csv"
 TAGS_DEF_FILE = "./settings/instrumenttags.csv"
 
 CENDRAWASIH = Source(
-    datapath=".\\data\\cendrawasih", infilename="Cendrawasih_complete.csv", outfilefmt="Cendrawasih {position}.{ext}"
+    datapath=".\\data\\cendrawasih",
+    infilename="Cendrawasih_complete.csv",
+    outfilefmt="Cendrawasih {position}_{version}.{ext}",
 )
 MARGAPATI = Source(
-    datapath=".\\data\\margapati", infilename="Margapati-UTF8.csv", outfilefmt="Margapati {position}.{ext}"
+    datapath=".\\data\\margapati", infilename="Margapati-UTF8.csv", outfilefmt="Margapati {position}_{version}.{ext}"
 )
 GENDINGANAK2 = Source(
-    datapath=".\\data\\test", infilename="Gending Anak-Anak.csv", outfilefmt="Gending Anak-Anak {position}.{ext}"
+    datapath=".\\data\\test",
+    infilename="Gending Anak-Anak.csv",
+    outfilefmt="Gending Anak-Anak {position}_{version}.{ext}",
 )
-DEMO = Source(datapath=".\\data\\test", infilename="demo.csv", outfilefmt="Demo {position}.{ext}")
+DEMO = Source(datapath=".\\data\\test", infilename="demo.csv", outfilefmt="Demo {position}_{version}.{ext}")
 
 
 # list of column headers used in the settings files

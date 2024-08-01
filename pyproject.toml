@@ -16,6 +16,7 @@ eth-pydantic-types = "^0.1.0"
 pytest = "^8.3.2"
 
 pytest-cov = "^5.0.0"
+scipy = "^1.14.0"
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra -q"

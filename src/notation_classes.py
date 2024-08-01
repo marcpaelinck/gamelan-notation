@@ -204,7 +204,7 @@ class Beat:
 class Source:
     datapath: str
     infilename: str
-    outfilefmt: str  # should contain 'position' and 'ext' arguments
+    outfilefmt: str  # should contain 'position', 'ext' and 'version' arguments (version=PIANO or GK)
 
 
 @dataclass
@@ -220,6 +220,7 @@ class System:
 @dataclass
 class Score:
     source: Source
+    is_pianoversion: bool
     instrumentgroup: InstrumentGroup = None
     instrument_positions: list[InstrumentPosition] = None
     systems: list[System] = field(default_factory=list)

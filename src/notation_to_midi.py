@@ -31,14 +31,14 @@ from src.notation_constants import (
 from src.score_validation import validate_score
 from src.settings import BASE_NOTE_TIME, CENDRAWASIH
 from src.utils import (
-    create_balimusic4_font_lookup,
-    create_midi_notes_lookup,
-    create_tags_to_position_lookup,
+    create_note_to_midi_lookup,
+    create_symbol_to_character_lookup,
+    create_tag_to_position_lookup,
 )
 
-BALIMUSIC4_FONT_DICT = None
-MIDI_NOTES_DICT = None
-TAGS_TO_POSITIONS_DICT = None
+SYMBOL_TO_CHARACTER_LOOKUP = None
+NOTE_TO_MIDI_LOOOKUP = None
+TAG_TO_POSITION_LOOKUP = None
 
 
 def initialize_lookups(instrumentgroup: InstrumentGroup, pianoversion: bool) -> None:
@@ -49,10 +49,10 @@ def initialize_lookups(instrumentgroup: InstrumentGroup, pianoversion: bool) -> 
         instrumentgroup (InstrumentGroup): The type of orchestra (e.g. gong kebyar, semar pagulingan)
 
     """
-    global BALIMUSIC4_FONT_DICT, MIDI_NOTES_DICT, TAGS_TO_POSITIONS_DICT
-    BALIMUSIC4_FONT_DICT = create_balimusic4_font_lookup()
-    MIDI_NOTES_DICT = create_midi_notes_lookup(instrumentgroup, pianoversion)
-    TAGS_TO_POSITIONS_DICT = create_tags_to_position_lookup()
+    global SYMBOL_TO_CHARACTER_LOOKUP, NOTE_TO_MIDI_LOOOKUP, TAG_TO_POSITION_LOOKUP
+    SYMBOL_TO_CHARACTER_LOOKUP = create_symbol_to_character_lookup()
+    NOTE_TO_MIDI_LOOOKUP = create_note_to_midi_lookup(instrumentgroup, pianoversion)
+    TAG_TO_POSITION_LOOKUP = create_tag_to_position_lookup()
     x = 1
 
 
@@ -120,7 +120,7 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
                     Message(
                         type="note_on",
                         channel=0,
-                        note=MIDI_NOTES_DICT[position.instrumenttype, note.value],
+                        note=NOTE_TO_MIDI_LOOOKUP[position.instrumenttype, note.value],
                         velocity=100,
                         time=time_since_last_note_end,
                     )
@@ -129,7 +129,7 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
                     Message(
                         type="note_off",
                         channel=0,
-                        note=MIDI_NOTES_DICT[position.instrumenttype, note.value],
+                        note=NOTE_TO_MIDI_LOOOKUP[position.instrumenttype, note.value],
                         velocity=70,
                         time=int(note.duration * BASE_NOTE_TIME),
                     )
@@ -240,9 +240,9 @@ def create_missing_staves(
         half_rests = int((beat.duration - rests) * 2)
         quarter_rests = int((beat.duration - rests - 0.5 * half_rests) * 4)
         notes = (
-            [copy(BALIMUSIC4_FONT_DICT["-"])] * rests
-            + [copy(BALIMUSIC4_FONT_DICT["µ"])] * half_rests
-            + [copy(BALIMUSIC4_FONT_DICT["ª"])] * quarter_rests
+            [copy(SYMBOL_TO_CHARACTER_LOOKUP["-"])] * rests
+            + [copy(SYMBOL_TO_CHARACTER_LOOKUP["µ"])] * half_rests
+            + [copy(SYMBOL_TO_CHARACTER_LOOKUP["ª"])] * quarter_rests
         )
         return {position: notes for position in missing_positions}
     else:
@@ -250,13 +250,13 @@ def create_missing_staves(
 
 
 def position_from_tag(tag: str) -> InstrumentPosition:
-    if tag in TAGS_TO_POSITIONS_DICT:
-        return TAGS_TO_POSITIONS_DICT[tag]
+    if tag in TAG_TO_POSITION_LOOKUP:
+        return TAG_TO_POSITION_LOOKUP[tag]
     else:
         raise ValueError(f"unrecognized instrument position {tag}")
 
 
-def create_score_object_model(source: Source) -> Score:
+def create_score_object_model(source: Source, pianoversion: bool) -> Score:
     """Creates an object model of the notation.
     This will simplify the generation of the MIDI file content.
 
@@ -274,7 +274,7 @@ def create_score_object_model(source: Source) -> Score:
     df = pd.read_csv(filepath, sep="\t", names=columns, skip_blank_lines=False, encoding="UTF-8")
     df["id"] = df.index
     # insert a column with the normalized instrument/position names and duplicate rows that contain multiple positions
-    df.insert(1, "tag", df["orig_tag"].apply(lambda val: TAGS_TO_POSITIONS_DICT.get(val, [])))
+    df.insert(1, "tag", df["orig_tag"].apply(lambda val: TAG_TO_POSITION_LOOKUP.get(val, [])))
     df = df.explode("tag", ignore_index=True)
     df["tag"] = np.where(df["tag"].isnull(), df["orig_tag"], df["tag"])
     df.drop("orig_tag", axis="columns", inplace=True)
@@ -300,9 +300,10 @@ def create_score_object_model(source: Source) -> Score:
 
     score = Score(
         source=source,
+        is_pianoversion=pianoversion,
         instrument_positions=all_positions,
-        balimusic4_font_dict=BALIMUSIC4_FONT_DICT,
-        midi_notes_dict=MIDI_NOTES_DICT,
+        balimusic4_font_dict=SYMBOL_TO_CHARACTER_LOOKUP,
+        midi_notes_dict=NOTE_TO_MIDI_LOOOKUP,
     )
     beats: list[Beat] = []
     metadata: list[MetaData] = []
@@ -312,7 +313,7 @@ def create_score_object_model(source: Source) -> Score:
             # create the staves
             try:
                 staves = {
-                    tag: [BALIMUSIC4_FONT_DICT[note].model_copy() for note in notechars[0]]
+                    tag: [SYMBOL_TO_CHARACTER_LOOKUP[note].model_copy() for note in notechars[0]]
                     for tag, notechars in beat_info.items()
                     if tag not in NON_INSTRUMENT_TAGS
                 }
@@ -392,12 +393,12 @@ def create_midifiles(score: Score, separate_files=False) -> None:
         if separate_files:
             mid.save(outfilepathfmt.format(position=position.value, ext="mid"))
     if not separate_files:
-        mid.save(outfilepathfmt.format(position="", ext="mid"))
+        mid.save(outfilepathfmt.format(position="", version="PIANO" if score.is_pianoversion else "GK", ext="mid"))
 
 
 if __name__ == "__main__":
     source = CENDRAWASIH
-    PIANOVERSION = True
+    PIANOVERSION = False
     SEPARATE_FILES = False
     INSTRUMENTGROUP = InstrumentGroup.GONG_KEBYAR
     VALIDATE_ONLY = False
@@ -405,7 +406,7 @@ if __name__ == "__main__":
     SAVE_CORRECTED_TO_FILE = False
 
     initialize_lookups(INSTRUMENTGROUP, PIANOVERSION)
-    score = create_score_object_model(source)
+    score = create_score_object_model(source, PIANOVERSION)
     validate_score(score=score, autocorrect=AUTOCORRECT, save_corrected=SAVE_CORRECTED_TO_FILE)
     if not VALIDATE_ONLY:
         create_midifiles(score, separate_files=SEPARATE_FILES)
