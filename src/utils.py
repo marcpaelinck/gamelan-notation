@@ -69,13 +69,13 @@ def score_to_notation_file(score: Score) -> None:
 #
 
 
-def create_balimusic4_font_lookup(fromfile: str = BALIMUSIC4_DEF_FILE):
+def create_symbol_to_character_lookup(fromfile: str = BALIMUSIC4_DEF_FILE):
     balifont_obj = pd.read_csv(fromfile, sep="\t", quoting=csv.QUOTE_NONE).to_dict(orient="records")
     balifont = [Character.model_validate(character) for character in balifont_obj]
     return {character.symbol: character for character in balifont}
 
 
-def create_midi_notes_lookup(
+def create_note_to_midi_lookup(
     instrumentgroup: InstrumentGroup, pianoversion: bool, fromfile: str = MIDI_NOTES_DEF_FILE
 ) -> dict[tuple[InstrumentType, SymbolValue], Note]:
     midinotes_df = pd.read_csv(fromfile, sep="\t")
@@ -105,7 +105,7 @@ def create_instrumentrange_lookup(instrumentgroup: InstrumentGroup, fromfile: st
     }
 
 
-def create_tags_to_position_lookup(fromfile: str = TAGS_DEF_FILE):
+def create_tag_to_position_lookup(fromfile: str = TAGS_DEF_FILE):
     tags_dict = pd.read_csv(fromfile, sep="\t").to_dict(orient="records")
     tags = [InstrumentTag.model_validate(record) for record in tags_dict]
     return {t.tag: t.positions for t in tags}
