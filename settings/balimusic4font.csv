@@ -15,7 +15,7 @@ symbol	unicode	symbol_description	balifont_symbol_description	value	duration	res
 9	0x0039	digit 9	o overdot	DONG2	1.0	0.0	dong2 open
 =	0x003d	equal	space with double 	EXTENSION	1.0	0.0	 open
 A	0x0041	uppercase A	a slashed	DANG1_MUTED	0.125	0.875	dang1 muted
-B	0x0042	uppercase B	b slashed	JET	0.125	0.875	jet
+B	0x0042	uppercase B	b slashed	JET	0.0	1.0	jet
 D	0x0044	uppercase D	e underdot slashed	DENG0_MUTED	0.125	0.875	deng0 muted
 E	0x0045	uppercase E	e slashed	DENG1_MUTED	0.125	0.875	deng1 muted
 G	0x0047	uppercase G	G	GIR	1.0	0.0	gir
