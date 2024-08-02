@@ -1,4 +1,5 @@
 import json
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -20,6 +21,7 @@ from src.notation_constants import (
     InstrumentGroup,
     InstrumentPosition,
     InstrumentType,
+    MidiVersion,
     SymbolValue,
 )
 
@@ -41,6 +43,27 @@ class TimingData:
 
 
 # Settings
+class NotationModel(BaseModel):
+    @classmethod
+    def to_list(cls, value, enumtype: StrEnum):
+        # This method tries to to parse a string or a list of strings
+        # into a list of `enumtype` values.
+        if isinstance(value, str):
+            # Single string representing a list of strings: parse into a list of strings
+            # First add double quotes around each list element.
+            val = re.sub(r"([\w]+)", r'"\1"', value)
+            value = json.loads(val)
+        if isinstance(value, list):
+            # List of strings: convert strings to enumtype objects.
+            if all(isinstance(el, str) for el in value):
+                return [enumtype[el] for el in value]
+            elif all(isinstance(el, enumtype) for el in value):
+                # List of enumtypes: do nothing
+                return value
+        else:
+            raise ValueError(f"Cannot convert value {value} to a list of {enumtype}")
+
+
 class Character(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -58,26 +81,23 @@ class Character(BaseModel):
         return self.duration + self.rest_after
 
 
-class MidiNote(BaseModel):
+class MidiNote(NotationModel):
     instrumentgroup: InstrumentGroup
     instrumenttype: InstrumentType
+    positions: list[InstrumentPosition]
     notevalue: SymbolValue
     midi: int
-    pianomidi: Optional[int] = -1
+
+    @field_validator("positions", mode="before")
+    @classmethod
+    def validate_pos(cls, value):
+        return cls.to_list(value, InstrumentPosition)
 
 
-class InstrumentTag(BaseModel):
+class InstrumentTag(NotationModel):
     tag: str
     infile: str
     positions: list[InstrumentPosition]
-
-    @classmethod
-    def to_list(cls, value, enumtype: StrEnum):
-        if isinstance(value, str):
-            val = value.replace("[", '["').replace("]", '"]').replace(", ", '", "')
-            lst = json.loads(val)
-            return [enumtype[instr] for instr in lst]
-        return value
 
     @field_validator("positions", mode="before")
     @classmethod
@@ -204,7 +224,7 @@ class Beat:
 class Source:
     datapath: str
     infilename: str
-    outfilefmt: str  # should contain 'position', 'ext' and 'version' arguments (version=PIANO or GK)
+    outfilefmt: str  # should contain 'position', 'ext' and 'midiversion' arguments
 
 
 @dataclass
@@ -220,7 +240,7 @@ class System:
 @dataclass
 class Score:
     source: Source
-    is_pianoversion: bool
+    midi_version: MidiVersion
     instrumentgroup: InstrumentGroup = None
     instrument_positions: list[InstrumentPosition] = None
     systems: list[System] = field(default_factory=list)

@@ -1,4 +1,6 @@
 import csv
+import json
+from enum import StrEnum
 from os import path
 
 import pandas as pd
@@ -7,8 +9,7 @@ from src.notation_classes import Character, InstrumentTag, MidiNote, Score, Syst
 from src.notation_constants import (
     InstrumentGroup,
     InstrumentPosition,
-    InstrumentType,
-    MutingType,
+    MidiVersion,
     Note,
     SymbolValue,
 )
@@ -61,7 +62,10 @@ def system_to_records(system: System, skipemptylines: bool = True) -> list[dict[
 def score_to_notation_file(score: Score) -> None:
     score_dict = sum((system_to_records(system) for system in score.systems), [])
     score_df = pd.DataFrame.from_records(score_dict)
-    filepath = path.join(score.source.datapath, score.source.outfilefmt.format(position="_CORRECTED", ext="csv"))
+    filepath = path.join(
+        score.source.datapath,
+        score.source.outfilefmt.format(position="_CORRECTED", version="", ext="csv"),
+    )
     score_df.to_csv(filepath, sep="\t", index=False, header=False)
 
 
@@ -75,29 +79,39 @@ def create_symbol_to_character_lookup(fromfile: str = BALIMUSIC4_DEF_FILE):
     return {character.symbol: character for character in balifont}
 
 
-def create_note_to_midi_lookup(
-    instrumentgroup: InstrumentGroup, pianoversion: bool, fromfile: str = MIDI_NOTES_DEF_FILE
-) -> dict[tuple[InstrumentType, SymbolValue], Note]:
-    midinotes_df = pd.read_csv(fromfile, sep="\t")
-    # Drop unrequired instrument groups
-    midinotes_obj = midinotes_df[midinotes_df[MidiNotesFields.INSTRUMENTGROUP] == instrumentgroup.value].to_dict(
+def create_midinote_list(
+    instrumentgroup: InstrumentGroup, version: MidiVersion = None, fromfile: str = MIDI_NOTES_DEF_FILE
+) -> list[MidiNote]:
+    midinotes_df = pd.read_csv(fromfile, sep="\t", comment="#")
+    # Convert pre-filled positions to a list of InstrumentPosition values.
+    # Fill in empty position fields with all positions for the instrument type.
+    mask = midinotes_df[MidiNotesFields.POSITIONS].isnull()
+    midinotes_df.loc[mask, MidiNotesFields.POSITIONS] = midinotes_df.loc[mask, MidiNotesFields.INSTRUMENTTYPE].apply(
+        lambda x: [p for p in InstrumentPosition if p.instrumenttype == x]
+    )
+    # Select the required midi value
+    if version:
+        midinotes_df[MidiNotesFields.MIDI] = midinotes_df[version].values.tolist()
+        midinotes_df.drop(list(MidiVersion), axis="columns", errors="ignore", inplace=True)
+    else:
+        midinotes_df[MidiNotesFields.MIDI] = -1
+    # Drop unrequired instrument groups and convert to dict
+    midinotes_dict = midinotes_df[midinotes_df[MidiNotesFields.INSTRUMENTGROUP] == instrumentgroup.value].to_dict(
         orient="records"
     )
     # Convert to MidiNote objects
-    midinotes = [MidiNote.model_validate(note) for note in midinotes_obj]
-    return {
-        (note.instrumenttype, note.notevalue): (note.pianomidi if pianoversion else note.midi) for note in midinotes
-    }
+    return [MidiNote.model_validate(note) for note in midinotes_dict]
+
+
+def create_note_to_midi_lookup(
+    instrumentgroup: InstrumentGroup, version: MidiVersion = None, fromfile: str = MIDI_NOTES_DEF_FILE
+) -> dict[tuple[InstrumentPosition, SymbolValue], Note]:
+    midinotes = create_midinote_list(instrumentgroup, version=version, fromfile=fromfile)
+    return {(note.instrumenttype, note.notevalue): (note.midi) for note in midinotes}
 
 
 def create_instrumentrange_lookup(instrumentgroup: InstrumentGroup, fromfile: str = MIDI_NOTES_DEF_FILE):
-    midinotes_df = pd.read_csv(fromfile, sep="\t")
-    # Drop unrequired instrument groups
-    midinotes_obj = midinotes_df[midinotes_df[MidiNotesFields.INSTRUMENTGROUP] == instrumentgroup.value].to_dict(
-        orient="records"
-    )
-    # Convert to MidiNote objects
-    midinotes = [MidiNote.model_validate(note) for note in midinotes_obj]
+    midinotes = create_midinote_list(instrumentgroup, fromfile=fromfile)
     instrumenttypes = {note.instrumenttype for note in midinotes}
     return {
         instr_type: [note.notevalue for note in midinotes if note.instrumenttype == instr_type]
