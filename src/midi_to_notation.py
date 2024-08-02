@@ -178,7 +178,7 @@ if __name__ == "__main__":
     x = 1
     # mid_sangsih = MidiFile(datafolder + "Cendrawasih_piano.mid", clip=True)
     grouping_polos = generate_grouping(mid_polos)
-    grouping_sangsih = generate_grouping(mid_sangsih)
+    # grouping_sangsih = generate_grouping(mid_sangsih)
     p_gongans = ["|".join("".join([note for note in beat]) for beat in gongan) for gongan in grouping_polos]
     s_gongans = ["|".join("".join([note for note in beat]) for beat in gongan) for gongan in grouping_sangsih]
 

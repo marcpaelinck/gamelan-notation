@@ -5,14 +5,39 @@ PASS = int
 DEFAULT = -1
 
 
-class InstrumentGroup(StrEnum):
+class NotationEnum(StrEnum):
+    def __repr__(self):
+        # Enables to parse string values correctly
+        return self.value
+
+    def __str__(self):
+        return self.value
+
+
+class MidiVersion(NotationEnum):
+    SINGLE_INSTR = "midi-gk0"
+    MULTIPLE_INSTR = "midi-gk1"
+    PIANO = "midi-piano"
+
+    @classmethod
+    def from_value(cls, value):
+        enum = next((el for el in cls if el.value == value), None)
+        if not enum:
+            raise ValueError(
+                f"Value {value} not in {cls.__name__} enum class."
+                "If you added a column with this name in the midi settings file, please add the column name to the enum class."
+            )
+        return enum
+
+
+class InstrumentGroup(NotationEnum):
     GONG_KEBYAR = "GONG_KEBYAR"
     SEMAR_PAGULINGAN = "SEMAR_PAGULINGAN"
     GONG_PELEGONGAN = "GONG_PELEGONGAN"
     GENDER_WAYANG = "GENDER_WAYANG"
 
 
-class InstrumentType(StrEnum):
+class InstrumentType(NotationEnum):
     GONGS = "GONGS"
     KEMPLI = "KEMPLI"
     CENGCENG = "CENGCENG"
@@ -28,12 +53,8 @@ class InstrumentType(StrEnum):
     REYONG = "REYONG"
     TROMPONG = "TROMPONG"
 
-    def __repr__(self):
-        # Enables to decode list of values
-        return self.value
 
-
-class InstrumentPosition(StrEnum):
+class InstrumentPosition(NotationEnum):
     UGAL = "UGAL"
     GENDERRAMBAT = "GENDERRAMBAT"
     TROMPONG = "TROMPONG"
@@ -55,10 +76,6 @@ class InstrumentPosition(StrEnum):
     GENDERWAYANG_POLOS = "GENDERWAYANG_POLOS"
     GENDERWAYANG_SANGSIH = "GENDERWAYANG_SANGSIH"
 
-    def __repr__(self):
-        # Enables to decode list of values
-        return self.value
-
     @property
     def instrumenttype(self):
         return InstrumentType[self.split("_")[0]]
@@ -68,12 +85,12 @@ class InstrumentPosition(StrEnum):
         return list(InstrumentPosition).index(self)
 
 
-class NoteType(StrEnum):
+class NoteType(NotationEnum):
     MELODIC = "MELODIC"
     PERCUSSION = "PERCUSSION"
 
 
-class MutingType(StrEnum):
+class MutingType(NotationEnum):
     OPEN = auto()
     MUTED = auto()
 

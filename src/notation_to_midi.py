@@ -26,6 +26,7 @@ from src.notation_constants import (
     DEFAULT,
     InstrumentGroup,
     InstrumentPosition,
+    MidiVersion,
     SymbolValue,
 )
 from src.score_validation import validate_score
@@ -37,21 +38,21 @@ from src.utils import (
 )
 
 SYMBOL_TO_CHARACTER_LOOKUP = None
-NOTE_TO_MIDI_LOOOKUP = None
+NOTE_TO_MIDI_LOOKUP = None
 TAG_TO_POSITION_LOOKUP = None
 
 
-def initialize_lookups(instrumentgroup: InstrumentGroup, pianoversion: bool) -> None:
+def initialize_lookups(instrumentgroup: InstrumentGroup, version: MidiVersion) -> None:
     """Initializes dicts BALIMUSIC4_FONT_DICT and MIDI_NOTES_DICT
 
     Args:
-        pianoversion (bool): if True, the midi values for a piano will be returned, otherwise the values for a gamelan orchestra.
         instrumentgroup (InstrumentGroup): The type of orchestra (e.g. gong kebyar, semar pagulingan)
+        version (Version):  Used to define which midi mapping to use from the midinotes.csv file.
 
     """
-    global SYMBOL_TO_CHARACTER_LOOKUP, NOTE_TO_MIDI_LOOOKUP, TAG_TO_POSITION_LOOKUP
+    global SYMBOL_TO_CHARACTER_LOOKUP, NOTE_TO_MIDI_LOOKUP, TAG_TO_POSITION_LOOKUP
     SYMBOL_TO_CHARACTER_LOOKUP = create_symbol_to_character_lookup()
-    NOTE_TO_MIDI_LOOOKUP = create_note_to_midi_lookup(instrumentgroup, pianoversion)
+    NOTE_TO_MIDI_LOOKUP = create_note_to_midi_lookup(instrumentgroup, version)
     TAG_TO_POSITION_LOOKUP = create_tag_to_position_lookup()
     x = 1
 
@@ -62,8 +63,7 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
     Args:
         score (Score): The object model containing the notation.
         position (InstrumentPosition): the instrument position
-        piano_version (bool, optional): If True, a version for standard piano is generated.
-                                Otherwise a version for the gong kebyar instrument rack is created. Defaults to False.
+        version (version): Used to define which midi mapping to use from the midinotes.csv file.
 
     Returns:
         MidiTrack: MIDI track for the instrument.
@@ -120,7 +120,7 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
                     Message(
                         type="note_on",
                         channel=0,
-                        note=NOTE_TO_MIDI_LOOOKUP[position.instrumenttype, note.value],
+                        note=NOTE_TO_MIDI_LOOKUP[position.instrumenttype, note.value],
                         velocity=100,
                         time=time_since_last_note_end,
                     )
@@ -129,7 +129,7 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
                     Message(
                         type="note_off",
                         channel=0,
-                        note=NOTE_TO_MIDI_LOOOKUP[position.instrumenttype, note.value],
+                        note=NOTE_TO_MIDI_LOOKUP[position.instrumenttype, note.value],
                         velocity=70,
                         time=int(note.duration * BASE_NOTE_TIME),
                     )
@@ -256,7 +256,7 @@ def position_from_tag(tag: str) -> InstrumentPosition:
         raise ValueError(f"unrecognized instrument position {tag}")
 
 
-def create_score_object_model(source: Source, pianoversion: bool) -> Score:
+def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score:
     """Creates an object model of the notation.
     This will simplify the generation of the MIDI file content.
 
@@ -300,10 +300,10 @@ def create_score_object_model(source: Source, pianoversion: bool) -> Score:
 
     score = Score(
         source=source,
-        is_pianoversion=pianoversion,
+        midi_version=midiversion,
         instrument_positions=all_positions,
         balimusic4_font_dict=SYMBOL_TO_CHARACTER_LOOKUP,
-        midi_notes_dict=NOTE_TO_MIDI_LOOOKUP,
+        midi_notes_dict=NOTE_TO_MIDI_LOOKUP,
     )
     beats: list[Beat] = []
     metadata: list[MetaData] = []
@@ -376,9 +376,6 @@ def create_midifiles(score: Score, separate_files=False) -> None:
 
     Args:
         score (Score): The object model.
-        outfilepath (str): Path to the destination folder.
-        piano_version (bool, optional): If True, a version for standard piano is generated.
-                                Otherwise a version for the gong kebyar instrument rack is created. Defaults to False.
         separate_files (bool, optional): If True, a separate file will be created for each instrument. Defaults to False.
     """
     outfilepathfmt = os.path.join(source.datapath, source.outfilefmt)
@@ -391,22 +388,22 @@ def create_midifiles(score: Score, separate_files=False) -> None:
         track = notation_to_track(score, position)
         mid.tracks.append(track)
         if separate_files:
-            mid.save(outfilepathfmt.format(position=position.value, ext="mid"))
+            mid.save(outfilepathfmt.format(position=position.value, ersion=score.midi_version, ext="mid"))
     if not separate_files:
-        mid.save(outfilepathfmt.format(position="", version="PIANO" if score.is_pianoversion else "GK", ext="mid"))
+        mid.save(outfilepathfmt.format(position="", version=score.midi_version, ext="mid"))
 
 
 if __name__ == "__main__":
     source = CENDRAWASIH
-    PIANOVERSION = False
+    VERSION = MidiVersion.MULTIPLE_INSTR
     SEPARATE_FILES = False
     INSTRUMENTGROUP = InstrumentGroup.GONG_KEBYAR
     VALIDATE_ONLY = False
     AUTOCORRECT = True
-    SAVE_CORRECTED_TO_FILE = False
+    SAVE_CORRECTED_TO_FILE = True
 
-    initialize_lookups(INSTRUMENTGROUP, PIANOVERSION)
-    score = create_score_object_model(source, PIANOVERSION)
+    initialize_lookups(INSTRUMENTGROUP, VERSION)
+    score = create_score_object_model(source, VERSION)
     validate_score(score=score, autocorrect=AUTOCORRECT, save_corrected=SAVE_CORRECTED_TO_FILE)
     if not VALIDATE_ONLY:
         create_midifiles(score, separate_files=SEPARATE_FILES)

@@ -46,6 +46,6 @@ class InstrumentTagFields(StrEnum):
 class MidiNotesFields(StrEnum):
     INSTRUMENTGROUP = "instrumentgroup"
     INSTRUMENTTYPE = "instrumenttype"
+    POSITIONS = "positions"
     NOTEVALUE = "notevalue"
     MIDI = "midi"
-    PIANOMIDI = "pianomidi"
