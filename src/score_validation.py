@@ -2,11 +2,16 @@ import math
 from pprint import pprint
 
 from src.notation_classes import Beat, Character, Score, System
-from src.notation_constants import InstrumentPosition, InstrumentType, Note, SymbolValue
+from src.notation_constants import (
+    BeatId,
+    Duration,
+    GonganType,
+    InstrumentPosition,
+    InstrumentType,
+    Note,
+    SymbolValue,
+)
 from src.utils import score_to_notation_file
-
-Duration = int
-BeatId = str
 
 POSITIONS_AUTOCORRECT_UNEQUAL_STAVES = [
     InstrumentPosition.UGAL,
@@ -37,7 +42,7 @@ def invalid_beat_lengths(system: System, autocorrect: bool) -> list[tuple[BeatId
     corrected_count = 0
 
     for beat in system.beats:
-        if system.gongan.kind != "kebyar" and 2 ** int(math.log2(beat.duration)) != beat.duration:
+        if system.gongantype != GonganType.KEBYAR and 2 ** int(math.log2(beat.duration)) != beat.duration:
             invalids.append((beat.full_id, beat.duration))
     return invalids, corrected_count
 
@@ -218,6 +223,7 @@ def validate_score(
     Args:
         score (Score): the score to analyze.
     """
+    print("========= SCORE VALIDATION =========")
     beats_with_length_not_pow2 = []
     beats_with_unequal_stave_lengths = []
     beats_with_note_out_of_instrument_range = []
@@ -267,6 +273,7 @@ def validate_score(
     pprint(beats_with_note_out_of_instrument_range)
     print(f"INCORRECT KEMPYUNG (corrected {count_corrected_invalid_kempyung}):")
     pprint(beats_with_incorrect_kempyung)
+    print("====================================")
 
     if save_corrected:
         score_to_notation_file(score)

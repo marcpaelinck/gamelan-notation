@@ -18,7 +18,10 @@ from notation_constants import (
     MutingType,
     NoteType,
 )
-from src.utils import create_instrumentrange_lookup, create_note_to_midi_lookup
+from src.utils import (
+    create_instrumentrange_lookup,
+    create_symbolvalue_to_midinote_lookup,
+)
 
 
 def get_all_tags():

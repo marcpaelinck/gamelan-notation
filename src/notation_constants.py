@@ -2,7 +2,9 @@ from enum import Enum, StrEnum, auto
 
 BPM = int
 PASS = int
-DEFAULT = -1
+ALL_PASSES = -1
+Duration = int
+BeatId = str
 
 
 class NotationEnum(StrEnum):
@@ -11,12 +13,21 @@ class NotationEnum(StrEnum):
         return self.value
 
     def __str__(self):
-        return self.value
+        return self.name
+
+    @classmethod
+    def from_value(cls, value):
+        enum = next((el for el in cls if value in [el.name, el.value]), None)
+        return enum
+
+    @property
+    def order(self):
+        return list(self.__class__).index(self)
 
 
 class MidiVersion(NotationEnum):
-    SINGLE_INSTR = "midi-gk0"
-    MULTIPLE_INSTR = "midi-gk1"
+    SINGLE_INSTR = "midi-gk1"
+    MULTIPLE_INSTR = "midi-gk2"
     PIANO = "midi-piano"
 
     @classmethod
@@ -24,8 +35,8 @@ class MidiVersion(NotationEnum):
         enum = next((el for el in cls if el.value == value), None)
         if not enum:
             raise ValueError(
-                f"Value {value} not in {cls.__name__} enum class."
-                "If you added a column with this name in the midi settings file, please add the column name to the enum class."
+                f"Value {value} not in {cls.__name__} enum class. If you added a column with this name "
+                "to the midi settings file, please add the new column name to the MidiValue enum class."
             )
         return enum
 
@@ -80,10 +91,6 @@ class InstrumentPosition(NotationEnum):
     def instrumenttype(self):
         return InstrumentType[self.split("_")[0]]
 
-    @property
-    def order(self):
-        return list(InstrumentPosition).index(self)
-
 
 class NoteType(NotationEnum):
     MELODIC = "MELODIC"
@@ -103,6 +110,7 @@ class Note(Enum):
     DUNG = "DUNG", NoteType.MELODIC, auto()
     DANG = "DANG", NoteType.MELODIC, auto()
     DAING = "DAING", NoteType.MELODIC, auto()
+    DENGDING = "DENGDING", NoteType.MELODIC, auto()
     BYONG = "BYONG", NoteType.PERCUSSION, auto()
     BYOT = "BYOT", NoteType.PERCUSSION, auto()
     DAG = "DAG", NoteType.PERCUSSION, auto()
@@ -162,6 +170,7 @@ class SymbolValue(Enum):
     DUNG2 = "DUNG2", Note.DUNG, 2, MutingType.OPEN, auto()
     DANG2 = "DANG2", Note.DANG, 2, MutingType.OPEN, auto()
     DAING2 = "DAING2", Note.DAING, 2, MutingType.OPEN, auto()
+    DENGDING0 = "DENGDING0", Note.DENGDING, 0, MutingType.OPEN, auto()
     DING0_MUTED = "DING0_MUTED", Note.DING, 0, MutingType.MUTED, auto()
     DONG0_MUTED = "DONG0_MUTED", Note.DONG, 0, MutingType.MUTED, auto()
     DENG0_MUTED = "DENG0_MUTED", Note.DENG, 0, MutingType.MUTED, auto()
@@ -195,7 +204,6 @@ class SymbolValue(Enum):
     BYONG = "BYONG", Note.BYONG, None, MutingType.OPEN, auto()
     BYOT = "BYOT", Note.BYOT, None, MutingType.OPEN, auto()
     JET = "JET", Note.JET, None, MutingType.OPEN, auto()
-    TICK = "TICK", Note.TICK, None, MutingType.OPEN, auto()
     TICK_1_PANGGUL = "TICK_1_PANGGUL", Note.TICK, None, MutingType.OPEN, auto()
     TICK_2_PANGGUL = "TICK_2_PANGGUL", Note.TICK, None, MutingType.OPEN, auto()
     KAP = "KAP", Note.KAP, None, MutingType.OPEN, auto()
@@ -239,6 +247,11 @@ class SymbolValue(Enum):
         return self in [self.SILENCE, self.EXTENSION]
 
 
+class GonganType(NotationEnum):
+    KEBYAR = "kebyar"
+    REGULAR = "regular"
+
+
 # MIDI to Notation
 
 MIDI_TO_COURIER = {
@@ -255,8 +268,6 @@ MIDI_TO_COURIER = {
 }
 VALID_MIDI_MESSAGE_TYPES = ["note_on", "note_off", "rest"]
 
-TO_PIANO = {36: 53, 37: 55, 38: 59, 39: 60, 40: 64, 41: 65, 42: 67, 43: 71, 44: 72, 45: 76}
-FROM_PIANO = {53: 36, 55: 37, 59: 38, 60: 39, 64: 40, 65: 41, 67: 42, 71: 43, 72: 44, 76: 45}
 
 # if __name__ == "__main__":
 #     for val in SymbolValue:
@@ -264,5 +275,4 @@ FROM_PIANO = {53: 36, 55: 37, 59: 38, 60: 39, 64: 40, 65: 41, 67: 42, 71: 43, 72
 
 
 if __name__ == "__main__":
-    for val in InstrumentPosition:
-        print(f"{val} {val.order}")
+    print(InstrumentType.CALUNG.order)
