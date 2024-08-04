@@ -48,4 +48,5 @@ class MidiNotesFields(StrEnum):
     INSTRUMENTTYPE = "instrumenttype"
     POSITIONS = "positions"
     NOTEVALUE = "notevalue"
+    CHANNEL = "channel"
     MIDI = "midi"

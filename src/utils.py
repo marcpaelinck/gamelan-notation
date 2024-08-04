@@ -2,10 +2,18 @@ import csv
 import json
 from enum import StrEnum
 from os import path
+from typing import Union
 
 import pandas as pd
 
-from src.notation_classes import Character, InstrumentTag, MidiNote, Score, System
+from src.notation_classes import (
+    Character,
+    InstrumentTag,
+    MetaData,
+    MidiNote,
+    Score,
+    System,
+)
 from src.notation_constants import (
     InstrumentGroup,
     InstrumentPosition,
@@ -48,13 +56,20 @@ def system_to_records(system: System, skipemptylines: bool = True) -> list[dict[
             skip.append(k_pos)
             alias[p_pos] = "GANGSA_" + p_pos.value.split("_")[1]
 
-    result = [
-        {InstrumentFields.POSITION: alias.get(position, position)}
-        | {beat.id: stave_to_string(beat.staves[position]) for beat in system.beats}
-        for position in InstrumentPosition
-        if position not in skip
-        if any(position in beat.staves for beat in system.beats) and not is_silent(system, position)
-    ] + [{InstrumentFields.POSITION: ""} | {beat.id: "" for beat in system.beats}]
+    result = (
+        [
+            {InstrumentFields.POSITION: "metadata", 1: metadata.data.model_dump_json(exclude_defaults=True)}
+            for metadata in system.metadata
+        ]
+        + [
+            {InstrumentFields.POSITION: alias.get(position, position)}
+            | {beat.id: stave_to_string(beat.staves[position]) for beat in system.beats}
+            for position in InstrumentPosition
+            if position not in skip
+            if any(position in beat.staves for beat in system.beats) and not is_silent(system, position)
+        ]
+        + [{InstrumentFields.POSITION: ""} | {beat.id: "" for beat in system.beats}]
+    )
 
     return result
 
@@ -66,14 +81,14 @@ def score_to_notation_file(score: Score) -> None:
         score.source.datapath,
         score.source.outfilefmt.format(position="_CORRECTED", version="", ext="csv"),
     )
-    score_df.to_csv(filepath, sep="\t", index=False, header=False)
+    score_df.to_csv(filepath, sep="\t", index=False, header=False, quoting=csv.QUOTE_NONE)
 
 
 # Create lookup dicts based on the settings files (CSV)
 #
 
 
-def create_symbol_to_character_lookup(fromfile: str = BALIMUSIC4_DEF_FILE):
+def create_symbol_to_character_lookup(fromfile: str = BALIMUSIC4_DEF_FILE) -> dict[str, Character]:
     balifont_obj = pd.read_csv(fromfile, sep="\t", quoting=csv.QUOTE_NONE).to_dict(orient="records")
     balifont = [Character.model_validate(character) for character in balifont_obj]
     return {character.symbol: character for character in balifont}
@@ -103,11 +118,11 @@ def create_midinote_list(
     return [MidiNote.model_validate(note) for note in midinotes_dict]
 
 
-def create_note_to_midi_lookup(
+def create_symbolvalue_to_midinote_lookup(
     instrumentgroup: InstrumentGroup, version: MidiVersion = None, fromfile: str = MIDI_NOTES_DEF_FILE
-) -> dict[tuple[InstrumentPosition, SymbolValue], Note]:
+) -> dict[tuple[InstrumentPosition, SymbolValue], int]:
     midinotes = create_midinote_list(instrumentgroup, version=version, fromfile=fromfile)
-    return {(note.instrumenttype, note.notevalue): (note.midi) for note in midinotes}
+    return {(note.instrumenttype, note.notevalue): note for note in midinotes}
 
 
 def create_instrumentrange_lookup(instrumentgroup: InstrumentGroup, fromfile: str = MIDI_NOTES_DEF_FILE):

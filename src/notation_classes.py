@@ -15,9 +15,10 @@ from pydantic import (
 )
 
 from src.notation_constants import (
+    ALL_PASSES,
     BPM,
-    DEFAULT,
     PASS,
+    GonganType,
     InstrumentGroup,
     InstrumentPosition,
     InstrumentType,
@@ -86,6 +87,7 @@ class MidiNote(NotationModel):
     instrumenttype: InstrumentType
     positions: list[InstrumentPosition]
     notevalue: SymbolValue
+    channel: int
     midi: int
 
     @field_validator("positions", mode="before")
@@ -114,19 +116,20 @@ class Tempo(BaseModel):
     passes: list[PASS] = field(default_factory=list)
     first_beat: Optional[int] = 1
     beats: Optional[int] = 0
-    passes: Optional[list[int]] = field(default_factory=list)  # On which pass(es) should goto be performed?
+    passes: Optional[list[int]] = field(
+        default_factory=lambda: list([ALL_PASSES])
+    )  # On which pass(es) should goto be performed?
 
-    @computed_field
     @property
     def first_beat_seq(self) -> int:
         # Returns the pythonic sequence id (numbered from 0)
         return self.first_beat - 1
 
-    @model_validator(mode="after")
-    def set_default_pass(self):
-        if not self.passes:
-            self.passes.append(DEFAULT)
-        return self
+    # @model_validator(mode="after")
+    # def set_default_pass(self):
+    #     if not self.passes:
+    #         self.passes.append(DEFAULT)
+    #     return self
 
 
 class Label(BaseModel):
@@ -134,7 +137,6 @@ class Label(BaseModel):
     label: str
     beat_nr: Optional[int] = 1
 
-    @computed_field
     @property
     def beat_seq(self) -> int:
         # Returns the pythonic sequence id (numbered from 0)
@@ -147,7 +149,6 @@ class GoTo(BaseModel):
     beat_nr: Optional[int] | None = None  # Beat number from which to goto. Default is last beat of the system.
     passes: Optional[list[int]] = field(default_factory=list)  # On which pass(es) should goto be performed?
 
-    @computed_field
     @property
     def beat_seq(self) -> int:
         # Returns the pythonic sequence id (numbered from 0)
@@ -205,13 +206,13 @@ class Beat:
         return self.sys_id - 1
 
     def get_bpm_start(self):
-        return self.bpm_start.get(self._pass_, self.bpm_start.get(DEFAULT, None))
+        return self.bpm_start.get(self._pass_, self.bpm_start.get(ALL_PASSES, None))
 
     def get_bpm_end(self):
-        return self.bpm_end.get(self._pass_, self.bpm_end.get(DEFAULT, None))
+        return self.bpm_end.get(self._pass_, self.bpm_end.get(ALL_PASSES, None))
 
     def get_changed_tempo(self, current_tempo: BPM) -> BPM | None:
-        tempo_change = self.tempo_changes.get(self._pass_, self.tempo_changes.get(DEFAULT, None))
+        tempo_change = self.tempo_changes.get(self._pass_, self.tempo_changes.get(ALL_PASSES, None))
         if tempo_change and tempo_change.new_tempo != current_tempo:
             if tempo_change.incremental:
                 return current_tempo + int((tempo_change.new_tempo - current_tempo) / tempo_change.steps)
@@ -234,7 +235,18 @@ class System:
     id: int
     beats: list[Beat] = field(default_factory=list)
     beat_duration: int = 4
-    gongan: Gongan = field(default_factory=lambda: Gongan(type="gongan", kind="regular"))
+    gongantype: GonganType = GonganType.REGULAR
+    metadata: list[MetaData] = field(default_factory=list)
+
+
+@dataclass
+class FlowInfo:
+    # Keeps track of statements that modify the sequence of
+    # systems or beats in the score. The main purpose of this
+    # class is to keep track of gotos that point to labels that
+    # have not yet been encountered while processing the score.
+    labels: dict[str, Beat] = field(default_factory=dict)
+    gotos: dict[str, tuple[System, GoTo]] = field(default_factory=lambda: defaultdict(list))
 
 
 @dataclass
@@ -242,13 +254,8 @@ class Score:
     source: Source
     midi_version: MidiVersion
     instrumentgroup: InstrumentGroup = None
-    instrument_positions: list[InstrumentPosition] = None
+    instrument_positions: set[InstrumentPosition] = None
     systems: list[System] = field(default_factory=list)
     balimusic4_font_dict: dict[str, Character] = None
     midi_notes_dict: dict[tuple[InstrumentType, SymbolValue] : int] = None
-
-
-@dataclass
-class FlowInfo:
-    labels: dict[str, Beat] = field(default_factory=dict)
-    gotos: dict[str, tuple[System, GoTo]] = field(default_factory=lambda: defaultdict(list))
+    flowinfo: FlowInfo = field(default_factory=FlowInfo)

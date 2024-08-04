@@ -13,7 +13,6 @@ symbol	unicode	symbol_description	balifont_symbol_description	value	duration	res
 7	0x0037	digit 7	u overdot	DUNG2	1.0	0.0	dung2 open
 8	0x0038	digit 8	i (with dot)	DING2	1.0	0.0	ding2 open
 9	0x0039	digit 9	o overdot	DONG2	1.0	0.0	dong2 open
-=	0x003d	equal	space with double	EXTENSION	1.0	0.0	" open"
 A	0x0041	uppercase A	a slashed	DANG1_MUTED	0.125	0.875	dang1 muted
 B	0x0042	uppercase B	b slashed	JET	0.0	1.0	jet
 D	0x0044	uppercase D	e underdot slashed	DENG0_MUTED	0.125	0.875	deng0 muted
@@ -32,47 +31,29 @@ T	0x0054	uppercase T	T	TONG	1.0	0.0	tong
 U	0x0055	uppercase U	u slashed	DUNG1_MUTED	0.125	0.875	dung1 muted
 W	0x0057	uppercase W	W	GIR	1.0	0.0	gir wadon
 X	0x0058	uppercase X	" slashed"	TICK_1_PANGGUL	0.125	0.875	tick muted
-Y	0x0059	uppercase Y	e underdot	DENG0	1.0	0.0	deng0 open
+Y	0x0059	uppercase Y	e underdot	DENGDING0	0.125	0.875	deng+ding muted (reyong pos. 1)
 Z	0x005a	uppercase Z	a underdot slashed	DANG0_MUTED	0.125	0.875	dang0 muted
-_	0x005f	underscore	macron	EXTENSION	1.0	0.0	" open"
 a	0x0061	lowercase a	a	DANG1	1.0	0.0	dang1 open
 b	0x0062	lowercase b	b	BYONG	1.0	0.0	byong
-d	0x0064	lowercase d	e underdot	DENG0	1.0	0.0	deng0 open
+d	0x0064	lowercase d	a and i combined underdot	DENG0	1.0	0.0	deng0 open
 e	0x0065	lowercase e	e	DENG1	1.0	0.0	deng1 open
-g	0x0067	lowercase g	G	GIR	1.0	0.0	gir
 i	0x0069	lowercase i	dotless i	DING1	1.0	0.0	ding1 open
 j	0x006a	lowercase j	u underdot	DUNG0	1.0	0.0	dung0 open
-k	0x006b	lowercase k	dotless i underdot	DING0	1.0	0.0	ding0 open
 l	0x006c	lowercase l	o underdot	DONG0	1.0	0.0	dong0 open
 m	ox006d	lowercase m	lowercase p	PAK	1.0	0.0	pak open
 n	0x006e	lowercase n	lowercase k	KEP	1.0	0.0	kep open
 o	0x006f	lowercase o	o	DONG1	1.0	0.0	dong1 open
-p	0x0070	lowercase p	P	PUR	1.0	0.0	pur
 q	0x0071	lowercase q	a overdot	DANG2	1.0	0.0	dang2 open
 r	0x0072	lowercase r	e and u combined	DEUNG1	1.0	0.0	deung open
 s	0x0073	lowercase s	a and i combined	DAING1	1.0	0.0	daing open
-t	0x0074	lowercase t	T	TONG	1.0	0.0	tong
 u	0x0075	lowercase u	u	DUNG1	1.0	0.0	dung1 open
-w	0x0077	lowercase w	L	GIR	1.0	0.0	gir lanang
 x	0x0078	lowercase x	x	TICK_1_PANGGUL	1.0	0.0	tick open
-y	0x0079	lowercase y	a and i combined, underdot	BYONG	1.0	0.0	byong (old notation)
+y	0x0079	lowercase y	a and i combined underdot	DENGDING0	1.0	0.0	deng+ding open (reyong pos. 1)
 z	0x007a	lowercase z	a underdot	DANG0	1.0	0.0	dang0 open
-©	0x00a9	copyright	k	KEP	1.0	0.0	ke open
 ª	0x00aa	underlined a superscript	dot with double macron	SILENCE	0.25	0.0	silence quarter duration
-«	0x00ab	left double chevron quote	d	DUT	1.0	0.0	dut open
-¬	0x00ac	logical not	n	KRUM	1.0	0.0	krum open
-®	0x00ae	registered trademark	p	PAK	1.0	0.0	pak open
-¯	0x00af	high hyphen	t	DUT	1.0	0.0	dut open
-°	0x00b0	degrees	u	PUNG	1.0	0.0	pung open
-±	0x00b1	plusminus	k	KEP	1.0	0.0	ke open
-²	0x00b2	squared (two superscript)	d	DUT	1.0	0.0	dut open
-³	0x00b3	cubed (three superscript)	n	KRUM	1.0	0.0	krum open
 µ	0x00b5	mu	dot with single macron	SILENCE	0.5	0.0	silence half duration
-¶	0x00b6	at	p	PAK	1.0	0.0	pak open
-·	0x00b7	dot	t	DUT	1.0	0.0	dut open
-¸	0x00b8	comma	u	PUNG	1.0	0.0	pung open
 À	0x00c0	uppercase A grave	a underdot slashed, single macron	DANG0_MUTED	0.1	0.4	dang0 half duration long muted
-Á	0x00c1	uppercase A acute	a underdot slashed, single macron	DANG0_MUTED	0.1	0.4	dang0 half duration long muted
+Á	0x00c1	uppercase A acute	a slashed, single macron	DANG1_MUTED	0.1	0.4	dang0 half duration long muted
 Â	0x00c2	uppercase A circumflex	a underdot slashed, double macron	DANG0_MUTED	0.05	0.2	dang0 quarter duration muted
 Ä	0x00c4	uppercase A trema	a slashed, double macron	DANG1_MUTED	0.05	0.2	dang1 quarter duration muted
 È	0x00c8	uppercase E grave	e underdot slashed, single macron	DENG0_MUTED	0.1	0.4	deng0 half duration long muted
@@ -94,17 +75,17 @@ z	0x007a	lowercase z	a underdot	DANG0	1.0	0.0	dang0 open
 Ý	0x00dd	uppercase Y acute	x slashed, single macron	TICK_1_PANGGUL	0.1	0.4	tick half duration long muted
 à	0x00e0	lowercase a grave	a underdot single macron	DANG0	0.5	0.0	dang0 half duration
 á	0x00e1	lowercase a acute	a single macron	DANG1	0.5	0.0	dang1 half duration
-â	0x00e2	lowercase a circumflex	a double macron	DANG1	0.25	0.0	dang1 quarter duration
+â	0x00e2	lowercase a circumflex	a underdot double macron	DANG0	0.25	0.0	dang1 quarter duration
 ä	0x00e4	lowercase a trema	a double macron	DANG1	0.25	0.0	dang1 quarter duration
 è	0x00e8	lowercase e grave	e underdot single macron	DENG0	0.5	0.0	deng0 half duration
 é	0x00e9	lowercase e	e single macron	DENG1	0.5	0.0	deng1 half duration
 ê	0x00ea	lowercase e circumflex	e underdot double macron	DENG0	0.25	0.0	deng0 quarter duration
 ë	0x00eb	lowercase e trema	e double macron	DENG1	0.25	0.0	deng1 quarter duration
-ì	0x00ec	lowercase i grave	e single macron	DENG1	0.5	0.0	deng1 half duration
+ì	0x00ec	lowercase i grave	i underdot single macron	DING0	0.5	0.0	ding1 half duration
 í	0x00ed	lowercase i	dotless i single macron	DING1	0.5	0.0	ding1 half duration
 î	0x00ee	lowercase i circumflex	dotless i underdot double macron	DING0	0.25	0.0	ding0 quarter duration
 ï	0x00ef	lowercase i trema	dotless i double macron	DING1	0.25	0.0	ding1 quarter duration
-ò	0x00f2	lowercase o grave	o underdot double macron	DONG0	0.25	0.0	dong0 quarter duration
+ò	0x00f2	lowercase o grave	o underdot macron	DONG0	0.5	0.0	dong0 quarter duration
 ó	0x00f3	lowercase o	o single macron	DONG1	0.5	0.0	dong1 half duration
 ô	0x00f4	lowercase o circumflex	o underdot double macron	DONG0	0.25	0.0	dong0 quarter duration
 ö	0x00f6	lowercase o trema	o double macron	DONG1	0.25	0.0	dong1 quarter duration
@@ -130,22 +111,22 @@ z	0x007a	lowercase z	a underdot	DANG0	1.0	0.0	dang0 open
 ō	0x014d	lowercase o macron	o overdot single macron	DONG2	0.5	0.0	dong2 half duration
 Ŏ	0x014e	uppercase O breve	o overdot slashed, double macron	DONG2_MUTED	0.05	0.2	dong2 quarter duration muted
 ŏ	0x014f	lowercase o breve	o overdot double macron	DONG2	0.25	0.0	dong2 quarter duration
-Ŕ	0x0154	uppercase R acute	e and u combined slashed, single macron	EXTENSION	0.1	0.4	deung half duration muted
-ŕ	0x0155	lowercase r acute	e and u combined single macron	EXTENSION	0.5	0.0	deung open half duration
-Ŗ	0x0156	uppercase R undercomma	e and u combined double macron	EXTENSION	0.05	0.2	deung quarter duration muted
-ŗ	0x0157	lowercase r undercomma	e and u combined double macron	EXTENSION	0.25	0.0	deung open quarter duration
-Ś	0x015a	uppercase S acute	a and i combined slashed, single macron	EXTENSION	0.1	0.4	daing half duration muted
-ś	0x015b	lowercase s acute	a and i combined single macron	EXTENSION	0.5	0.0	daing open half duration
-Ş	0x015e	uppercase S cedille	a and i combined slashed, double macron	EXTENSION	0.05	0.2	daing quarter duration muted
-ş	0x015f	lowercase s cedille	a and i combined double macron	EXTENSION	0.25	0.0	daing open quarter duration
+Ŕ	0x0154	uppercase R acute	e and u combined slashed, single macron	DEUNG1	0.1	0.4	deung half duration muted
+ŕ	0x0155	lowercase r acute	e and u combined single macron	DEUNG1	0.5	0.0	deung open half duration
+Ŗ	0x0156	uppercase R undercomma	e and u combined double macron	DEUNG1	0.05	0.2	deung quarter duration muted
+ŗ	0x0157	lowercase r undercomma	e and u combined double macron	DEUNG1	0.25	0.0	deung open quarter duration
+Ś	0x015a	uppercase S acute	a and i combined slashed, single macron	DAING1	0.1	0.4	daing half duration muted
+ś	0x015b	lowercase s acute	a and i combined single macron	DAING1	0.5	0.0	daing open half duration
+Ş	0x015e	uppercase S cedille	a and i combined slashed, double macron	DAING1	0.05	0.2	dang+ding (reyong1) quarter duration muted
+ş	0x015f	lowercase s cedille	a and i combined double macron	DAING1	0.25	0.0	dang+ding  (reyong1) open quarter duration
 Ū	0x016a	uppercase U macron	u overdot slashed, single macron	DUNG2_MUTED	0.1	0.4	dung2 half duration long muted
 ū	0x016b	lowercase u macron	u overdot single macron	DUNG2	0.5	0.0	dung2 half duration
 Ŭ	0x016c	uppercase U breve	u overdot slashed, double macron	DUNG2_MUTED	0.05	0.2	dung2 quarter duration muted
 ŭ	0x016d	lowercase u breve	u overdot double macron	DUNG2	0.25	0.0	dung2 quarter duration
 Ÿ	0x0178	uppercase Y trema	x slashed, double macron	TICK_1_PANGGUL	0.05	0.2	tick quarter duration muted
-Ž	0x017d	uppercase Z caron	slash with macron	EXTENSION	1.0	0.0	long mutes previous note, half duration
-ž	0x017e	lowercase Z caron	slash with double macron	EXTENSION	1.0	0.0	long mutes previous note, quarter duration
-ṁ	0x1e41	lowercase m overdot	serifless lowercase u, upside down	PUNG	1.0	0.0	pung open
+Ž	0x017d	uppercase Z caron	slash with macron	MODIFIER_PREV1	0.2	0.3	long mutes previous note, half duration
+ž	0x017e	lowercase Z caron	slash with double macron	MODIFIER_PREV1	0.1	0.15	long mutes previous note, quarter duration
+ṁ	0x1e41	lowercase m overdot	serifless lowercase u	KRUM	1.0	0.0	krum open
 ṃ	0x1e43	lowercase m underdot	lowercase t	TUT	1.0	0.0	tut open
-ṅ	0x1e45	lowercase n overdot	serifless lowercase u	KRUM	1.0	0.0	krum open
+ṅ	0x1e45	lowercase n overdot	serifless lowercase u, upside down	PUNG	1.0	0.0	pung open
 ṇ	0x1e47	lowercase n underdot	lowercase d	DUG	1.0	0.0	dug open
