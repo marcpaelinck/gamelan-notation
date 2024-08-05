@@ -22,8 +22,8 @@ from src.notation_constants import (
     SymbolValue,
 )
 from src.settings import (
-    BALIMUSIC4_DEF_FILE,
     MIDI_NOTES_DEF_FILE,
+    NOTATIONFONT_DEF_FILE,
     TAGS_DEF_FILE,
     InstrumentFields,
     MidiNotesFields,
@@ -88,7 +88,7 @@ def score_to_notation_file(score: Score) -> None:
 #
 
 
-def create_symbol_to_character_lookup(fromfile: str = BALIMUSIC4_DEF_FILE) -> dict[str, Character]:
+def create_symbol_to_character_lookup(fromfile: str = NOTATIONFONT_DEF_FILE) -> dict[str, Character]:
     balifont_obj = pd.read_csv(fromfile, sep="\t", quoting=csv.QUOTE_NONE).to_dict(orient="records")
     balifont = [Character.model_validate(character) for character in balifont_obj]
     return {character.symbol: character for character in balifont}
