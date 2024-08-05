@@ -4,8 +4,9 @@ from src.notation_classes import Source
 
 BASE_NOTE_TIME = 24
 MIDI_NOTES_DEF_FILE = "./settings/midinotes.csv"
-BALIMUSIC4_DEF_FILE = "./settings/balimusic4font.csv"
+NOTATIONFONT_DEF_FILE = "./settings/balimusic4font.csv"
 TAGS_DEF_FILE = "./settings/instrumenttags.csv"
+SOUNDFONT_FILE = "./settings/Gong Kebyar MP2.sf2"
 
 CENDRAWASIH = Source(
     datapath=".\\data\\cendrawasih",
@@ -28,25 +29,41 @@ DEMO = Source(datapath=".\\data\\test", infilename="demo.csv", outfilefmt="Demo 
 # balimusic4font.csv: Fields should correspond exactly with the Character class attributes
 
 
+class SStrEnum(StrEnum):
+    def __str__(self):
+        return self.value
+
+
+class FontFields(SStrEnum):
+    SYMBOL = "symbol"
+    UNICODE = "unicode"
+    SYMBOL_DESCRIPTION = "symbol_description"
+    BALIFONT_SYMBOL_DESCRIPTION = "balifont_symbol_description"
+    SYMBOLVALUE = "value"
+    DURATION = "duration"
+    REST_AFTER = "rest_after"
+    DESCRIPTION = "description"
+
+
 # instruments.csv
-class InstrumentFields(StrEnum):
+class InstrumentFields(SStrEnum):
     POSITION = "position"
     INSTRUMENT = "instrument"
     GROUP = "groups"
 
 
 # instrumenttags.csv
-class InstrumentTagFields(StrEnum):
+class InstrumentTagFields(SStrEnum):
     TAG = "tag"
     INFILE = "infile"
     POSITION = "positions"
 
 
 # midinotes.csv
-class MidiNotesFields(StrEnum):
+class MidiNotesFields(SStrEnum):
     INSTRUMENTGROUP = "instrumentgroup"
     INSTRUMENTTYPE = "instrumenttype"
     POSITIONS = "positions"
-    NOTEVALUE = "notevalue"
+    SYMBOLVALUE = "notevalue"
     CHANNEL = "channel"
     MIDI = "midi"
