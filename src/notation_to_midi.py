@@ -119,6 +119,7 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
         if new_tempo := beat.get_changed_tempo(current_tempo):
             track.append(MetaMessage("set_tempo", tempo=bpm2tempo(new_tempo)))
             current_tempo = new_tempo
+
         # Process individual notes
         for note in beat.staves.get(position, []):
             if not note.value.is_nonnote:
@@ -424,15 +425,19 @@ def create_midifiles(score: Score, separate_files=False) -> None:
 if __name__ == "__main__":
     source = CENDRAWASIH
     VERSION = MidiVersion.MULTIPLE_INSTR
-    SEPARATE_FILES = False
     INSTRUMENTGROUP = InstrumentGroup.GONG_KEBYAR
-    VALIDATE_ONLY = False
+    # --------------------------
+    VALIDATE_SETTINGS = True
     AUTOCORRECT = True
     SAVE_CORRECTED_TO_FILE = True
+    # --------------------------
+    CREATE_MIDIFILE = True
+    SEPARATE_MIDIFILES = False
 
     initialize_constants(INSTRUMENTGROUP, VERSION)
-    validate_settings(list(SYMBOL_TO_CHARACTER_LOOKUP.values()))
+    if VALIDATE_SETTINGS:
+        validate_settings(INSTRUMENTGROUP)
     score = create_score_object_model(source, VERSION)
     validate_score(score=score, autocorrect=AUTOCORRECT, save_corrected=SAVE_CORRECTED_TO_FILE)
-    if not VALIDATE_ONLY:
-        create_midifiles(score, separate_files=SEPARATE_FILES)
+    if CREATE_MIDIFILE:
+        create_midifiles(score, separate_files=SEPARATE_MIDIFILES)

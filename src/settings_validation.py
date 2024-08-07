@@ -42,19 +42,28 @@ def check_font_midi_match(group: InstrumentGroup) -> None:
     """
     # 1. Find midi notes without corresponding character definition.
     font_keep = [FontFields.SYMBOLVALUE]
-    midi_keep = [MidiNotesFields.INSTRUMENTGROUP, MidiNotesFields.POSITIONS, MidiNotesFields.SYMBOLVALUE]
+    midi_keep = [
+        MidiNotesFields.INSTRUMENTGROUP,
+        MidiNotesFields.INSTRUMENTTYPE,
+        MidiNotesFields.POSITIONS,
+        MidiNotesFields.SYMBOLVALUE,
+    ]
     font_df = pd.read_csv(NOTATIONFONT_DEF_FILE, sep="\t", quoting=csv.QUOTE_NONE)[font_keep]
     midi_df = pd.read_csv(MIDI_NOTES_DEF_FILE, sep="\t", quoting=csv.QUOTE_NONE)[midi_keep]
-    midi_values = midi_df[midi_df[MidiNotesFields.INSTRUMENTGROUP] == group].drop_duplicates()
+    midi_values = (
+        midi_df[midi_df[MidiNotesFields.INSTRUMENTGROUP] == group]
+        .drop([MidiNotesFields.INSTRUMENTGROUP], axis="columns")
+        .drop_duplicates()
+    )
     merged = midi_values.merge(
         font_df, how="left", left_on=MidiNotesFields.SYMBOLVALUE, right_on=FontFields.SYMBOLVALUE, suffixes=["_F", "_M"]
     )
-    missing = merged[merged[FontFields.SYMBOLVALUE].isna()]
+    missing = merged[merged[FontFields.SYMBOLVALUE].isna()].drop(FontFields.SYMBOLVALUE, axis="columns")
     if missing.size > 0:
-        print("CHARACTERS IN THE FONT DEFINITION MISSING A MIDI NOTE EQUIVALENT:")
+        print(f"CHARACTERS IN THE FONT DEFINITION MISSING A MIDI NOTE EQUIVALENT FOR {group}:")
         print(missing)
     else:
-        print("ALL HARACTERS HAVE A CORRESPONDING NOTE IN THE MIDINOTES DEFINITION.")
+        print("ALL CHARACTERS HAVE A CORRESPONDING NOTE IN THE MIDINOTES DEFINITION FOR {group}.")
 
     # 2. Find characters without corresponding midi note.
     non_notes = [symvalue.value for symvalue in SymbolValue if not symvalue.isnote]
@@ -68,10 +77,10 @@ def check_font_midi_match(group: InstrumentGroup) -> None:
     missing = merged[merged[MidiNotesFields.SYMBOLVALUE].isna() & ~merged[FontFields.SYMBOLVALUE].isin(non_notes)]
     if missing.size > 0:
         print("-------------------------------------")
-        print("MIDI NOTES MISSING A CHARACTER EQUIVALENT IN THE FONT DEFINITION:")
+        print("MIDI NOTES MISSING A CHARACTER EQUIVALENT IN THE FONT DEFINITION FOR {group}:")
         print(missing[FontFields.SYMBOLVALUE].drop_duplicates())
     else:
-        print("ALL MIDI NOTES HAVE A CORRESPONDING CHARACTER IN THE FONT DEFINITION.")
+        print("ALL MIDI NOTES HAVE A CORRESPONDING CHARACTER IN THE FONT DEFINITION FOR {group}.")
 
 
 def validate_settings(group: InstrumentGroup):

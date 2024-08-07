@@ -1,0 +1,9 @@
+font	operator	action	value_parameters	enum_parameters	description
+					
+					
+BALIMUSIC5FONT	OCTAVE_0	ChangeOctave	[0]	[PREVIOUS]	sets octave of previous note to 0
+BALIMUSIC5FONT	OCTAVE_2	ChangeOctave	[2]	[PREVIOUS]	sets octave of previous note to 2
+BALIMUSIC5FONT	MUTED	ChangeDuration	[0.25, 0.75]	[PREVIOUS, RELATIVE]	long mutes previous note
+BALIMUSIC5FONT	LONG_MUTED	ChangeDuration	[0.4, 0.6]	[PREVIOUS, RELATIVE]	makes previous note muted
+BALIMUSIC5FONT	HALF_NOTEVALUE	ChangeDuration	[0.25, 0.0]	[PREVIOUS, ABSOLUTE]	quarter note value
+BALIMUSIC5FONT	QUARTER_NOTEVALUE	ChangeDuration	[0.25, 0.0]	[PREVIOUS, ABSOLUTE]	quarter note value
