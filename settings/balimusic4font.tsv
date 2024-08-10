@@ -8,7 +8,7 @@ symbol	unicode	symbol_description	balifont_symbol_description	value	duration	res
 -	0x002d	hyphen	dash	EXTENSION	1.0	0.0	extends note duration
 .	0x002e	period	dot	SILENCE	1.0	0.0	silence (muted note) open
 /	0x002f	forward slash	slash	MODIFIER_PREV1	0.25	0.75	long mutes previous note
-^	0x0302	circumflex	none currently	MODIFIER_PREV2	0.75	0.25	grace note indicator
+^	0x0302	circumflex	none currently	MODIFIER_PREV2	0.5	0.5	grace note indicator
 3	0x0033	digit 3	e overdot	DENG2	1.0	0.0	deng2 open
 7	0x0037	digit 7	u overdot	DUNG2	1.0	0.0	dung2 open
 8	0x0038	digit 8	i (with dot)	DING2	1.0	0.0	ding2 open

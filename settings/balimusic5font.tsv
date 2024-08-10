@@ -1,0 +1,30 @@
+symbol	unicode	symbol_description	balifont_symbol_description	value		duration	rest_after	octave	description
+&	0x0026	ampersand	p	PAK	NoteValue	1.0	0.0		dung2 muted
+(	0x0028	left round bracket	t	TUT	NoteValue	1.0	0.0		dong2 muted
+)	0x0029	right round bracket	serifless u	PUNG	NoteValue	1.0	0.0		pung
+,	0x002c	comma	underdot (combining)	MODIFIER_PREV1	NoteValue			0	sets octave of previous note to 0
+-	0x002d	hyphen	dash	EXTENSION	NoteValue	1.0	0.0		extends note duration
+.	0x002e	period	dot	SILENCE	NoteValue	1.0	0.0		silence (muted note) open
+/	0x002f	forward slash	slash through char (combining)	MODIFIER_PREV1	NoteValue	0.25	0.75		long mutes previous note
+0	0x0030	digit 0	serifless u upside-down	KRUM	NoteValue	1.0	0.0		krum (kendang)
+8	0x0038	digit 8	k	KEP	NoteValue	1.0	0.0		kep (kendang)
+9	0x0039	digit 9	d	DUT	NoteValue	1.0	0.0		dut (kendang)
+G	0x0047	uppercase G	G	GIR	NoteValue	1.0	0.0		gir
+P	0x0050	uppercase P	P	PUR	NoteValue	1.0	0.0		pur
+T	0x0054	uppercase T	T	TONG	NoteValue	1.0	0.0		tong
+X	0x0058	uppercast X	X	TICK_2_PANGGUL	NoteValue	1.0	0.0		tick open with two panggul
+a	0x0061	lowercase a	a	DANG1	NoteValue	1.0	0.0		dang1 open
+b	0x0062	lowercase b	b	BYONG	NoteValue	1.0	0.0		byong
+d	0x0064	lowercase d	d	DUT	NoteValue	1.0	0.0		
+e	0x0065	lowercase e	e	DENG1	NoteValue	1.0	0.0		deng1 open
+i	0x0069	lowercase i	dotless i	DING1	NoteValue	1.0	0.0		ding1 open
+o	0x006f	lowercase o	o	DONG1	NoteValue	1.0	0.0		dong1 open
+r	0x0072	lowercase r	e and u combined	DEUNG1	NoteValue	1.0	0.0		deung open
+s	0x0073	lowercase s	a and i combined	DAING1	NoteValue	1.0	0.0		daing open
+t	0x0074	lowercase t	t	TUT	NoteValue	1.0	0.0		
+u	0x0075	lowercase u	u	DUNG1	NoteValue	1.0	0.0		dung1 open
+x	0x0078	lowercase x	x	TICK_1_PANGGUL	NoteValue	1.0	0.0		tick open with one
+<	0x003c	less than	overdot (combining)	MODIFIER_PREV1	Operator			2	
+=	0x003d	equal	double macron (combining)	MODIFIER_PREV1	Operator	0.125	0.0		
+?	0x003f	question mark	slash right of char (combining)	MODIFIER_PREV1	Operator	0.4	0.6		makes previous note muted
+_	0x005f	underscore	macron (combining)			0.25	0.0		

@@ -6,8 +6,6 @@ from os import path
 from pprint import pprint
 
 import pandas as pd
-from openpyxl import load_workbook
-from openpyxl.styles import Font
 from scipy.io import wavfile
 
 from notation_classes import InstrumentTag
@@ -18,10 +16,7 @@ from notation_constants import (
     MutingType,
     NoteType,
 )
-from src.utils import (
-    create_instrumentrange_lookup,
-    create_symbolvalue_to_midinote_lookup,
-)
+from src.utils import create_instrumentrange_lookup
 
 
 def get_all_tags():
@@ -227,111 +222,9 @@ def convert_to_wav_pcm(filepath_in: str, filepath_out: str):
     wavfile.write(filepath_out, rate, data)
 
 
-def get_files_with_symbols():
-    folderpath = "G:\\Marc\\documents-backup-2jun24-08h00\\Documents\\administratie\\_VRIJETIJD_REIZEN\\Gamelangroepen\\Studiemateriaal\\Muzieknotatie"
-    # search = {"ê", "ë", "Ë", "â", "ä", "ï", "Ï", "ĭ", "ö", "û", "Ü", "ü"}
-    search = ["¯", "«", "©", "¬", "®", "°"]  # onjuiste kendang
-    # search = ["ṁ", "ṃ", "ṅ", "ṇ"] # correcte kendang-noten (ook nog m en n) - nergens gebruikt
-
-    infiles = defaultdict(set)
-    files = glob(path.join(folderpath, "*.xlsx"))
-    for file in files:
-        wb = load_workbook(file)
-        sheets = set(wb.sheetnames) - {"formules"}
-        wb.close()
-        for sheet in sheets:
-            print(os.path.basename(file) + " " + sheet)
-            df = pd.read_excel(file, sheet_name=sheet).iloc[:, 1:]
-            uniques = set().union(
-                *[
-                    set(df[col][df[col].apply(lambda x: isinstance(x, str))].sum())
-                    for col in df.columns
-                    if set(df[col][df[col].apply(lambda x: isinstance(x, str))])
-                ]
-            )
-            for sym in search:
-                if sym in uniques:
-                    infiles[sym].add(os.path.basename(file))
-
-    pprint(infiles)
-
-
-def get_all_used_symbols():
-    all_uniques = set()
-    folderpath = "G:\\Marc\\documents-backup-2jun24-08h00\\Documents\\administratie\\_VRIJETIJD_REIZEN\\Gamelangroepen\\Studiemateriaal\\Muzieknotatie"
-    files = glob(path.join(folderpath, "*.xlsx"))
-    where = dict()
-    for file in files:
-        wb = load_workbook(file)
-        sheets = set(wb.sheetnames) - {"formules"}
-        wb.close()
-        for sheet in sheets:
-            print(os.path.basename(file) + " " + sheet)
-            df = pd.read_excel(file, sheet_name=sheet).iloc[:, 1:]
-            uniques = set().union(
-                *[
-                    set(df[col][df[col].apply(lambda x: isinstance(x, str))].sum())
-                    for col in df.columns
-                    if set(df[col][df[col].apply(lambda x: isinstance(x, str))])
-                ]
-            )
-            all_uniques.update(uniques)
-            for s in uniques:
-                where[s] = (os.path.basename(file), sheet)
-    print(all_uniques)
-    pprint(where)
-
-
-def replace_cell_content(fromfont: str = None, tofont: str = None, search: str = None, replace: str = None):
-    folderpath = "G:\\Marc\\documents-backup-2jun24-08h00\\Documents\\administratie\\_VRIJETIJD_REIZEN\\Gamelangroepen\\Studiemateriaal\\Muzieknotatie\\balimusic4"
-    savepath = "G:\\Marc\\documents-backup-2jun24-08h00\\Documents\\administratie\\_VRIJETIJD_REIZEN\\Gamelangroepen\\Studiemateriaal\\Muzieknotatie"
-    fromfont = None  # "Bali Music 3"
-    tofont = None  # "Bali Music 4"
-    files = [
-        "Hujan Mas.xlsx",
-        "Jauk keras.xlsx",
-        "Kebyar Amstelveen.xlsx",
-        "Manuk Rawa.xlsx",
-        "Sidakarya.xlsx",
-        "Sidakarya1.xlsx",
-    ]
-    searchreplace = [("¯", "ṃ"), ("«", "ṇ"), ("©", "n"), ("¬", "ṅ"), ("®", "m"), ("°", "ṁ")]
-    files = [path.join(folderpath, file) for file in files] or glob(path.join(folderpath, "*.xlsx"))
-    fontchanged = False
-    contentchanged = False
-    for file in files:
-        wb = load_workbook(file)
-        for sheet in wb.worksheets:
-            for row in sheet.rows:
-                for cell in row:
-                    # Replace font
-                    if fromfont and tofont:
-                        if cell.font.name == fromfont:
-                            oldfont: Font = cell.font
-                            newfont: Font = Font(
-                                name=tofont,
-                                size=oldfont.size,
-                                bold=oldfont.bold,
-                                italic=oldfont.italic,
-                                underline=oldfont.underline,
-                                color=oldfont.color,
-                            )
-                            cell.font = newfont
-                            fontchanged = True
-                    # find-replace in content
-                    if searchreplace and isinstance(cell.value, str):
-                        for find, replace in searchreplace:
-                            oldval = cell.value
-                            cell.value = cell.value.replace(find, replace)
-                            contentchanged = contentchanged or (cell.value != oldval)
-        print(
-            f"{os.path.basename(file)}: {'font changed' if fontchanged else ''}{'and' if fontchanged and contentchanged else ''}{'value(s) changed' if contentchanged else ''}"
-        )
-        wb.save(os.path.join(savepath, os.path.basename(file)))
-
-
 if __name__ == "__main__":
-    replace_cell_content()
+    pass
+    # replace_cell_content()
     # foldername = "G:/Marc/documents-backup-2jun24-08h00/Documents/administratie/_VRIJETIJD_REIZEN/Gamelangroepen/Studiemateriaal/audio-samples/GONG KEBYAR"
     # foldername_out = "G:/Marc/documents-backup-2jun24-08h00/Documents/administratie/_VRIJETIJD_REIZEN/Gamelangroepen/Studiemateriaal/audio-samples/GONG KEBYAR WAV"
     # filename = "02 Kantil Ombak DONG0.wav"
