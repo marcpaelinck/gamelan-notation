@@ -1,24 +1,15 @@
 import csv
-import json
-from enum import StrEnum
+from copy import copy
 from os import path
-from typing import Union
 
 import pandas as pd
 
-from src.notation_classes import (
-    Character,
-    InstrumentTag,
-    MetaData,
-    MidiNote,
-    Score,
-    System,
-)
+from src.notation_classes import Character, InstrumentTag, MidiNote, Score, System
 from src.notation_constants import (
+    Duration,
     InstrumentGroup,
     InstrumentPosition,
     MidiVersion,
-    Note,
     SymbolValue,
 )
 from src.settings import (
@@ -29,6 +20,29 @@ from src.settings import (
     MidiNotesFields,
 )
 
+SYMBOL_TO_CHARACTER_LOOKUP: dict[str, Character] = dict()
+SYMBOLVALUE_TO_CHARACTER_LOOKUP: dict[(SymbolValue, Duration, Duration):Character] = dict()
+SYMBOLVALUE_TO_MIDINOTE_LOOKUP: dict[tuple[InstrumentPosition, SymbolValue], MidiNote] = dict()
+TAG_TO_POSITION_LOOKUP: dict[InstrumentTag, InstrumentPosition] = dict()
+
+
+def initialize_constants(instrumentgroup: InstrumentGroup, version: MidiVersion) -> None:
+    """Initializes lookup dicts and other constants
+
+    Args:
+        instrumentgroup (InstrumentGroup): The type of orchestra (e.g. gong kebyar, semar pagulingan)
+        version (Version):  Used to define which midi mapping to use from the midinotes.csv file.
+
+    """
+    global SYMBOL_TO_CHARACTER_LOOKUP, SYMBOLVALUE_TO_CHARACTER_LOOKUP, SYMBOLVALUE_TO_MIDINOTE_LOOKUP, TAG_TO_POSITION_LOOKUP
+    SYMBOL_TO_CHARACTER_LOOKUP.update(create_symbol_to_character_lookup())
+    SYMBOLVALUE_TO_CHARACTER_LOOKUP.update(
+        {(char.value, char.duration, char.rest_after): char for char in SYMBOL_TO_CHARACTER_LOOKUP.values()}
+    )
+    SYMBOLVALUE_TO_MIDINOTE_LOOKUP.update(create_symbolvalue_to_midinote_lookup(instrumentgroup, version))
+    TAG_TO_POSITION_LOOKUP.update(create_tag_to_position_lookup())
+    x = 1
+
 
 def is_silent(system: System, position: InstrumentPosition):
     no_occurrence = sum((beat.staves.get(position, []) for beat in system.beats), []) == []
@@ -38,6 +52,28 @@ def is_silent(system: System, position: InstrumentPosition):
 
 def stave_to_string(stave: list[Character]) -> str:
     return "".join((n.symbol for n in stave))
+
+
+def create_rest_stave(resttype: SymbolValue, duration: float) -> list[Character]:
+    """Creates a stave with rests of the given type for the given duration.
+    If the duration is non-integer, the stave will also contain half and/or quarter rests.
+
+    Args:
+        resttype (SymbolValue): the type of rest (SILENCE or EXTENSION)
+        duration (float): the duration, which can be non-integer.
+
+    Returns:
+        list[Character]: _description_
+    """
+    rest_count = int(duration)
+    half_rest_count = int((duration - rest_count) * 2)
+    quarter_rest_count = int((duration - rest_count - 0.5 * half_rest_count) * 4)
+    rests = (
+        [copy(SYMBOLVALUE_TO_CHARACTER_LOOKUP[resttype, 1, 0])] * rest_count
+        + [SYMBOLVALUE_TO_CHARACTER_LOOKUP[resttype, 0.5, 0]] * half_rest_count
+        + [SYMBOLVALUE_TO_CHARACTER_LOOKUP[resttype, 0.25, 0]] * quarter_rest_count
+    )
+    return rests
 
 
 def system_to_records(system: System, skipemptylines: bool = True) -> list[dict[InstrumentPosition | int, list[str]]]:

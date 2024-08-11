@@ -1,32 +1,49 @@
 from enum import StrEnum
 
 from src.notation_classes import Source
+from src.notation_constants import NotationFont
 
 BASE_NOTE_TIME = 24
-MIDI_NOTES_DEF_FILE = "./settings/midinotes.csv"
-NOTATIONFONT_DEF_FILE = "./settings/balimusic4font.csv"
-TAGS_DEF_FILE = "./settings/instrumenttags.csv"
+MIDI_NOTES_DEF_FILE = "./settings/midinotes.tsv"
+NOTATIONFONT_DEF_FILE = "./settings/balimusic4font.tsv"
+TAGS_DEF_FILE = "./settings/instrumenttags.tsv"
 SOUNDFONT_FILE = "./settings/Gong Kebyar MP2.sf2"
 
 CENDRAWASIH = Source(
     datapath=".\\data\\cendrawasih",
-    infilename="Cendrawasih_complete.csv",
+    infilename="Cendrawasih_complete.tsv",
     outfilefmt="Cendrawasih {position}_{version}.{ext}",
+    font=NotationFont.BALIMUSIC4,
+)
+CENDRAWASIH5 = Source(
+    datapath=".\\data\\cendrawasih",
+    infilename="Cendrawasih_complete_font5.tsv",
+    outfilefmt="Cendrawasih {position}_{version}.{ext}",
+    font=NotationFont.BALIMUSIC5,
 )
 MARGAPATI = Source(
-    datapath=".\\data\\margapati", infilename="Margapati-UTF8.csv", outfilefmt="Margapati {position}_{version}.{ext}"
+    datapath=".\\data\\margapati",
+    infilename="Margapati-UTF8.tsv",
+    outfilefmt="Margapati {position}_{version}.{ext}",
+    font=NotationFont.BALIMUSIC4,
 )
 GENDINGANAK2 = Source(
     datapath=".\\data\\test",
-    infilename="Gending Anak-Anak.csv",
+    infilename="Gending Anak-Anak.tsv",
     outfilefmt="Gending Anak-Anak {position}_{version}.{ext}",
+    font=NotationFont.BALIMUSIC4,
 )
-DEMO = Source(datapath=".\\data\\test", infilename="demo.csv", outfilefmt="Demo {position}_{version}.{ext}")
+DEMO = Source(
+    datapath=".\\data\\test",
+    infilename="demo.tsv",
+    outfilefmt="Demo {position}_{version}.{ext}",
+    font=NotationFont.BALIMUSIC4,
+)
 
 
 # list of column headers used in the settings files
 
-# balimusic4font.csv: Fields should correspond exactly with the Character class attributes
+# balimusic4font.tsv: Fields should correspond exactly with the Character class attributes
 
 
 class SStrEnum(StrEnum):
@@ -45,21 +62,21 @@ class FontFields(SStrEnum):
     DESCRIPTION = "description"
 
 
-# instruments.csv
+# instruments.tsv
 class InstrumentFields(SStrEnum):
     POSITION = "position"
     INSTRUMENT = "instrument"
     GROUP = "groups"
 
 
-# instrumenttags.csv
+# instrumenttags.tsv
 class InstrumentTagFields(SStrEnum):
     TAG = "tag"
     INFILE = "infile"
     POSITION = "positions"
 
 
-# midinotes.csv
+# midinotes.tsv
 class MidiNotesFields(SStrEnum):
     INSTRUMENTGROUP = "instrumentgroup"
     INSTRUMENTTYPE = "instrumenttype"

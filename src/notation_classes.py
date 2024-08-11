@@ -5,14 +5,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Literal, Optional, Union
 
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    Field,
-    computed_field,
-    field_validator,
-    model_validator,
-)
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 
 from src.notation_constants import (
     ALL_PASSES,
@@ -23,6 +16,7 @@ from src.notation_constants import (
     InstrumentPosition,
     InstrumentType,
     MidiVersion,
+    NotationFont,
     SymbolValue,
 )
 
@@ -226,6 +220,7 @@ class Source:
     datapath: str
     infilename: str
     outfilefmt: str  # should contain 'position', 'ext' and 'midiversion' arguments
+    font: NotationFont
 
 
 @dataclass
@@ -256,6 +251,6 @@ class Score:
     instrumentgroup: InstrumentGroup = None
     instrument_positions: set[InstrumentPosition] = None
     systems: list[System] = field(default_factory=list)
-    balimusic4_font_dict: dict[str, Character] = None
+    balimusic_font_dict: dict[str, Character] = None
     midi_notes_dict: dict[tuple[InstrumentType, SymbolValue] : int] = None
     flowinfo: FlowInfo = field(default_factory=FlowInfo)

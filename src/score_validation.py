@@ -11,7 +11,11 @@ from src.notation_constants import (
     Note,
     SymbolValue,
 )
-from src.utils import score_to_notation_file
+from src.utils import (
+    SYMBOLVALUE_TO_CHARACTER_LOOKUP,
+    create_rest_stave,
+    score_to_notation_file,
+)
 
 POSITIONS_AUTOCORRECT_UNEQUAL_STAVES = [
     InstrumentPosition.UGAL,
@@ -136,7 +140,7 @@ def get_correct_kempyung(polos: Character, sangsih: Character, score: Score, ins
         octave,
         sangsih.duration,
         sangsih.rest_after,
-        score.balimusic4_font_dict.values(),
+        score.balimusic_font_dict.values(),
     )
     if not correct_sangsih:
         # Note duration was modified
@@ -145,7 +149,7 @@ def get_correct_kempyung(polos: Character, sangsih: Character, score: Score, ins
             octave,
             1,
             0,
-            score.balimusic4_font_dict.values(),
+            score.balimusic_font_dict.values(),
         ).model_copy(update={"duration": sangsih.duration, "rest_after": sangsih.rest_after})
     else:
         correct_sangsih = correct_sangsih.model_copy()
@@ -213,6 +217,51 @@ def incorrect_kempyung(
     return invalids, corrected_counter
 
 
+def create_missing_staves(beat: Beat, prevbeat: Beat, score: Score) -> dict[InstrumentPosition, list[Character]]:
+    """Returns staves for missing positions, containing rests (silence) for the duration of the given beat.
+    This ensures that positions that do not occur in all the systems will remain in sync.
+
+    Args:
+        beat (Beat): The beat that should be complemented.
+        all_positions (set[InstrumentPosition]): List of all the positions that occur in the notation.
+
+    Returns:
+        dict[InstrumentPosition, list[Character]]: A dict with the generated staves.
+    """
+
+    if missing_positions := ((score.instrument_positions | {InstrumentPosition.KEMPLI}) - set(beat.staves.keys())):
+        silence = SymbolValue.SILENCE
+        extension = SymbolValue.EXTENSION
+        prevnotes = {pos: (prevbeat.staves[pos][-1].value if prevbeat else silence) for pos in missing_positions}
+        resttypes = {pos: silence if prevnote is silence else extension for pos, prevnote in prevnotes.items()}
+        staves = {position: create_rest_stave(resttypes[position], beat.duration) for position in missing_positions}
+        # Add a kempli beat, except in case of kebyar of if the kempli part was already given in the original score
+        if (
+            InstrumentPosition.KEMPLI in staves.keys()
+            and score.systems[beat.sys_seq].gongantype is not GonganType.KEBYAR
+        ):
+            kemplibeat = SYMBOLVALUE_TO_CHARACTER_LOOKUP[SymbolValue.TICK_1_PANGGUL, 1, 0]
+            staves[InstrumentPosition.KEMPLI] = [kemplibeat] + create_rest_stave(
+                SymbolValue.EXTENSION, beat.duration - 1
+            )
+        return staves
+    else:
+        return dict()
+
+
+def add_missing_staves(score: Score):
+    prev_beat = None
+    for system in score.systems:
+        for beat in system.beats:
+            # Not all positions occur in each system.
+            # Therefore we need to add blank staves (all rests) for missing positions.
+            missing_staves = create_missing_staves(beat, prev_beat, score)
+            beat.staves.update(missing_staves)
+            # Update all positions of the score
+            score.instrument_positions.update({pos for pos in missing_staves})
+            prev_beat = beat
+
+
 def validate_score(
     score: Score,
     autocorrect: bool = False,
@@ -241,7 +290,7 @@ def validate_score(
 
     filler = next(
         char
-        for char in score.balimusic4_font_dict.values()
+        for char in score.balimusic_font_dict.values()
         if char.value == SymbolValue.EXTENSION and char.total_duration == 1
     )
 

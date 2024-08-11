@@ -25,6 +25,11 @@ class NotationEnum(StrEnum):
         return list(self.__class__).index(self)
 
 
+class NotationFont(NotationEnum):
+    BALIMUSIC4 = "Bali Music 4"
+    BALIMUSIC5 = "Bali Music 5"
+
+
 class MidiVersion(NotationEnum):
     SINGLE_INSTR = "midi-gk1"
     MULTIPLE_INSTR = "midi-gk2"

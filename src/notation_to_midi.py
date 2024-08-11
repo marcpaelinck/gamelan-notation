@@ -1,66 +1,41 @@
 import json
 import os
 from collections import defaultdict
-from copy import copy
 from os import path
 
 import numpy as np
 import pandas as pd
-from mido import Message, MetaMessage, MidiFile, MidiTrack, bpm2tempo
+from mido import MetaMessage, MidiFile, MidiTrack, bpm2tempo
 
+from src.font_specific_code import MidiTrackX, postprocess
 from src.notation_classes import (
     Beat,
-    Character,
     Gongan,
     GoTo,
-    InstrumentTag,
     Label,
     MetaData,
-    MidiNote,
     Score,
     Source,
     System,
     Tempo,
 )
 from src.notation_constants import (
-    ALL_PASSES,
-    Duration,
     GonganType,
     InstrumentGroup,
     InstrumentPosition,
     MidiVersion,
     SymbolValue,
 )
-from src.score_validation import validate_score
-from src.settings import BASE_NOTE_TIME, CENDRAWASIH
+from src.score_validation import add_missing_staves, validate_score
+from src.settings import CENDRAWASIH
 from src.settings_validation import validate_settings
 from src.utils import (
-    create_symbol_to_character_lookup,
-    create_symbolvalue_to_midinote_lookup,
-    create_tag_to_position_lookup,
+    SYMBOL_TO_CHARACTER_LOOKUP,
+    SYMBOLVALUE_TO_MIDINOTE_LOOKUP,
+    TAG_TO_POSITION_LOOKUP,
+    create_rest_stave,
+    initialize_constants,
 )
-
-SYMBOL_TO_CHARACTER_LOOKUP: dict[str, Character] = None
-SYMBOLVALUE_TO_CHARACTER_LOOKUP: dict[(SymbolValue, Duration, Duration):Character]
-SYMBOLVALUE_TO_MIDINOTE_LOOKUP: dict[tuple[InstrumentPosition, SymbolValue], MidiNote] = None
-TAG_TO_POSITION_LOOKUP: dict[InstrumentTag, InstrumentPosition] = None
-
-
-def initialize_constants(instrumentgroup: InstrumentGroup, version: MidiVersion) -> None:
-    """Initializes lookup dicts and other constants
-
-    Args:
-        instrumentgroup (InstrumentGroup): The type of orchestra (e.g. gong kebyar, semar pagulingan)
-        version (Version):  Used to define which midi mapping to use from the midinotes.csv file.
-
-    """
-    global SYMBOL_TO_CHARACTER_LOOKUP, SYMBOLVALUE_TO_CHARACTER_LOOKUP, SYMBOLVALUE_TO_MIDINOTE_LOOKUP, TAG_TO_POSITION_LOOKUP
-    SYMBOL_TO_CHARACTER_LOOKUP = create_symbol_to_character_lookup()
-    SYMBOLVALUE_TO_CHARACTER_LOOKUP = {
-        (char.value, char.duration, char.rest_after): char for char in SYMBOL_TO_CHARACTER_LOOKUP.values()
-    }
-    SYMBOLVALUE_TO_MIDINOTE_LOOKUP = create_symbolvalue_to_midinote_lookup(instrumentgroup, version)
-    TAG_TO_POSITION_LOOKUP = create_tag_to_position_lookup()
 
 
 def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
@@ -80,16 +55,13 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
             for beat in system.beats:
                 beat._pass_ = 0
 
-    track = MidiTrack()
+    track = MidiTrackX(score.source.font)
     track.append(MetaMessage("track_name", name=position.value, time=0))
     # track.append(
     #     MetaMessage(
     #         "time_signature", numerator=4, denominator=4, clocks_per_click=36, notated_32nd_notes_per_beat=8, time=0
     #     )
     # )
-
-    last_note_end_msg = None
-    time_since_last_note_end = 0
 
     reset_pass_counters()
     beat = score.systems[0].beats[0]
@@ -110,10 +82,10 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
                     denominator=4,
                     clocks_per_click=36,
                     notated_32nd_notes_per_beat=8,
-                    time=time_since_last_note_end,
+                    time=track.time_since_last_note_end,
                 )
             )
-            time_since_last_note_end = 0
+            track.time_since_last_note_end = 0
             current_signature = new_signature
         # Set new tempo
         if new_tempo := beat.get_changed_tempo(current_tempo):
@@ -122,42 +94,7 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
 
         # Process individual notes
         for note in beat.staves.get(position, []):
-            if not note.value.is_nonnote:
-                midinote = SYMBOLVALUE_TO_MIDINOTE_LOOKUP[position.instrumenttype, note.value]
-                # Set ON and OFF messages for actual note
-                track.append(
-                    Message(
-                        type="note_on",
-                        channel=midinote.channel,
-                        note=midinote.midi,
-                        velocity=100,
-                        time=time_since_last_note_end,
-                    )
-                )
-                track.append(
-                    Message(
-                        type="note_off",
-                        channel=midinote.channel,
-                        note=midinote.midi,
-                        velocity=70,
-                        time=int(note.duration * BASE_NOTE_TIME),
-                    )
-                )
-                last_note_end_msg = track[-1]
-                time_since_last_note_end = int(note.rest_after * BASE_NOTE_TIME)
-            elif note.value in [SymbolValue.MODIFIER_PREV1, SymbolValue.MODIFIER_PREV2]:
-                # Should not occur because processed in create_score_object_model
-                # track[-1].time = int(note.duration * BASE_NOTE_TIME)
-                # time_since_last_note_end += int(note.rest_after * BASE_NOTE_TIME)
-                raise ValueError(f"Unexpected note value {note.value}")
-            elif note.value is SymbolValue.SILENCE:
-                # Increment time since last note ended
-                time_since_last_note_end += int(note.duration * BASE_NOTE_TIME)
-            elif note.value is SymbolValue.EXTENSION:
-                # Extension of note duration: add duration to last note
-                if last_note_end_msg:
-                    last_note_end_msg.time += int(note.duration * BASE_NOTE_TIME)
-
+            track.process(position, note)
         beat = beat.goto.get(beat._pass_, beat.next)
 
     return track
@@ -234,56 +171,6 @@ COMMENT = "comment"
 NON_INSTRUMENT_TAGS = [METADATA, COMMENT]
 
 
-def create_rest_stave(resttype: SymbolValue, duration: float) -> list[Character]:
-    """Creates a stave with rests of the given type for the given duration.
-    If the duration is non-integer, the stave will also contain half and/or quarter rests.
-
-    Args:
-        resttype (SymbolValue): the type of rest (SILENCE or EXTENSION)
-        duration (float): the duration, which can be non-integer.
-
-    Returns:
-        list[Character]: _description_
-    """
-    rest_count = int(duration)
-    half_rest_count = int((duration - rest_count) * 2)
-    quarter_rest_count = int((duration - rest_count - 0.5 * half_rest_count) * 4)
-    rests = (
-        [copy(SYMBOLVALUE_TO_CHARACTER_LOOKUP[resttype, 1, 0])] * rest_count
-        + [SYMBOLVALUE_TO_CHARACTER_LOOKUP[resttype, 0.5, 0]] * half_rest_count
-        + [SYMBOLVALUE_TO_CHARACTER_LOOKUP[resttype, 0.25, 0]] * quarter_rest_count
-    )
-    return rests
-
-
-def create_missing_staves(beat: Beat, prevbeat: Beat, score: Score) -> dict[InstrumentPosition, list[Character]]:
-    """Returns staves for missing positions, containing rests (silence) for the duration of the given beat.
-    This ensures that positions that do not occur in all the systems will remain in sync.
-
-    Args:
-        beat (Beat): The beat that should be complemented.
-        all_positions (set[InstrumentPosition]): List of all the positions that occur in the notation.
-
-    Returns:
-        dict[InstrumentPosition, list[Character]]: A dict with the generated staves.
-    """
-
-    if missing_positions := ((score.instrument_positions | {InstrumentPosition.KEMPLI}) - set(beat.staves.keys())):
-        silence = SymbolValue.SILENCE
-        extension = SymbolValue.EXTENSION
-        prevnotes = {pos: (prevbeat.staves[pos][-1].value if prevbeat else silence) for pos in missing_positions}
-        resttypes = {pos: silence if prevnote is silence else extension for pos, prevnote in prevnotes.items()}
-        staves = {position: create_rest_stave(resttypes[position], beat.duration) for position in missing_positions}
-        if InstrumentPosition.KEMPLI in staves.keys():
-            kemplibeat = SYMBOLVALUE_TO_CHARACTER_LOOKUP[SymbolValue.TICK_1_PANGGUL, 1, 0]
-            staves[InstrumentPosition.KEMPLI] = [kemplibeat] + create_rest_stave(
-                SymbolValue.EXTENSION, beat.duration - 1
-            )
-        return staves
-    else:
-        return dict()
-
-
 def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score:
     """Creates an object model of the notation.
     This will simplify the generation of the MIDI file content.
@@ -330,7 +217,7 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
         source=source,
         midi_version=midiversion,
         instrument_positions=set(all_positions),
-        balimusic4_font_dict=SYMBOL_TO_CHARACTER_LOOKUP,
+        balimusic_font_dict=SYMBOL_TO_CHARACTER_LOOKUP,
         midi_notes_dict=SYMBOLVALUE_TO_MIDINOTE_LOOKUP,
     )
     beats: list[Beat] = []
@@ -347,24 +234,6 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
             except Exception as e:
                 raise ValueError(f"unexpected character in beat {sys_id}-{beat_nr}: {e}")
 
-            # Merge notes with negative valuewith previous note(s)
-            for stave in staves.values():
-                stave_cpy = stave.copy()
-                stave.clear()
-                for note in stave_cpy:
-                    if note.value is SymbolValue.MODIFIER_PREV1:
-                        prevnote = stave.pop(-1)
-                        stave.append(
-                            prevnote.model_copy(update={"duration": note.duration, "rest_after": note.rest_after})
-                        )
-                    elif note.value is SymbolValue.MODIFIER_PREV2:
-                        prev1note = stave.pop(-1)
-                        prev2note = stave.pop(-1)
-                        stave.append(prev2note.model_copy(update={"duration": note.duration}))
-                        stave.append(prev1note.model_copy(update={"duration": note.rest_after}))
-                    else:
-                        stave.append(note)
-
             # Create the beat and add it to the list of beats
             new_beat = Beat(
                 id=beat_nr,
@@ -374,14 +243,8 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
                 bpm_end={-1: bpm},
                 duration=max(sum(note.total_duration for note in notes) for notes in list(staves.values())),
             )
-            # Not all positions occur in each system.
-            # Therefore we need to add blank staves (all rests) for missing positions.
             prev_beat = beats[-1] if beats else score.systems[-1].beats[-1] if score.systems else None
-            missing_staves = create_missing_staves(new_beat, prev_beat, score)
-            new_beat.staves.update(missing_staves)
-            # Updata all positions of score
-            score.instrument_positions.update({pos for pos in missing_staves})
-
+            # Update the `next` pointer of the previous beat.
             if prev_beat:
                 prev_beat.next = new_beat
             beats.append(new_beat)
@@ -396,6 +259,14 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
             apply_metadata(metadata, system, score)
             metadata = []
             beats = []
+
+    # Apply font-specific modifications
+    postprocess(score)
+    # Add kempli beats and blank staves for all other omitted instruments
+    add_missing_staves(score)
+
+    beat = score.systems[11].beats[0]
+    print(beat)
 
     return score
 
