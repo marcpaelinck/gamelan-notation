@@ -1,13 +1,13 @@
 import pytest
 
-from src.notation_classes import Beat, Character, System
-from src.notation_constants import InstrumentPosition
-from src.settings import InstrumentFields
-from src.utils import (
+from src.common.classes import Beat, Character, System
+from src.common.constants import InstrumentPosition
+from src.common.utils import (
     create_symbol_to_character_lookup,
     stave_to_string,
     system_to_records,
 )
+from src.settings import InstrumentFields
 
 BALIFONT4_TO_CHARACTER_DICT = create_symbol_to_character_lookup(fromfile="tests/data/balimusic4font.csv")
 

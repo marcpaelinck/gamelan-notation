@@ -1,13 +1,17 @@
 from enum import StrEnum
 
-from src.notation_classes import Source
-from src.notation_constants import NotationFont
+from src.common.classes import Source
+from src.common.constants import NotationFont
 
 BASE_NOTE_TIME = 24
 MIDI_NOTES_DEF_FILE = "./settings/midinotes.tsv"
 NOTATIONFONT_DEF_FILE = "./settings/balimusic4font.tsv"
 TAGS_DEF_FILE = "./settings/instrumenttags.tsv"
 SOUNDFONT_FILE = "./settings/Gong Kebyar MP2.sf2"
+
+METADATA = "metadata"
+COMMENT = "comment"
+NON_INSTRUMENT_TAGS = [METADATA, COMMENT]
 
 CENDRAWASIH = Source(
     datapath=".\\data\\cendrawasih",

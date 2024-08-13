@@ -1,22 +1,20 @@
-import json
 import os
-from collections import defaultdict
 from glob import glob
 from os import path
 from pprint import pprint
 
 import pandas as pd
-from scipy.io import wavfile
-
-from notation_classes import InstrumentTag
-from notation_constants import (
+from classes import InstrumentTag
+from constants import (
     InstrumentGroup,
     InstrumentPosition,
     InstrumentType,
     MutingType,
     NoteType,
 )
-from src.utils import create_instrumentrange_lookup
+from scipy.io import wavfile
+
+from src.common.utils import create_instrumentrange_lookup
 
 
 def get_all_tags():

@@ -1,9 +1,9 @@
+from classes import Character, Score
+from constants import InstrumentPosition, NotationFont, SymbolValue
 from mido import Message, MidiTrack
 
-from src.notation_classes import Character, Score
-from src.notation_constants import InstrumentPosition, NotationFont, SymbolValue
-from src.settings import BASE_NOTE_TIME
-from src.utils import SYMBOLVALUE_TO_MIDINOTE_LOOKUP
+from src.common.utils import SYMBOLVALUE_TO_MIDINOTE_LOOKUP
+from src.notation2midi.settings import BASE_NOTE_TIME
 
 
 class MidiTrackX(MidiTrack):

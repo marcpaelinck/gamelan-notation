@@ -4,15 +4,15 @@ from os import path
 
 import pandas as pd
 
-from src.notation_classes import Character, InstrumentTag, MidiNote, Score, System
-from src.notation_constants import (
+from src.common.classes import Character, InstrumentTag, MidiNote, Score, System
+from src.common.constants import (
     Duration,
     InstrumentGroup,
     InstrumentPosition,
     MidiVersion,
     SymbolValue,
 )
-from src.settings import (
+from src.notation2midi.settings import (
     MIDI_NOTES_DEF_FILE,
     NOTATIONFONT_DEF_FILE,
     TAGS_DEF_FILE,

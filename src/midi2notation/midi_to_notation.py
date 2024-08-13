@@ -1,13 +1,10 @@
 import math
 import os
 from dataclasses import dataclass
-from email import message
 from itertools import batched, pairwise
 
-from mido import Message, MetaMessage, MidiFile
-
-from src.notation_classes import TimedMessage, TimingData
-from src.notation_constants import FROM_PIANO, MIDI_TO_COURIER, VALID_MIDI_MESSAGE_TYPES
+from src.common.classes import TimedMessage, TimingData
+from src.common.constants import FROM_PIANO, MIDI_TO_COURIER, VALID_MIDI_MESSAGE_TYPES
 
 # datafolder = ".\\data\\puspanjali\\"
 datafolder = ".\\data\\cendrawasih\\"

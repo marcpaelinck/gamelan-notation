@@ -22,4 +22,8 @@
     "[tsv]": {
         "editor.detectIndentation": false,
         "editor.insertSpaces": false
-    }}
+    },
+    "python.analysis.extraPaths": [
+        "./src/common"
+    ]
+}

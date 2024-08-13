@@ -2,18 +2,14 @@
 """
 
 import csv
-from collections import defaultdict
-from pprint import pprint
 
 import pandas as pd
 
-from src.notation_classes import Character
-from src.notation_constants import InstrumentGroup, SymbolValue
-from src.settings import (
+from src.common.constants import InstrumentGroup, SymbolValue
+from src.notation2midi.settings import (
     MIDI_NOTES_DEF_FILE,
     NOTATIONFONT_DEF_FILE,
     FontFields,
-    InstrumentFields,
     MidiNotesFields,
 )
 

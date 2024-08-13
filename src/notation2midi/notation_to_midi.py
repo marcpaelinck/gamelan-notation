@@ -5,37 +5,27 @@ from os import path
 
 import numpy as np
 import pandas as pd
-from mido import MetaMessage, MidiFile, MidiTrack, bpm2tempo
-
-from src.font_specific_code import MidiTrackX, postprocess
-from src.notation_classes import (
-    Beat,
-    Gongan,
-    GoTo,
-    Label,
-    MetaData,
-    Score,
-    Source,
-    System,
-    Tempo,
-)
-from src.notation_constants import (
+from classes import Beat, Gongan, GoTo, Label, MetaData, Score, Source, System, Tempo
+from constants import (
     GonganType,
     InstrumentGroup,
     InstrumentPosition,
     MidiVersion,
     SymbolValue,
 )
-from src.score_validation import add_missing_staves, validate_score
-from src.settings import CENDRAWASIH
-from src.settings_validation import validate_settings
-from src.utils import (
+from mido import MetaMessage, MidiFile, MidiTrack, bpm2tempo
+
+from src.common.utils import (
     SYMBOL_TO_CHARACTER_LOOKUP,
     SYMBOLVALUE_TO_MIDINOTE_LOOKUP,
     TAG_TO_POSITION_LOOKUP,
     create_rest_stave,
     initialize_constants,
 )
+from src.notation2midi.font_specific_code import MidiTrackX, postprocess
+from src.notation2midi.score_validation import add_missing_staves, validate_score
+from src.notation2midi.settings import CENDRAWASIH, METADATA, NON_INSTRUMENT_TAGS
+from src.notation2midi.settings_validation import validate_settings
 
 
 def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
@@ -166,11 +156,6 @@ def apply_metadata(metadata: list[MetaData], system: System, score: Score) -> No
     return
 
 
-METADATA = "metadata"
-COMMENT = "comment"
-NON_INSTRUMENT_TAGS = [METADATA, COMMENT]
-
-
 def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score:
     """Creates an object model of the notation.
     This will simplify the generation of the MIDI file content.
@@ -264,9 +249,6 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
     postprocess(score)
     # Add kempli beats and blank staves for all other omitted instruments
     add_missing_staves(score)
-
-    beat = score.systems[11].beats[0]
-    print(beat)
 
     return score
 

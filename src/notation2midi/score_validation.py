@@ -1,8 +1,8 @@
 import math
 from pprint import pprint
 
-from src.notation_classes import Beat, Character, Score, System
-from src.notation_constants import (
+from classes import Beat, Character, Score, System
+from constants import (
     BeatId,
     Duration,
     GonganType,
@@ -11,7 +11,8 @@ from src.notation_constants import (
     Note,
     SymbolValue,
 )
-from src.utils import (
+
+from src.common.utils import (
     SYMBOLVALUE_TO_CHARACTER_LOOKUP,
     create_rest_stave,
     score_to_notation_file,

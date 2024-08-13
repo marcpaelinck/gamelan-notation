@@ -7,7 +7,7 @@ from typing import Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 
-from src.notation_constants import (
+from src.common.constants import (
     ALL_PASSES,
     BPM,
     PASS,

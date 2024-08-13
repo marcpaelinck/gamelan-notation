@@ -13,9 +13,6 @@ import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.cell.cell import Cell
 from openpyxl.styles import Font
-from openpyxl.worksheet.worksheet import Worksheet
-
-from src.notation_constants import InstrumentPosition, InstrumentType
 
 
 def get_files_with_symbols(folderpath: str, symbollist: list[str]):
