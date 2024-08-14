@@ -224,19 +224,21 @@ def substitutefont_xlsx_file(
             "Missing find-replace data. Either parameter 'find_replace_list' or 'symbolreplacetablepath' should have a value other than `None`."
         )
 
+    changes = {"font": False, "content": False}
     wb = load_workbook(filepath)
     for sheet in wb.worksheets:
         if sheet.title != "formules":
             for row in sheet.rows:
                 for cell in row:
-                    changes = replace_cell_content(
+                    cell_changes = replace_cell_content(
                         cell=cell,
                         fontreplace=fontreplacepair,
                         find_replace_pairs=find_replace_pairs,
                     )
-    print(
-        f"{path.basename(filepath)}: {'font changed' if changes['font'] else ''}{'and' if changes['font'] and changes['content'] else ''}{'value(s) changed' if changes['content'] else ''}"
-    )
+                    changes = {key: (changes[key] or cell_changes[key]) for key in changes.keys()}
+
+    changed_items = " and ".join([key for key, modified in changes.items() if modified] or ["nothing"])
+    print(f"{path.basename(filepath)}: {changed_items} changed")
     wb.save(path.join(savepath, path.basename(filepath).replace("_4", "_5")))
 
 
@@ -301,8 +303,10 @@ def substitutefont_all_xlsx_files(
 
 SYMBOLREPLACETABLEPATH = "./settings/convert4to5font.tsv"
 
-XL_FOLDERPATH = "G:/Marc/documents-backup-2jun24-08h00/Documents/administratie/_VRIJETIJD_REIZEN/Gamelangroepen/Studiemateriaal/Muzieknotatie/test"
-XL_SAVEFOLDERPATH = "G:/Marc/documents-backup-2jun24-08h00/Documents/administratie/_VRIJETIJD_REIZEN/Gamelangroepen/Studiemateriaal/Muzieknotatie/balimusic5"
+XL_FOLDERPATH = "C:/Users/marcp/Documents/administratie/_VRIJETIJD_REIZEN/Gamelangroepen/Studiemateriaal/Muzieknotatie/balimusic4/superscript-replaced"
+XL_SAVEFOLDERPATH = (
+    "C:/Users/marcp/Documents/administratie/_VRIJETIJD_REIZEN/Gamelangroepen/Studiemateriaal/Muzieknotatie/balimusic5"
+)
 TSV_FILEPATH = "C:/Users/marcp/Documents/administratie/_VRIJETIJD_REIZEN/Scripts-Programmas/PythonProjects/gamelan-notation/data/cendrawasih/Cendrawasih_complete.csv"
 TSV_SAVEPATH = "C:/Users/marcp/Documents/administratie/_VRIJETIJD_REIZEN/Scripts-Programmas/PythonProjects/gamelan-notation/data/cendrawasih/Cendrawasih_complete_font5.csv"
 

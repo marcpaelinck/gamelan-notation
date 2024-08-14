@@ -1,8 +1,8 @@
 import math
 from pprint import pprint
 
-from classes import Beat, Character, Score, System
-from constants import (
+from src.common.classes import Beat, Character, Score, System
+from src.common.constants import (
     BeatId,
     Duration,
     GonganType,
@@ -11,7 +11,6 @@ from constants import (
     Note,
     SymbolValue,
 )
-
 from src.common.utils import (
     SYMBOLVALUE_TO_CHARACTER_LOOKUP,
     create_rest_stave,

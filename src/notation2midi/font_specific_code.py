@@ -1,7 +1,7 @@
-from classes import Character, Score
-from constants import InstrumentPosition, NotationFont, SymbolValue
 from mido import Message, MidiTrack
 
+from src.common.classes import Character, Score
+from src.common.constants import InstrumentPosition, NotationFont, SymbolValue
 from src.common.utils import SYMBOLVALUE_TO_MIDINOTE_LOOKUP
 from src.notation2midi.settings import BASE_NOTE_TIME
 
@@ -56,11 +56,6 @@ class MidiTrackX(MidiTrack):
             )
             self.last_note_end_msg = self[-1]
             self.time_since_last_note_end = int(note.rest_after * BASE_NOTE_TIME)
-        elif note.value in [SymbolValue.MODIFIER_PREV1, SymbolValue.MODIFIER_PREV2]:
-            # Should not occur because processed in create_score_object_model
-            # track[-1].time = int(note.duration * BASE_NOTE_TIME)
-            # self.time_since_last_note_end += int(note.rest_after * BASE_NOTE_TIME)
-            raise ValueError(f"Unexpected note value {note.value}")
         elif note.value is SymbolValue.SILENCE:
             # Increment time since last note ended
             self.time_since_last_note_end += int(note.duration * BASE_NOTE_TIME)
@@ -68,20 +63,14 @@ class MidiTrackX(MidiTrack):
             # Extension of note duration: add duration to last note
             if self.last_note_end_msg:
                 self.last_note_end_msg.time += int(note.duration * BASE_NOTE_TIME)
+        else:
+            raise ValueError(f"Unexpected note value {note.value}")
 
     def process_font5(self, position: InstrumentPosition, note: Character):
         pass
 
 
-def preprocess_font4(score: Score) -> Score:
-    pass
-
-
-def preprocess_font5(score: Score) -> Score:
-    pass
-
-
-def postprocess(score: Score) -> Score:
+def postprocess_font4(score: Score) -> Score:
     # Merge notes with negative value with previous note(s)
     for system in score.systems:
         for beat in system.beats:
@@ -102,3 +91,34 @@ def postprocess(score: Score) -> Score:
                     else:
                         stave.append(note)
             beat.duration = max(sum(note.total_duration for note in notes) for notes in list(beat.staves.values()))
+
+
+def postprocess_font5(score: Score) -> Score:
+    for system in score.systems:
+        for beat in system.beats:
+            for instrument, stave in beat.staves.items():
+                stave_cpy = stave.copy()
+                stave.clear()
+                for note in stave_cpy:
+                    if note.value is SymbolValue.MODIFIER_PREV1:
+                        prevnote = stave.pop(-1)
+                        stave.append(
+                            prevnote.model_copy(update={"duration": note.duration, "rest_after": note.rest_after})
+                        )
+                    elif note.value is SymbolValue.MODIFIER_PREV2:
+                        prev1note = stave.pop(-1)
+                        prev2note = stave.pop(-1)
+                        stave.append(prev2note.model_copy(update={"duration": note.duration}))
+                        stave.append(prev1note.model_copy(update={"duration": note.rest_after}))
+                    else:
+                        stave.append(note)
+            beat.duration = max(sum(note.total_duration for note in notes) for notes in list(beat.staves.values()))
+
+
+def postprocess(score: Score) -> Score:
+    if score.source.font is NotationFont.BALIMUSIC4:
+        postprocess_font4(score)
+    elif score.source.font is NotationFont.BALIMUSIC5:
+        postprocess_font5(score)
+    else:
+        raise ValueError(f"Unexpected font value {score.source.font}")

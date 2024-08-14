@@ -4,16 +4,16 @@ from os import path
 from pprint import pprint
 
 import pandas as pd
-from classes import InstrumentTag
-from constants import (
+from scipy.io import wavfile
+
+from src.common.classes import InstrumentTag
+from src.common.constants import (
     InstrumentGroup,
     InstrumentPosition,
     InstrumentType,
     MutingType,
     NoteType,
 )
-from scipy.io import wavfile
-
 from src.common.utils import create_instrumentrange_lookup
 
 

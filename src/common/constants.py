@@ -21,7 +21,7 @@ class NotationEnum(StrEnum):
         return enum
 
     @property
-    def order(self):
+    def sequence(self):
         return list(self.__class__).index(self)
 
 
@@ -31,6 +31,10 @@ class NotationFont(NotationEnum):
 
 
 class MidiVersion(NotationEnum):
+    """Lists the possible midi mappings to choose from in the midinotes.tsv settings file.
+    This settings file maps instrument/note combinations to a midi pianoroll key value.
+    """
+
     SINGLE_INSTR = "midi-gk1"
     MULTIPLE_INSTR = "midi-gk2"
     PIANO = "midi-piano"
@@ -154,90 +158,108 @@ class Note(Enum):
 class SymbolValue(Enum):
     # 0=lower instrument octave, 1=central instrument octave, 2=higher instrument octave.
     # The octave numbering is relative to the instrument's range.
-    DING0 = "DING0", Note.DING, 0, MutingType.OPEN, auto()
-    DONG0 = "DONG0", Note.DONG, 0, MutingType.OPEN, auto()
-    DENG0 = "DENG0", Note.DENG, 0, MutingType.OPEN, auto()
-    DEUNG0 = "DEUNG0", Note.DEUNG, 0, MutingType.OPEN, auto()
-    DUNG0 = "DUNG0", Note.DUNG, 0, MutingType.OPEN, auto()
-    DANG0 = "DANG0", Note.DANG, 0, MutingType.OPEN, auto()
-    DAING0 = "DAING0", Note.DAING, 0, MutingType.OPEN, auto()
-    DING1 = "DING1", Note.DING, 1, MutingType.OPEN, auto()
-    DONG1 = "DONG1", Note.DONG, 1, MutingType.OPEN, auto()
-    DENG1 = "DENG1", Note.DENG, 1, MutingType.OPEN, auto()
-    DEUNG1 = "DEUNG1", Note.DEUNG, 1, MutingType.OPEN, auto()
-    DUNG1 = "DUNG1", Note.DUNG, 1, MutingType.OPEN, auto()
-    DANG1 = "DANG1", Note.DANG, 1, MutingType.OPEN, auto()
-    DAING1 = "DAING1", Note.DAING, 1, MutingType.OPEN, auto()
-    DING2 = "DING2", Note.DING, 2, MutingType.OPEN, auto()
-    DONG2 = "DONG2", Note.DONG, 2, MutingType.OPEN, auto()
-    DENG2 = "DENG2", Note.DENG, 2, MutingType.OPEN, auto()
-    DEUNG2 = "DEUNG2", Note.DEUNG, 2, MutingType.OPEN, auto()
-    DUNG2 = "DUNG2", Note.DUNG, 2, MutingType.OPEN, auto()
-    DANG2 = "DANG2", Note.DANG, 2, MutingType.OPEN, auto()
-    DAING2 = "DAING2", Note.DAING, 2, MutingType.OPEN, auto()
-    DENGDING0 = "DENGDING0", Note.DENGDING, 0, MutingType.OPEN, auto()
-    DING0_MUTED = "DING0_MUTED", Note.DING, 0, MutingType.MUTED, auto()
-    DONG0_MUTED = "DONG0_MUTED", Note.DONG, 0, MutingType.MUTED, auto()
-    DENG0_MUTED = "DENG0_MUTED", Note.DENG, 0, MutingType.MUTED, auto()
-    DEUNG0_MUTED = "DEUNG0_MUTED", Note.DEUNG, 0, MutingType.MUTED, auto()
-    DUNG0_MUTED = "DUNG0_MUTED", Note.DUNG, 0, MutingType.MUTED, auto()
-    DANG0_MUTED = "DANG0_MUTED", Note.DANG, 0, MutingType.MUTED, auto()
-    DAING0_MUTED = "DAING0_MUTED", Note.DAING, 0, MutingType.MUTED, auto()
-    DING1_MUTED = "DING1_MUTED", Note.DING, 1, MutingType.MUTED, auto()
-    DONG1_MUTED = "DONG1_MUTED", Note.DONG, 1, MutingType.MUTED, auto()
-    DENG1_MUTED = "DENG1_MUTED", Note.DENG, 1, MutingType.MUTED, auto()
-    DEUNG1_MUTED = "DEUNG1_MUTED", Note.DEUNG, 1, MutingType.MUTED, auto()
-    DUNG1_MUTED = "DUNG1_MUTED", Note.DUNG, 1, MutingType.MUTED, auto()
-    DANG1_MUTED = "DANG1_MUTED", Note.DANG, 1, MutingType.MUTED, auto()
-    DAING1_MUTED = "DAING1_MUTED", Note.DAING, 1, MutingType.MUTED, auto()
-    DING2_MUTED = "DING2_MUTED", Note.DING, 2, MutingType.MUTED, auto()
-    DONG2_MUTED = "DONG2_MUTED", Note.DONG, 2, MutingType.MUTED, auto()
-    DENG2_MUTED = "DENG2_MUTED", Note.DENG, 2, MutingType.MUTED, auto()
-    DEUNG2_MUTED = "DEUNG2_MUTED", Note.DEUNG, 2, MutingType.MUTED, auto()
-    DUNG2_MUTED = "DUNG2_MUTED", Note.DUNG, 2, MutingType.MUTED, auto()
-    DANG2_MUTED = "DANG2_MUTED", Note.DANG, 2, MutingType.MUTED, auto()
-    DAING2_MUTED = "DAING2_MUTED", Note.DAING, 2, MutingType.MUTED, auto()
-    GIR = "GIR", Note.GIR, None, MutingType.OPEN, auto()
-    PUR = "PUR", Note.PUR, None, MutingType.OPEN, auto()
-    TONG = "TONG", Note.TONG, None, MutingType.OPEN, auto()
-    KEP = "KEP", Note.KEP, None, MutingType.OPEN, auto()
-    PAK = "PAK", Note.PAK, None, MutingType.OPEN, auto()
-    DUT = "DUT", Note.DUT, None, MutingType.OPEN, auto()
-    TUT = "TUT", Note.TUT, None, MutingType.OPEN, auto()
-    KRUM = "KRUM", Note.KRUM, None, MutingType.OPEN, auto()
-    PUNG = "PUNG", Note.PUNG, None, MutingType.OPEN, auto()
-    BYONG = "BYONG", Note.BYONG, None, MutingType.OPEN, auto()
-    BYOT = "BYOT", Note.BYOT, None, MutingType.OPEN, auto()
-    JET = "JET", Note.JET, None, MutingType.OPEN, auto()
-    TICK_1_PANGGUL = "TICK_1_PANGGUL", Note.TICK, None, MutingType.OPEN, auto()
-    TICK_2_PANGGUL = "TICK_2_PANGGUL", Note.TICK, None, MutingType.OPEN, auto()
-    KAP = "KAP", Note.KAP, None, MutingType.OPEN, auto()
-    PEK = "PEK", Note.PEK, None, MutingType.OPEN, auto()
-    DAG = "DAG", Note.DAG, None, MutingType.OPEN, auto()
-    DUG = "DUG", Note.DUG, None, MutingType.OPEN, auto()
-    TAK = "TAK", Note.TAK, None, MutingType.OPEN, auto()
-    TEK = "TEK", Note.TEK, None, MutingType.OPEN, auto()
-    PLAK = "PLAK", Note.PLAK, None, MutingType.OPEN, auto()
-    MUTED = "MUTED", Note.MUTED, None, MutingType.MUTED, auto()
-    OPEN = "OPEN", Note.OPEN, None, MutingType.OPEN, auto()
-    MODIFIER_PREV1 = "MODIFIER_PREV1", None, None, MutingType.OPEN, auto()
-    MODIFIER_PREV2 = "MODIFIER_PREV2", None, None, MutingType.OPEN, auto()
-    SILENCE = "SILENCE", None, None, MutingType.OPEN, auto()
-    EXTENSION = "EXTENSION", None, None, MutingType.OPEN, auto()
-    NOT_IMPLEMENTED = "NOT_IMPLEMENTED", None, None, MutingType.OPEN, auto()
+    DING0 = "DING0", Note.DING, 0, MutingType.OPEN
+    DONG0 = "DONG0", Note.DONG, 0, MutingType.OPEN
+    DENG0 = "DENG0", Note.DENG, 0, MutingType.OPEN
+    DEUNG0 = "DEUNG0", Note.DEUNG, 0, MutingType.OPEN
+    DUNG0 = "DUNG0", Note.DUNG, 0, MutingType.OPEN
+    DANG0 = "DANG0", Note.DANG, 0, MutingType.OPEN
+    DAING0 = "DAING0", Note.DAING, 0, MutingType.OPEN
+    DING1 = "DING1", Note.DING, 1, MutingType.OPEN
+    DONG1 = "DONG1", Note.DONG, 1, MutingType.OPEN
+    DENG1 = "DENG1", Note.DENG, 1, MutingType.OPEN
+    DEUNG1 = "DEUNG1", Note.DEUNG, 1, MutingType.OPEN
+    DUNG1 = "DUNG1", Note.DUNG, 1, MutingType.OPEN
+    DANG1 = "DANG1", Note.DANG, 1, MutingType.OPEN
+    DAING1 = "DAING1", Note.DAING, 1, MutingType.OPEN
+    DING2 = "DING2", Note.DING, 2, MutingType.OPEN
+    DONG2 = "DONG2", Note.DONG, 2, MutingType.OPEN
+    DENG2 = "DENG2", Note.DENG, 2, MutingType.OPEN
+    DEUNG2 = "DEUNG2", Note.DEUNG, 2, MutingType.OPEN
+    DUNG2 = "DUNG2", Note.DUNG, 2, MutingType.OPEN
+    DANG2 = "DANG2", Note.DANG, 2, MutingType.OPEN
+    DAING2 = "DAING2", Note.DAING, 2, MutingType.OPEN
+    DENGDING0 = "DENGDING0", Note.DENGDING, 0, MutingType.OPEN
+    DING0_MUTED = "DING0_MUTED", Note.DING, 0, MutingType.MUTED
+    DONG0_MUTED = "DONG0_MUTED", Note.DONG, 0, MutingType.MUTED
+    DENG0_MUTED = "DENG0_MUTED", Note.DENG, 0, MutingType.MUTED
+    DEUNG0_MUTED = "DEUNG0_MUTED", Note.DEUNG, 0, MutingType.MUTED
+    DUNG0_MUTED = "DUNG0_MUTED", Note.DUNG, 0, MutingType.MUTED
+    DANG0_MUTED = "DANG0_MUTED", Note.DANG, 0, MutingType.MUTED
+    DAING0_MUTED = "DAING0_MUTED", Note.DAING, 0, MutingType.MUTED
+    DING1_MUTED = "DING1_MUTED", Note.DING, 1, MutingType.MUTED
+    DONG1_MUTED = "DONG1_MUTED", Note.DONG, 1, MutingType.MUTED
+    DENG1_MUTED = "DENG1_MUTED", Note.DENG, 1, MutingType.MUTED
+    DEUNG1_MUTED = "DEUNG1_MUTED", Note.DEUNG, 1, MutingType.MUTED
+    DUNG1_MUTED = "DUNG1_MUTED", Note.DUNG, 1, MutingType.MUTED
+    DANG1_MUTED = "DANG1_MUTED", Note.DANG, 1, MutingType.MUTED
+    DAING1_MUTED = "DAING1_MUTED", Note.DAING, 1, MutingType.MUTED
+    DING2_MUTED = "DING2_MUTED", Note.DING, 2, MutingType.MUTED
+    DONG2_MUTED = "DONG2_MUTED", Note.DONG, 2, MutingType.MUTED
+    DENG2_MUTED = "DENG2_MUTED", Note.DENG, 2, MutingType.MUTED
+    DEUNG2_MUTED = "DEUNG2_MUTED", Note.DEUNG, 2, MutingType.MUTED
+    DUNG2_MUTED = "DUNG2_MUTED", Note.DUNG, 2, MutingType.MUTED
+    DANG2_MUTED = "DANG2_MUTED", Note.DANG, 2, MutingType.MUTED
+    DAING2_MUTED = "DAING2_MUTED", Note.DAING, 2, MutingType.MUTED
+    GIR = "GIR", Note.GIR, None, MutingType.OPEN
+    PUR = "PUR", Note.PUR, None, MutingType.OPEN
+    TONG = "TONG", Note.TONG, None, MutingType.OPEN
+    KEP = "KEP", Note.KEP, None, MutingType.OPEN
+    PAK = "PAK", Note.PAK, None, MutingType.OPEN
+    DUT = "DUT", Note.DUT, None, MutingType.OPEN
+    TUT = "TUT", Note.TUT, None, MutingType.OPEN
+    KRUM = "KRUM", Note.KRUM, None, MutingType.OPEN
+    PUNG = "PUNG", Note.PUNG, None, MutingType.OPEN
+    BYONG = "BYONG", Note.BYONG, None, MutingType.OPEN
+    BYOT = "BYOT", Note.BYOT, None, MutingType.OPEN
+    JET = "JET", Note.JET, None, MutingType.OPEN
+    TICK_1_PANGGUL = "TICK_1_PANGGUL", Note.TICK, None, MutingType.OPEN
+    TICK_2_PANGGUL = "TICK_2_PANGGUL", Note.TICK, None, MutingType.OPEN
+    OPEN = "OPEN", Note.OPEN, None, MutingType.OPEN
+    MUTED = "MUTED", Note.MUTED, None, MutingType.MUTED
+    KAP = "KAP", Note.KAP, None, MutingType.OPEN
+    PEK = "PEK", Note.PEK, None, MutingType.OPEN
+    DAG = "DAG", Note.DAG, None, MutingType.OPEN
+    DUG = "DUG", Note.DUG, None, MutingType.OPEN
+    TAK = "TAK", Note.TAK, None, MutingType.OPEN
+    TEK = "TEK", Note.TEK, None, MutingType.OPEN
+    PLAK = "PLAK", Note.PLAK, None, MutingType.OPEN
+    SILENCE = "SILENCE", None, None, None
+    EXTENSION = "EXTENSION", None, None, None
+    NOT_IMPLEMENTED = "NOT_IMPLEMENTED", None, None, None
+    # Bali Music 4 font
+    MODIFIER_PREV1 = "MODIFIER_PREV1", None, None, None
+    MODIFIER_PREV2 = "MODIFIER_PREV2", None, None, None
+    # Bali Music 5 font
+    GRACE_DING = "GRACE_DING", Note.DING, 1, MutingType.OPEN
+    GRACE_DONG = "GRACE_DONG", Note.DONG, 1, MutingType.OPEN
+    GRACE_DENG = "GRACE_DENG", Note.DENG, 1, MutingType.OPEN
+    GRACE_DUNG = "GRACE_DUNG", Note.DUNG, 1, MutingType.OPEN
+    GRACE_DANG = "GRACE_DANG", Note.DANG, 1, MutingType.OPEN
+    MOD_MUTE = "MUTE", None, None, MutingType.OPEN
+    MOD_ABBREVIATE = "MOD_ABBREVIATE", None, None, MutingType.OPEN
+    MOD_QUARTER_NOTE = "MOD_QUARTER_NOTE", None, None, MutingType.OPEN
+    MOD_HALF_NOTE = "MOD_HALF_NOTE", None, None, MutingType.OPEN
+    MOD_OCTAVE_0 = "MOD_OCTAVE_0", None, None, MutingType.OPEN
+    MOD_OCTAVE_2 = "MOD_OCTAVE_2", None, None, MutingType.OPEN
 
-    def __init__(self, symbolname, note, octave, mutingtype, sequence):
+    def __init__(self, symbolname, note, octave, mutingtype):
         self._value_ = symbolname
         self.note = note
         self.octave = octave
         self.mutingtype = mutingtype
-        self.sequence = sequence
+
+        # self.sequence = sequence
 
     def __repr__(self):
         return self.value
 
     def __str__(self):
         return self.value
+
+    @property
+    def sequence(self):
+        return list(self.__class__).index(self)
 
     @property
     def is_nonnote(self):
@@ -280,4 +302,4 @@ VALID_MIDI_MESSAGE_TYPES = ["note_on", "note_off", "rest"]
 
 
 if __name__ == "__main__":
-    print(InstrumentType.CALUNG.order)
+    print(InstrumentType.CALUNG.sequence)

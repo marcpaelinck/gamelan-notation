@@ -5,16 +5,26 @@ from os import path
 
 import numpy as np
 import pandas as pd
-from classes import Beat, Gongan, GoTo, Label, MetaData, Score, Source, System, Tempo
-from constants import (
+from mido import MetaMessage, MidiFile, MidiTrack, bpm2tempo
+
+from src.common.classes import (
+    Beat,
+    Gongan,
+    GoTo,
+    Label,
+    MetaData,
+    Score,
+    Source,
+    System,
+    Tempo,
+)
+from src.common.constants import (
     GonganType,
     InstrumentGroup,
     InstrumentPosition,
     MidiVersion,
     SymbolValue,
 )
-from mido import MetaMessage, MidiFile, MidiTrack, bpm2tempo
-
 from src.common.utils import (
     SYMBOL_TO_CHARACTER_LOOKUP,
     SYMBOLVALUE_TO_MIDINOTE_LOOKUP,
@@ -24,7 +34,12 @@ from src.common.utils import (
 )
 from src.notation2midi.font_specific_code import MidiTrackX, postprocess
 from src.notation2midi.score_validation import add_missing_staves, validate_score
-from src.notation2midi.settings import CENDRAWASIH, METADATA, NON_INSTRUMENT_TAGS
+from src.notation2midi.settings import (
+    CENDRAWASIH,
+    CENDRAWASIH5,
+    METADATA,
+    NON_INSTRUMENT_TAGS,
+)
 from src.notation2midi.settings_validation import validate_settings
 
 
@@ -196,7 +211,7 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
 
     # create a list of all instrument positions
     positions_str = set(df[~df["tag"].isin(NON_INSTRUMENT_TAGS)]["tag"].unique())
-    all_positions = sorted([InstrumentPosition[pos] for pos in positions_str], key=lambda p: p.order)
+    all_positions = sorted([InstrumentPosition[pos] for pos in positions_str], key=lambda p: p.sequence)
 
     score = Score(
         source=source,
@@ -264,7 +279,7 @@ def create_midifiles(score: Score, separate_files=False) -> None:
     if not separate_files:
         mid = MidiFile(ticks_per_beat=96, type=1)
 
-    for position in sorted(score.instrument_positions, key=lambda x: x.order):
+    for position in sorted(score.instrument_positions, key=lambda x: x.sequence):
         if separate_files:
             mid = MidiFile(ticks_per_beat=96, type=0)
         track = notation_to_track(score, position)
