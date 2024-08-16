@@ -2,31 +2,35 @@ import csv
 from copy import copy
 from os import path
 
+import numpy as np
 import pandas as pd
 
-from src.common.classes import Character, InstrumentTag, MidiNote, Score, System
+from src.common.classes import Character, InstrumentTag, MidiNote, Score, Source, System
 from src.common.constants import (
     Duration,
     InstrumentGroup,
     InstrumentPosition,
+    MIDIvalue,
     MidiVersion,
-    SymbolValue,
+    Note,
+    NoteType,
+    Octave,
+    Stroke,
 )
 from src.notation2midi.settings import (
-    MIDI_NOTES_DEF_FILE,
-    NOTATIONFONT_DEF_FILE,
+    NOTATIONFONT_DEF_FILES,
     TAGS_DEF_FILE,
     InstrumentFields,
     MidiNotesFields,
 )
 
 SYMBOL_TO_CHARACTER_LOOKUP: dict[str, Character] = dict()
-SYMBOLVALUE_TO_CHARACTER_LOOKUP: dict[(SymbolValue, Duration, Duration):Character] = dict()
-SYMBOLVALUE_TO_MIDINOTE_LOOKUP: dict[tuple[InstrumentPosition, SymbolValue], MidiNote] = dict()
+CHARACTER_LIST: list[Character] = list()
+SYMBOLVALUE_TO_MIDINOTE_LOOKUP: dict[tuple[InstrumentPosition, Note, Octave, Stroke], MidiNote] = dict()
 TAG_TO_POSITION_LOOKUP: dict[InstrumentTag, InstrumentPosition] = dict()
 
 
-def initialize_constants(instrumentgroup: InstrumentGroup, version: MidiVersion) -> None:
+def initialize_constants(source: Source, version: MidiVersion, midi_notes_file: str) -> None:
     """Initializes lookup dicts and other constants
 
     Args:
@@ -34,19 +38,18 @@ def initialize_constants(instrumentgroup: InstrumentGroup, version: MidiVersion)
         version (Version):  Used to define which midi mapping to use from the midinotes.csv file.
 
     """
-    global SYMBOL_TO_CHARACTER_LOOKUP, SYMBOLVALUE_TO_CHARACTER_LOOKUP, SYMBOLVALUE_TO_MIDINOTE_LOOKUP, TAG_TO_POSITION_LOOKUP
-    SYMBOL_TO_CHARACTER_LOOKUP.update(create_symbol_to_character_lookup())
-    SYMBOLVALUE_TO_CHARACTER_LOOKUP.update(
-        {(char.value, char.duration, char.rest_after): char for char in SYMBOL_TO_CHARACTER_LOOKUP.values()}
+    global SYMBOL_TO_CHARACTER_LOOKUP, CHARACTER_LIST, SYMBOLVALUE_TO_MIDINOTE_LOOKUP, TAG_TO_POSITION_LOOKUP
+    SYMBOL_TO_CHARACTER_LOOKUP.update(create_symbol_to_character_lookup(NOTATIONFONT_DEF_FILES[source.font]))
+    CHARACTER_LIST.extend(list(SYMBOL_TO_CHARACTER_LOOKUP.values()))
+    SYMBOLVALUE_TO_MIDINOTE_LOOKUP.update(
+        create_symbolvalue_to_midinote_lookup(source.instrumentgroup, version, midi_notes_file)
     )
-    SYMBOLVALUE_TO_MIDINOTE_LOOKUP.update(create_symbolvalue_to_midinote_lookup(instrumentgroup, version))
     TAG_TO_POSITION_LOOKUP.update(create_tag_to_position_lookup())
-    x = 1
 
 
 def is_silent(system: System, position: InstrumentPosition):
     no_occurrence = sum((beat.staves.get(position, []) for beat in system.beats), []) == []
-    all_rests = all(char.value.isrest for beat in system.beats for char in beat.staves.get(position, []))
+    all_rests = all(char.note == Note.NONE for beat in system.beats for char in beat.staves.get(position, []))
     return no_occurrence or all_rests
 
 
@@ -54,25 +57,31 @@ def stave_to_string(stave: list[Character]) -> str:
     return "".join((n.symbol for n in stave))
 
 
-def create_rest_stave(resttype: SymbolValue, duration: float) -> list[Character]:
+def create_rest_stave(resttype: Stroke, duration: float) -> list[Character]:
     """Creates a stave with rests of the given type for the given duration.
     If the duration is non-integer, the stave will also contain half and/or quarter rests.
 
     Args:
-        resttype (SymbolValue): the type of rest (SILENCE or EXTENSION)
+        resttype (Stroke): the type of rest (SILENCE or EXTENSION)
         duration (float): the duration, which can be non-integer.
 
     Returns:
         list[Character]: _description_
     """
+    # TODO exception handling
+    whole_rest: Character = next(
+        (char for char in CHARACTER_LIST if char.stroke == resttype and char.total_duration == 1), None
+    )
+    half_rest = whole_rest.model_copy(
+        update={"duration": whole_rest.duration / 2, "rest_after": whole_rest.rest_after / 2}
+    )
+    quarter_rest = whole_rest.model_copy(
+        update={"duration": whole_rest.duration / 4, "rest_after": whole_rest.rest_after / 4}
+    )
     rest_count = int(duration)
     half_rest_count = int((duration - rest_count) * 2)
     quarter_rest_count = int((duration - rest_count - 0.5 * half_rest_count) * 4)
-    rests = (
-        [copy(SYMBOLVALUE_TO_CHARACTER_LOOKUP[resttype, 1, 0])] * rest_count
-        + [SYMBOLVALUE_TO_CHARACTER_LOOKUP[resttype, 0.5, 0]] * half_rest_count
-        + [SYMBOLVALUE_TO_CHARACTER_LOOKUP[resttype, 0.25, 0]] * quarter_rest_count
-    )
+    rests = [copy(whole_rest)] * rest_count + [half_rest] * half_rest_count + [quarter_rest] * quarter_rest_count
     return rests
 
 
@@ -124,15 +133,14 @@ def score_to_notation_file(score: Score) -> None:
 #
 
 
-def create_symbol_to_character_lookup(fromfile: str = NOTATIONFONT_DEF_FILE) -> dict[str, Character]:
-    balifont_obj = pd.read_csv(fromfile, sep="\t", quoting=csv.QUOTE_NONE).to_dict(orient="records")
+def create_symbol_to_character_lookup(fromfile: str) -> dict[str, Character]:
+    balifont_df = pd.read_csv(fromfile, sep="\t", quoting=csv.QUOTE_NONE)
+    balifont_obj = balifont_df.where(pd.notnull(balifont_df), "NONE").to_dict(orient="records")
     balifont = [Character.model_validate(character) for character in balifont_obj]
     return {character.symbol: character for character in balifont}
 
 
-def create_midinote_list(
-    instrumentgroup: InstrumentGroup, version: MidiVersion = None, fromfile: str = MIDI_NOTES_DEF_FILE
-) -> list[MidiNote]:
+def create_midinote_list(instrumentgroup: InstrumentGroup, version: MidiVersion, fromfile: str) -> list[MidiNote]:
     midinotes_df = pd.read_csv(fromfile, sep="\t", comment="#")
     # Convert pre-filled positions to a list of InstrumentPosition values.
     # Fill in empty position fields with all positions for the instrument type.
@@ -140,6 +148,7 @@ def create_midinote_list(
     midinotes_df.loc[mask, MidiNotesFields.POSITIONS] = midinotes_df.loc[mask, MidiNotesFields.INSTRUMENTTYPE].apply(
         lambda x: [p for p in InstrumentPosition if p.instrumenttype == x]
     )
+    midinotes_df[MidiNotesFields.OCTAVE].replace(np.nan, value="NONE", inplace=True)
     # Select the required midi value
     if version:
         midinotes_df[MidiNotesFields.MIDI] = midinotes_df[version].values.tolist()
@@ -155,13 +164,13 @@ def create_midinote_list(
 
 
 def create_symbolvalue_to_midinote_lookup(
-    instrumentgroup: InstrumentGroup, version: MidiVersion = None, fromfile: str = MIDI_NOTES_DEF_FILE
-) -> dict[tuple[InstrumentPosition, SymbolValue], int]:
+    instrumentgroup: InstrumentGroup, version: MidiVersion, fromfile: str
+) -> dict[tuple[InstrumentPosition, Note, Octave, Stroke], MIDIvalue]:
     midinotes = create_midinote_list(instrumentgroup, version=version, fromfile=fromfile)
-    return {(note.instrumenttype, note.notevalue): note for note in midinotes}
+    return {(note.instrumenttype, note.note, note.octave, note.stroke): note for note in midinotes}
 
 
-def create_instrumentrange_lookup(instrumentgroup: InstrumentGroup, fromfile: str = MIDI_NOTES_DEF_FILE):
+def create_instrumentrange_lookup(instrumentgroup: InstrumentGroup, fromfile: str):
     midinotes = create_midinote_list(instrumentgroup, fromfile=fromfile)
     instrumenttypes = {note.instrumenttype for note in midinotes}
     return {

@@ -1,11 +1,14 @@
 from enum import StrEnum
 
 from src.common.classes import Source
-from src.common.constants import NotationFont
+from src.common.constants import InstrumentGroup, NotationFont
 
 BASE_NOTE_TIME = 24
 MIDI_NOTES_DEF_FILE = "./settings/midinotes.tsv"
-NOTATIONFONT_DEF_FILE = "./settings/balimusic4font.tsv"
+NOTATIONFONT_DEF_FILES = {
+    NotationFont.BALIMUSIC4: "./settings/balimusic4font.tsv",
+    NotationFont.BALIMUSIC5: "./settings/balimusic5font.tsv",
+}
 TAGS_DEF_FILE = "./settings/instrumenttags.tsv"
 SOUNDFONT_FILE = "./settings/Gong Kebyar MP2.sf2"
 
@@ -18,30 +21,35 @@ CENDRAWASIH = Source(
     infilename="Cendrawasih_complete.tsv",
     outfilefmt="Cendrawasih {position}_{version}.{ext}",
     font=NotationFont.BALIMUSIC4,
+    instrumentgroup=InstrumentGroup.GONG_KEBYAR,
 )
 CENDRAWASIH5 = Source(
     datapath=".\\data\\cendrawasih",
     infilename="Cendrawasih_complete_font5.tsv",
     outfilefmt="Cendrawasih {position}_{version}.{ext}",
     font=NotationFont.BALIMUSIC5,
+    instrumentgroup=InstrumentGroup.GONG_KEBYAR,
 )
 MARGAPATI = Source(
     datapath=".\\data\\margapati",
     infilename="Margapati-UTF8.tsv",
     outfilefmt="Margapati {position}_{version}.{ext}",
     font=NotationFont.BALIMUSIC4,
+    instrumentgroup=InstrumentGroup.GONG_KEBYAR,
 )
 GENDINGANAK2 = Source(
     datapath=".\\data\\test",
     infilename="Gending Anak-Anak.tsv",
     outfilefmt="Gending Anak-Anak {position}_{version}.{ext}",
     font=NotationFont.BALIMUSIC4,
+    instrumentgroup=InstrumentGroup.GONG_KEBYAR,
 )
 DEMO = Source(
     datapath=".\\data\\test",
     infilename="demo.tsv",
     outfilefmt="Demo {position}_{version}.{ext}",
     font=NotationFont.BALIMUSIC4,
+    instrumentgroup=InstrumentGroup.GONG_KEBYAR,
 )
 
 
@@ -60,7 +68,9 @@ class FontFields(SStrEnum):
     UNICODE = "unicode"
     SYMBOL_DESCRIPTION = "symbol_description"
     BALIFONT_SYMBOL_DESCRIPTION = "balifont_symbol_description"
-    SYMBOLVALUE = "value"
+    NOTE = "note"
+    OCTAVE = "octave"
+    STROKE = "stroke"
     DURATION = "duration"
     REST_AFTER = "rest_after"
     DESCRIPTION = "description"
@@ -85,6 +95,8 @@ class MidiNotesFields(SStrEnum):
     INSTRUMENTGROUP = "instrumentgroup"
     INSTRUMENTTYPE = "instrumenttype"
     POSITIONS = "positions"
-    SYMBOLVALUE = "notevalue"
+    NOTE = "note"
+    OCTAVE = "octave"
+    STROKE = "stroke"
     CHANNEL = "channel"
     MIDI = "midi"

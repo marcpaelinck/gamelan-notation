@@ -11,13 +11,17 @@ from src.common.constants import (
     ALL_PASSES,
     BPM,
     PASS,
+    Duration,
     GonganType,
     InstrumentGroup,
     InstrumentPosition,
     InstrumentType,
     MidiVersion,
+    Modifier,
     NotationFont,
-    SymbolValue,
+    Note,
+    Octave,
+    Stroke,
 )
 
 
@@ -40,47 +44,70 @@ class TimingData:
 # Settings
 class NotationModel(BaseModel):
     @classmethod
-    def to_list(cls, value, enumtype: StrEnum):
+    def to_list(cls, value, el_type: type):
         # This method tries to to parse a string or a list of strings
-        # into a list of `enumtype` values.
+        # into a list of `el_type` values.
+        # el_type can only be `float` or a subclass of `StrEnum`.
         if isinstance(value, str):
             # Single string representing a list of strings: parse into a list of strings
             # First add double quotes around each list element.
-            val = re.sub(r"([\w]+)", r'"\1"', value)
+            val = re.sub(r"([A-Za-z_][\w]*)", r'"\1"', value)
             value = json.loads(val)
         if isinstance(value, list):
             # List of strings: convert strings to enumtype objects.
             if all(isinstance(el, str) for el in value):
-                return [enumtype[el] for el in value]
-            elif all(isinstance(el, enumtype) for el in value):
-                # List of enumtypes: do nothing
+                return [el_type[el] if issubclass(el_type, StrEnum) else float(el) for el in value]
+            elif all(isinstance(el, el_type) for el in value):
+                # List of el_type: do nothing
                 return value
         else:
-            raise ValueError(f"Cannot convert value {value} to a list of {enumtype}")
+            raise ValueError(f"Cannot convert value {value} to a list of {el_type}")
 
 
-class Character(BaseModel):
+class Character(NotationModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     symbol: str
     unicode: str
     symbol_description: str
     balifont_symbol_description: str
-    value: SymbolValue
-    duration: float
-    rest_after: float
+    # symbolvalue: SymbolValue  # Phase out
+    note: Note
+    octave: Optional[int]
+    stroke: Stroke
+    duration: Optional[float]
+    rest_after: Optional[float]
+    modifier: Modifier
     description: str
 
     @property
     def total_duration(self):
         return self.duration + self.rest_after
 
+    @field_validator("octave", mode="before")
+    @classmethod
+    def process_nonevals(cls, value):
+        if isinstance(value, str) and value.upper() == "NONE":
+            return None
+        return value
+
+    def matches(self, note: Note, octave: Octave, stroke: Stroke, duration: Duration, rest_after: Duration) -> bool:
+        return (
+            note == self.note
+            and self.octave == octave
+            and self.stroke == stroke
+            and self.duration == duration
+            and self.rest_after == rest_after
+        )
+
 
 class MidiNote(NotationModel):
     instrumentgroup: InstrumentGroup
     instrumenttype: InstrumentType
     positions: list[InstrumentPosition]
-    notevalue: SymbolValue
+    note: Note
+    octave: Optional[int]
+    stroke: Stroke
     channel: int
     midi: int
 
@@ -88,6 +115,13 @@ class MidiNote(NotationModel):
     @classmethod
     def validate_pos(cls, value):
         return cls.to_list(value, InstrumentPosition)
+
+    @field_validator("octave", mode="before")
+    @classmethod
+    def process_nonevals(cls, value):
+        if isinstance(value, str) and value.upper() == "NONE":
+            return None
+        return value
 
 
 class InstrumentTag(NotationModel):
@@ -221,6 +255,7 @@ class Source:
     infilename: str
     outfilefmt: str  # should contain 'position', 'ext' and 'midiversion' arguments
     font: NotationFont
+    instrumentgroup: InstrumentGroup
 
 
 @dataclass
@@ -252,5 +287,5 @@ class Score:
     instrument_positions: set[InstrumentPosition] = None
     systems: list[System] = field(default_factory=list)
     balimusic_font_dict: dict[str, Character] = None
-    midi_notes_dict: dict[tuple[InstrumentType, SymbolValue] : int] = None
+    midi_notes_dict: dict[tuple[InstrumentPosition, Note, Octave, Stroke], MidiNote] = None
     flowinfo: FlowInfo = field(default_factory=FlowInfo)

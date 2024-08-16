@@ -11,8 +11,8 @@ from src.common.constants import (
     InstrumentGroup,
     InstrumentPosition,
     InstrumentType,
-    MutingType,
     NoteType,
+    Stroke,
 )
 from src.common.utils import create_instrumentrange_lookup
 
@@ -198,7 +198,7 @@ def rename_notes_in_filenames(folderpath: str, group: InstrumentGroup, print_onl
         instrtype: [
             note
             for note in notes
-            if note.isnote and note.note.type == NoteType.MELODIC and note.mutingtype == MutingType.OPEN
+            if note.isnote and note.note.type == NoteType.MELODIC and note.mutingtype == Stroke.OPEN
         ]
         for instrtype, notes in lookup.items()
         if instrtype in instrdict.values()

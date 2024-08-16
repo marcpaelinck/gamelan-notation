@@ -7,7 +7,7 @@ from src.common.utils import (
     stave_to_string,
     system_to_records,
 )
-from src.settings import InstrumentFields
+from src.notation2midi.settings import InstrumentFields
 
 BALIFONT4_TO_CHARACTER_DICT = create_symbol_to_character_lookup(fromfile="tests/data/balimusic4font.csv")
 

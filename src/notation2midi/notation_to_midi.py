@@ -20,10 +20,10 @@ from src.common.classes import (
 )
 from src.common.constants import (
     GonganType,
-    InstrumentGroup,
     InstrumentPosition,
     MidiVersion,
-    SymbolValue,
+    Note,
+    Stroke,
 )
 from src.common.utils import (
     SYMBOL_TO_CHARACTER_LOOKUP,
@@ -38,6 +38,7 @@ from src.notation2midi.settings import (
     CENDRAWASIH,
     CENDRAWASIH5,
     METADATA,
+    MIDI_NOTES_DEF_FILE,
     NON_INSTRUMENT_TAGS,
 )
 from src.notation2midi.settings_validation import validate_settings
@@ -165,7 +166,7 @@ def apply_metadata(metadata: list[MetaData], system: System, score: Score) -> No
                 system.gongantype = GonganType.from_value(meta.data.kind)
                 for beat in system.beats:
                     if InstrumentPosition.KEMPLI in beat.staves:
-                        beat.staves[InstrumentPosition.KEMPLI] = create_rest_stave(SymbolValue.SILENCE, beat.duration)
+                        beat.staves[InstrumentPosition.KEMPLI] = create_rest_stave(Stroke.SILENCE, beat.duration)
             case _:
                 raise ValueError(f"Metadata value {meta.data.type} is not supported.")
     return
@@ -241,7 +242,10 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
                 staves=staves,
                 bpm_start={-1: (bpm := score.systems[-1].beats[-1].bpm_end[-1] if score.systems else 0)},
                 bpm_end={-1: bpm},
-                duration=max(sum(note.total_duration for note in notes) for notes in list(staves.values())),
+                duration=max(
+                    sum(char.total_duration for char in characters if char.note != Note.NONE)
+                    for characters in list(staves.values())
+                ),
             )
             prev_beat = beats[-1] if beats else score.systems[-1].beats[-1] if score.systems else None
             # Update the `next` pointer of the previous beat.
@@ -293,19 +297,25 @@ def create_midifiles(score: Score, separate_files=False) -> None:
 if __name__ == "__main__":
     source = CENDRAWASIH
     VERSION = MidiVersion.MULTIPLE_INSTR
-    INSTRUMENTGROUP = InstrumentGroup.GONG_KEBYAR
+    # INSTRUMENTGROUP = InstrumentGroup.GONG_KEBYAR
     # --------------------------
     VALIDATE_SETTINGS = True
+    EXTENSIVE_VALIDATION_LOGGING = False
     AUTOCORRECT = True
     SAVE_CORRECTED_TO_FILE = True
     # --------------------------
     CREATE_MIDIFILE = True
     SEPARATE_MIDIFILES = False
 
-    initialize_constants(INSTRUMENTGROUP, VERSION)
+    initialize_constants(source, VERSION, MIDI_NOTES_DEF_FILE)
     if VALIDATE_SETTINGS:
-        validate_settings(INSTRUMENTGROUP)
+        validate_settings(source)
     score = create_score_object_model(source, VERSION)
-    validate_score(score=score, autocorrect=AUTOCORRECT, save_corrected=SAVE_CORRECTED_TO_FILE)
+    validate_score(
+        score=score,
+        autocorrect=AUTOCORRECT,
+        save_corrected=SAVE_CORRECTED_TO_FILE,
+        extensive_logging=EXTENSIVE_VALIDATION_LOGGING,
+    )
     if CREATE_MIDIFILE:
         create_midifiles(score, separate_files=SEPARATE_MIDIFILES)
