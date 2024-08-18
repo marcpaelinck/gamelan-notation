@@ -10,6 +10,7 @@ from src.common.utils import (
 from src.notation2midi.settings import InstrumentFields
 
 BALIFONT4_TO_CHARACTER_DICT = create_symbol_to_character_lookup(fromfile="tests/data/balimusic4font.csv")
+BALIFONT4_TO_CHARACTER_DICT = create_symbol_to_character_lookup(fromfile="tests/data/balimusic4font.csv")
 
 
 def getchar(c: str) -> Character:
@@ -72,6 +73,17 @@ data2 = [
                 6: "88",
                 7: "uu",
                 8: "aa",
+            },
+            {
+                InstrumentFields.POSITION: "",
+                1: "",
+                2: "",
+                3: "",
+                4: "",
+                5: "",
+                6: "",
+                7: "",
+                8: "",
             },
             {
                 InstrumentFields.POSITION: "",

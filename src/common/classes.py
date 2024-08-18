@@ -147,12 +147,20 @@ class Tempo(BaseModel):
     passes: Optional[list[int]] = field(
         default_factory=lambda: list([ALL_PASSES])
     )  # On which pass(es) should goto be performed?
+    passes: Optional[list[int]] = field(
+        default_factory=lambda: list([ALL_PASSES])
+    )  # On which pass(es) should goto be performed?
 
     @property
     def first_beat_seq(self) -> int:
         # Returns the pythonic sequence id (numbered from 0)
         return self.first_beat - 1
 
+    # @model_validator(mode="after")
+    # def set_default_pass(self):
+    #     if not self.passes:
+    #         self.passes.append(DEFAULT)
+    #     return self
     # @model_validator(mode="after")
     # def set_default_pass(self):
     #     if not self.passes:
@@ -235,11 +243,14 @@ class Beat:
 
     def get_bpm_start(self):
         return self.bpm_start.get(self._pass_, self.bpm_start.get(ALL_PASSES, None))
+        return self.bpm_start.get(self._pass_, self.bpm_start.get(ALL_PASSES, None))
 
     def get_bpm_end(self):
         return self.bpm_end.get(self._pass_, self.bpm_end.get(ALL_PASSES, None))
+        return self.bpm_end.get(self._pass_, self.bpm_end.get(ALL_PASSES, None))
 
     def get_changed_tempo(self, current_tempo: BPM) -> BPM | None:
+        tempo_change = self.tempo_changes.get(self._pass_, self.tempo_changes.get(ALL_PASSES, None))
         tempo_change = self.tempo_changes.get(self._pass_, self.tempo_changes.get(ALL_PASSES, None))
         if tempo_change and tempo_change.new_tempo != current_tempo:
             if tempo_change.incremental:
@@ -277,13 +288,27 @@ class FlowInfo:
     # have not yet been encountered while processing the score.
     labels: dict[str, Beat] = field(default_factory=dict)
     gotos: dict[str, tuple[System, GoTo]] = field(default_factory=lambda: defaultdict(list))
+    gongantype: GonganType = GonganType.REGULAR
+    metadata: list[MetaData] = field(default_factory=list)
+
+
+@dataclass
+class FlowInfo:
+    # Keeps track of statements that modify the sequence of
+    # systems or beats in the score. The main purpose of this
+    # class is to keep track of gotos that point to labels that
+    # have not yet been encountered while processing the score.
+    labels: dict[str, Beat] = field(default_factory=dict)
+    gotos: dict[str, tuple[System, GoTo]] = field(default_factory=lambda: defaultdict(list))
 
 
 @dataclass
 class Score:
     source: Source
     midi_version: MidiVersion
+    midi_version: MidiVersion
     instrumentgroup: InstrumentGroup = None
+    instrument_positions: set[InstrumentPosition] = None
     instrument_positions: set[InstrumentPosition] = None
     systems: list[System] = field(default_factory=list)
     balimusic_font_dict: dict[str, Character] = None
