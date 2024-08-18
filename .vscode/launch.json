@@ -13,16 +13,18 @@
             "program": "${file}",
             "env": { "PYTHONPATH": "${workspaceRoot}"},
             "console": "integratedTerminal",
-            "args": ["-m"]
+            "args": ["-m"],
+            "justMyCode": false
         },
         {
             "name": "Python: toMIDI",
             "type": "debugpy",
             "cwd": "${workspaceFolder}",
             "request": "launch",
-            "program": "${workspaceFolder}/src/notation_to_midi.py",
+            "program": "${workspaceFolder}/src/notation2midi/notation_to_midi.py",
             "env": { "PYTHONPATH": "${workspaceFolder}" },
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "justMyCode": false
         }
 
     ]

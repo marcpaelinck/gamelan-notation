@@ -1,6 +1,6 @@
 import pytest
 
-from src.notation_constants import Note, SymbolValue
+from src.common.constants import Note, SymbolValue
 from src.score_validation import iskempyung
 
 instrumentrange = [

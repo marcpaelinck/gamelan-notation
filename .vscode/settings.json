@@ -15,4 +15,15 @@
     "python.testing.pytestEnabled": true,
     "python.testing.pytestArgs": [
         "--cache-clear"
-    ]}
+    ],
+    "files.associations": {
+        "*.tsv": "tsv"
+    },
+    "[tsv]": {
+        "editor.detectIndentation": false,
+        "editor.insertSpaces": false
+    },
+    "python.analysis.extraPaths": [
+        "./src/common"
+    ]
+}
