@@ -288,4 +288,5 @@ class Score:
     systems: list[System] = field(default_factory=list)
     balimusic_font_dict: dict[str, Character] = None
     midi_notes_dict: dict[tuple[InstrumentPosition, Note, Octave, Stroke], MidiNote] = None
+    position_range_lookup: dict[InstrumentPosition, tuple[Note, Octave, Stroke]] = None
     flowinfo: FlowInfo = field(default_factory=FlowInfo)

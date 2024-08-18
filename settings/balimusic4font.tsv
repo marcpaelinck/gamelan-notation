@@ -6,7 +6,7 @@ symbol	unicode	symbol_description	balifont_symbol_description	note	octave	stroke
 (	0x0028	left round bracket	o overdot slashed	DONG	2	MUTED	0.125	0.875	NONE	dong2 muted
 *	0x002a	asterisk	i (with dot) slashed	DING	2	MUTED	0.125	0.875	NONE	ding2 muted
 -	0x002d	hyphen	dash	NONE		EXTENSION	1	0	NONE	extends note duration
-.	0x002e	period	dot	NONE		SILENCE	1	0	NONE	silence (muted note) open
+.	0x002e	period	dot	NONE		SILENCE	0	1	NONE	silence (muted note) open
 /	0x002f	forward slash	slash	NONE		NONE	0.25	0.75	MODIFIER_PREV1	long mutes previous note
 ^	0x0302	circumflex	none currently	NONE		NONE	0.5	0.5	MODIFIER_PREV2	grace note indicator
 3	0x0033	digit 3	e overdot	DENG	2	OPEN	1	0	NONE	deng2 open
@@ -31,7 +31,7 @@ T	0x0054	uppercase T	T	TONG		OPEN	1	0	NONE	tong
 U	0x0055	uppercase U	u slashed	DUNG	1	MUTED	0.125	0.875	NONE	dung1 muted
 W	0x0057	uppercase W	W	GIR		OPEN	1	0	NONE	gir wadon
 X	0x0058	uppercase X	 slashed	TICK		ONE_PANGGUL	0.125	0.875	NONE	tick muted
-Y	0x0059	uppercase Y	e underdot	DENG	0	OPEN	0.125	0.875	NONE	deng+ding muted (reyong pos. 1)
+Y	0x0059	uppercase Y	e underdot	DENGDING	0	MUTED	0.125	0.875	NONE	deng+ding muted (reyong pos. 1)
 Z	0x005a	uppercase Z	a underdot slashed	DANG	0	MUTED	0.125	0.875	NONE	dang0 muted
 a	0x0061	lowercase a	a	DANG	1	OPEN	1	0	NONE	dang1 open
 b	0x0062	lowercase b	b	BYONG		OPEN	1	0	NONE	byong
@@ -48,10 +48,10 @@ r	0x0072	lowercase r	e and u combined	DEUNG	1	OPEN	1	0	NONE	deung open
 s	0x0073	lowercase s	a and i combined	DAING	1	OPEN	1	0	NONE	daing open
 u	0x0075	lowercase u	u	DUNG	1	OPEN	1	0	NONE	dung1 open
 x	0x0078	lowercase x	x	TICK		ONE_PANGGUL	1	0	NONE	tick open
-y	0x0079	lowercase y	a and i combined underdot	DENG	0	OPEN	1	0	NONE	deng+ding open (reyong pos. 1)
+y	0x0079	lowercase y	a and i combined underdot	DENGDING	0	OPEN	1	0	NONE	deng+ding open (reyong pos. 1)
 z	0x007a	lowercase z	a underdot	DANG	0	OPEN	1	0	NONE	dang0 open
-ª	0x00aa	underlined a superscript	dot with double macron	NONE		SILENCE	0.25	0	NONE	silence quarter duration
-µ	0x00b5	mu	dot with single macron	NONE		SILENCE	0.5	0	NONE	silence half duration
+ª	0x00aa	underlined a superscript	dot with double macron	NONE		SILENCE	0	0.25	NONE	silence quarter duration
+µ	0x00b5	mu	dot with single macron	NONE		SILENCE	0	0.5	NONE	silence half duration
 À	0x00c0	uppercase A grave	a underdot slashed, single macron	DANG	0	MUTED	0.1	0.4	NONE	dang0 half duration abbreviated
 Á	0x00c1	uppercase A acute	a slashed, single macron	DANG	1	MUTED	0.1	0.4	NONE	dang0 half duration abbreviated
 Â	0x00c2	uppercase A circumflex	a underdot slashed, double macron	DANG	0	MUTED	0.05	0.2	NONE	dang0 quarter duration muted

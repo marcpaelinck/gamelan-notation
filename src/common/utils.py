@@ -18,6 +18,7 @@ from src.common.constants import (
     Stroke,
 )
 from src.notation2midi.settings import (
+    MIDI_NOTES_DEF_FILE,
     NOTATIONFONT_DEF_FILES,
     TAGS_DEF_FILE,
     InstrumentFields,
@@ -28,6 +29,7 @@ SYMBOL_TO_CHARACTER_LOOKUP: dict[str, Character] = dict()
 CHARACTER_LIST: list[Character] = list()
 SYMBOLVALUE_TO_MIDINOTE_LOOKUP: dict[tuple[InstrumentPosition, Note, Octave, Stroke], MidiNote] = dict()
 TAG_TO_POSITION_LOOKUP: dict[InstrumentTag, InstrumentPosition] = dict()
+POSITION_TO_RANGE_LOOKUP: dict[InstrumentPosition, tuple[Note, Octave, Stroke]] = dict()
 
 
 def initialize_constants(source: Source, version: MidiVersion, midi_notes_file: str) -> None:
@@ -45,6 +47,7 @@ def initialize_constants(source: Source, version: MidiVersion, midi_notes_file: 
         create_symbolvalue_to_midinote_lookup(source.instrumentgroup, version, midi_notes_file)
     )
     TAG_TO_POSITION_LOOKUP.update(create_tag_to_position_lookup())
+    POSITION_TO_RANGE_LOOKUP.update(create_position_range_lookup(source.instrumentgroup, version, midi_notes_file))
 
 
 def is_silent(system: System, position: InstrumentPosition):
@@ -148,7 +151,7 @@ def create_midinote_list(instrumentgroup: InstrumentGroup, version: MidiVersion,
     midinotes_df.loc[mask, MidiNotesFields.POSITIONS] = midinotes_df.loc[mask, MidiNotesFields.INSTRUMENTTYPE].apply(
         lambda x: [p for p in InstrumentPosition if p.instrumenttype == x]
     )
-    midinotes_df[MidiNotesFields.OCTAVE].replace(np.nan, value="NONE", inplace=True)
+    midinotes_df[MidiNotesFields.OCTAVE] = midinotes_df[MidiNotesFields.OCTAVE].replace(np.nan, value="NONE")
     # Select the required midi value
     if version:
         midinotes_df[MidiNotesFields.MIDI] = midinotes_df[version].values.tolist()
@@ -170,13 +173,15 @@ def create_symbolvalue_to_midinote_lookup(
     return {(note.instrumenttype, note.note, note.octave, note.stroke): note for note in midinotes}
 
 
-def create_instrumentrange_lookup(instrumentgroup: InstrumentGroup, fromfile: str):
-    midinotes = create_midinote_list(instrumentgroup, fromfile=fromfile)
-    instrumenttypes = {note.instrumenttype for note in midinotes}
-    return {
-        instr_type: [note.notevalue for note in midinotes if note.instrumenttype == instr_type]
-        for instr_type in instrumenttypes
+def create_position_range_lookup(
+    instrumentgroup: InstrumentGroup, midiversion: MidiVersion, fromfile: str
+) -> dict[InstrumentPosition, tuple[Note, Octave, Stroke]]:
+    midinotes = create_midinote_list(instrumentgroup, version=midiversion, fromfile=fromfile)
+    lookup = {
+        position: [(note.note, note.octave, note.stroke) for note in midinotes if position in note.positions]
+        for position in InstrumentPosition
     }
+    return lookup
 
 
 def create_tag_to_position_lookup(fromfile: str = TAGS_DEF_FILE):
@@ -186,4 +191,4 @@ def create_tag_to_position_lookup(fromfile: str = TAGS_DEF_FILE):
 
 
 if __name__ == "__main__":
-    print(create_instrumentrange_lookup(InstrumentGroup.GONG_KEBYAR))
+    print(create_position_range_lookup(InstrumentGroup.GONG_KEBYAR, MidiVersion.MULTIPLE_INSTR, MIDI_NOTES_DEF_FILE))

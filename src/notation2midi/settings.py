@@ -4,6 +4,8 @@ from src.common.classes import Source
 from src.common.constants import InstrumentGroup, NotationFont
 
 BASE_NOTE_TIME = 24
+BASE_NOTES_PER_BEAT = 4
+ATTENUATION_SECONDS_AFTER_MUSIC_END = 10  # additional time in seconds to let final chord attenuate.
 MIDI_NOTES_DEF_FILE = "./settings/midinotes.tsv"
 NOTATIONFONT_DEF_FILES = {
     NotationFont.BALIMUSIC4: "./settings/balimusic4font.tsv",

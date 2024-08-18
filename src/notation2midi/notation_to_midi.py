@@ -26,6 +26,7 @@ from src.common.constants import (
     Stroke,
 )
 from src.common.utils import (
+    POSITION_TO_RANGE_LOOKUP,
     SYMBOL_TO_CHARACTER_LOOKUP,
     SYMBOLVALUE_TO_MIDINOTE_LOOKUP,
     TAG_TO_POSITION_LOOKUP,
@@ -35,6 +36,7 @@ from src.common.utils import (
 from src.notation2midi.font_specific_code import MidiTrackX, postprocess
 from src.notation2midi.score_validation import add_missing_staves, validate_score
 from src.notation2midi.settings import (
+    ATTENUATION_SECONDS_AFTER_MUSIC_END,
     CENDRAWASIH,
     CENDRAWASIH5,
     METADATA,
@@ -71,36 +73,26 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
 
     reset_pass_counters()
     beat = score.systems[0].beats[0]
-    current_tempo = 0
-    current_signature = 0
+    # current_tempo = 0
+    # current_signature = 0
     while beat:
         beat._pass_ += 1
-        # Set new not signature if the beat's system has a different beat length
-        if new_signature := (
-            round(score.systems[beat.sys_seq].beat_duration)
-            if score.systems[beat.sys_seq].beat_duration != current_signature
-            else None
-        ):
-            track.append(
-                MetaMessage(
-                    "time_signature",
-                    numerator=new_signature,
-                    denominator=4,
-                    clocks_per_click=36,
-                    notated_32nd_notes_per_beat=8,
-                    time=track.time_since_last_note_end,
-                )
-            )
-            track.time_since_last_note_end = 0
-            current_signature = new_signature
+        # Set new signature if the beat's system has a different beat length
+        track.update_signature(score.systems[beat.sys_seq].beat_duration)
+        # if new_signature := (
+        #     round(score.systems[beat.sys_seq].beat_duration)
+        #     if score.systems[beat.sys_seq].beat_duration != track.current_signature
+        #     else None
+        # ):
         # Set new tempo
-        if new_tempo := beat.get_changed_tempo(current_tempo):
-            track.append(MetaMessage("set_tempo", tempo=bpm2tempo(new_tempo)))
-            current_tempo = new_tempo
+        if new_tempo := beat.get_changed_tempo(track.current_bpm):
+            track.update_tempo(new_tempo)
+            # track.append(MetaMessage("set_tempo", tempo=bpm2tempo(new_tempo)))
+            # current_tempo = new_tempo
 
         # Process individual notes
         for note in beat.staves.get(position, []):
-            track.process(position, note)
+            track.add_note(position, note)
         beat = beat.goto.get(beat._pass_, beat.next)
 
     return track
@@ -220,6 +212,7 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
         instrument_positions=set(all_positions),
         balimusic_font_dict=SYMBOL_TO_CHARACTER_LOOKUP,
         midi_notes_dict=SYMBOLVALUE_TO_MIDINOTE_LOOKUP,
+        position_range_lookup=POSITION_TO_RANGE_LOOKUP,
     )
     beats: list[Beat] = []
     metadata: list[MetaData] = []
@@ -272,7 +265,14 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
     return score
 
 
-def create_midifiles(score: Score, separate_files=False) -> None:
+def add_attenuation_time(tracks: list[MidiTrackX], seconds: int) -> None:
+    max_ticks = max(track.total_tick_time() for track in tracks)
+    for track in tracks:
+        if track.total_tick_time() == max_ticks:
+            track.extend_last_note(seconds)
+
+
+def create_midifile(score: Score) -> None:
     """Generates the MIDI content and saves it to file.
 
     Args:
@@ -280,18 +280,13 @@ def create_midifiles(score: Score, separate_files=False) -> None:
         separate_files (bool, optional): If True, a separate file will be created for each instrument. Defaults to False.
     """
     outfilepathfmt = os.path.join(source.datapath, source.outfilefmt)
-    if not separate_files:
-        mid = MidiFile(ticks_per_beat=96, type=1)
+    mid = MidiFile(ticks_per_beat=96, type=1)
 
     for position in sorted(score.instrument_positions, key=lambda x: x.sequence):
-        if separate_files:
-            mid = MidiFile(ticks_per_beat=96, type=0)
         track = notation_to_track(score, position)
         mid.tracks.append(track)
-        if separate_files:
-            mid.save(outfilepathfmt.format(position=position.value, ersion=score.midi_version, ext="mid"))
-    if not separate_files:
-        mid.save(outfilepathfmt.format(position="", version=score.midi_version, ext="mid"))
+    add_attenuation_time(mid.tracks, seconds=ATTENUATION_SECONDS_AFTER_MUSIC_END)
+    mid.save(outfilepathfmt.format(position="", version=score.midi_version, ext="mid"))
 
 
 if __name__ == "__main__":
@@ -300,12 +295,11 @@ if __name__ == "__main__":
     # INSTRUMENTGROUP = InstrumentGroup.GONG_KEBYAR
     # --------------------------
     VALIDATE_SETTINGS = True
-    EXTENSIVE_VALIDATION_LOGGING = False
+    DETAILED_VALIDATION_LOGGING = False
     AUTOCORRECT = True
     SAVE_CORRECTED_TO_FILE = True
     # --------------------------
     CREATE_MIDIFILE = True
-    SEPARATE_MIDIFILES = False
 
     initialize_constants(source, VERSION, MIDI_NOTES_DEF_FILE)
     if VALIDATE_SETTINGS:
@@ -315,7 +309,7 @@ if __name__ == "__main__":
         score=score,
         autocorrect=AUTOCORRECT,
         save_corrected=SAVE_CORRECTED_TO_FILE,
-        extensive_logging=EXTENSIVE_VALIDATION_LOGGING,
+        detailed_logging=DETAILED_VALIDATION_LOGGING,
     )
     if CREATE_MIDIFILE:
-        create_midifiles(score, separate_files=SEPARATE_MIDIFILES)
+        create_midifile(score)

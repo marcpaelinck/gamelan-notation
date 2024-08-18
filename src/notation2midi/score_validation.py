@@ -9,11 +9,13 @@ from src.common.constants import (
     InstrumentPosition,
     InstrumentType,
     Modifier,
+    NotationFont,
     Note,
     Octave,
     Stroke,
 )
-from src.common.utils import CHARACTER_LIST, create_rest_stave, score_to_notation_file
+from src.common.utils import create_rest_stave, score_to_notation_file
+from src.notation2midi.font_specific_code import get_character
 
 POSITIONS_AUTOCORRECT_UNEQUAL_STAVES = [
     InstrumentPosition.UGAL,
@@ -26,18 +28,6 @@ POSITIONS_VALIDATE_AND_CORRECT_KEMPYUNG = [
     (InstrumentPosition.PEMADE_POLOS, InstrumentPosition.PEMADE_SANGSIH),
     (InstrumentPosition.KANTILAN_POLOS, InstrumentPosition.KANTILAN_SANGSIH),
 ]
-
-INSTRUMENT_TO_RANGE_LOOKUP = None
-
-
-def initialize_lookups(score: Score):
-    global INSTRUMENT_TO_RANGE_LOOKUP
-    instrumentnotes = list(score.midi_notes_dict.keys())
-    INSTRUMENT_TO_RANGE_LOOKUP = {
-        instrument: [(note, octave, stroke) for instr, note, octave, stroke in instrumentnotes if instr == instrument]
-        for instrument in set(i for i, _, _, _ in instrumentnotes)
-    }
-    x = 1
 
 
 def invalid_beat_lengths(system: System, autocorrect: bool) -> tuple[list[tuple[BeatId, Duration]]]:
@@ -88,14 +78,14 @@ def unequal_stave_lengths(system: System, autocorrect: bool, filler: Character) 
 
 
 def out_of_range(
-    system: System, ranges: dict[InstrumentType, list[(Note, Octave, Stroke)]], autocorrect: bool
+    system: System, ranges: dict[InstrumentPosition, list[(Note, Octave, Stroke)]], autocorrect: bool
 ) -> tuple[list[str, list[Character]]]:
     invalids = []
     corrected = []
 
     for beat in system.beats:
         for position, chars in beat.staves.items():
-            instr_range = ranges[position.instrumenttype]
+            instr_range = ranges[position]
             badnotes = list()
             for char in chars:
                 if char.note is not Note.NONE and (char.note, char.octave, char.stroke) not in instr_range:
@@ -105,10 +95,7 @@ def out_of_range(
     return invalids, corrected
 
 
-def get_kempyung(
-    polos: Character,
-    instrumentrange: list[tuple[Note, Octave, Stroke]],
-):
+def get_kempyung(polos: Character, instrumentrange: list[tuple[Note, Octave, Stroke]]):
     ordered = sorted(
         list({(note, octave) for note, octave, _ in instrumentrange}),
         key=lambda item: item[0].sequence + 10 * item[1],
@@ -132,55 +119,8 @@ def iskempyung(
     return ((polos.note, polos.octave), (sangsih.note, sangsih.octave)) in kempyung
 
 
-def create_character(
-    note: Note,
-    octave: int,
-    stroke: Stroke,
-    duration: float,
-    rest_after: float,
-    symbol: str = "",
-    unicode: str = "",
-    symbol_description: str = "",
-    balifont_symbol_description: str = "",
-    modifier: Modifier = Modifier.NONE,
-    description: str = "",
-) -> Character:
-    return Character(
-        note=note,
-        octave=octave,
-        stroke=stroke,
-        duration=duration,
-        rest_after=rest_after,
-        symbol=symbol,
-        unicode=unicode,
-        symbol_description=symbol_description,
-        balifont_symbol_description=balifont_symbol_description,
-        modifier=modifier,
-        description=description,
-    )
-
-
-def get_character(
-    note: Note, octave: Octave, stroke: Stroke, duration: Duration, rest_after: Duration, symbol: str
-) -> Character:
-    char = next((char for char in CHARACTER_LIST if char.matches(note, octave, stroke, duration, rest_after)), None)
-    char = char or next((char for char in CHARACTER_LIST if char.matches(note, octave, stroke, 1, 0)), None)
-    char = char or next((char for char in CHARACTER_LIST if char.matches(note, octave, Stroke.OPEN, 1, 0)), None)
-    char = char or next((char for char in CHARACTER_LIST if char.matches(note, 1, Stroke.OPEN, 1, 0)), None)
-    char = char or create_character(note, octave, stroke, duration, rest_after, symbol="@")
-    return char.model_copy(
-        update={
-            "symbol": char.symbol + symbol[1:],
-            "octave": octave,
-            "stroke": stroke,
-            "duration": duration,
-            "rest_after": rest_after,
-        }
-    )
-
-
 def get_correct_kempyung(
-    polos: Character, sangsih: Character, score: Score, instrumentrange: list[tuple[Note, Octave, Stroke]]
+    polos: Character, sangsih: Character, instrumentrange: list[tuple[Note, Octave, Stroke]], font: NotationFont
 ):
     note, octave = get_kempyung(polos, instrumentrange)
     correct_sangsih = get_character(
@@ -190,6 +130,7 @@ def get_correct_kempyung(
         duration=sangsih.duration,
         rest_after=sangsih.rest_after,
         symbol=sangsih.symbol,
+        font=font,
     )
     return correct_sangsih
 
@@ -197,7 +138,7 @@ def get_correct_kempyung(
 def incorrect_kempyung(
     system: System,
     score: Score,
-    ranges: dict[InstrumentType, list[tuple[Note, Octave, Stroke]]],
+    ranges: dict[InstrumentPosition, list[tuple[Note, Octave, Stroke]]],
     autocorrect: bool,
 ) -> list[tuple[BeatId, tuple[InstrumentPosition, InstrumentPosition]]]:
     def note_pairs(beat: Beat, pair: list[InstrumentType]):
@@ -207,7 +148,7 @@ def incorrect_kempyung(
     corrected = []
     for beat in system.beats:
         for pair in POSITIONS_VALIDATE_AND_CORRECT_KEMPYUNG:
-            instrumentrange = ranges[pair[0].instrumenttype]
+            instrumentrange = ranges[pair[0]]
             # check if both instruments occur in the beat
             if all(instrument in beat.staves.keys() for instrument in pair):
                 # check each kempyung note
@@ -236,7 +177,10 @@ def incorrect_kempyung(
                             ):
                                 if autocorrect and iteration == 1:
                                     correct_sangsih = get_correct_kempyung(
-                                        polos=polos, sangsih=sangsih, score=score, instrumentrange=instrumentrange
+                                        polos=polos,
+                                        sangsih=sangsih,
+                                        instrumentrange=instrumentrange,
+                                        font=score.source.font,
                                     )
                                     beat.staves[pair[1]][seq] = correct_sangsih
                                     autocorrected = True
@@ -310,7 +254,7 @@ def validate_score(
     score: Score,
     autocorrect: bool = False,
     save_corrected: bool = False,
-    extensive_logging: bool = False,
+    detailed_logging: bool = False,
 ) -> None:
     """Performs consistency checks and prints results.
 
@@ -333,8 +277,6 @@ def validate_score(
     count_corrected_beats_with_incorrect_norot = 0
     count_corrected_beats_with_incorrect_ubitan = 0
 
-    initialize_lookups(score)
-
     filler = next(
         char
         for char in score.balimusic_font_dict.values()
@@ -352,12 +294,12 @@ def validate_score(
         corrected_stave_lengths.extend(corrected)
         count_corrected_stave_lengths += len(corrected)
 
-        invalids, corrected = out_of_range(system, ranges=INSTRUMENT_TO_RANGE_LOOKUP, autocorrect=autocorrect)
+        invalids, corrected = out_of_range(system, ranges=score.position_range_lookup, autocorrect=autocorrect)
         beats_with_note_out_of_instrument_range.extend(invalids)
         count_corrected_notes_out_of_range += len(corrected)
 
         invalids, corrected = incorrect_kempyung(
-            system, score=score, ranges=INSTRUMENT_TO_RANGE_LOOKUP, autocorrect=autocorrect
+            system, score=score, ranges=score.position_range_lookup, autocorrect=autocorrect
         )
         beats_with_incorrect_kempyung.extend(invalids)
         corrected_invalid_kempyung.extend(corrected)
@@ -368,7 +310,7 @@ def validate_score(
         pprint([])
     pprint(beats_with_length_not_pow2)
     print(f"UNEQUAL STAVE LENGTHS WITHIN BEAT (corrected {count_corrected_stave_lengths}):")
-    if extensive_logging:
+    if detailed_logging:
         print("corrected:")
         pprint(corrected_stave_lengths)
     print("remaining invalids:")
@@ -376,7 +318,7 @@ def validate_score(
     print(f"NOTES NOT IN INSTRUMENT RANGE (corrected {count_corrected_notes_out_of_range}):")
     pprint(beats_with_note_out_of_instrument_range)
     print(f"INCORRECT KEMPYUNG (corrected {count_corrected_invalid_kempyung}):")
-    if extensive_logging:
+    if detailed_logging:
         print("corrected:")
         pprint(corrected_invalid_kempyung)
     print("remaining invalids:")

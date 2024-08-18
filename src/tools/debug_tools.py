@@ -14,7 +14,7 @@ from src.common.constants import (
     NoteType,
     Stroke,
 )
-from src.common.utils import create_instrumentrange_lookup
+from src.common.utils import create_position_range_lookup
 
 
 def get_all_tags():
@@ -193,7 +193,7 @@ def rename_notes_in_filenames(folderpath: str, group: InstrumentGroup, print_onl
         "Ugal": InstrumentType.UGAL,
     }
     filenotes = sum([[f"Ding {i}", f"Dong {i}", f"Deng {i}", f"Dung {i}", f"Dang {i}"] for i in range(1, 4)], [])
-    lookup = create_instrumentrange_lookup(group)
+    lookup = create_position_range_lookup(group)
     lookup = {
         instrtype: [
             note

@@ -27,10 +27,10 @@ i	0x0069	lowercase i	dotless i	DING	1	OPEN	1.0	0.0	NONE	ding1 open
 o	0x006f	lowercase o	o	DONG	1	OPEN	1.0	0.0	NONE	dong1 open
 r	0x0072	lowercase r	e and u combined	DEUNG	1	OPEN	1.0	0.0	NONE	deung open
 s	0x0073	lowercase s	a and i combined	DAING	1	OPEN	1.0	0.0	NONE	daing open
-t	0x0074	lowercase t	t	TUT		OPEN	1.0	0.0	NONE	kendang tut
+t	0x0074	lowercase t	e and i combined	DENGDING	0	OPEN	1.0	0.0	NONE	dengding open (reyong 1)
 u	0x0075	lowercase u	u	DUNG	1	OPEN	1.0	0.0	NONE	dung1 open
 x	0x0078	lowercase x	x	TICK		ONE_PANGGUL	1.0	0.0	NONE	tick open with one
 <	0x003c	less than	overdot (combining)	NONE	2	NONE	0	0	OCTAVE_2	sets octave of preceding note to 2
-=	0x003d	equal	double macron (combining)	NONE		NONE	0.125	0	QUARTER_NOTE	sets the duration of the preceding note to 1/4
+=	0x003d	equal	double macron (combining)	NONE		NONE	0.25	0	QUARTER_NOTE	sets the duration of the preceding note to 1/4
 ?	0x003f	question mark	slash right of char (combining)	NONE		NONE	0.4	0.6	ABBREVIATE	makes preceding note muted
-_	0x005f	underscore	macron (combining)	NONE		NONE	0.25	0	HALF_NOTE	sets the duration of the preceding note to 1/2
+_	0x005f	underscore	macron (combining)	NONE		NONE	0.5	0	HALF_NOTE	sets the duration of the preceding note to 1/2
