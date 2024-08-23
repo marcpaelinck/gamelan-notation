@@ -11,6 +11,7 @@ from src.common.classes import (
     Beat,
     Gongan,
     GoTo,
+    Kempli,
     Label,
     MetaData,
     Score,
@@ -21,6 +22,7 @@ from src.common.classes import (
 from src.common.constants import (
     GonganType,
     InstrumentPosition,
+    MetaDataStatus,
     MidiVersion,
     Note,
     Stroke,
@@ -31,17 +33,21 @@ from src.common.utils import (
     SYMBOLVALUE_TO_MIDINOTE_LOOKUP,
     TAG_TO_POSITION_LOOKUP,
     create_rest_stave,
-    initialize_constants,
+    read_settings,
 )
-from src.notation2midi.font_specific_code import MidiTrackX, postprocess
+from src.notation2midi.font_specific_code import postprocess
+from src.notation2midi.midi_track import MidiTrackX
 from src.notation2midi.score_validation import add_missing_staves, validate_score
 from src.notation2midi.settings import (
     ATTENUATION_SECONDS_AFTER_MUSIC_END,
     CENDRAWASIH,
     CENDRAWASIH5,
+    COMMENT,
+    MARGAPATI5,
     METADATA,
     MIDI_NOTES_DEF_FILE,
     NON_INSTRUMENT_TAGS,
+    SINOMLADRANG,
 )
 from src.notation2midi.settings_validation import validate_settings
 
@@ -85,8 +91,10 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
         #     else None
         # ):
         # Set new tempo
-        if new_tempo := beat.get_changed_tempo(track.current_bpm):
-            track.update_tempo(new_tempo)
+        if new_bpm := beat.get_changed_tempo(track.current_bpm):
+            # if position == InstrumentPosition.PEMADE_POLOS:
+            # print(f"beat {beat.full_id}: tempo_change detectected from {track.current_bpm} to {new_bpm}")
+            track.update_tempo(new_bpm or beat.get_bpm_start())
             # track.append(MetaMessage("set_tempo", tempo=bpm2tempo(new_tempo)))
             # current_tempo = new_tempo
 
@@ -111,7 +119,8 @@ def apply_metadata(metadata: list[MetaData], system: System, score: Score) -> No
         for rep in goto.data.passes:
             system.beats[goto.data.beat_seq].goto[rep] = score.flowinfo.labels[goto.data.label]
 
-    for meta in metadata:
+    haslabel = False
+    for meta in sorted(metadata, key=lambda x: x.data._processingorder_):
         match meta.data:
             case Tempo():
                 if meta.data.beats == 0:
@@ -142,10 +151,11 @@ def apply_metadata(metadata: list[MetaData], system: System, score: Score) -> No
 
             case Label():
                 # Add the label to flowinfo
-                score.flowinfo.labels[meta.data.label] = system.beats[meta.data.beat_seq]
+                haslabel = True
+                score.flowinfo.labels[meta.data.name] = system.beats[meta.data.beat_seq]
                 # Process any GoTo pointing to this label
                 goto: MetaData
-                for sys, goto in score.flowinfo.gotos[meta.data.label]:
+                for sys, goto in score.flowinfo.gotos[meta.data.name]:
                     process_goto(sys, goto)
             case GoTo():
                 if score.flowinfo.labels.get(meta.data.label, None):
@@ -153,15 +163,23 @@ def apply_metadata(metadata: list[MetaData], system: System, score: Score) -> No
                 else:
                     # Label not yet encountered: store GoTo obect in flowinfo
                     score.flowinfo.gotos[meta.data.label].append((system, meta))
+            case Kempli():
+                system.gongantype = meta.data.status
+                if meta.data.status is MetaDataStatus.OFF:
+                    for beat in system.beats:
+                        if InstrumentPosition.KEMPLI in beat.staves:
+                            beat.staves[InstrumentPosition.KEMPLI] = create_rest_stave(Stroke.SILENCE, beat.duration)
             case Gongan():
-                # Meant for validation
-                system.gongantype = GonganType.from_value(meta.data.kind)
-                for beat in system.beats:
-                    if InstrumentPosition.KEMPLI in beat.staves:
-                        beat.staves[InstrumentPosition.KEMPLI] = create_rest_stave(Stroke.SILENCE, beat.duration)
+                # TODO: need to synchronize all instruments starting from next regular system
+                system.gongantype = meta.data.kind
             case _:
                 raise ValueError(f"Metadata value {meta.data.type} is not supported.")
-    return
+
+    if haslabel:
+        for beat in system.beats:
+            if not beat.tempo_changes and beat.prev:
+                beat.tempo_changes.update(beat.prev.tempo_changes)
+        return
 
 
 def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score:
@@ -216,6 +234,7 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
     )
     beats: list[Beat] = []
     metadata: list[MetaData] = []
+    comments: list[str] = []
     for sys_id, sys_info in notation.items():
         for beat_nr, beat_info in sys_info.items():
             # create the staves
@@ -244,18 +263,24 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
             # Update the `next` pointer of the previous beat.
             if prev_beat:
                 prev_beat.next = new_beat
+                new_beat.prev = prev_beat
             beats.append(new_beat)
 
             for meta in beat_info.get(METADATA, []):
                 metadata.append(MetaData(data=json.loads(meta)))
 
+            for comment in beat_info.get(COMMENT, []):
+                comments.append(comment)
         # Create a new system
         if beats:
-            system = System(id=int(sys_id), beats=beats, beat_duration=beats[0].duration, metadata=metadata)
+            system = System(
+                id=int(sys_id), beats=beats, beat_duration=beats[0].duration, metadata=metadata, comments=comments
+            )
             score.systems.append(system)
             apply_metadata(metadata, system, score)
             metadata = []
             beats = []
+            comments = []
 
     # Apply font-specific modifications
     postprocess(score)
@@ -290,9 +315,8 @@ def create_midifile(score: Score) -> None:
 
 
 if __name__ == "__main__":
-    source = CENDRAWASIH
+    source = SINOMLADRANG
     VERSION = MidiVersion.MULTIPLE_INSTR
-    # INSTRUMENTGROUP = InstrumentGroup.GONG_KEBYAR
     # --------------------------
     VALIDATE_SETTINGS = True
     DETAILED_VALIDATION_LOGGING = False
@@ -301,7 +325,7 @@ if __name__ == "__main__":
     # --------------------------
     CREATE_MIDIFILE = True
 
-    initialize_constants(source, VERSION, MIDI_NOTES_DEF_FILE)
+    read_settings(source, VERSION, MIDI_NOTES_DEF_FILE)
     if VALIDATE_SETTINGS:
         validate_settings(source)
     score = create_score_object_model(source, VERSION)

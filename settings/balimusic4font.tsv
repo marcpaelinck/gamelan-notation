@@ -14,7 +14,7 @@ symbol	unicode	symbol_description	balifont_symbol_description	note	octave	stroke
 8	0x0038	digit 8	i (with dot)	DING	2	OPEN	1	0	NONE	ding2 open
 9	0x0039	digit 9	o overdot	DONG	2	OPEN	1	0	NONE	dong2 open
 A	0x0041	uppercase A	a slashed	DANG	1	MUTED	0.125	0.875	NONE	dang1 muted
-B	0x0042	uppercase B	b slashed	JET		MUTED	0.125	0.875	NONE	jet
+B	0x0042	uppercase B	b slashed	BYONG		MUTED	0.125	0.875	NONE	jet
 D	0x0044	uppercase D	e underdot slashed	DENG	0	MUTED	0.125	0.875	NONE	deng0 muted
 E	0x0045	uppercase E	e slashed	DENG	1	MUTED	0.125	0.875	NONE	deng1 muted
 G	0x0047	uppercase G	G	GIR		OPEN	1	0	NONE	gir
@@ -30,7 +30,7 @@ S	0x0053	uppercase S	 a and i combined slashed	DAING	1	MUTED	0.125	0.875	NONE	da
 T	0x0054	uppercase T	T	TONG		OPEN	1	0	NONE	tong
 U	0x0055	uppercase U	u slashed	DUNG	1	MUTED	0.125	0.875	NONE	dung1 muted
 W	0x0057	uppercase W	W	GIR		OPEN	1	0	NONE	gir wadon
-X	0x0058	uppercase X	 slashed	TICK		ONE_PANGGUL	0.125	0.875	NONE	tick muted
+X	0x0058	uppercase X	x slashed	TICK		MUTED	0.125	0.875	NONE	tick muted
 Y	0x0059	uppercase Y	e underdot	DENGDING	0	MUTED	0.125	0.875	NONE	deng+ding muted (reyong pos. 1)
 Z	0x005a	uppercase Z	a underdot slashed	DANG	0	MUTED	0.125	0.875	NONE	dang0 muted
 a	0x0061	lowercase a	a	DANG	1	OPEN	1	0	NONE	dang1 open
@@ -47,7 +47,7 @@ q	0x0071	lowercase q	a overdot	DANG	2	OPEN	1	0	NONE	dang2 open
 r	0x0072	lowercase r	e and u combined	DEUNG	1	OPEN	1	0	NONE	deung open
 s	0x0073	lowercase s	a and i combined	DAING	1	OPEN	1	0	NONE	daing open
 u	0x0075	lowercase u	u	DUNG	1	OPEN	1	0	NONE	dung1 open
-x	0x0078	lowercase x	x	TICK		ONE_PANGGUL	1	0	NONE	tick open
+x	0x0078	lowercase x	x	TICK		OPEN	1	0	NONE	tick open
 y	0x0079	lowercase y	a and i combined underdot	DENGDING	0	OPEN	1	0	NONE	deng+ding open (reyong pos. 1)
 z	0x007a	lowercase z	a underdot	DANG	0	OPEN	1	0	NONE	dang0 open
 ª	0x00aa	underlined a superscript	dot with double macron	NONE		SILENCE	0	0.25	NONE	silence quarter duration
@@ -72,7 +72,7 @@ z	0x007a	lowercase z	a underdot	DANG	0	OPEN	1	0	NONE	dang0 open
 Ú	0x00da	uppercase U acute	u slashed, single macron	DUNG	1	MUTED	0.1	0.4	NONE	dung1 half duration abbreviated
 Û	0x00db	uppercase U circumflex	u underdot slashed, double macron	DUNG	0	MUTED	0.05	0.2	NONE	dung0 quarter duration muted
 Ü	0x00dc	uppercase U trema	u slashed, double macron	DUNG	1	MUTED	0.05	0.2	NONE	dung1 quarter duration muted
-Ý	0x00dd	uppercase Y acute	x slashed, single macron	TICK		ONE_PANGGUL	0.1	0.4	NONE	tick half duration abbreviated
+Ý	0x00dd	uppercase Y acute	x slashed, single macron	TICK		OPEN	0.1	0.4	NONE	tick half duration abbreviated
 à	0x00e0	lowercase a grave	a underdot single macron	DANG	0	OPEN	0.5	0	NONE	dang0 half duration
 á	0x00e1	lowercase a acute	a single macron	DANG	1	OPEN	0.5	0	NONE	dang1 half duration
 â	0x00e2	lowercase a circumflex	a underdot double macron	DANG	0	OPEN	0.25	0	NONE	dang1 quarter duration
@@ -93,8 +93,8 @@ z	0x007a	lowercase z	a underdot	DANG	0	OPEN	1	0	NONE	dang0 open
 ú	0x00fa	lowercase u acute	u single macron	DUNG	1	OPEN	0.5	0	NONE	dung1 half duration
 û	0x00fb	lowercase u circumflex	u underdot double macron	DUNG	0	OPEN	0.25	0	NONE	dung0 quarter duration
 ü	0x00fc	lowercase u trema	u double macron	DUNG	1	OPEN	0.25	0	NONE	dung1 quarter duration
-ý	0x00fd	lowercase y acute	x single macron	TICK		ONE_PANGGUL	0.5	0	NONE	tick half duration
-ÿ	0x00ff	lowercase y trema	x double macron	TICK		ONE_PANGGUL	0.25	0	NONE	tick quarter duration
+ý	0x00fd	lowercase y acute	x single macron	TICK		OPEN	0.5	0	NONE	tick half duration
+ÿ	0x00ff	lowercase y trema	x double macron	TICK		OPEN	0.25	0	NONE	tick quarter duration
 Ā	0x0100	uppercase A macron	a overdot slashed, single macron	DANG	2	MUTED	0.1	0.4	NONE	dang2 half duration abbreviated
 ā	0x0101	lowercase a macron	a overdot single macron	DANG	2	OPEN	0.5	0	NONE	dang2 half duration
 Ă	0x0102	uppercase A breve	a overdot slashed, double macron	DANG	2	MUTED	0.05	0.2	NONE	dang2 quarter duration muted
@@ -123,7 +123,7 @@ z	0x007a	lowercase z	a underdot	DANG	0	OPEN	1	0	NONE	dang0 open
 ū	0x016b	lowercase u macron	u overdot single macron	DUNG	2	OPEN	0.5	0	NONE	dung2 half duration
 Ŭ	0x016c	uppercase U breve	u overdot slashed, double macron	DUNG	2	MUTED	0.05	0.2	NONE	dung2 quarter duration muted
 ŭ	0x016d	lowercase u breve	u overdot double macron	DUNG	2	OPEN	0.25	0	NONE	dung2 quarter duration
-Ÿ	0x0178	uppercase Y trema	x slashed, double macron	TICK		ONE_PANGGUL	0.05	0.2	NONE	tick quarter duration muted
+Ÿ	0x0178	uppercase Y trema	x slashed, double macron	TICK		MUTED	0.05	0.2	NONE	tick quarter duration muted
 Ž	0x017d	uppercase Z caron	slash with macron	NONE		NONE	0.2	0.3	MODIFIER_PREV1	long mutes previous note, half duration
 ž	0x017e	lowercase Z caron	slash with double macron	NONE		NONE	0.1	0.15	MODIFIER_PREV1	long mutes previous note, quarter duration
 ṁ	0x1e41	lowercase m overdot	serifless lowercase u	KRUM		OPEN	1	0	NONE	krum open

@@ -1,104 +1,16 @@
-from mido import Message, MetaMessage, MidiTrack, bpm2tempo, tempo2bpm
-
 from src.common.classes import Beat, Character, Score
 from src.common.constants import (
     Duration,
     InstrumentPosition,
-    InstrumentType,
     Modifier,
     NotationFont,
     Note,
     Octave,
     Stroke,
 )
-from src.common.utils import CHARACTER_LIST, SYMBOLVALUE_TO_MIDINOTE_LOOKUP
-from src.notation2midi.settings import BASE_NOTE_TIME, BASE_NOTES_PER_BEAT
+from src.common.utils import CHARACTER_LIST
 
-
-class MidiTrackX(MidiTrack):
-    font: NotationFont
-    last_note_end_msg = None
-    time_since_last_note_end: int = 0
-    current_bpm: int = 0
-    current_signature: int = 0
-
-    def __init__(self, font: NotationFont):
-        self.font = font
-        super(MidiTrackX, self).__init__()
-
-    def total_tick_time(self):
-        return sum(msg.time for msg in self)
-
-    def update_signature(self, new_signature) -> None:
-        if new_signature != self.current_signature:
-            self.append(
-                MetaMessage(
-                    "time_signature",
-                    numerator=round(new_signature),
-                    denominator=4,
-                    clocks_per_click=36,
-                    notated_32nd_notes_per_beat=8,
-                    time=self.time_since_last_note_end,
-                )
-            )
-            self.time_since_last_note_end = 0
-            self.current_signature = new_signature
-
-    def update_tempo(self, new_tempo):
-        if new_tempo != self.current_bpm:
-            self.append(MetaMessage("set_tempo", tempo=bpm2tempo(new_tempo)))
-            self.current_bpm = new_tempo
-
-    def extend_last_note(self, seconds: int) -> None:
-        if self.last_note_end_msg:
-            beats = round(self.current_bpm * seconds / 60)
-            self.last_note_end_msg.time += beats * BASE_NOTE_TIME * BASE_NOTES_PER_BEAT
-
-    def add_note(self, position: InstrumentPosition, character: Character):
-        """Converts a note into a midi event
-
-        Args:
-            position (InstrumentPosition): The instrument position playing the note.
-            note (Character): Note to be processed.
-
-        Raises:
-            ValueError: _description_
-        """
-        if not character.note == Note.NONE:
-            midinote = SYMBOLVALUE_TO_MIDINOTE_LOOKUP[
-                position.instrumenttype, character.note, character.octave, character.stroke
-            ]
-            # Set ON and OFF messages for actual note
-            self.append(
-                Message(
-                    type="note_on",
-                    channel=midinote.channel,
-                    note=midinote.midi,
-                    velocity=100,
-                    time=self.time_since_last_note_end,
-                )
-            )
-            self.append(
-                Message(
-                    type="note_off",
-                    channel=midinote.channel,
-                    note=midinote.midi,
-                    velocity=70,
-                    time=round(character.duration * BASE_NOTE_TIME),
-                )
-            )
-            self.last_note_end_msg = self[-1]
-            self.time_since_last_note_end = round(character.rest_after * BASE_NOTE_TIME)
-        # TODO next two ifs can now be combined
-        elif character.stroke is Stroke.SILENCE:
-            # Increment time since last note ended
-            self.time_since_last_note_end += round(character.rest_after * BASE_NOTE_TIME)
-        elif character.stroke is Stroke.EXTENSION:
-            # Extension of note duration: add duration to last note
-            if self.last_note_end_msg:
-                self.last_note_end_msg.time += round(character.duration * BASE_NOTE_TIME)
-        else:
-            raise ValueError(f"Unexpected note value {character.note} {character.octave} {character.stroke}")
+# ==================== BALI MUSIC 4 FONT =====================================
 
 
 def postprocess_font4(score: Score) -> Score:
@@ -136,47 +48,99 @@ def get_next_note(beat: Beat, position: InstrumentPosition, index: int) -> Chara
     return char
 
 
+# ==================== BALI MUSIC 5 FONT =====================================
+
+TREMOLO_NR_OF_NOTES_PER_QUARTERNOTE = 3
+TREMOLO_ACCELERATING_FROM_TO_FREQ = [1, 5]
+TREMOLO_ACCELERATING_NR_OF_NOTES = 16
+
+
 def apply_ratio(note: Character, ratio_note: Character) -> tuple[Duration, Duration]:
     total_duration = note.total_duration
-    new_duration = total_duration * round(ratio_note.duration)
+    new_duration = total_duration * ratio_note.duration
     new_time_after = total_duration - new_duration
     return new_duration, new_time_after
+
+
+def get_nearest_octave(char: Character, other_char: Character, noterange: list[tuple[Note, Octave]]) -> Octave:
+    """Returns the octave for char that minimizes the distance between the two character notes.
+
+    Args:
+        char (Character): character for which to optimize the octave
+        other_char (Character): reference character
+        noterange (list[tuple[Note, Octave]]): available note range
+
+    Returns:
+        Octave: the octave that puts char nearest to other_char
+    """
+    next_note_idx = noterange.index((other_char.note, other_char.octave))
+    octave = None
+    best_distance = 99
+    for offset in [0, 1, -1]:
+        new_octave = other_char.octave + offset
+        if (char.note, new_octave) in noterange and (
+            new_distance := abs(noterange.index((char.note, new_octave)) - next_note_idx)
+        ) < best_distance:
+            octave = new_octave
+            best_distance = min(new_distance, best_distance)
+    return octave
+
+
+def remove_from_last_note_to_end(stave: list[Character]) -> tuple[Character | None, list[Character]]:
+    """Searches for the last note character in stave and removes this note and all characters following it.
+
+    Args:
+        stave (list[Character]): list to be searched.
+
+    Returns:
+        tuple[Character | None, list[Character]]: The last note if found and the characters following it.
+    """
+    modifiers = []
+    note = None
+    while stave and not note:
+        element = stave.pop(-1)
+        if element.note is not Note.NONE:
+            note = element
+        else:
+            modifiers.append(element)
+    return note, modifiers
 
 
 def postprocess_font5(score: Score) -> Score:
     for iteration in [1, 2]:  # Needed for correct processing of grace notes. See explanation below.
         for system in score.systems:
             for beat in system.beats:
-                for instr_position, stave in beat.staves.items():
+                for position, stave in beat.staves.items():
+                    instr_range = [
+                        (note, oct)
+                        for (note, oct, stroke) in score.position_range_lookup[position]
+                        if stroke == score.position_range_lookup[position][0][2]
+                    ]
+
                     new_stave = list()
                     for index, note in enumerate(stave):
                         match note.modifier:
                             case Modifier.MUTE | Modifier.ABBREVIATE:
+                                # Mute / abbreviate preceding note.
+                                # Check if there is a separate MIDI entry for the muted/abbreviated variant of this note.
                                 prevnote = new_stave.pop(-1)
-                                if prevnote.note == Note.BYONG:
-                                    new_note, new_stroke = (
-                                        (Note.BYOT, Stroke.OPEN)
-                                        if note.modifier == Modifier.MUTE
-                                        else (Note.JET, Stroke.MUTED)
-                                    )
+                                if (
+                                    position.instrumenttype,
+                                    prevnote.note,
+                                    prevnote.octave,
+                                    note.stroke,
+                                ) in score.midi_notes_dict:
+                                    # Midi entry found: keep previous note durations and change its stroke type
                                     new_duration, new_rest_after = prevnote.duration, prevnote.rest_after
-                                elif note.modifier == Modifier.ABBREVIATE:
-                                    new_duration, new_rest_after = apply_ratio(prevnote, note)
-                                    new_note, new_stroke = prevnote.note, prevnote.stroke
+                                    new_stroke = note.stroke
                                 else:
-                                    new_duration, new_rest_after = prevnote.duration, prevnote.rest_after
-                                    new_note = prevnote.note
-                                    new_stroke = (
-                                        Stroke.MUTED
-                                        if (instr_position, new_note, prevnote.octave, Stroke.MUTED)
-                                        in list(score.midi_notes_dict.keys())
-                                        else prevnote.stroke
-                                    )
+                                    # No separate MIDI entry: emulate the stroke by modifying the note duration
+                                    new_duration, new_rest_after = apply_ratio(prevnote, note)
+                                    new_stroke = prevnote.stroke
                                 new_stave.append(
                                     prevnote.model_copy(
                                         update={
                                             "symbol": prevnote.symbol + note.symbol,
-                                            "note": new_note,
                                             "stroke": new_stroke,
                                             "duration": new_duration,
                                             "rest_after": new_rest_after,
@@ -184,6 +148,7 @@ def postprocess_font5(score: Score) -> Score:
                                     )
                                 )
                             case Modifier.HALF_NOTE | Modifier.QUARTER_NOTE:
+                                # Reduce the note duration of the preceding note.
                                 prevnote = new_stave.pop(-1)
                                 new_duration = prevnote.duration * note.duration
                                 new_rest_after = prevnote.rest_after * note.duration
@@ -197,54 +162,30 @@ def postprocess_font5(score: Score) -> Score:
                                     )
                                 )
                             case Modifier.OCTAVE_0 | Modifier.OCTAVE_2:
+                                # Modify the octave of the preceding note.
                                 prevnote = new_stave.pop(-1)
                                 new_stave.append(
                                     prevnote.model_copy(
                                         update={"symbol": prevnote.symbol + note.symbol, "octave": note.octave}
                                     )
                                 )
-                            case Modifier.SUBTRACT_FROM_PREV:  # Grace notes
+                            case Modifier.GRACE_NOTE:
+                                # A grace note is both a note and a modifyer.
+                                # 1. Subtract its length from the preceding note.
+                                # 2. Determine its octave (grace notes can't be combined with an octave indicator).
                                 if iteration == 1:
-                                    # Append the grace note during iteration 1 so that it can be processed in iteration 2.
-                                    # We need to wait until all modifiers of the next node have been applied before proceeding.
-                                    # See also the next remark.
+                                    # Do not process the grace note during iteration 1: put it back so that it can be processed
+                                    # in iteration 2. We need to wait until all modifiers of the next node have been applied.
+                                    # See next remark.
                                     new_stave.append(note)
                                 if iteration == 2:
-                                    # The symbol of grace notes does not have information about its octave.
-                                    # In order to determine the correct octave, we assume that grace notes are always as "close"
-                                    # as possible to the following note.
-                                    # In order to get the correct octave of the following note, we need to wait until its modifiers
-                                    # have been processed. This is why we wait until the second iteration to process grace notes.
-                                    if note.octave:
-                                        next_note = get_next_note(beat, instr_position, index)
-                                        if next_note:
-                                            # Create a list of notes in the instrument's range with indices
-                                            instr_range = {
-                                                (note, oct): idx
-                                                for idx, (note, oct, stroke) in enumerate(
-                                                    score.position_range_lookup[instr_position]
-                                                )
-                                                if stroke == score.position_range_lookup[instr_position][0][2]
-                                            }
-                                            next_note_idx = instr_range[next_note.note, next_note.octave]
-                                            possible_octaves = [
-                                                (o, abs(idx - next_note_idx))
-                                                for (n, o), idx in instr_range.items()
-                                                if n == note.note
-                                            ]
-                                            octave = (
-                                                next(
-                                                    (
-                                                        o
-                                                        for o, diff in possible_octaves
-                                                        if diff == min([diff for _, diff in possible_octaves])
-                                                    ),
-                                                    None,
-                                                )
-                                                or note.octave
-                                            )
+                                    # The symbol of grace notes does not have information about its octave. In order to determine the
+                                    # correct octave, we assume that grace notes are always as "close" as possible to the following note.
+                                    if note.octave and (next_note := get_next_note(beat, position, index)):
+                                        octave = get_nearest_octave(note, next_note, instr_range)
                                     else:
-                                        octave = None
+                                        octave = note.octave
+                                    # Subtract the duration of the grace note from its predecessor
                                     prevnote = new_stave.pop(-1)
                                     new_rest_after = max(0, prevnote.rest_after - note.duration)
                                     new_duration = max(0, prevnote.duration - (note.duration - new_rest_after))
@@ -253,8 +194,62 @@ def postprocess_font5(score: Score) -> Score:
                                             update={"duration": new_duration, "rest_after": new_rest_after}
                                         )
                                     )
+                                    # Add the grace note with the correct octave
                                     new_stave.append(note.model_copy(update={"octave": octave}))
+                            case Modifier.TREMOLO:
+                                if iteration == 1:
+                                    new_stave.append(note)
+                                if iteration == 2:
+                                    prevnote = new_stave.pop(-1)
+                                    nr_of_notes = round(prevnote.duration * TREMOLO_NR_OF_NOTES_PER_QUARTERNOTE)
+                                    duration = prevnote.duration / nr_of_notes
+                                    for _ in range(nr_of_notes):
+                                        new_stave.append(prevnote.model_copy(update={"duration": duration}))
+                            case Modifier.TREMOLO_ACCELERATING:
+                                # If the next two characters are also a TREMOLO_ACCELERATING NOTE, then wait for that modifier to be selected.
+                                if iteration == 1:
+                                    new_stave.append(note)
+                                if iteration == 2:
+                                    if (
+                                        len(stave) >= index + 3
+                                        and stave[index + 1].note is not Note.NONE
+                                        and stave[index + 2].modifier is Modifier.TREMOLO_ACCELERATING
+                                    ):
+                                        new_stave.append(note)
+                                    else:
+                                        notes = []
+                                        notes.append(new_stave.pop(-1))
+                                        # remove the previous note from new_stave if it is also TREMOLO_ACCELERATING
+                                        if new_stave and new_stave[-1].modifier is Modifier.TREMOLO_ACCELERATING:
+                                            new_stave.pop(-1)
+                                            notes.insert(0, new_stave.pop(-1))
+                                        duration_incr = (
+                                            TREMOLO_ACCELERATING_FROM_TO_FREQ[1] - TREMOLO_ACCELERATING_FROM_TO_FREQ[0]
+                                        ) / TREMOLO_ACCELERATING_NR_OF_NOTES
+                                        note_idx = 0
+                                        for count in range(TREMOLO_ACCELERATING_NR_OF_NOTES):
+                                            new_stave.append(
+                                                notes[note_idx].model_copy(
+                                                    update={"duration": 1 / (1 + count * duration_incr)}
+                                                )
+                                            )
+                                            note_idx = (note_idx + 1) % len(notes)
                             case _:
+                                # if (
+                                #     note.stroke == Stroke.EXTENSION
+                                #     and new_stave
+                                #     and new_stave[-1].modifier
+                                #     in [
+                                #         Modifier.TREMOLO,
+                                #         Modifier.TREMOLO_ACCELERATING,
+                                #     ]
+                                # ):
+                                #     prevnote, following_characters = remove_from_last_note_to_end(new_stave)
+                                #     new_note = prevnote.model_copy(
+                                #         update={"duration": prevnote.duration + note.duration}
+                                #     )
+                                #     new_stave.extend([new_note] + following_characters)
+                                # else:
                                 new_stave.append(note)
                     stave.clear()
                     stave.extend(new_stave)
@@ -263,6 +258,19 @@ def postprocess_font5(score: Score) -> Score:
 
 
 def postprocess(score: Score) -> Score:
+    """Processes the modifier characters. These are characters that change properties of the preceding note.
+    Usually these characters don't have an intrinsic value are discarded after having been processed.
+    The meaning and effect of modifiers is font specific.
+
+    Args:
+        score (Score): The score
+
+    Raises:
+        ValueError: _description_
+
+    Returns:
+        Score: _description_
+    """
     if score.source.font is NotationFont.BALIMUSIC4:
         postprocess_font4(score)
     elif score.source.font is NotationFont.BALIMUSIC5:
@@ -284,7 +292,7 @@ def create_character(
     modifier: Modifier = Modifier.NONE,
     description: str = "",
 ) -> Character:
-    Character(
+    return Character(
         note=note,
         octave=octave,
         stroke=stroke,
@@ -317,6 +325,7 @@ def get_character(
         duration (Duration): _description_
         rest_after (Duration): _description_
         symbol (str): _description_
+        font(NotationFont): the font used
 
     Returns:
         Character: a copy of a Character from the character list if a match is found, otherwise an newly created Character object.
@@ -328,11 +337,12 @@ def get_character(
     char = char or create_character(note, octave, stroke, duration, rest_after, symbol="")
     char_symbol = char.symbol
     additional_symbol = ""
-    if font is NotationFont.BALIMUSIC5 and octave != 1:
+    if font is NotationFont.BALIMUSIC5:
+        # symbol can consist of more than one character: a note symbol followed by one or more modifiers
         if symbol[0] in "1234567" and char_symbol in "ioeruas":
             # replace regular note symbol with grace note equivalent
             char_symbol = "1234567"["ioeruas".find(char_symbol)]
-        additional_symbol = "," if octave == 0 else "<"
+        additional_symbol = "," if octave == 0 else "<" if octave == 2 else ""
 
     return char.model_copy(
         update={

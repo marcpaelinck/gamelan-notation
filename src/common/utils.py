@@ -1,13 +1,24 @@
 import csv
 from copy import copy
 from os import path
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
-from src.common.classes import Character, InstrumentTag, MidiNote, Score, Source, System
+from src.common.classes import (
+    Character,
+    InstrumentTag,
+    Kempli,
+    MetaDataType,
+    MidiNote,
+    Score,
+    Source,
+    System,
+)
 from src.common.constants import (
     Duration,
+    GonganType,
     InstrumentGroup,
     InstrumentPosition,
     MIDIvalue,
@@ -18,6 +29,8 @@ from src.common.constants import (
     Stroke,
 )
 from src.notation2midi.settings import (
+    COMMENT,
+    METADATA,
     MIDI_NOTES_DEF_FILE,
     NOTATIONFONT_DEF_FILES,
     TAGS_DEF_FILE,
@@ -32,8 +45,8 @@ TAG_TO_POSITION_LOOKUP: dict[InstrumentTag, InstrumentPosition] = dict()
 POSITION_TO_RANGE_LOOKUP: dict[InstrumentPosition, tuple[Note, Octave, Stroke]] = dict()
 
 
-def initialize_constants(source: Source, version: MidiVersion, midi_notes_file: str) -> None:
-    """Initializes lookup dicts and other constants
+def read_settings(source: Source, version: MidiVersion, midi_notes_file: str) -> None:
+    """Initializes lookup dicts and lists from settings files
 
     Args:
         instrumentgroup (InstrumentGroup): The type of orchestra (e.g. gong kebyar, semar pagulingan)
@@ -75,23 +88,26 @@ def create_rest_stave(resttype: Stroke, duration: float) -> list[Character]:
     whole_rest: Character = next(
         (char for char in CHARACTER_LIST if char.stroke == resttype and char.total_duration == 1), None
     )
-    half_rest = whole_rest.model_copy(
-        update={"duration": whole_rest.duration / 2, "rest_after": whole_rest.rest_after / 2}
-    )
-    quarter_rest = whole_rest.model_copy(
-        update={"duration": whole_rest.duration / 4, "rest_after": whole_rest.rest_after / 4}
-    )
-    rest_count = int(duration)
-    half_rest_count = int((duration - rest_count) * 2)
-    quarter_rest_count = int((duration - rest_count - 0.5 * half_rest_count) * 4)
-    rests = [copy(whole_rest)] * rest_count + [half_rest] * half_rest_count + [quarter_rest] * quarter_rest_count
-    return rests
+    attribute = "duration" if whole_rest.duration > 0 else "rest_after"
+    return [whole_rest.model_copy(update={attribute: duration})]
+    # half_rest = whole_rest.model_copy(
+    #     update={"duration": whole_rest.duration / 2, "rest_after": whole_rest.rest_after / 2}
+    # )
+    # quarter_rest = whole_rest.model_copy(
+    #     update={"duration": whole_rest.duration / 4, "rest_after": whole_rest.rest_after / 4}
+    # )
+    # rest_count = int(duration)
+    # half_rest_count = int((duration - rest_count) * 2)
+    # quarter_rest_count = int((duration - rest_count - 0.5 * half_rest_count) * 4)
+    # rests = [copy(whole_rest)] * rest_count + [half_rest] * half_rest_count + [quarter_rest] * quarter_rest_count
+    # return rests
 
 
 def system_to_records(system: System, skipemptylines: bool = True) -> list[dict[InstrumentPosition | int, list[str]]]:
 
     skip = []
     alias = dict()
+    # If pemade and kantilan staves are identical, replace both positions with a single "GANGSA" position.
     for p_pos, k_pos in [
         (InstrumentPosition.PEMADE_POLOS, InstrumentPosition.KANTILAN_POLOS),
         (InstrumentPosition.PEMADE_SANGSIH, InstrumentPosition.KANTILAN_SANGSIH),
@@ -105,8 +121,9 @@ def system_to_records(system: System, skipemptylines: bool = True) -> list[dict[
             alias[p_pos] = "GANGSA_" + p_pos.value.split("_")[1]
 
     result = (
-        [
-            {InstrumentFields.POSITION: "metadata", 1: metadata.data.model_dump_json(exclude_defaults=True)}
+        [{InstrumentFields.POSITION: COMMENT, 1: comment} for comment in system.comments]
+        + [
+            {InstrumentFields.POSITION: METADATA, 1: metadata.data.model_dump_json(exclude_defaults=True)}
             for metadata in system.metadata
         ]
         + [
@@ -152,6 +169,7 @@ def create_midinote_list(instrumentgroup: InstrumentGroup, version: MidiVersion,
         lambda x: [p for p in InstrumentPosition if p.instrumenttype == x]
     )
     midinotes_df[MidiNotesFields.OCTAVE] = midinotes_df[MidiNotesFields.OCTAVE].replace(np.nan, value="NONE")
+    midinotes_df[MidiNotesFields.REMARK] = midinotes_df[MidiNotesFields.REMARK].replace(np.nan, value="")
     # Select the required midi value
     if version:
         midinotes_df[MidiNotesFields.MIDI] = midinotes_df[version].values.tolist()

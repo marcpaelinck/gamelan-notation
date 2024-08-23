@@ -18,6 +18,13 @@ METADATA = "metadata"
 COMMENT = "comment"
 NON_INSTRUMENT_TAGS = [METADATA, COMMENT]
 
+SINOMLADRANG = Source(
+    datapath=".\\data\\sinom ladrang",
+    infilename="Sinom Ladrang_font5.tsv",
+    outfilefmt="Sinom Ladrang {position}_{version}.{ext}",
+    font=NotationFont.BALIMUSIC5,
+    instrumentgroup=InstrumentGroup.GONG_KEBYAR,
+)
 CENDRAWASIH = Source(
     datapath=".\\data\\cendrawasih",
     infilename="Cendrawasih_complete.tsv",
@@ -32,11 +39,25 @@ CENDRAWASIH5 = Source(
     font=NotationFont.BALIMUSIC5,
     instrumentgroup=InstrumentGroup.GONG_KEBYAR,
 )
-MARGAPATI = Source(
+MARGAPATI4 = Source(
     datapath=".\\data\\margapati",
-    infilename="Margapati-UTF8.tsv",
+    infilename="Margapati_font4.tsv",
     outfilefmt="Margapati {position}_{version}.{ext}",
     font=NotationFont.BALIMUSIC4,
+    instrumentgroup=InstrumentGroup.GONG_KEBYAR,
+)
+MARGAPATIREYONG3 = Source(
+    datapath=".\\data\\margapati",
+    infilename="Margapati reyong_font3.tsv",
+    outfilefmt="Margapati {position}_{version}.{ext}",
+    font=NotationFont.BALIMUSIC4,
+    instrumentgroup=InstrumentGroup.GONG_KEBYAR,
+)
+MARGAPATI5 = Source(
+    datapath=".\\data\\margapati",
+    infilename="Margapati_font5.tsv",
+    outfilefmt="Margapati {position}_{version}.{ext}",
+    font=NotationFont.BALIMUSIC5,
     instrumentgroup=InstrumentGroup.GONG_KEBYAR,
 )
 GENDINGANAK2 = Source(
@@ -100,5 +121,6 @@ class MidiNotesFields(SStrEnum):
     NOTE = "note"
     OCTAVE = "octave"
     STROKE = "stroke"
+    REMARK = "remark"
     CHANNEL = "channel"
     MIDI = "midi"
