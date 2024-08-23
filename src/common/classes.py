@@ -11,11 +11,13 @@ from src.common.constants import (
     ALL_PASSES,
     BPM,
     PASS,
+    CharacterSource,
     Duration,
     GonganType,
     InstrumentGroup,
     InstrumentPosition,
     InstrumentType,
+    MetaDataStatus,
     MidiVersion,
     Modifier,
     NotationFont,
@@ -67,6 +69,7 @@ class NotationModel(BaseModel):
 class Character(NotationModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    source: CharacterSource = CharacterSource.SCORE
     symbol: str
     unicode: str
     symbol_description: str
@@ -110,6 +113,7 @@ class MidiNote(NotationModel):
     stroke: Stroke
     channel: int
     midi: int
+    remark: str
 
     @field_validator("positions", mode="before")
     @classmethod
@@ -138,7 +142,12 @@ class InstrumentTag(NotationModel):
 #
 # Metadata
 #
-class Tempo(BaseModel):
+class MetaDataType(BaseModel):
+    type: Literal[""]
+    _processingorder_ = 99
+
+
+class Tempo(MetaDataType):
     type: Literal["tempo"]
     bpm: int
     passes: list[PASS] = field(default_factory=list)
@@ -156,48 +165,46 @@ class Tempo(BaseModel):
         # Returns the pythonic sequence id (numbered from 0)
         return self.first_beat - 1
 
-    # @model_validator(mode="after")
-    # def set_default_pass(self):
-    #     if not self.passes:
-    #         self.passes.append(DEFAULT)
-    #     return self
-    # @model_validator(mode="after")
-    # def set_default_pass(self):
-    #     if not self.passes:
-    #         self.passes.append(DEFAULT)
-    #     return self
 
-
-class Label(BaseModel):
+class Label(MetaDataType):
     type: Literal["label"]
-    label: str
-    beat_nr: Optional[int] = 1
+    name: str
+    beat: Optional[int] = 1
+    _processingorder_ = 1
 
     @property
     def beat_seq(self) -> int:
         # Returns the pythonic sequence id (numbered from 0)
-        return self.beat_nr - 1
+        return self.beat - 1
 
 
-class GoTo(BaseModel):
+class GoTo(MetaDataType):
     type: Literal["goto"]
     label: str
-    beat_nr: Optional[int] | None = None  # Beat number from which to goto. Default is last beat of the system.
+    from_beat: Optional[int] | None = None  # Beat number from which to goto. Default is last beat of the system.
     passes: Optional[list[int]] = field(default_factory=list)  # On which pass(es) should goto be performed?
 
     @property
     def beat_seq(self) -> int:
         # Returns the pythonic sequence id (numbered from 0)
-        return self.beat_nr - 1 if self.beat_nr else -1
+        return self.from_beat - 1 if self.from_beat else -1
 
 
-class Gongan(BaseModel):
+class Kempli(MetaDataType):
+    type: Literal["kempli"]
+    status: MetaDataStatus
+
+
+class Gongan(MetaDataType):
     type: Literal["gongan"]
-    kind: str
+    kind: GonganType
+
+
+MetaDataType = Union[Tempo, Label, GoTo, Kempli, Gongan]
 
 
 class MetaData(BaseModel):
-    data: Union[Tempo, Label, GoTo, Gongan] = Field(..., discriminator="type")
+    data: MetaDataType = Field(..., discriminator="type")
 
 
 #
@@ -225,7 +232,9 @@ class Beat:
     bpm_end: dict[PASS, BPM]  # tempo at end of beat (can vary per pass)
     duration: float
     tempo_changes: dict[PASS, TempoChange] = field(default_factory=dict)
+    tempi: dict[PASS, Tempo] = field(default_factory=dict)
     staves: dict[InstrumentPosition, list[Character]] = field(default_factory=dict)
+    prev: "Beat" = field(default=None, repr=False)
     next: "Beat" = field(default=None, repr=False)
     goto: dict[PASS, "Beat"] = field(default_factory=dict)
     _pass_: PASS = 0  # Counts the number of times the beat is passed during generation of MIDI file.
@@ -241,16 +250,19 @@ class Beat:
         # Returns the pythonic sequence id (numbered from 0)
         return self.sys_id - 1
 
+    def next_beat_in_flow(self, pass_=None):
+        return self.goto.get(pass_ or self._pass_, self.next)
+
     def get_bpm_start(self):
-        return self.bpm_start.get(self._pass_, self.bpm_start.get(ALL_PASSES, None))
         return self.bpm_start.get(self._pass_, self.bpm_start.get(ALL_PASSES, None))
 
     def get_bpm_end(self):
         return self.bpm_end.get(self._pass_, self.bpm_end.get(ALL_PASSES, None))
+
+    def get_bpm_end_last_pass(self):
         return self.bpm_end.get(self._pass_, self.bpm_end.get(ALL_PASSES, None))
 
     def get_changed_tempo(self, current_tempo: BPM) -> BPM | None:
-        tempo_change = self.tempo_changes.get(self._pass_, self.tempo_changes.get(ALL_PASSES, None))
         tempo_change = self.tempo_changes.get(self._pass_, self.tempo_changes.get(ALL_PASSES, None))
         if tempo_change and tempo_change.new_tempo != current_tempo:
             if tempo_change.incremental:
@@ -278,6 +290,11 @@ class System:
     beat_duration: int = 4
     gongantype: GonganType = GonganType.REGULAR
     metadata: list[MetaData] = field(default_factory=list)
+    comments: list[str] = field(default_factory=list)
+    _pass_: PASS = 0  # Counts the number of times the system is passed during generation of MIDI file.
+
+    def get_metadata(self, cls: MetaDataType):
+        return next((meta.data for meta in self.metadata if isinstance(meta.data, cls)), None)
 
 
 @dataclass
@@ -288,7 +305,7 @@ class FlowInfo:
     # have not yet been encountered while processing the score.
     labels: dict[str, Beat] = field(default_factory=dict)
     gotos: dict[str, tuple[System, GoTo]] = field(default_factory=lambda: defaultdict(list))
-    gongantype: GonganType = GonganType.REGULAR
+    kempli: MetaDataStatus = MetaDataStatus.ON
     metadata: list[MetaData] = field(default_factory=list)
 
 
@@ -308,7 +325,6 @@ class Score:
     midi_version: MidiVersion
     midi_version: MidiVersion
     instrumentgroup: InstrumentGroup = None
-    instrument_positions: set[InstrumentPosition] = None
     instrument_positions: set[InstrumentPosition] = None
     systems: list[System] = field(default_factory=list)
     balimusic_font_dict: dict[str, Character] = None

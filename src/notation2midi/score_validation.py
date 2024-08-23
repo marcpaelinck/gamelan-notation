@@ -1,13 +1,14 @@
 import math
 from pprint import pprint
 
-from src.common.classes import Beat, Character, Score, System
+from src.common.classes import Beat, Character, Kempli, Score, System
 from src.common.constants import (
     BeatId,
     Duration,
     GonganType,
     InstrumentPosition,
     InstrumentType,
+    MetaDataStatus,
     Modifier,
     NotationFont,
     Note,
@@ -31,16 +32,35 @@ POSITIONS_VALIDATE_AND_CORRECT_KEMPYUNG = [
 
 
 def invalid_beat_lengths(system: System, autocorrect: bool) -> tuple[list[tuple[BeatId, Duration]]]:
+    """Checks the length of beats in "regular" gongans. The length should be a power of 2.
+
+    Args:
+        system (System): the system to check
+        autocorrect (bool): if True, an attempt will be made to correct the beat length (currently not effective)
+
+    Returns:
+        tuple[list[tuple[BeatId, Duration]]]: list of remaining invalid beats and of corrected beats.
+    """
     invalids = []
     corrected = []
 
     for beat in system.beats:
-        if system.gongantype != GonganType.KEBYAR and 2 ** int(math.log2(beat.duration)) != beat.duration:
+        if system.gongantype == GonganType.REGULAR and 2 ** int(math.log2(beat.duration)) != beat.duration:
             invalids.append((beat.full_id, beat.duration))
     return invalids, corrected
 
 
 def unequal_stave_lengths(system: System, autocorrect: bool, filler: Character) -> tuple[list[tuple[BeatId, Duration]]]:
+    """Checks that the stave lengths of the individual instrument in each beat of the given system are all equal.
+
+    Args:
+        system (System): the system to check
+        autocorrect (bool): if True, an attempt will be made to correct the stave lengths of specific instruments (pokok, gongs and kempli)
+                    In most scores, the notation of these instruments is simplified by omitting dashes (extensions) after each long note.
+
+    Returns:
+        tuple[list[tuple[BeatId, Duration]]]: list of remaining invalid beats and of corrected beats.
+    """
     invalids = []
     corrected = []
 
@@ -80,6 +100,16 @@ def unequal_stave_lengths(system: System, autocorrect: bool, filler: Character) 
 def out_of_range(
     system: System, ranges: dict[InstrumentPosition, list[(Note, Octave, Stroke)]], autocorrect: bool
 ) -> tuple[list[str, list[Character]]]:
+    """Checks that the notes of each instrument matches the instrument's range.
+
+    Args:
+        system (System): the system to check
+        ranges(dict[InstrumentPosition, list[(Note, Octave, Stroke)]]): list of notes for each instrument
+        autocorrect (bool): if True, an attempt will be made to correct notes that are out of range (currently not effective)
+
+    Returns:
+        tuple[list[tuple[BeatId, Duration]]]: list of remaining beats containing incorrect notes and of corrected beats.
+    """
     invalids = []
     corrected = []
 
@@ -95,44 +125,23 @@ def out_of_range(
     return invalids, corrected
 
 
-def get_kempyung(polos: Character, instrumentrange: list[tuple[Note, Octave, Stroke]]):
+def get_kempyung_dict(instrumentrange: dict[tuple[Note, Octave], tuple[Note, Octave]]):
+    """returns a dict mapping the kempyung note to each base note in the instrument's range.
+
+    Args:
+        instrumentrange (list[tuple[Note, Octave, Stroke]]): range of the instrument.
+
+    Returns:
+        dict[tuple[Note, Octave], tuple[Note, Octave]]: the kempyung dict
+    """
     ordered = sorted(
         list({(note, octave) for note, octave, _ in instrumentrange}),
-        key=lambda item: item[0].sequence + 10 * item[1],
+        key=lambda item: item[0].sequence + 100 * item[1],
     )
     kempyung = zip(ordered, ordered[3:] + ordered[-3:])
     kempyung_dict = {polos: sangsih for polos, sangsih in kempyung}
     # raises error if not found (should not happen)
-    return kempyung_dict[(polos.note, polos.octave)]
-
-
-def iskempyung(
-    polos: Character,
-    sangsih: Character,
-    instrumentrange: list[tuple[Note, Octave, Stroke]],
-):
-    ordered = sorted(
-        list({(note, octave) for note, octave, _ in instrumentrange}),
-        key=lambda item: item[0].sequence + 10 * item[1],
-    )
-    kempyung = zip(ordered, ordered[3:] + ordered[-3:])
-    return ((polos.note, polos.octave), (sangsih.note, sangsih.octave)) in kempyung
-
-
-def get_correct_kempyung(
-    polos: Character, sangsih: Character, instrumentrange: list[tuple[Note, Octave, Stroke]], font: NotationFont
-):
-    note, octave = get_kempyung(polos, instrumentrange)
-    correct_sangsih = get_character(
-        note=note,
-        octave=octave,
-        stroke=sangsih.stroke,
-        duration=sangsih.duration,
-        rest_after=sangsih.rest_after,
-        symbol=sangsih.symbol,
-        font=font,
-    )
-    return correct_sangsih
+    return kempyung_dict
 
 
 def incorrect_kempyung(
@@ -149,13 +158,14 @@ def incorrect_kempyung(
     for beat in system.beats:
         for pair in POSITIONS_VALIDATE_AND_CORRECT_KEMPYUNG:
             instrumentrange = ranges[pair[0]]
+            kempyung_dict = get_kempyung_dict(instrumentrange)
             # check if both instruments occur in the beat
             if all(instrument in beat.staves.keys() for instrument in pair):
                 # check each kempyung note
                 notepairs = note_pairs(beat, pair)
-                # only check kempyung if parts are homophone.
                 incorrect_detected = False
                 autocorrected = False
+                # only check kempyung if parts are homophone.
                 if all(
                     polos.stroke == sangsih.stroke  # Unisono and playing the same stroke (muting, open or rest)
                     and polos.duration == sangsih.duration
@@ -164,22 +174,26 @@ def incorrect_kempyung(
                 ):
                     orig_sangsih_str = "".join((n.symbol for n in beat.staves[pair[1]]))
                     # Check for incorrect sangsih values.
-                    # When autocorrecting, run the code a second time to check corrections.
+                    # When autocorrecting, run the code a second time to check for remaining errors.
                     iterations = [1, 2] if autocorrect else [1]
                     for iteration in iterations:
                         notepairs = note_pairs(beat, pair)
                         for seq, (polos, sangsih) in enumerate(notepairs):
-                            # Kempyung is only valid if muting status of both notes is the same.
+                            # Check kempyung.
                             if (
                                 polos.note is not Note.NONE
                                 and sangsih.note is not Note.NONE
-                                and not iskempyung(polos, sangsih, instrumentrange=instrumentrange)
+                                and not (sangsih.note, sangsih.octave) == kempyung_dict[(polos.note, polos.octave)]
                             ):
                                 if autocorrect and iteration == 1:
-                                    correct_sangsih = get_correct_kempyung(
-                                        polos=polos,
-                                        sangsih=sangsih,
-                                        instrumentrange=instrumentrange,
+                                    correct_note, correct_octave = kempyung_dict[(polos.note, polos.octave)]
+                                    correct_sangsih = get_character(
+                                        note=correct_note,
+                                        octave=correct_octave,
+                                        stroke=sangsih.stroke,
+                                        duration=sangsih.duration,
+                                        rest_after=sangsih.rest_after,
+                                        symbol=sangsih.symbol,  # will be returned with corrected note symbol
                                         font=score.source.font,
                                     )
                                     beat.staves[pair[1]][seq] = correct_sangsih
@@ -218,16 +232,18 @@ def create_missing_staves(beat: Beat, prevbeat: Beat, score: Score) -> dict[Inst
         prevstrokes = {pos: (prevbeat.staves[pos][-1].stroke if prevbeat else silence) for pos in missing_positions}
         resttypes = {pos: silence if prevstroke is silence else extension for pos, prevstroke in prevstrokes.items()}
         staves = {position: create_rest_stave(resttypes[position], beat.duration) for position in missing_positions}
-        # Add a kempli beat, except in case of kebyar of if the kempli part was already given in the original score
+        system = score.systems[beat.sys_seq]
+        # Add a kempli beat, except if a metadata label indicates otherwise or if the kempli part was already given in the original score
         if (
             InstrumentPosition.KEMPLI in staves.keys()
-            and score.systems[beat.sys_seq].gongantype is not GonganType.KEBYAR
+            and (not (kempli := system.get_metadata(Kempli)) or kempli.status != MetaDataStatus.OFF)
+            and system.gongantype not in [GonganType.KEBYAR, GonganType.GINEMAN]
         ):
             kemplibeat = next(
                 (
                     char
                     for char in score.balimusic_font_dict.values()
-                    if char.note == Note.TICK and char.stroke == Stroke.ONE_PANGGUL and char.duration == 1
+                    if char.note == Note.TICK and char.stroke == Stroke.OPEN and char.duration == 1
                 ),
                 None,
             )
@@ -327,7 +343,3 @@ def validate_score(
 
     if save_corrected:
         score_to_notation_file(score)
-
-
-if __name__ == "__main__":
-    pass

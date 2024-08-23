@@ -55,10 +55,10 @@ def check_font_midi_match(source: Source) -> None:
     merged = midi_values.merge(font_df, how="left", left_on=(midi_keys), right_on=(font_keys), suffixes=["_F", "_M"])
     missing = merged[merged[FontFields.NOTE].isna()]
     if missing.size > 0:
-        print("MIDI NOTES MISSING A CHARACTER EQUIVALENT IN THE FONT DEFINITION FOR {group}:")
+        print(f"MIDI NOTES MISSING A CHARACTER EQUIVALENT IN THE FONT DEFINITION FOR {source.instrumentgroup}:")
         print(missing[midi_keys].drop_duplicates())
     else:
-        print("ALL MIDI NOTES HAVE A CORRESPONDING CHARACTER IN THE FONT DEFINITION FOR {group}.")
+        print(f"ALL MIDI NOTES HAVE A CORRESPONDING CHARACTER IN THE FONT DEFINITION FOR {source.instrumentgroup}.")
 
     # 2. Find characters without corresponding midi note.
     merged = font_df.merge(midi_values, how="left", left_on=(font_keys), right_on=(midi_keys), suffixes=["_F", "_M"])
@@ -77,7 +77,3 @@ def validate_settings(source: Source):
     print("-------------------------------------")
     check_font_midi_match(source)
     print("=====================================")
-
-
-if __name__ == "__main__":
-    validate_settings(group=InstrumentGroup.GONG_KEBYAR)
