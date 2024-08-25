@@ -3,11 +3,10 @@
 
 import csv
 
-import numpy as np
 import pandas as pd
 
 from src.common.classes import Source
-from src.common.constants import InstrumentGroup, Note
+from src.common.constants import Note
 from src.notation2midi.settings import (
     MIDI_NOTES_DEF_FILE,
     NOTATIONFONT_DEF_FILES,

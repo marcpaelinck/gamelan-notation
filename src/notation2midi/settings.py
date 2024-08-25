@@ -20,7 +20,7 @@ NON_INSTRUMENT_TAGS = [METADATA, COMMENT]
 
 SINOMLADRANG = Source(
     datapath=".\\data\\sinom ladrang",
-    infilename="Sinom Ladrang_font5.tsv",
+    infilename="Sinom Ladrang_ubit4_font5.tsv",
     outfilefmt="Sinom Ladrang {position}_{version}.{ext}",
     font=NotationFont.BALIMUSIC5,
     instrumentgroup=InstrumentGroup.GONG_KEBYAR,

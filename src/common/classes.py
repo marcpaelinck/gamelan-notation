@@ -3,9 +3,9 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Literal, Optional, Union
+from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
+from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
 from src.common.constants import (
     ALL_PASSES,
@@ -13,17 +13,24 @@ from src.common.constants import (
     PASS,
     CharacterSource,
     Duration,
-    GonganType,
     InstrumentGroup,
     InstrumentPosition,
     InstrumentType,
-    MetaDataStatus,
     MidiVersion,
     Modifier,
     NotationFont,
     Note,
     Octave,
     Stroke,
+)
+from src.common.metadata_classes import (
+    GonganType,
+    GoTo,
+    MetaData,
+    MetaDataStatus,
+    MetaDataType,
+    Tempo,
+    ValidationProperty,
 )
 
 
@@ -80,6 +87,7 @@ class Character(NotationModel):
     stroke: Stroke
     duration: Optional[float]
     rest_after: Optional[float]
+    velocity: Optional[int] = 100
     modifier: Modifier
     description: str
 
@@ -140,74 +148,6 @@ class InstrumentTag(NotationModel):
 
 
 #
-# Metadata
-#
-class MetaDataType(BaseModel):
-    type: Literal[""]
-    _processingorder_ = 99
-
-
-class Tempo(MetaDataType):
-    type: Literal["tempo"]
-    bpm: int
-    passes: list[PASS] = field(default_factory=list)
-    first_beat: Optional[int] = 1
-    beats: Optional[int] = 0
-    passes: Optional[list[int]] = field(
-        default_factory=lambda: list([ALL_PASSES])
-    )  # On which pass(es) should goto be performed?
-    passes: Optional[list[int]] = field(
-        default_factory=lambda: list([ALL_PASSES])
-    )  # On which pass(es) should goto be performed?
-
-    @property
-    def first_beat_seq(self) -> int:
-        # Returns the pythonic sequence id (numbered from 0)
-        return self.first_beat - 1
-
-
-class Label(MetaDataType):
-    type: Literal["label"]
-    name: str
-    beat: Optional[int] = 1
-    _processingorder_ = 1
-
-    @property
-    def beat_seq(self) -> int:
-        # Returns the pythonic sequence id (numbered from 0)
-        return self.beat - 1
-
-
-class GoTo(MetaDataType):
-    type: Literal["goto"]
-    label: str
-    from_beat: Optional[int] | None = None  # Beat number from which to goto. Default is last beat of the system.
-    passes: Optional[list[int]] = field(default_factory=list)  # On which pass(es) should goto be performed?
-
-    @property
-    def beat_seq(self) -> int:
-        # Returns the pythonic sequence id (numbered from 0)
-        return self.from_beat - 1 if self.from_beat else -1
-
-
-class Kempli(MetaDataType):
-    type: Literal["kempli"]
-    status: MetaDataStatus
-
-
-class Gongan(MetaDataType):
-    type: Literal["gongan"]
-    kind: GonganType
-
-
-MetaDataType = Union[Tempo, Label, GoTo, Kempli, Gongan]
-
-
-class MetaData(BaseModel):
-    data: MetaDataType = Field(..., discriminator="type")
-
-
-#
 # Flow
 #
 
@@ -232,11 +172,11 @@ class Beat:
     bpm_end: dict[PASS, BPM]  # tempo at end of beat (can vary per pass)
     duration: float
     tempo_changes: dict[PASS, TempoChange] = field(default_factory=dict)
-    tempi: dict[PASS, Tempo] = field(default_factory=dict)
     staves: dict[InstrumentPosition, list[Character]] = field(default_factory=dict)
     prev: "Beat" = field(default=None, repr=False)
     next: "Beat" = field(default=None, repr=False)
     goto: dict[PASS, "Beat"] = field(default_factory=dict)
+    validation_ignore: list[ValidationProperty] = field(default_factory=list)
     _pass_: PASS = 0  # Counts the number of times the beat is passed during generation of MIDI file.
 
     @computed_field

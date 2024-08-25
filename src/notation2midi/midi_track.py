@@ -69,7 +69,7 @@ class MidiTrackX(MidiTrack):
                     type="note_on",
                     channel=midinote.channel,
                     note=midinote.midi,
-                    velocity=100,
+                    velocity=character.velocity,
                     time=self.time_since_last_note_end,
                 )
             )

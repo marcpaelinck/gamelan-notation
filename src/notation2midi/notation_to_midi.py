@@ -7,25 +7,16 @@ import numpy as np
 import pandas as pd
 from mido import MetaMessage, MidiFile, MidiTrack, bpm2tempo
 
-from src.common.classes import (
-    Beat,
+from src.common.classes import Beat, Score, Source, System, Tempo
+from src.common.constants import InstrumentPosition, MidiVersion, Note, Stroke
+from src.common.metadata_classes import (
     Gongan,
     GoTo,
     Kempli,
     Label,
     MetaData,
-    Score,
-    Source,
-    System,
-    Tempo,
-)
-from src.common.constants import (
-    GonganType,
-    InstrumentPosition,
     MetaDataStatus,
-    MidiVersion,
-    Note,
-    Stroke,
+    Validation,
 )
 from src.common.utils import (
     POSITION_TO_RANGE_LOOKUP,
@@ -84,7 +75,7 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
     while beat:
         beat._pass_ += 1
         # Set new signature if the beat's system has a different beat length
-        track.update_signature(score.systems[beat.sys_seq].beat_duration)
+        # track.update_signature(score.systems[beat.sys_seq].beat_duration)
         # if new_signature := (
         #     round(score.systems[beat.sys_seq].beat_duration)
         #     if score.systems[beat.sys_seq].beat_duration != track.current_signature
@@ -116,7 +107,8 @@ def apply_metadata(metadata: list[MetaData], system: System, score: Score) -> No
     """
 
     def process_goto(system: System, goto: MetaData) -> None:
-        for rep in goto.data.passes:
+        for rep in goto.data.passes or [p + 1 for p in range(10)]:
+            # Assuming 10 is larger than the max. number of passes.
             system.beats[goto.data.beat_seq].goto[rep] = score.flowinfo.labels[goto.data.label]
 
     haslabel = False
@@ -172,6 +164,11 @@ def apply_metadata(metadata: list[MetaData], system: System, score: Score) -> No
             case Gongan():
                 # TODO: need to synchronize all instruments starting from next regular system
                 system.gongantype = meta.data.kind
+            case Validation():
+                for beat in [b for b in system.beats if b.id in meta.data.beats] or system.beats:
+                    beat.validation_ignore.extend(meta.data.ignore)
+
+                pass
             case _:
                 raise ValueError(f"Metadata value {meta.data.type} is not supported.")
 

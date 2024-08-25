@@ -191,18 +191,6 @@ class Modifier(StrEnum):
     NOROT = "NOROT"
 
 
-# MetaData related constants
-class MetaDataStatus(NotationEnum):
-    OFF = "off"
-    ON = "on"
-
-
-class GonganType(NotationEnum):
-    REGULAR = "regular"
-    KEBYAR = "kebyar"
-    GINEMAN = "gineman"
-
-
 # MIDI to Notation
 
 MIDI_TO_COURIER = {
