@@ -3,6 +3,8 @@ import os
 from dataclasses import dataclass
 from itertools import batched, pairwise
 
+from mido import MidiFile
+
 from src.common.classes import TimedMessage, TimingData
 from src.common.constants import FROM_PIANO, MIDI_TO_COURIER, VALID_MIDI_MESSAGE_TYPES
 

@@ -8,7 +8,7 @@ import pandas as pd
 from mido import MetaMessage, MidiFile, MidiTrack, bpm2tempo
 
 from src.common.classes import Beat, Gongan, Score, Source, TempoMeta
-from src.common.constants import InstrumentPosition, MidiVersion, Note, Stroke
+from src.common.constants import InstrumentPosition, MidiVersion, Pitch, Stroke
 from src.common.metadata_classes import (
     GonganMeta,
     GoToMeta,
@@ -20,7 +20,7 @@ from src.common.metadata_classes import (
 )
 from src.common.utils import (
     POSITION_TO_RANGE_LOOKUP,
-    SYMBOL_TO_CHARACTER_LOOKUP,
+    SYMBOL_TO_NOTE_LOOKUP,
     SYMBOLVALUE_TO_MIDINOTE_LOOKUP,
     TAG_TO_POSITION_LOOKUP,
     create_rest_stave,
@@ -225,7 +225,7 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
         source=source,
         midi_version=midiversion,
         instrument_positions=set(all_positions),
-        balimusic_font_dict=SYMBOL_TO_CHARACTER_LOOKUP,
+        balimusic_font_dict=SYMBOL_TO_NOTE_LOOKUP,
         midi_notes_dict=SYMBOLVALUE_TO_MIDINOTE_LOOKUP,
         position_range_lookup=POSITION_TO_RANGE_LOOKUP,
     )
@@ -237,7 +237,7 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
             # create the staves
             try:
                 staves = {
-                    tag: [SYMBOL_TO_CHARACTER_LOOKUP[note].model_copy() for note in notechars[0]]
+                    tag: [SYMBOL_TO_NOTE_LOOKUP[symbol].model_copy() for symbol in notechars[0]]
                     for tag, notechars in beat_info.items()
                     if tag not in NON_INSTRUMENT_TAGS
                 }
@@ -252,8 +252,8 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
                 bpm_start={-1: (bpm := score.gongans[-1].beats[-1].bpm_end[-1] if score.gongans else 0)},
                 bpm_end={-1: bpm},
                 duration=max(
-                    sum(char.total_duration for char in characters if char.note != Note.NONE)
-                    for characters in list(staves.values())
+                    sum(note.total_duration for note in notes if note.pitch != Pitch.NONE)
+                    for notes in list(staves.values())
                 ),
             )
             prev_beat = beats[-1] if beats else score.gongans[-1].beats[-1] if score.gongans else None
@@ -320,7 +320,7 @@ if __name__ == "__main__":
     AUTOCORRECT = True
     SAVE_CORRECTED_TO_FILE = True
     # --------------------------
-    CREATE_MIDIFILE = True
+    CREATE_MIDIFILE = False
 
     read_settings(source, VERSION, MIDI_NOTES_DEF_FILE)
     if VALIDATE_SETTINGS:

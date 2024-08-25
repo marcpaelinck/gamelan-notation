@@ -1,4 +1,4 @@
-instrumentgroup	instrumenttype	positions	note	octave	stroke	remark	channel	midi-gk1	midi-gk2	midi-piano
+instrumentgroup	instrumenttype	positions	pitch	octave	stroke	remark	channel	midi-gk1	midi-gk2	midi-piano
 GONG_KEBYAR	GONGS		GIR		OPEN		9	0	1	22
 GONG_KEBYAR	GONGS		PUR		OPEN		9	1	2	28
 GONG_KEBYAR	GONGS		TONG		OPEN		9	2	3	47

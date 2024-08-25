@@ -32,10 +32,10 @@ class NotationFont(NotationEnum):
     BALIMUSIC5 = "Bali Music 5"
 
 
-class CharacterSource(NotationEnum):
+class NoteSource(NotationEnum):
     # indicates whether the character occurs in the score
     # or was added by this application.
-    # SCORE is also applicable for Note Characters that have been
+    # SCORE is also applicable for Pitch Characters that have been
     # changed by applying one or more Modifier Characters.
     SCORE = "SCORE"
     VALIDATOR = "VALIDATOR"
@@ -43,7 +43,7 @@ class CharacterSource(NotationEnum):
 
 class MidiVersion(NotationEnum):
     """Lists the possible midi mappings to choose from in the midinotes.tsv settings file.
-    This settings file maps instrument/note combinations to a midi pianoroll key value.
+    This settings file maps instrument/pitch combinations to a midi pianoroll key value.
     """
 
     SINGLE_INSTR = "midi-gk1"
@@ -118,7 +118,7 @@ class NoteType(NotationEnum):
     NONE = "NONE"
 
 
-class Note(Enum):
+class Pitch(Enum):
     DING = "DING", NoteType.MELODIC, auto()
     DONG = "DONG", NoteType.MELODIC, auto()
     DENG = "DENG", NoteType.MELODIC, auto()
@@ -206,11 +206,6 @@ MIDI_TO_COURIER = {
     45: "i",
 }
 VALID_MIDI_MESSAGE_TYPES = ["note_on", "note_off", "rest"]
-
-
-# if __name__ == "__main__":
-#     for val in SymbolValue:
-#         print(f"{val} - {val.note}{val.octave if val.octave is not None else ""}")
 
 
 if __name__ == "__main__":

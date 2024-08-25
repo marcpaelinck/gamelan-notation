@@ -1,7 +1,7 @@
 from mido import Message, MetaMessage, MidiTrack, bpm2tempo
 
-from src.common.classes import Character
-from src.common.constants import InstrumentPosition, NotationFont, Note, Stroke
+from src.common.classes import Note
+from src.common.constants import InstrumentPosition, NotationFont, Pitch, Stroke
 from src.common.utils import SYMBOLVALUE_TO_MIDINOTE_LOOKUP
 from src.notation2midi.settings import BASE_NOTE_TIME, BASE_NOTES_PER_BEAT
 
@@ -49,7 +49,7 @@ class MidiTrackX(MidiTrack):
             beats = round(self.current_bpm * seconds / 60)
             self.last_note_end_msg.time += beats * BASE_NOTE_TIME * BASE_NOTES_PER_BEAT
 
-    def add_note(self, position: InstrumentPosition, character: Character):
+    def add_note(self, position: InstrumentPosition, character: Note):
         """Converts a note into a midi event
 
         Args:
@@ -59,9 +59,9 @@ class MidiTrackX(MidiTrack):
         Raises:
             ValueError: _description_
         """
-        if not character.note == Note.NONE:
+        if not character.pitch == Pitch.NONE:
             midinote = SYMBOLVALUE_TO_MIDINOTE_LOOKUP[
-                position.instrumenttype, character.note, character.octave, character.stroke
+                position.instrumenttype, character.pitch, character.octave, character.stroke
             ]
             # Set ON and OFF messages for actual note
             self.append(
@@ -96,4 +96,4 @@ class MidiTrackX(MidiTrack):
             else:
                 self.time_since_last_note_end += round(character.duration * BASE_NOTE_TIME)
         else:
-            raise ValueError(f"Unexpected note value {character.note} {character.octave} {character.stroke}")
+            raise ValueError(f"Unexpected note value {character.pitch} {character.octave} {character.stroke}")

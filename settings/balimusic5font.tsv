@@ -1,4 +1,4 @@
-symbol	unicode	symbol_description	balifont_symbol_description	note	octave	stroke	duration	rest_after	modifier	description
+symbol	unicode	symbol_description	balifont_symbol_description	pitch	octave	stroke	duration	rest_after	modifier	description
 (	0x0028	left round bracket	t	TUT		OPEN	1.0	0.0	NONE	kendang tut
 )	0x0029	right round bracket	serifless u	PUNG		OPEN	1.0	0.0	NONE	kendang pung
 *	0x002a	asterisk	p	PAK		OPEN	1.0	0.0	NONE	kendang pak

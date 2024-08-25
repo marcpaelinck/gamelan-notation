@@ -3,7 +3,6 @@
 
 import codecs
 import csv
-import os
 from collections import defaultdict
 from copy import copy
 from glob import glob
@@ -14,7 +13,6 @@ import pandas as pd
 from openpyxl import Workbook, load_workbook
 from openpyxl.cell.cell import Cell
 from openpyxl.styles import Font
-from openpyxl.worksheet.worksheet import Worksheet
 
 from src.notation2midi.settings import MARGAPATI4, MARGAPATI5, MARGAPATIREYONG3
 

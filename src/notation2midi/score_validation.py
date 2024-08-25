@@ -1,14 +1,14 @@
 import math
 from pprint import pprint
 
-from src.common.classes import Beat, Character, Gongan, Score
+from src.common.classes import Beat, Gongan, Note, Score
 from src.common.constants import (
     BeatId,
     Duration,
     InstrumentPosition,
     InstrumentType,
-    Note,
     Octave,
+    Pitch,
     Stroke,
 )
 from src.common.metadata_classes import (
@@ -18,7 +18,7 @@ from src.common.metadata_classes import (
     ValidationProperty,
 )
 from src.common.utils import create_rest_stave, score_to_notation_file
-from src.notation2midi.font_specific_code import get_character
+from src.notation2midi.font_specific_code import get_note
 
 POSITIONS_AUTOCORRECT_UNEQUAL_STAVES = [
     InstrumentPosition.UGAL,
@@ -56,7 +56,7 @@ def invalid_beat_lengths(gongan: Gongan, autocorrect: bool) -> tuple[list[tuple[
     return invalids, corrected, ignored
 
 
-def unequal_stave_lengths(gongan: Gongan, autocorrect: bool, filler: Character) -> tuple[list[tuple[BeatId, Duration]]]:
+def unequal_stave_lengths(gongan: Gongan, autocorrect: bool, filler: Note) -> tuple[list[tuple[BeatId, Duration]]]:
     """Checks that the stave lengths of the individual instrument in each beat of the given gongan are all equal.
 
     Args:
@@ -116,13 +116,13 @@ def unequal_stave_lengths(gongan: Gongan, autocorrect: bool, filler: Character) 
 
 
 def out_of_range(
-    gongan: Gongan, ranges: dict[InstrumentPosition, list[(Note, Octave, Stroke)]], autocorrect: bool
-) -> tuple[list[str, list[Character]]]:
+    gongan: Gongan, ranges: dict[InstrumentPosition, list[(Pitch, Octave, Stroke)]], autocorrect: bool
+) -> tuple[list[str, list[Note]]]:
     """Checks that the notes of each instrument matches the instrument's range.
 
     Args:
         gongan (Gongan): the gongan to check
-        ranges(dict[InstrumentPosition, list[(Note, Octave, Stroke)]]): list of notes for each instrument
+        ranges(dict[InstrumentPosition, list[(Pitch, Octave, Stroke)]]): list of notes for each instrument
         autocorrect (bool): if True, an attempt will be made to correct notes that are out of range (currently not effective)
 
     Returns:
@@ -136,25 +136,25 @@ def out_of_range(
         if ValidationProperty.INSTRUMENT_RANGE in beat.validation_ignore:
             ignored.append(f"BEAT {beat.full_id} skipped due to override")
             continue
-        for position, chars in beat.staves.items():
+        for position, notes in beat.staves.items():
             instr_range = ranges[position]
             badnotes = list()
-            for char in chars:
-                if char.note is not Note.NONE and (char.note, char.octave, char.stroke) not in instr_range:
-                    badnotes.append((char.note, char.octave, char.stroke))
+            for note in notes:
+                if note.pitch is not Pitch.NONE and (note.pitch, note.octave, note.stroke) not in instr_range:
+                    badnotes.append((note.pitch, note.octave, note.stroke))
             if badnotes:
                 invalids.append({f"BEAT {beat.full_id} {position}": badnotes})
     return invalids, corrected, ignored
 
 
-def get_kempyung_dict(instrumentrange: dict[tuple[Note, Octave], tuple[Note, Octave]]):
+def get_kempyung_dict(instrumentrange: dict[tuple[Pitch, Octave], tuple[Pitch, Octave]]):
     """returns a dict mapping the kempyung note to each base note in the instrument's range.
 
     Args:
-        instrumentrange (list[tuple[Note, Octave, Stroke]]): range of the instrument.
+        instrumentrange (list[tuple[Pitch, Octave, Stroke]]): range of the instrument.
 
     Returns:
-        dict[tuple[Note, Octave], tuple[Note, Octave]]: the kempyung dict
+        dict[tuple[Pitch, Octave], tuple[Pitch, Octave]]: the kempyung dict
     """
     ordered = sorted(
         list({(note, octave) for note, octave, _ in instrumentrange}),
@@ -169,7 +169,7 @@ def get_kempyung_dict(instrumentrange: dict[tuple[Note, Octave], tuple[Note, Oct
 def incorrect_kempyung(
     gongan: Gongan,
     score: Score,
-    ranges: dict[InstrumentPosition, list[tuple[Note, Octave, Stroke]]],
+    ranges: dict[InstrumentPosition, list[tuple[Pitch, Octave, Stroke]]],
     autocorrect: bool,
 ) -> list[tuple[BeatId, tuple[InstrumentPosition, InstrumentPosition]]]:
     def note_pairs(beat: Beat, pair: list[InstrumentType]):
@@ -207,14 +207,14 @@ def incorrect_kempyung(
                         for seq, (polos, sangsih) in enumerate(notepairs):
                             # Check kempyung.
                             if (
-                                polos.note is not Note.NONE
-                                and sangsih.note is not Note.NONE
-                                and not (sangsih.note, sangsih.octave) == kempyung_dict[(polos.note, polos.octave)]
+                                polos.pitch is not Pitch.NONE
+                                and sangsih.pitch is not Pitch.NONE
+                                and not (sangsih.pitch, sangsih.octave) == kempyung_dict[(polos.pitch, polos.octave)]
                             ):
                                 if autocorrect and iteration == 1:
-                                    correct_note, correct_octave = kempyung_dict[(polos.note, polos.octave)]
-                                    correct_sangsih = get_character(
-                                        note=correct_note,
+                                    correct_note, correct_octave = kempyung_dict[(polos.pitch, polos.octave)]
+                                    correct_sangsih = get_note(
+                                        pitch=correct_note,
                                         octave=correct_octave,
                                         stroke=sangsih.stroke,
                                         duration=sangsih.duration,
@@ -240,7 +240,7 @@ def incorrect_kempyung(
     return invalids, corrected, ignored
 
 
-def create_missing_staves(beat: Beat, prevbeat: Beat, score: Score) -> dict[InstrumentPosition, list[Character]]:
+def create_missing_staves(beat: Beat, prevbeat: Beat, score: Score) -> dict[InstrumentPosition, list[Note]]:
     """Returns staves for missing positions, containing rests (silence) for the duration of the given beat.
     This ensures that positions that do not occur in all the gongans will remain in sync.
 
@@ -249,7 +249,7 @@ def create_missing_staves(beat: Beat, prevbeat: Beat, score: Score) -> dict[Inst
         all_positions (set[InstrumentPosition]): List of all the positions that occur in the notation.
 
     Returns:
-        dict[InstrumentPosition, list[Character]]: A dict with the generated staves.
+        dict[InstrumentPosition, list[Note]]: A dict with the generated staves.
     """
 
     if missing_positions := ((score.instrument_positions | {InstrumentPosition.KEMPLI}) - set(beat.staves.keys())):
@@ -267,9 +267,9 @@ def create_missing_staves(beat: Beat, prevbeat: Beat, score: Score) -> dict[Inst
         ):
             kemplibeat = next(
                 (
-                    char
-                    for char in score.balimusic_font_dict.values()
-                    if char.note == Note.TICK and char.stroke == Stroke.OPEN and char.duration == 1
+                    note
+                    for note in score.balimusic_font_dict.values()
+                    if note.pitch == Pitch.TICK and note.stroke == Stroke.OPEN and note.duration == 1
                 ),
                 None,
             )
@@ -326,9 +326,9 @@ def validate_score(
     count_ignored_beats_with_incorrect_ubitan = 0
 
     filler = next(
-        char
-        for char in score.balimusic_font_dict.values()
-        if char.stroke == Stroke.EXTENSION and char.total_duration == 1
+        note
+        for note in score.balimusic_font_dict.values()
+        if note.stroke == Stroke.EXTENSION and note.total_duration == 1
     )
 
     for gongan in score.gongans:
