@@ -1,6 +1,6 @@
 import pytest
 
-from src.common.constants import Note, SymbolValue
+from src.common.constants import Pitch, SymbolValue
 from src.score_validation import iskempyung
 
 instrumentrange = [

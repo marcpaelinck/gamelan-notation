@@ -6,7 +6,7 @@ import csv
 import pandas as pd
 
 from src.common.classes import Source
-from src.common.constants import Note
+from src.common.constants import Pitch
 from src.notation2midi.settings import (
     MIDI_NOTES_DEF_FILE,
     NOTATIONFONT_DEF_FILES,
@@ -19,7 +19,7 @@ def check_unique_character_values(source: Source) -> None:
     """Analyzes the font definition setting and detects characters that have the same
     values for fields `value`, `duration` and `rest_after`.
     """
-    groupby = [FontFields.NOTE, FontFields.OCTAVE, FontFields.STROKE, FontFields.DURATION, FontFields.REST_AFTER]
+    groupby = [FontFields.PITCH, FontFields.OCTAVE, FontFields.STROKE, FontFields.DURATION, FontFields.REST_AFTER]
     font_df = pd.read_csv(NOTATIONFONT_DEF_FILES[source.font], sep="\t", quoting=csv.QUOTE_NONE)[
         groupby + [FontFields.SYMBOL]
     ]
@@ -35,8 +35,8 @@ def check_font_midi_match(source: Source) -> None:
     """Checks the consistency of the font definition settings file and the midi settings file.
     Reports if any value in one file has no match in the other one.
     """
-    font_keys = [FontFields.NOTE, FontFields.OCTAVE, FontFields.STROKE]
-    midi_keys = [MidiNotesFields.NOTE, MidiNotesFields.OCTAVE, MidiNotesFields.STROKE]
+    font_keys = [FontFields.PITCH, FontFields.OCTAVE, FontFields.STROKE]
+    midi_keys = [MidiNotesFields.PITCH, MidiNotesFields.OCTAVE, MidiNotesFields.STROKE]
     midi_keep = midi_keys + [MidiNotesFields.INSTRUMENTTYPE, MidiNotesFields.POSITIONS]
 
     # 1. Find midi notes without corresponding character definition.
@@ -52,16 +52,16 @@ def check_font_midi_match(source: Source) -> None:
         .drop_duplicates()
     )[midi_keep]
     merged = midi_values.merge(font_df, how="left", left_on=(midi_keys), right_on=(font_keys), suffixes=["_F", "_M"])
-    missing = merged[merged[FontFields.NOTE].isna()]
+    missing = merged[merged[FontFields.PITCH].isna()]
     if missing.size > 0:
         print(f"MIDI NOTES MISSING A CHARACTER EQUIVALENT IN THE FONT DEFINITION FOR {source.instrumentgroup}:")
         print(missing[midi_keys].drop_duplicates())
     else:
         print(f"ALL MIDI NOTES HAVE A CORRESPONDING CHARACTER IN THE FONT DEFINITION FOR {source.instrumentgroup}.")
 
-    # 2. Find characters without corresponding midi note.
+    # 2. Find notes without corresponding midi value.
     merged = font_df.merge(midi_values, how="left", left_on=(font_keys), right_on=(midi_keys), suffixes=["_F", "_M"])
-    missing = merged[merged[MidiNotesFields.NOTE].isna() & ~(merged[FontFields.NOTE] == Note.NONE.value)]
+    missing = merged[merged[MidiNotesFields.PITCH].isna() & ~(merged[FontFields.PITCH] == Pitch.NONE.value)]
     if missing.size > 0:
         print("-------------------------------------")
         print(f"CHARACTERS IN THE FONT DEFINITION MISSING A MIDI NOTE EQUIVALENT FOR {source.instrumentgroup}:")

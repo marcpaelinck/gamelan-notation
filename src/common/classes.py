@@ -11,7 +11,6 @@ from src.common.constants import (
     ALL_PASSES,
     BPM,
     PASS,
-    CharacterSource,
     Duration,
     InstrumentGroup,
     InstrumentPosition,
@@ -19,8 +18,9 @@ from src.common.constants import (
     MidiVersion,
     Modifier,
     NotationFont,
-    Note,
+    NoteSource,
     Octave,
+    Pitch,
     Stroke,
 )
 from src.common.metadata_classes import (
@@ -73,16 +73,16 @@ class NotationModel(BaseModel):
             raise ValueError(f"Cannot convert value {value} to a list of {el_type}")
 
 
-class Character(NotationModel):
+class Note(NotationModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    source: CharacterSource = CharacterSource.SCORE
+    source: NoteSource = NoteSource.SCORE
     symbol: str
     unicode: str
     symbol_description: str
     balifont_symbol_description: str
     # symbolvalue: SymbolValue  # Phase out
-    note: Note
+    pitch: Pitch
     octave: Optional[int]
     stroke: Stroke
     duration: Optional[float]
@@ -102,9 +102,9 @@ class Character(NotationModel):
             return None
         return value
 
-    def matches(self, note: Note, octave: Octave, stroke: Stroke, duration: Duration, rest_after: Duration) -> bool:
+    def matches(self, pitch: Pitch, octave: Octave, stroke: Stroke, duration: Duration, rest_after: Duration) -> bool:
         return (
-            note == self.note
+            pitch == self.pitch
             and self.octave == octave
             and self.stroke == stroke
             and self.duration == duration
@@ -116,7 +116,7 @@ class MidiNote(NotationModel):
     instrumentgroup: InstrumentGroup
     instrumenttype: InstrumentType
     positions: list[InstrumentPosition]
-    note: Note
+    pitch: Pitch
     octave: Optional[int]
     stroke: Stroke
     channel: int
@@ -172,7 +172,7 @@ class Beat:
     bpm_end: dict[PASS, BPM]  # tempo at end of beat (can vary per pass)
     duration: float
     tempo_changes: dict[PASS, TempoChange] = field(default_factory=dict)
-    staves: dict[InstrumentPosition, list[Character]] = field(default_factory=dict)
+    staves: dict[InstrumentPosition, list[Note]] = field(default_factory=dict)
     prev: "Beat" = field(default=None, repr=False)
     next: "Beat" = field(default=None, repr=False)
     goto: dict[PASS, "Beat"] = field(default_factory=dict)
@@ -268,7 +268,7 @@ class Score:
     instrumentgroup: InstrumentGroup = None
     instrument_positions: set[InstrumentPosition] = None
     gongans: list[Gongan] = field(default_factory=list)
-    balimusic_font_dict: dict[str, Character] = None
-    midi_notes_dict: dict[tuple[InstrumentPosition, Note, Octave, Stroke], MidiNote] = None
-    position_range_lookup: dict[InstrumentPosition, tuple[Note, Octave, Stroke]] = None
+    balimusic_font_dict: dict[str, Note] = None
+    midi_notes_dict: dict[tuple[InstrumentPosition, Pitch, Octave, Stroke], MidiNote] = None
+    position_range_lookup: dict[InstrumentPosition, tuple[Pitch, Octave, Stroke]] = None
     flowinfo: FlowInfo = field(default_factory=FlowInfo)

@@ -1,4 +1,4 @@
-symbol	unicode	symbol_description	balifont_symbol_description	note	octave	stroke	duration	rest_after	modifier	description
+symbol	unicode	symbol_description	balifont_symbol_description	pitch	octave	stroke	duration	rest_after	modifier	description
 '	0x00b4	apostrophe	dash single macron	NONE		EXTENSION	0.5	0	NONE	extends note by half duration
 "	0x00a8	quotation mark	dash double macron	NONE		EXTENSION	0.25	0	NONE	extends note by quarter duration
 &	0x0026	ampersand	u overdot slashed	DUNG	2	MUTED	0.125	0.875	NONE	dung2 muted

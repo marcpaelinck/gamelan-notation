@@ -1,19 +1,19 @@
 import pytest
 
-from src.common.classes import Beat, Character, Gongan
+from src.common.classes import Beat, Gongan, Note
 from src.common.constants import InstrumentPosition
 from src.common.utils import (
-    create_symbol_to_character_lookup,
+    create_symbol_to_note_lookup,
     gongan_to_records,
     stave_to_string,
 )
 from src.notation2midi.settings import InstrumentFields
 
-BALIFONT4_TO_CHARACTER_DICT = create_symbol_to_character_lookup(fromfile="tests/data/balimusic4font.csv")
-BALIFONT4_TO_CHARACTER_DICT = create_symbol_to_character_lookup(fromfile="tests/data/balimusic4font.csv")
+BALIFONT4_TO_CHARACTER_DICT = create_symbol_to_note_lookup(fromfile="tests/data/balimusic4font.csv")
+BALIFONT4_TO_CHARACTER_DICT = create_symbol_to_note_lookup(fromfile="tests/data/balimusic4font.csv")
 
 
-def getchar(c: str) -> Character:
+def getchar(c: str) -> Note:
     return BALIFONT4_TO_CHARACTER_DICT[c]
 
 
