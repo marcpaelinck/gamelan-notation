@@ -7,16 +7,16 @@ import numpy as np
 import pandas as pd
 from mido import MetaMessage, MidiFile, MidiTrack, bpm2tempo
 
-from src.common.classes import Beat, Score, Source, System, Tempo
+from src.common.classes import Beat, Gongan, Score, Source, TempoMeta
 from src.common.constants import InstrumentPosition, MidiVersion, Note, Stroke
 from src.common.metadata_classes import (
-    Gongan,
-    GoTo,
-    Kempli,
-    Label,
+    GonganMeta,
+    GoToMeta,
+    KempliMeta,
+    LabelMeta,
     MetaData,
     MetaDataStatus,
-    Validation,
+    ValidationMeta,
 )
 from src.common.utils import (
     POSITION_TO_RANGE_LOOKUP,
@@ -56,8 +56,8 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
     """
 
     def reset_pass_counters():
-        for system in score.systems:
-            for beat in system.beats:
+        for gongan in score.gongans:
+            for beat in gongan.beats:
                 beat._pass_ = 0
 
     track = MidiTrackX(score.source.font)
@@ -69,16 +69,16 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
     # )
 
     reset_pass_counters()
-    beat = score.systems[0].beats[0]
+    beat = score.gongans[0].beats[0]
     # current_tempo = 0
     # current_signature = 0
     while beat:
         beat._pass_ += 1
-        # Set new signature if the beat's system has a different beat length
-        # track.update_signature(score.systems[beat.sys_seq].beat_duration)
+        # Set new signature if the beat's gongan has a different beat length
+        # track.update_signature(score.gongans[beat.sys_seq].beat_duration)
         # if new_signature := (
-        #     round(score.systems[beat.sys_seq].beat_duration)
-        #     if score.systems[beat.sys_seq].beat_duration != track.current_signature
+        #     round(score.gongans[beat.sys_seq].beat_duration)
+        #     if score.gongans[beat.sys_seq].beat_duration != track.current_signature
         #     else None
         # ):
         # Set new tempo
@@ -97,27 +97,27 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
     return track
 
 
-def apply_metadata(metadata: list[MetaData], system: System, score: Score) -> None:
-    """Processes the metadata of a system into the object model.
+def apply_metadata(metadata: list[MetaData], gongan: Gongan, score: Score) -> None:
+    """Processes the metadata of a gongan into the object model.
 
     Args:
         metadata (list[MetaData]): The metadata to process.
-        system (System): The system to which the metadata applies.
+        gongan (Gongan): The gongan to which the metadata applies.
         score (score): The score
     """
 
-    def process_goto(system: System, goto: MetaData) -> None:
+    def process_goto(gongan: Gongan, goto: MetaData) -> None:
         for rep in goto.data.passes or [p + 1 for p in range(10)]:
             # Assuming 10 is larger than the max. number of passes.
-            system.beats[goto.data.beat_seq].goto[rep] = score.flowinfo.labels[goto.data.label]
+            gongan.beats[goto.data.beat_seq].goto[rep] = score.flowinfo.labels[goto.data.label]
 
     haslabel = False
     for meta in sorted(metadata, key=lambda x: x.data._processingorder_):
         match meta.data:
-            case Tempo():
+            case TempoMeta():
                 if meta.data.beats == 0:
                     # immediate tempo change.
-                    system.beats[meta.data.first_beat_seq].tempo_changes.update(
+                    gongan.beats[meta.data.first_beat_seq].tempo_changes.update(
                         {
                             pass_: Beat.TempoChange(new_tempo=meta.data.bpm, incremental=False)
                             for pass_ in meta.data.passes
@@ -127,7 +127,7 @@ def apply_metadata(metadata: list[MetaData], system: System, score: Score) -> No
                 else:
                     # Stepwise tempo change over meta.data.beats beats. The first tempo change is after first beat.
                     # This emulates a gradual tempo change.
-                    beat = system.beats[meta.data.first_beat_seq]
+                    beat = gongan.beats[meta.data.first_beat_seq]
                     steps = meta.data.beats
                     for _ in range(meta.data.beats):
                         beat = beat.next
@@ -141,31 +141,31 @@ def apply_metadata(metadata: list[MetaData], system: System, score: Score) -> No
                         )
                         steps -= 1
 
-            case Label():
+            case LabelMeta():
                 # Add the label to flowinfo
                 haslabel = True
-                score.flowinfo.labels[meta.data.name] = system.beats[meta.data.beat_seq]
+                score.flowinfo.labels[meta.data.name] = gongan.beats[meta.data.beat_seq]
                 # Process any GoTo pointing to this label
                 goto: MetaData
                 for sys, goto in score.flowinfo.gotos[meta.data.name]:
                     process_goto(sys, goto)
-            case GoTo():
+            case GoToMeta():
                 if score.flowinfo.labels.get(meta.data.label, None):
-                    process_goto(system, meta)
+                    process_goto(gongan, meta)
                 else:
                     # Label not yet encountered: store GoTo obect in flowinfo
-                    score.flowinfo.gotos[meta.data.label].append((system, meta))
-            case Kempli():
-                system.gongantype = meta.data.status
+                    score.flowinfo.gotos[meta.data.label].append((gongan, meta))
+            case KempliMeta():
+                gongan.gongantype = meta.data.status
                 if meta.data.status is MetaDataStatus.OFF:
-                    for beat in system.beats:
+                    for beat in gongan.beats:
                         if InstrumentPosition.KEMPLI in beat.staves:
                             beat.staves[InstrumentPosition.KEMPLI] = create_rest_stave(Stroke.SILENCE, beat.duration)
-            case Gongan():
-                # TODO: need to synchronize all instruments starting from next regular system
-                system.gongantype = meta.data.kind
-            case Validation():
-                for beat in [b for b in system.beats if b.id in meta.data.beats] or system.beats:
+            case GonganMeta():
+                # TODO: need to synchronize all instruments starting from next regular gongan
+                gongan.gongantype = meta.data.kind
+            case ValidationMeta():
+                for beat in [b for b in gongan.beats if b.id in meta.data.beats] or gongan.beats:
                     beat.validation_ignore.extend(meta.data.ignore)
 
                 pass
@@ -173,7 +173,7 @@ def apply_metadata(metadata: list[MetaData], system: System, score: Score) -> No
                 raise ValueError(f"Metadata value {meta.data.type} is not supported.")
 
     if haslabel:
-        for beat in system.beats:
+        for beat in gongan.beats:
             if not beat.tempo_changes and beat.prev:
                 beat.tempo_changes.update(beat.prev.tempo_changes)
         return
@@ -203,16 +203,16 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
     df.drop("orig_tag", axis="columns", inplace=True)
     # Drop all empty columns
     df.dropna(how="all", axis=1, inplace=True)
-    # Number the systems: blank lines denote start of new system. Then delete blank lines.
+    # Number the gongans: blank lines denote start of new gongan. Then delete blank lines.
     df["sysnr"] = df["tag"].isna().cumsum()[~df["tag"].isna()] + 1
     # Reshape dataframe so that there is one beat per row. Column "BEAT" will contain the beat content.
     df = pd.wide_to_long(df, ["BEAT"], i=["sysnr", "tag", "id"], j="beat_nr").reset_index(inplace=False)
     df = df[~df["BEAT"].isna()]
     df["sysnr"] = df["sysnr"].astype("int16")
 
-    # convert to list of systems, each system containing optional metadata and a list of instrument parts.
+    # convert to list of gongans, each gongan containing optional metadata and a list of instrument parts.
     df_dict = df.groupby(["sysnr", "beat_nr", "tag"])["BEAT"].apply(lambda g: g.values.tolist()).to_dict()
-    # Create notation dict that is grouped by system and beat
+    # Create notation dict that is grouped by gongan and beat
     notation = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     for (sysnr, beat_nr, tag), beat in df_dict.items():
         notation[sysnr][beat_nr][tag] = beat
@@ -249,14 +249,14 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
                 id=beat_nr,
                 sys_id=sys_id,
                 staves=staves,
-                bpm_start={-1: (bpm := score.systems[-1].beats[-1].bpm_end[-1] if score.systems else 0)},
+                bpm_start={-1: (bpm := score.gongans[-1].beats[-1].bpm_end[-1] if score.gongans else 0)},
                 bpm_end={-1: bpm},
                 duration=max(
                     sum(char.total_duration for char in characters if char.note != Note.NONE)
                     for characters in list(staves.values())
                 ),
             )
-            prev_beat = beats[-1] if beats else score.systems[-1].beats[-1] if score.systems else None
+            prev_beat = beats[-1] if beats else score.gongans[-1].beats[-1] if score.gongans else None
             # Update the `next` pointer of the previous beat.
             if prev_beat:
                 prev_beat.next = new_beat
@@ -268,13 +268,13 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
 
             for comment in beat_info.get(COMMENT, []):
                 comments.append(comment)
-        # Create a new system
+        # Create a new gongan
         if beats:
-            system = System(
+            gongan = Gongan(
                 id=int(sys_id), beats=beats, beat_duration=beats[0].duration, metadata=metadata, comments=comments
             )
-            score.systems.append(system)
-            apply_metadata(metadata, system, score)
+            score.gongans.append(gongan)
+            apply_metadata(metadata, gongan, score)
             metadata = []
             beats = []
             comments = []

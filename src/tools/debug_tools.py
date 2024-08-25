@@ -145,7 +145,7 @@ def merge_parts(datapath: str, basefile: str, mergefile: str, resultfile: str):
     # Drop all empty columns
     base_df.dropna(how="all", axis="columns", inplace=True)
     merge_df.dropna(how="all", axis="columns", inplace=True)
-    # Number the systems: blank lines denote start of new system. Then delete blank lines.
+    # Number the gongans: blank lines denote start of new gongan. Then delete blank lines.
     base_df["sysnr"] = base_df["tag"].isna().cumsum()[~base_df["tag"].isna()] + 1
     merge_df["sysnr"] = merge_df["tag"].isna().cumsum()[~merge_df["tag"].isna()] + 1
     merge_df = merge_df[~merge_df["tag"].isin(["gangsa p", "gangsa s"])]
@@ -157,7 +157,7 @@ def merge_parts(datapath: str, basefile: str, mergefile: str, resultfile: str):
     # Sort the new table
     new_df["tagid"] = new_df["tag"].apply(lambda tag: sortingorder.index(tag))
     new_df.sort_values(by=["sysnr", "tagid"], inplace=True, ignore_index=True)
-    # Add empty lines between systems
+    # Add empty lines between gongans
     mask = new_df["sysnr"].ne(new_df["sysnr"].shift(-1))
     empties = pd.DataFrame("", index=mask.index[mask] + 0.5, columns=new_df.columns)
     new_df = pd.concat([new_df, empties]).sort_index().reset_index(drop=True).iloc[:-1]

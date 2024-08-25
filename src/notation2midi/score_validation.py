@@ -1,7 +1,7 @@
 import math
 from pprint import pprint
 
-from src.common.classes import Beat, Character, Score, System
+from src.common.classes import Beat, Character, Gongan, Score
 from src.common.constants import (
     BeatId,
     Duration,
@@ -13,7 +13,7 @@ from src.common.constants import (
 )
 from src.common.metadata_classes import (
     GonganType,
-    Kempli,
+    KempliMeta,
     MetaDataStatus,
     ValidationProperty,
 )
@@ -33,11 +33,11 @@ POSITIONS_VALIDATE_AND_CORRECT_KEMPYUNG = [
 ]
 
 
-def invalid_beat_lengths(system: System, autocorrect: bool) -> tuple[list[tuple[BeatId, Duration]]]:
+def invalid_beat_lengths(gongan: Gongan, autocorrect: bool) -> tuple[list[tuple[BeatId, Duration]]]:
     """Checks the length of beats in "regular" gongans. The length should be a power of 2.
 
     Args:
-        system (System): the system to check
+        gongan (Gongan): the gongan to check
         autocorrect (bool): if True, an attempt will be made to correct the beat length (currently not effective)
 
     Returns:
@@ -47,20 +47,20 @@ def invalid_beat_lengths(system: System, autocorrect: bool) -> tuple[list[tuple[
     corrected = []
     ignored = []
 
-    for beat in system.beats:
+    for beat in gongan.beats:
         if ValidationProperty.BEAT_DURATION in beat.validation_ignore:
             ignored.append(f"BEAT {beat.full_id} skipped due to override")
             continue
-        if system.gongantype == GonganType.REGULAR and 2 ** int(math.log2(beat.duration)) != beat.duration:
+        if gongan.gongantype == GonganType.REGULAR and 2 ** int(math.log2(beat.duration)) != beat.duration:
             invalids.append((beat.full_id, beat.duration))
     return invalids, corrected, ignored
 
 
-def unequal_stave_lengths(system: System, autocorrect: bool, filler: Character) -> tuple[list[tuple[BeatId, Duration]]]:
-    """Checks that the stave lengths of the individual instrument in each beat of the given system are all equal.
+def unequal_stave_lengths(gongan: Gongan, autocorrect: bool, filler: Character) -> tuple[list[tuple[BeatId, Duration]]]:
+    """Checks that the stave lengths of the individual instrument in each beat of the given gongan are all equal.
 
     Args:
-        system (System): the system to check
+        gongan (Gongan): the gongan to check
         autocorrect (bool): if True, an attempt will be made to correct the stave lengths of specific instruments (pokok, gongs and kempli)
                     In most scores, the notation of these instruments is simplified by omitting dashes (extensions) after each long note.
 
@@ -71,7 +71,7 @@ def unequal_stave_lengths(system: System, autocorrect: bool, filler: Character) 
     corrected = []
     ignored = []
 
-    for beat in system.beats:
+    for beat in gongan.beats:
         if ValidationProperty.STAVE_LENGTH in beat.validation_ignore:
             ignored.append(f"BEAT {beat.full_id} skipped due to override")
             continue
@@ -116,12 +116,12 @@ def unequal_stave_lengths(system: System, autocorrect: bool, filler: Character) 
 
 
 def out_of_range(
-    system: System, ranges: dict[InstrumentPosition, list[(Note, Octave, Stroke)]], autocorrect: bool
+    gongan: Gongan, ranges: dict[InstrumentPosition, list[(Note, Octave, Stroke)]], autocorrect: bool
 ) -> tuple[list[str, list[Character]]]:
     """Checks that the notes of each instrument matches the instrument's range.
 
     Args:
-        system (System): the system to check
+        gongan (Gongan): the gongan to check
         ranges(dict[InstrumentPosition, list[(Note, Octave, Stroke)]]): list of notes for each instrument
         autocorrect (bool): if True, an attempt will be made to correct notes that are out of range (currently not effective)
 
@@ -132,7 +132,7 @@ def out_of_range(
     corrected = []
     ignored = []
 
-    for beat in system.beats:
+    for beat in gongan.beats:
         if ValidationProperty.INSTRUMENT_RANGE in beat.validation_ignore:
             ignored.append(f"BEAT {beat.full_id} skipped due to override")
             continue
@@ -167,7 +167,7 @@ def get_kempyung_dict(instrumentrange: dict[tuple[Note, Octave], tuple[Note, Oct
 
 
 def incorrect_kempyung(
-    system: System,
+    gongan: Gongan,
     score: Score,
     ranges: dict[InstrumentPosition, list[tuple[Note, Octave, Stroke]]],
     autocorrect: bool,
@@ -178,7 +178,7 @@ def incorrect_kempyung(
     invalids = []
     corrected = []
     ignored = []
-    for beat in system.beats:
+    for beat in gongan.beats:
         if ValidationProperty.KEMPYUNG in beat.validation_ignore:
             ignored.append(f"BEAT {beat.full_id} skipped due to override")
             continue
@@ -242,7 +242,7 @@ def incorrect_kempyung(
 
 def create_missing_staves(beat: Beat, prevbeat: Beat, score: Score) -> dict[InstrumentPosition, list[Character]]:
     """Returns staves for missing positions, containing rests (silence) for the duration of the given beat.
-    This ensures that positions that do not occur in all the systems will remain in sync.
+    This ensures that positions that do not occur in all the gongans will remain in sync.
 
     Args:
         beat (Beat): The beat that should be complemented.
@@ -258,12 +258,12 @@ def create_missing_staves(beat: Beat, prevbeat: Beat, score: Score) -> dict[Inst
         prevstrokes = {pos: (prevbeat.staves[pos][-1].stroke if prevbeat else silence) for pos in missing_positions}
         resttypes = {pos: silence if prevstroke is silence else extension for pos, prevstroke in prevstrokes.items()}
         staves = {position: create_rest_stave(resttypes[position], beat.duration) for position in missing_positions}
-        system = score.systems[beat.sys_seq]
+        gongan = score.gongans[beat.sys_seq]
         # Add a kempli beat, except if a metadata label indicates otherwise or if the kempli part was already given in the original score
         if (
             InstrumentPosition.KEMPLI in staves.keys()
-            and (not (kempli := system.get_metadata(Kempli)) or kempli.status != MetaDataStatus.OFF)
-            and system.gongantype not in [GonganType.KEBYAR, GonganType.GINEMAN]
+            and (not (kempli := gongan.get_metadata(KempliMeta)) or kempli.status != MetaDataStatus.OFF)
+            and gongan.gongantype not in [GonganType.KEBYAR, GonganType.GINEMAN]
         ):
             kemplibeat = next(
                 (
@@ -281,9 +281,9 @@ def create_missing_staves(beat: Beat, prevbeat: Beat, score: Score) -> dict[Inst
 
 def add_missing_staves(score: Score):
     prev_beat = None
-    for system in score.systems:
-        for beat in system.beats:
-            # Not all positions occur in each system.
+    for gongan in score.gongans:
+        for beat in gongan.beats:
+            # Not all positions occur in each gongan.
             # Therefore we need to add blank staves (all rests) for missing positions.
             missing_staves = create_missing_staves(beat, prev_beat, score)
             beat.staves.update(missing_staves)
@@ -331,26 +331,26 @@ def validate_score(
         if char.stroke == Stroke.EXTENSION and char.total_duration == 1
     )
 
-    for system in score.systems:
+    for gongan in score.gongans:
         # Determine if the beat duration is a power of 2 (ignore kebyar)
-        invalids, corrected, ignored = invalid_beat_lengths(system, autocorrect)
+        invalids, corrected, ignored = invalid_beat_lengths(gongan, autocorrect)
         beats_with_length_not_pow2.extend(invalids)
         count_corrected_beat_lengths += len(corrected)
         count_ignored_beat_lengths += len(ignored)
 
-        invalids, corrected, ignored = unequal_stave_lengths(system, filler=filler, autocorrect=autocorrect)
+        invalids, corrected, ignored = unequal_stave_lengths(gongan, filler=filler, autocorrect=autocorrect)
         beats_with_unequal_stave_lengths.extend(invalids)
         corrected_stave_lengths.extend(corrected)
         count_corrected_stave_lengths += len(corrected)
         count_ignored_stave_lengths += len(ignored)
 
-        invalids, corrected, ignored = out_of_range(system, ranges=score.position_range_lookup, autocorrect=autocorrect)
+        invalids, corrected, ignored = out_of_range(gongan, ranges=score.position_range_lookup, autocorrect=autocorrect)
         beats_with_note_out_of_instrument_range.extend(invalids)
         count_corrected_notes_out_of_range += len(corrected)
         count_ignored_notes_out_of_range += len(ignored)
 
         invalids, corrected, ignored = incorrect_kempyung(
-            system, score=score, ranges=score.position_range_lookup, autocorrect=autocorrect
+            gongan, score=score, ranges=score.position_range_lookup, autocorrect=autocorrect
         )
         beats_with_incorrect_kempyung.extend(invalids)
         corrected_invalid_kempyung.extend(corrected)

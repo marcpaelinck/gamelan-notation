@@ -25,11 +25,11 @@ from src.common.constants import (
 )
 from src.common.metadata_classes import (
     GonganType,
-    GoTo,
+    GoToMeta,
     MetaData,
     MetaDataStatus,
     MetaDataType,
-    Tempo,
+    TempoMeta,
     ValidationProperty,
 )
 
@@ -222,16 +222,17 @@ class Source:
 
 
 @dataclass
-class System:
+class Gongan:
     # A set of beats.
-    # A System will usually span one gongan.
+    # A Gongan consists of a set of instrument parts.
+    # Gongans in the input file are separated from each other by an empty line.
     id: int
     beats: list[Beat] = field(default_factory=list)
     beat_duration: int = 4
     gongantype: GonganType = GonganType.REGULAR
     metadata: list[MetaData] = field(default_factory=list)
     comments: list[str] = field(default_factory=list)
-    _pass_: PASS = 0  # Counts the number of times the system is passed during generation of MIDI file.
+    _pass_: PASS = 0  # Counts the number of times the gongan is passed during generation of MIDI file.
 
     def get_metadata(self, cls: MetaDataType):
         return next((meta.data for meta in self.metadata if isinstance(meta.data, cls)), None)
@@ -240,11 +241,11 @@ class System:
 @dataclass
 class FlowInfo:
     # Keeps track of statements that modify the sequence of
-    # systems or beats in the score. The main purpose of this
+    # gongans or beats in the score. The main purpose of this
     # class is to keep track of gotos that point to labels that
     # have not yet been encountered while processing the score.
     labels: dict[str, Beat] = field(default_factory=dict)
-    gotos: dict[str, tuple[System, GoTo]] = field(default_factory=lambda: defaultdict(list))
+    gotos: dict[str, tuple[Gongan, GoToMeta]] = field(default_factory=lambda: defaultdict(list))
     kempli: MetaDataStatus = MetaDataStatus.ON
     metadata: list[MetaData] = field(default_factory=list)
 
@@ -252,11 +253,11 @@ class FlowInfo:
 @dataclass
 class FlowInfo:
     # Keeps track of statements that modify the sequence of
-    # systems or beats in the score. The main purpose of this
+    # gongans or beats in the score. The main purpose of this
     # class is to keep track of gotos that point to labels that
     # have not yet been encountered while processing the score.
     labels: dict[str, Beat] = field(default_factory=dict)
-    gotos: dict[str, tuple[System, GoTo]] = field(default_factory=lambda: defaultdict(list))
+    gotos: dict[str, tuple[Gongan, GoToMeta]] = field(default_factory=lambda: defaultdict(list))
 
 
 @dataclass
@@ -266,7 +267,7 @@ class Score:
     midi_version: MidiVersion
     instrumentgroup: InstrumentGroup = None
     instrument_positions: set[InstrumentPosition] = None
-    systems: list[System] = field(default_factory=list)
+    gongans: list[Gongan] = field(default_factory=list)
     balimusic_font_dict: dict[str, Character] = None
     midi_notes_dict: dict[tuple[InstrumentPosition, Note, Octave, Stroke], MidiNote] = None
     position_range_lookup: dict[InstrumentPosition, tuple[Note, Octave, Stroke]] = None
