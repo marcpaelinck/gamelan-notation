@@ -1,30 +1,16 @@
 import csv
-from copy import copy
 from os import path
-from typing import Any
 
 import numpy as np
 import pandas as pd
 
-from src.common.classes import (
-    Character,
-    InstrumentTag,
-    Kempli,
-    MetaDataType,
-    MidiNote,
-    Score,
-    Source,
-    System,
-)
+from src.common.classes import Character, InstrumentTag, MidiNote, Score, Source, System
 from src.common.constants import (
-    Duration,
-    GonganType,
     InstrumentGroup,
     InstrumentPosition,
     MIDIvalue,
     MidiVersion,
     Note,
-    NoteType,
     Octave,
     Stroke,
 )

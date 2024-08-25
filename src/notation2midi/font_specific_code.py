@@ -9,6 +9,7 @@ from src.common.constants import (
     Stroke,
 )
 from src.common.utils import CHARACTER_LIST
+from src.notation2midi.settings import BASE_NOTE_TIME
 
 # ==================== BALI MUSIC 4 FONT =====================================
 
@@ -50,9 +51,11 @@ def get_next_note(beat: Beat, position: InstrumentPosition, index: int) -> Chara
 
 # ==================== BALI MUSIC 5 FONT =====================================
 
-TREMOLO_NR_OF_NOTES_PER_QUARTERNOTE = 3
-TREMOLO_ACCELERATING_FROM_TO_FREQ = [1, 5]
-TREMOLO_ACCELERATING_NR_OF_NOTES = 16
+TREMOLO_NR_OF_NOTES_PER_QUARTERNOTE: int = 3  # should be a divisor of BASE_NOTE_TIME
+# Next values are in 1/BASE_NOTE_TIME. E.g. if BASE_NOTE_TIME=24, then 24 is a standard note duration.
+# Should also be an even number so that alternating note patterns end on the second note.
+TREMOLO_ACCELERATING_PATTERN: list[int] = [48, 40, 32, 26, 22, 18, 14, 10, 10, 10, 10, 10]
+TREMOLO_ACCELERATING_VELOCITY: list[int] = [100] * (len(TREMOLO_ACCELERATING_PATTERN) - 5) + [90, 85, 80, 75, 70]
 
 
 def apply_ratio(note: Character, ratio_note: Character) -> tuple[Duration, Duration]:
@@ -104,6 +107,25 @@ def remove_from_last_note_to_end(stave: list[Character]) -> tuple[Character | No
         else:
             modifiers.append(element)
     return note, modifiers
+
+
+def generate_accelerated_tremolo(stave: dict[InstrumentPosition, list[Character]]):
+    """Generates the note sequence for an accelerated tremolo
+
+    Args:
+        stave (dict[InstrumentPosition, list[Character]]): _description_
+    """
+    notes = []
+    notes.append(stave.pop(-1))
+    # remove the previous note from new_stave if it is also TREMOLO_ACCELERATING
+    if stave and stave[-1].modifier is Modifier.TREMOLO_ACCELERATING:
+        stave.pop(-1)
+        notes.insert(0, stave.pop(-1))
+    durations = [i / BASE_NOTE_TIME for i in TREMOLO_ACCELERATING_PATTERN]
+    note_idx = 0
+    for duration, velocity in zip(durations, TREMOLO_ACCELERATING_VELOCITY):
+        stave.append(notes[note_idx].model_copy(update={"duration": duration, "velocity": velocity}))
+        note_idx = (note_idx + 1) % len(notes)
 
 
 def postprocess_font5(score: Score) -> Score:
@@ -217,39 +239,8 @@ def postprocess_font5(score: Score) -> Score:
                                     ):
                                         new_stave.append(note)
                                     else:
-                                        notes = []
-                                        notes.append(new_stave.pop(-1))
-                                        # remove the previous note from new_stave if it is also TREMOLO_ACCELERATING
-                                        if new_stave and new_stave[-1].modifier is Modifier.TREMOLO_ACCELERATING:
-                                            new_stave.pop(-1)
-                                            notes.insert(0, new_stave.pop(-1))
-                                        duration_incr = (
-                                            TREMOLO_ACCELERATING_FROM_TO_FREQ[1] - TREMOLO_ACCELERATING_FROM_TO_FREQ[0]
-                                        ) / TREMOLO_ACCELERATING_NR_OF_NOTES
-                                        note_idx = 0
-                                        for count in range(TREMOLO_ACCELERATING_NR_OF_NOTES):
-                                            new_stave.append(
-                                                notes[note_idx].model_copy(
-                                                    update={"duration": 1 / (1 + count * duration_incr)}
-                                                )
-                                            )
-                                            note_idx = (note_idx + 1) % len(notes)
+                                        generate_accelerated_tremolo(new_stave)
                             case _:
-                                # if (
-                                #     note.stroke == Stroke.EXTENSION
-                                #     and new_stave
-                                #     and new_stave[-1].modifier
-                                #     in [
-                                #         Modifier.TREMOLO,
-                                #         Modifier.TREMOLO_ACCELERATING,
-                                #     ]
-                                # ):
-                                #     prevnote, following_characters = remove_from_last_note_to_end(new_stave)
-                                #     new_note = prevnote.model_copy(
-                                #         update={"duration": prevnote.duration + note.duration}
-                                #     )
-                                #     new_stave.extend([new_note] + following_characters)
-                                # else:
                                 new_stave.append(note)
                     stave.clear()
                     stave.extend(new_stave)
