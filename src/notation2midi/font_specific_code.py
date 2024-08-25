@@ -16,8 +16,8 @@ from src.notation2midi.settings import BASE_NOTE_TIME
 
 def postprocess_font4(score: Score) -> Score:
     # Merge notes with negative value with previous note(s)
-    for system in score.systems:
-        for beat in system.beats:
+    for gongan in score.gongans:
+        for beat in gongan.beats:
             for instrument, stave in beat.staves.items():
                 stave_cpy = stave.copy()
                 stave.clear()
@@ -130,8 +130,8 @@ def generate_accelerated_tremolo(stave: dict[InstrumentPosition, list[Character]
 
 def postprocess_font5(score: Score) -> Score:
     for iteration in [1, 2]:  # Needed for correct processing of grace notes. See explanation below.
-        for system in score.systems:
-            for beat in system.beats:
+        for gongan in score.gongans:
+            for beat in gongan.beats:
                 for position, stave in beat.staves.items():
                     instr_range = [
                         (note, oct)

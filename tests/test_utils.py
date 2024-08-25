@@ -1,11 +1,11 @@
 import pytest
 
-from src.common.classes import Beat, Character, System
+from src.common.classes import Beat, Character, Gongan
 from src.common.constants import InstrumentPosition
 from src.common.utils import (
     create_symbol_to_character_lookup,
+    gongan_to_records,
     stave_to_string,
-    system_to_records,
 )
 from src.notation2midi.settings import InstrumentFields
 
@@ -31,7 +31,7 @@ def test_stave_to_string(char_list, expected):
 
 data2 = [
     (
-        System(
+        Gongan(
             id=1,
             beats=[
                 Beat(
@@ -101,6 +101,6 @@ data2 = [
 ]
 
 
-@pytest.mark.parametrize("system, expected", data2)
-def test_system_to_records(system, expected):
-    assert system_to_records(system) == expected
+@pytest.mark.parametrize("gongan, expected", data2)
+def test_gongan_to_records(gongan, expected):
+    assert gongan_to_records(gongan) == expected

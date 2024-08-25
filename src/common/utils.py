@@ -4,7 +4,7 @@ from os import path
 import numpy as np
 import pandas as pd
 
-from src.common.classes import Character, InstrumentTag, MidiNote, Score, Source, System
+from src.common.classes import Character, Gongan, InstrumentTag, MidiNote, Score, Source
 from src.common.constants import (
     InstrumentGroup,
     InstrumentPosition,
@@ -49,9 +49,9 @@ def read_settings(source: Source, version: MidiVersion, midi_notes_file: str) ->
     POSITION_TO_RANGE_LOOKUP.update(create_position_range_lookup(source.instrumentgroup, version, midi_notes_file))
 
 
-def is_silent(system: System, position: InstrumentPosition):
-    no_occurrence = sum((beat.staves.get(position, []) for beat in system.beats), []) == []
-    all_rests = all(char.note == Note.NONE for beat in system.beats for char in beat.staves.get(position, []))
+def is_silent(gongan: Gongan, position: InstrumentPosition):
+    no_occurrence = sum((beat.staves.get(position, []) for beat in gongan.beats), []) == []
+    all_rests = all(char.note == Note.NONE for beat in gongan.beats for char in beat.staves.get(position, []))
     return no_occurrence or all_rests
 
 
@@ -89,7 +89,7 @@ def create_rest_stave(resttype: Stroke, duration: float) -> list[Character]:
     # return rests
 
 
-def system_to_records(system: System, skipemptylines: bool = True) -> list[dict[InstrumentPosition | int, list[str]]]:
+def gongan_to_records(gongan: Gongan, skipemptylines: bool = True) -> list[dict[InstrumentPosition | int, list[str]]]:
 
     skip = []
     alias = dict()
@@ -99,34 +99,34 @@ def system_to_records(system: System, skipemptylines: bool = True) -> list[dict[
         (InstrumentPosition.PEMADE_SANGSIH, InstrumentPosition.KANTILAN_SANGSIH),
     ]:
         if (
-            p_pos in system.beats[0].staves
-            and k_pos in system.beats[0].staves
-            and all(beat.staves[p_pos] == beat.staves[k_pos] for beat in system.beats)
+            p_pos in gongan.beats[0].staves
+            and k_pos in gongan.beats[0].staves
+            and all(beat.staves[p_pos] == beat.staves[k_pos] for beat in gongan.beats)
         ):
             skip.append(k_pos)
             alias[p_pos] = "GANGSA_" + p_pos.value.split("_")[1]
 
     result = (
-        [{InstrumentFields.POSITION: COMMENT, 1: comment} for comment in system.comments]
+        [{InstrumentFields.POSITION: COMMENT, 1: comment} for comment in gongan.comments]
         + [
             {InstrumentFields.POSITION: METADATA, 1: metadata.data.model_dump_json(exclude_defaults=True)}
-            for metadata in system.metadata
+            for metadata in gongan.metadata
         ]
         + [
             {InstrumentFields.POSITION: alias.get(position, position)}
-            | {beat.id: stave_to_string(beat.staves[position]) for beat in system.beats}
+            | {beat.id: stave_to_string(beat.staves[position]) for beat in gongan.beats}
             for position in InstrumentPosition
             if position not in skip
-            if any(position in beat.staves for beat in system.beats) and not is_silent(system, position)
+            if any(position in beat.staves for beat in gongan.beats) and not is_silent(gongan, position)
         ]
-        + [{InstrumentFields.POSITION: ""} | {beat.id: "" for beat in system.beats}]
+        + [{InstrumentFields.POSITION: ""} | {beat.id: "" for beat in gongan.beats}]
     )
 
     return result
 
 
 def score_to_notation_file(score: Score) -> None:
-    score_dict = sum((system_to_records(system) for system in score.systems), [])
+    score_dict = sum((gongan_to_records(gpngan) for gpngan in score.gongans), [])
     score_df = pd.DataFrame.from_records(score_dict)
     filepath = path.join(
         score.source.datapath,

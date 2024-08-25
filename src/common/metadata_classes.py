@@ -30,7 +30,7 @@ class MetaDataType(BaseModel):
     _processingorder_ = 99
 
 
-class Tempo(MetaDataType):
+class TempoMeta(MetaDataType):
     type: Literal["tempo"]
     bpm: int
     passes: list[PASS] = field(default_factory=list)
@@ -49,7 +49,7 @@ class Tempo(MetaDataType):
         return self.first_beat - 1
 
 
-class Label(MetaDataType):
+class LabelMeta(MetaDataType):
     type: Literal["label"]
     name: str
     beat: Optional[int] = 1
@@ -61,10 +61,10 @@ class Label(MetaDataType):
         return self.beat - 1
 
 
-class GoTo(MetaDataType):
+class GoToMeta(MetaDataType):
     type: Literal["goto"]
     label: str
-    from_beat: Optional[int] | None = None  # Beat number from which to goto. Default is last beat of the system.
+    from_beat: Optional[int] | None = None  # Beat number from which to goto. Default is last beat of the gongan.
     passes: Optional[list[int]] = field(default_factory=list)  # On which pass(es) should goto be performed?
 
     @property
@@ -73,23 +73,23 @@ class GoTo(MetaDataType):
         return self.from_beat - 1 if self.from_beat else -1
 
 
-class Kempli(MetaDataType):
+class KempliMeta(MetaDataType):
     type: Literal["kempli"]
     status: MetaDataStatus
 
 
-class Gongan(MetaDataType):
+class GonganMeta(MetaDataType):
     type: Literal["gongan"]
     kind: GonganType
 
 
-class Validation(MetaDataType):
+class ValidationMeta(MetaDataType):
     type: Literal["validation"]
     beats: Optional[list[int]] = field(default_factory=list)
     ignore: list[ValidationProperty]
 
 
-MetaDataType = Union[Tempo, Label, GoTo, Kempli, Gongan, Validation]
+MetaDataType = Union[TempoMeta, LabelMeta, GoToMeta, KempliMeta, GonganMeta, ValidationMeta]
 
 
 class MetaData(BaseModel):
