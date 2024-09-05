@@ -14,7 +14,7 @@ from src.common.constants import (
 from src.common.metadata_classes import (
     GonganType,
     KempliMeta,
-    MetaDataStatus,
+    MetaDataSwitch,
     ValidationProperty,
 )
 from src.common.utils import create_rest_stave, score_to_notation_file
@@ -262,7 +262,7 @@ def create_missing_staves(beat: Beat, prevbeat: Beat, score: Score) -> dict[Inst
         # Add a kempli beat, except if a metadata label indicates otherwise or if the kempli part was already given in the original score
         if (
             InstrumentPosition.KEMPLI in staves.keys()
-            and (not (kempli := gongan.get_metadata(KempliMeta)) or kempli.status != MetaDataStatus.OFF)
+            and (not (kempli := gongan.get_metadata(KempliMeta)) or kempli.status != MetaDataSwitch.OFF)
             and gongan.gongantype not in [GonganType.KEBYAR, GonganType.GINEMAN]
         ):
             kemplibeat = next(

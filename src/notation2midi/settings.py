@@ -25,6 +25,13 @@ SINOMLADRANG = Source(
     font=NotationFont.BALIMUSIC5,
     instrumentgroup=InstrumentGroup.GONG_KEBYAR,
 )
+SINOMLADRANGMETA = Source(
+    datapath=".\\data\\sinom ladrang",
+    infilename="Sinom Ladrang_ubit4_font5_meta.tsv",
+    outfilefmt="Sinom Ladrang {position}_{version}.{ext}",
+    font=NotationFont.BALIMUSIC5,
+    instrumentgroup=InstrumentGroup.GONG_KEBYAR,
+)
 CENDRAWASIH = Source(
     datapath=".\\data\\cendrawasih",
     infilename="Cendrawasih_complete.tsv",

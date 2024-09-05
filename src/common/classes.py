@@ -8,8 +8,8 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
 from src.common.constants import (
-    ALL_PASSES,
     BPM,
+    DEFAULT,
     PASS,
     Duration,
     InstrumentGroup,
@@ -20,6 +20,7 @@ from src.common.constants import (
     NotationFont,
     NoteSource,
     Octave,
+    Pass,
     Pitch,
     Stroke,
 )
@@ -27,7 +28,7 @@ from src.common.metadata_classes import (
     GonganType,
     GoToMeta,
     MetaData,
-    MetaDataStatus,
+    MetaDataSwitch,
     MetaDataType,
     TempoMeta,
     ValidationProperty,
@@ -173,6 +174,8 @@ class Beat:
     duration: float
     tempo_changes: dict[PASS, TempoChange] = field(default_factory=dict)
     staves: dict[InstrumentPosition, list[Note]] = field(default_factory=dict)
+    # Exceptions contains alternative staves for specific passes.
+    exceptions: dict[(InstrumentPosition, Pass), list[Note]] = field(default_factory=dict)
     prev: "Beat" = field(default=None, repr=False)
     next: "Beat" = field(default=None, repr=False)
     goto: dict[PASS, "Beat"] = field(default_factory=dict)
@@ -194,16 +197,16 @@ class Beat:
         return self.goto.get(pass_ or self._pass_, self.next)
 
     def get_bpm_start(self):
-        return self.bpm_start.get(self._pass_, self.bpm_start.get(ALL_PASSES, None))
+        return self.bpm_start.get(self._pass_, self.bpm_start.get(DEFAULT, None))
 
     def get_bpm_end(self):
-        return self.bpm_end.get(self._pass_, self.bpm_end.get(ALL_PASSES, None))
+        return self.bpm_end.get(self._pass_, self.bpm_end.get(DEFAULT, None))
 
     def get_bpm_end_last_pass(self):
-        return self.bpm_end.get(self._pass_, self.bpm_end.get(ALL_PASSES, None))
+        return self.bpm_end.get(self._pass_, self.bpm_end.get(DEFAULT, None))
 
     def get_changed_tempo(self, current_tempo: BPM) -> BPM | None:
-        tempo_change = self.tempo_changes.get(self._pass_, self.tempo_changes.get(ALL_PASSES, None))
+        tempo_change = self.tempo_changes.get(self._pass_, self.tempo_changes.get(DEFAULT, None))
         if tempo_change and tempo_change.new_tempo != current_tempo:
             if tempo_change.incremental:
                 return current_tempo + int((tempo_change.new_tempo - current_tempo) / tempo_change.steps)
@@ -246,7 +249,7 @@ class FlowInfo:
     # have not yet been encountered while processing the score.
     labels: dict[str, Beat] = field(default_factory=dict)
     gotos: dict[str, tuple[Gongan, GoToMeta]] = field(default_factory=lambda: defaultdict(list))
-    kempli: MetaDataStatus = MetaDataStatus.ON
+    kempli: MetaDataSwitch = MetaDataSwitch.ON
     metadata: list[MetaData] = field(default_factory=list)
 
 
