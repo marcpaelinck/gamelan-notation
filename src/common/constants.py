@@ -1,4 +1,5 @@
 from enum import Enum, StrEnum, auto
+from typing import Any
 
 BPM = int
 PASS = int

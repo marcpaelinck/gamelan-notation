@@ -8,7 +8,6 @@ from pprint import pprint
 import pandas as pd
 from scipy.io import wavfile
 
-from src.common.classes import InstrumentTag
 from src.common.constants import (
     InstrumentGroup,
     InstrumentPosition,
@@ -16,6 +15,7 @@ from src.common.constants import (
     NoteType,
     Stroke,
 )
+from src.common.lookups import InstrumentTag
 from src.common.utils import create_position_range_lookup
 
 
