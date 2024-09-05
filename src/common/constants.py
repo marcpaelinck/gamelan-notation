@@ -2,9 +2,10 @@ from enum import Enum, StrEnum, auto
 
 BPM = int
 PASS = int
-ALL_PASSES = -1
+DEFAULT = -1
 Duration = int
 BeatId = str
+Pass = int
 Octave = int
 MIDIvalue = int
 
@@ -129,27 +130,24 @@ class Pitch(Enum):
     DENGDING = "DENGDING", NoteType.MELODIC, auto()
     BYONG = "BYONG", NoteType.PERCUSSION, auto()
     BYOT = "BYOT", NoteType.PERCUSSION, auto()
+    KA = "KA", NoteType.PERCUSSION, auto()
+    PAK = "PAK", NoteType.PERCUSSION, auto()
+    DE = "DE", NoteType.PERCUSSION, auto()
+    TUT = "TUT", NoteType.PERCUSSION, auto()
+    JU = "JU", NoteType.PERCUSSION, auto()
+    KUNG = "KUNG", NoteType.PERCUSSION, auto()
+    PLAK = "PLAK", NoteType.PERCUSSION, auto()
     DAG = "DAG", NoteType.PERCUSSION, auto()
     DUG = "DUG", NoteType.PERCUSSION, auto()
-    DUT = "DUT", NoteType.PERCUSSION, auto()
     GIR = "GIR", NoteType.PERCUSSION, auto()
     JET = "JET", NoteType.PERCUSSION, auto()
-    KAP = "KAP", NoteType.PERCUSSION, auto()
-    KEP = "KEP", NoteType.PERCUSSION, auto()
-    KRUM = "KRUM", NoteType.PERCUSSION, auto()
     MUTED = "MUTED", NoteType.PERCUSSION, auto()
     OPEN = "OPEN", NoteType.PERCUSSION, auto()
-    PAK = "PAK", NoteType.PERCUSSION, auto()
     PEK = "PEK", NoteType.PERCUSSION, auto()
-    PLAK = "PLAK", NoteType.PERCUSSION, auto()
-    PUNG = "PUNG", NoteType.PERCUSSION, auto()
     PUR = "PUR", NoteType.PERCUSSION, auto()
-    TAK = "TAK", NoteType.PERCUSSION, auto()
-    TEK = "TEK", NoteType.PERCUSSION, auto()
     TICK = "TICK", NoteType.PERCUSSION, auto()
     TICK_2_PANGGUL = "TICK_2_PANGGUL", NoteType.PERCUSSION, auto()
     TONG = "TONG", NoteType.PERCUSSION, auto()
-    TUT = "TUT", NoteType.PERCUSSION, auto()
     NONE = "NONE", NoteType.NONE, auto()
 
     def __init__(self, notename: str, notetype: NoteType, sequence: int):

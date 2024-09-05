@@ -1,21 +1,24 @@
 import json
 import os
+import re
 from collections import defaultdict
 from os import path
 
 import numpy as np
 import pandas as pd
-from mido import MetaMessage, MidiFile, MidiTrack, bpm2tempo
+from mido import MetaMessage, MidiFile, MidiTrack
 
 from src.common.classes import Beat, Gongan, Score, Source, TempoMeta
-from src.common.constants import InstrumentPosition, MidiVersion, Pitch, Stroke
+from src.common.constants import DEFAULT, InstrumentPosition, MidiVersion, Pitch, Stroke
 from src.common.metadata_classes import (
     GonganMeta,
     GoToMeta,
     KempliMeta,
     LabelMeta,
     MetaData,
-    MetaDataStatus,
+    MetaDataSwitch,
+    RepeatMeta,
+    SilenceMeta,
     ValidationMeta,
 )
 from src.common.utils import (
@@ -39,6 +42,7 @@ from src.notation2midi.settings import (
     MIDI_NOTES_DEF_FILE,
     NON_INSTRUMENT_TAGS,
     SINOMLADRANG,
+    SINOMLADRANGMETA,
 )
 from src.notation2midi.settings_validation import validate_settings
 
@@ -62,35 +66,17 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
 
     track = MidiTrackX(score.source.font)
     track.append(MetaMessage("track_name", name=position.value, time=0))
-    # track.append(
-    #     MetaMessage(
-    #         "time_signature", numerator=4, denominator=4, clocks_per_click=36, notated_32nd_notes_per_beat=8, time=0
-    #     )
-    # )
 
     reset_pass_counters()
     beat = score.gongans[0].beats[0]
-    # current_tempo = 0
-    # current_signature = 0
     while beat:
         beat._pass_ += 1
-        # Set new signature if the beat's gongan has a different beat length
-        # track.update_signature(score.gongans[beat.sys_seq].beat_duration)
-        # if new_signature := (
-        #     round(score.gongans[beat.sys_seq].beat_duration)
-        #     if score.gongans[beat.sys_seq].beat_duration != track.current_signature
-        #     else None
-        # ):
         # Set new tempo
         if new_bpm := beat.get_changed_tempo(track.current_bpm):
-            # if position == InstrumentPosition.PEMADE_POLOS:
-            # print(f"beat {beat.full_id}: tempo_change detectected from {track.current_bpm} to {new_bpm}")
             track.update_tempo(new_bpm or beat.get_bpm_start())
-            # track.append(MetaMessage("set_tempo", tempo=bpm2tempo(new_tempo)))
-            # current_tempo = new_tempo
 
-        # Process individual notes
-        for note in beat.staves.get(position, []):
+        # Process individual notes. Check if there is an alternative stave for the current pass
+        for note in beat.exceptions.get((position, beat._pass_), beat.staves.get(position, [])):
             track.add_note(position, note)
         beat = beat.goto.get(beat._pass_, beat.next)
 
@@ -111,11 +97,11 @@ def apply_metadata(metadata: list[MetaData], gongan: Gongan, score: Score) -> No
             # Assuming 10 is larger than the max. number of passes.
             gongan.beats[goto.data.beat_seq].goto[rep] = score.flowinfo.labels[goto.data.label]
 
-    haslabel = False
+    haslabel = False  # Will be set to true if the gongan has a metadata Label tag.
     for meta in sorted(metadata, key=lambda x: x.data._processingorder_):
         match meta.data:
             case TempoMeta():
-                if meta.data.beats == 0:
+                if meta.data.beat_count == 0:
                     # immediate tempo change.
                     gongan.beats[meta.data.first_beat_seq].tempo_changes.update(
                         {
@@ -123,13 +109,12 @@ def apply_metadata(metadata: list[MetaData], gongan: Gongan, score: Score) -> No
                             for pass_ in meta.data.passes
                         }
                     )
-                    # immediate bpm change
                 else:
                     # Stepwise tempo change over meta.data.beats beats. The first tempo change is after first beat.
                     # This emulates a gradual tempo change.
                     beat = gongan.beats[meta.data.first_beat_seq]
-                    steps = meta.data.beats
-                    for _ in range(meta.data.beats):
+                    steps = meta.data.beat_count
+                    for _ in range(meta.data.beat_count):
                         beat = beat.next
                         if not beat:  # End of score. This should not happen unless notation error.
                             break
@@ -150,33 +135,81 @@ def apply_metadata(metadata: list[MetaData], gongan: Gongan, score: Score) -> No
                 for sys, goto in score.flowinfo.gotos[meta.data.name]:
                     process_goto(sys, goto)
             case GoToMeta():
+                # Add goto info to the beat
                 if score.flowinfo.labels.get(meta.data.label, None):
                     process_goto(gongan, meta)
                 else:
                     # Label not yet encountered: store GoTo obect in flowinfo
                     score.flowinfo.gotos[meta.data.label].append((gongan, meta))
+            case RepeatMeta():
+                # Special case of goto: from last back to first beat of the gongan.
+                for counter in range(meta.data.count):
+                    gongan.beats[-1].goto[counter + 1] = gongan.beats[0]
             case KempliMeta():
+                # Suppress kempli.
+                # TODO status=ON will never be used because it is the default. So attribute status can be discarded.
                 gongan.gongantype = meta.data.status
-                if meta.data.status is MetaDataStatus.OFF:
+                if meta.data.status is MetaDataSwitch.OFF:
                     for beat in gongan.beats:
                         if InstrumentPosition.KEMPLI in beat.staves:
                             beat.staves[InstrumentPosition.KEMPLI] = create_rest_stave(Stroke.SILENCE, beat.duration)
             case GonganMeta():
-                # TODO: need to synchronize all instruments starting from next regular gongan
-                gongan.gongantype = meta.data.kind
+                # TODO: how to safely synchronize all instruments starting from next regular gongan?
+                gongan.gongantype = meta.data.type
+            case SilenceMeta():
+                # Add a separate silence stave to the gongan beats for each instrument position and pass mentioned.
+                # Currently the positions given in the meta tag need to correspond with InstrumentPosition values.
+                # TODO enable to use the same position tags as used in the notation.
+                for beat in gongan.beats:
+                    if beat.id in meta.data.beats or not meta.data.beats:
+                        for position in meta.data.positions:
+                            beat.exceptions.update(
+                                {
+                                    (position, pass_): create_rest_stave(Stroke.EXTENSION, beat.duration)
+                                    for pass_ in meta.data.passes
+                                }
+                            )
             case ValidationMeta():
                 for beat in [b for b in gongan.beats if b.id in meta.data.beats] or gongan.beats:
                     beat.validation_ignore.extend(meta.data.ignore)
 
                 pass
             case _:
-                raise ValueError(f"Metadata value {meta.data.type} is not supported.")
+                raise ValueError(f"Metadata value {meta.data.metatype} is not supported.")
 
     if haslabel:
+        # Gongan has one or more Label metadata items: explicitly set the current tempo for each beat by copying it
+        # from its predecessor. This will ensure that a goto to any of these beats will pick up the correct tempo.
         for beat in gongan.beats:
             if not beat.tempo_changes and beat.prev:
                 beat.tempo_changes.update(beat.prev.tempo_changes)
         return
+
+
+def passes_str_to_tuple(rangestr: str) -> list[int]:
+    """Converts a pass indicator that follows a position tag to a list of passes.
+        The indicator is preceded by a colon (:) and has one of the following formats:
+        <pass>[,<pass>...]
+        <firstpass>-<lastpass>
+        where <pass>, <firstpass> and <lastpass> are single digits.
+        e.g.:
+        gangsa p:2,3
+
+    Args:
+        rangestr (str): the pass range indicator, in the prescribed format.
+
+    Raises:
+        ValueError: string does not have the expected format.
+
+    Returns:
+        list[int]: a list of passes (passes are numbered from 1)
+    """
+    if not re.match("^(\d-\d|(\d,)*\d)$", rangestr):
+        raise ValueError(f"Invalid value for passes: {rangestr}")
+    if re.match("^\d-\d$", rangestr):
+        return list(range(int(rangestr[0]), int(rangestr[2]) + 1))
+    else:
+        return tuple(json.loads(f"[{rangestr}]"))
 
 
 def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score:
@@ -196,6 +229,13 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
     filepath = path.join(source.datapath, source.infilename)
     df = pd.read_csv(filepath, sep="\t", names=columns, skip_blank_lines=False, encoding="UTF-8")
     df["id"] = df.index
+    # Create a column with the optional pass indicator (indicated by a colon (:) immediately following the position).
+    # Add a default pass value -1 if missing.
+    df["passes"] = df["orig_tag"].apply(
+        lambda x: None if not isinstance(x, str) else passes_str_to_tuple(x.split(":")[1]) if ":" in x else (DEFAULT,)
+    )
+    # Remove optional pass indicator from orig_tag
+    df["orig_tag"] = df["orig_tag"].apply(lambda x: x.split(":")[0] if isinstance(x, str) and ":" in x else x)
     # insert a column with the normalized instrument/position names and duplicate rows that contain multiple positions
     df.insert(1, "tag", df["orig_tag"].apply(lambda val: TAG_TO_POSITION_LOOKUP.get(val, [])))
     df = df.explode("tag", ignore_index=True)
@@ -206,16 +246,24 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
     # Number the gongans: blank lines denote start of new gongan. Then delete blank lines.
     df["sysnr"] = df["tag"].isna().cumsum()[~df["tag"].isna()] + 1
     # Reshape dataframe so that there is one beat per row. Column "BEAT" will contain the beat content.
-    df = pd.wide_to_long(df, ["BEAT"], i=["sysnr", "tag", "id"], j="beat_nr").reset_index(inplace=False)
+    df = pd.wide_to_long(df, ["BEAT"], i=["sysnr", "tag", "passes", "id"], j="beat_nr").reset_index(inplace=False)
     df = df[~df["BEAT"].isna()]
     df["sysnr"] = df["sysnr"].astype("int16")
 
     # convert to list of gongans, each gongan containing optional metadata and a list of instrument parts.
-    df_dict = df.groupby(["sysnr", "beat_nr", "tag"])["BEAT"].apply(lambda g: g.values.tolist()).to_dict()
+    df_dict = df.groupby(["sysnr", "beat_nr", "tag", "passes"])["BEAT"].apply(lambda g: g.values.tolist()).to_dict()
     # Create notation dict that is grouped by gongan and beat
-    notation = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-    for (sysnr, beat_nr, tag), beat in df_dict.items():
-        notation[sysnr][beat_nr][tag] = beat
+    notation = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
+    for (sysnr, beat_nr, tag, passes), beat in df_dict.items():
+        if tag in InstrumentPosition:
+            # Notation contains optional pass information (default (-1,) was added above for gongans without pass info)
+            position = tag  # for code clarity
+            for pass_ in passes:
+                # In case of notation, beat contains exactly one element: a string of notation characters for the position.
+                notation[sysnr][beat_nr][position][pass_] = beat[0]
+        else:
+            # other tags (metadata, comment). Beat can contain multiple values for each tag.
+            notation[sysnr][beat_nr][tag] = beat
 
     # create a list of all instrument positions
     positions_str = set(df[~df["tag"].isin(NON_INSTRUMENT_TAGS)]["tag"].unique())
@@ -234,12 +282,20 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
     comments: list[str] = []
     for sys_id, sys_info in notation.items():
         for beat_nr, beat_info in sys_info.items():
-            # create the staves
+            # create the staves (regular and exceptions)
+            # TODO merge Beat.staves and Beat.exceptions and use pass=-1 for default stave. Similar to Beat.tempo_changes.
             try:
                 staves = {
-                    tag: [SYMBOL_TO_NOTE_LOOKUP[symbol].model_copy() for symbol in notechars[0]]
-                    for tag, notechars in beat_info.items()
-                    if tag not in NON_INSTRUMENT_TAGS
+                    position: [SYMBOL_TO_NOTE_LOOKUP[symbol].model_copy() for symbol in notationchars[DEFAULT]]
+                    for position, notationchars in beat_info.items()
+                    if position in InstrumentPosition
+                }
+                exceptions = {
+                    (position, pass_): [SYMBOL_TO_NOTE_LOOKUP[symbol].model_copy() for symbol in notationchars[pass_]]
+                    for position, notationchars in beat_info.items()
+                    if position in InstrumentPosition
+                    for pass_ in notationchars.keys()
+                    if pass_ > 0
                 }
             except Exception as e:
                 raise ValueError(f"unexpected character in beat {sys_id}-{beat_nr}: {e}")
@@ -249,8 +305,9 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
                 id=beat_nr,
                 sys_id=sys_id,
                 staves=staves,
-                bpm_start={-1: (bpm := score.gongans[-1].beats[-1].bpm_end[-1] if score.gongans else 0)},
-                bpm_end={-1: bpm},
+                exceptions=exceptions,
+                bpm_start={DEFAULT: (bpm := score.gongans[-1].beats[-1].bpm_end[-1] if score.gongans else 0)},
+                bpm_end={DEFAULT: bpm},
                 duration=max(
                     sum(note.total_duration for note in notes if note.pitch != Pitch.NONE)
                     for notes in list(staves.values())
@@ -263,24 +320,30 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
                 new_beat.prev = prev_beat
             beats.append(new_beat)
 
+            # Add metadata tags to the beat
             for meta in beat_info.get(METADATA, []):
-                metadata.append(MetaData(data=json.loads(meta)))
+                # Note that `meta`` is not a valid json string.
+                # It will be converted to the required json format by the MetaData class.
+                metadata.append(MetaData(data=meta))
 
+            # Add comment tags to the beat
             for comment in beat_info.get(COMMENT, []):
                 comments.append(comment)
+
         # Create a new gongan
         if beats:
             gongan = Gongan(
                 id=int(sys_id), beats=beats, beat_duration=beats[0].duration, metadata=metadata, comments=comments
             )
             score.gongans.append(gongan)
-            apply_metadata(metadata, gongan, score)
             metadata = []
             beats = []
             comments = []
 
     # Apply font-specific modifications
     postprocess(score)
+    for gongan in score.gongans:
+        apply_metadata(gongan.metadata, gongan, score)
     # Add kempli beats and blank staves for all other omitted instruments
     add_missing_staves(score)
 
@@ -320,7 +383,7 @@ if __name__ == "__main__":
     AUTOCORRECT = True
     SAVE_CORRECTED_TO_FILE = True
     # --------------------------
-    CREATE_MIDIFILE = False
+    CREATE_MIDIFILE = True
 
     read_settings(source, VERSION, MIDI_NOTES_DEF_FILE)
     if VALIDATE_SETTINGS:

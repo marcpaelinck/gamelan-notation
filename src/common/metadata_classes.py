@@ -1,13 +1,16 @@
+import json
+import re
 from dataclasses import field
-from typing import Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 
-from pydantic import BaseModel, Field
+import pandas as pd
+from pydantic import BaseModel, Field, field_validator, model_validator
 
-from src.common.constants import ALL_PASSES, PASS, NotationEnum
+from src.common.constants import DEFAULT, PASS, InstrumentPosition, NotationEnum
 
 
 # MetaData related constants
-class MetaDataStatus(NotationEnum):
+class MetaDataSwitch(NotationEnum):
     OFF = "off"
     ON = "on"
 
@@ -26,21 +29,17 @@ class ValidationProperty(NotationEnum):
 
 
 class MetaDataType(BaseModel):
-    type: Literal[""]
+    metatype: Literal[""]
     _processingorder_ = 99
 
 
 class TempoMeta(MetaDataType):
-    type: Literal["tempo"]
+    metatype: Literal["tempo"]
     bpm: int
-    passes: list[PASS] = field(default_factory=list)
     first_beat: Optional[int] = 1
-    beats: Optional[int] = 0
+    beat_count: Optional[int] = 0
     passes: Optional[list[int]] = field(
-        default_factory=lambda: list([ALL_PASSES])
-    )  # On which pass(es) should goto be performed?
-    passes: Optional[list[int]] = field(
-        default_factory=lambda: list([ALL_PASSES])
+        default_factory=lambda: list([DEFAULT])
     )  # On which pass(es) should goto be performed?
 
     @property
@@ -50,9 +49,10 @@ class TempoMeta(MetaDataType):
 
 
 class LabelMeta(MetaDataType):
-    type: Literal["label"]
+    metatype: Literal["label"]
     name: str
     beat: Optional[int] = 1
+    # Make sure that labels are processed before gotos in same gongan.
     _processingorder_ = 1
 
     @property
@@ -62,7 +62,7 @@ class LabelMeta(MetaDataType):
 
 
 class GoToMeta(MetaDataType):
-    type: Literal["goto"]
+    metatype: Literal["goto"]
     label: str
     from_beat: Optional[int] | None = None  # Beat number from which to goto. Default is last beat of the gongan.
     passes: Optional[list[int]] = field(default_factory=list)  # On which pass(es) should goto be performed?
@@ -73,24 +73,93 @@ class GoToMeta(MetaDataType):
         return self.from_beat - 1 if self.from_beat else -1
 
 
+class RepeatMeta(MetaDataType):
+    metatype: Literal["repeat"]
+    count: int = 1
+
+
 class KempliMeta(MetaDataType):
-    type: Literal["kempli"]
-    status: MetaDataStatus
+    metatype: Literal["kempli"]
+    status: MetaDataSwitch
 
 
 class GonganMeta(MetaDataType):
-    type: Literal["gongan"]
-    kind: GonganType
+    metatype: Literal["gongan"]
+    type: GonganType
+
+
+class SilenceMeta(MetaDataType):
+    metatype: Literal["silence"]
+    positions: list[InstrumentPosition] = field(default_factory=list)
+    passes: Optional[list[int]] = field(default_factory=list)
+    beats: list[int] = field(default_factory=list)
 
 
 class ValidationMeta(MetaDataType):
-    type: Literal["validation"]
+    metatype: Literal["validation"]
     beats: Optional[list[int]] = field(default_factory=list)
     ignore: list[ValidationProperty]
 
 
-MetaDataType = Union[TempoMeta, LabelMeta, GoToMeta, KempliMeta, GonganMeta, ValidationMeta]
+MetaDataType = Union[
+    TempoMeta,
+    LabelMeta,
+    GoToMeta,
+    RepeatMeta,
+    KempliMeta,
+    GonganMeta,
+    ValidationMeta,
+    SilenceMeta,
+]
 
 
 class MetaData(BaseModel):
-    data: MetaDataType = Field(..., discriminator="type")
+    data: MetaDataType = Field(..., discriminator="metatype")
+
+    @classmethod
+    def __get_all_subtype_fieldnames__(cls):
+        membertypes = list(MetaDataType.__dict__.values())[4]
+        return {fieldname for member in membertypes for fieldname in member.model_fields.keys()}
+
+    @classmethod
+    def __is_list__(cls, value):
+        return value.startswith("[") and value.endswith("]")
+
+    @field_validator("data", mode="before")
+    @classmethod
+    def convert_to_proper_json(cls, data: str) -> dict[Any]:
+        """Converts the metadata syntax used in the notation into regular JSON strings.
+            metadata format: {META_KEYWORD keyword1=value1[keywordN=valueN] }
+        Args:
+            x (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        # Switch metadata keyword to lowercase and add 'metatype: ' in front.
+        fieldnames = cls.__get_all_subtype_fieldnames__()
+        value = data
+        match = r"\{(\w+)"
+        p = re.compile(match)
+        keyword_uc = p.findall(value)[0]
+        value = value.replace(keyword_uc, "metatype: " + keyword_uc.lower() + ", ")
+        # Replace equal signs with colon.
+        value = value.replace("=", ": ")
+        # Split value into (fieldname, fieldvalue) pairs.
+        # Field value should be either a single string, or a list of strings starting with '[' and ending with ']'.
+        match = "(" + "|".join(fieldnames) + r"): *([^\[\]]*?|\[[^\[\]]*?\])[,}]"
+        p = re.compile(match)
+        field_list = p.findall(value)
+        # quote keywords and strings
+        # pf matches field values
+        match = r"(\b\w+\b)"
+        pf = re.compile(match)
+        # pv matches unquoted strings and omits strings representing number values.
+        # match = r"(\b\w*[A-Za-z_]\w*\b|\\.*\\)"
+        match = r"(\w*[A-Za-z_]\w*\b)"
+        pv = re.compile(match)
+        quoted_fields = [": ".join((f'"{field}"', pv.sub(r'"\1"', value))) for field, value in field_list]
+        value = "{" + ", ".join(quoted_fields) + "}"
+        # unquote already quoted strings (which are now double quoted)
+        value = value.replace('""', "")
+        return json.loads(value)
