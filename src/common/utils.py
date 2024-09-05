@@ -4,7 +4,7 @@ from os import path
 import numpy as np
 import pandas as pd
 
-from src.common.classes import Gongan, InstrumentTag, MidiNote, Note, Score, Source
+from src.common.classes import Gongan, MidiNote, Note, Score, Source
 from src.common.constants import (
     InstrumentGroup,
     InstrumentPosition,
@@ -14,6 +14,15 @@ from src.common.constants import (
     Pitch,
     Stroke,
 )
+from src.common.lookups import (
+    NOTE_LIST,
+    POSITION_TO_RANGE_LOOKUP,
+    SYMBOL_TO_NOTE_LOOKUP,
+    SYMBOLVALUE_TO_MIDINOTE_LOOKUP,
+    TAG_TO_POSITION_LOOKUP,
+    InstrumentTag,
+)
+from src.common.metadata_classes import SilenceMeta
 from src.notation2midi.settings import (
     COMMENT,
     METADATA,
@@ -24,12 +33,6 @@ from src.notation2midi.settings import (
     MidiNotesFields,
 )
 
-SYMBOL_TO_NOTE_LOOKUP: dict[str, Note] = dict()
-NOTE_LIST: list[Note] = list()
-SYMBOLVALUE_TO_MIDINOTE_LOOKUP: dict[tuple[InstrumentPosition, Pitch, Octave, Stroke], MidiNote] = dict()
-TAG_TO_POSITION_LOOKUP: dict[InstrumentTag, InstrumentPosition] = dict()
-POSITION_TO_RANGE_LOOKUP: dict[InstrumentPosition, tuple[Pitch, Octave, Stroke]] = dict()
-
 
 def read_settings(source: Source, version: MidiVersion, midi_notes_file: str) -> None:
     """Initializes lookup dicts and lists from settings files
@@ -39,13 +42,15 @@ def read_settings(source: Source, version: MidiVersion, midi_notes_file: str) ->
         version (Version):  Used to define which midi mapping to use from the midinotes.csv file.
 
     """
-    global SYMBOL_TO_NOTE_LOOKUP, NOTE_LIST, SYMBOLVALUE_TO_MIDINOTE_LOOKUP, TAG_TO_POSITION_LOOKUP
+    # global SYMBOL_TO_NOTE_LOOKUP, NOTE_LIST, SYMBOLVALUE_TO_MIDINOTE_LOOKUP
     SYMBOL_TO_NOTE_LOOKUP.update(create_symbol_to_note_lookup(NOTATIONFONT_DEF_FILES[source.font]))
     NOTE_LIST.extend(list(SYMBOL_TO_NOTE_LOOKUP.values()))
     SYMBOLVALUE_TO_MIDINOTE_LOOKUP.update(
         create_symbolvalue_to_midinote_lookup(source.instrumentgroup, version, midi_notes_file)
     )
     TAG_TO_POSITION_LOOKUP.update(create_tag_to_position_lookup())
+    # TODO temporary solution in order to avoid circular imports. Should look for more elegant solution.
+    SilenceMeta.TAG_TO_POSITION_LOOKUP = TAG_TO_POSITION_LOOKUP
     POSITION_TO_RANGE_LOOKUP.update(create_position_range_lookup(source.instrumentgroup, version, midi_notes_file))
 
 
@@ -88,6 +93,15 @@ def create_rest_stave(resttype: Stroke, duration: float) -> list[Note]:
 
 
 def gongan_to_records(gongan: Gongan, skipemptylines: bool = True) -> list[dict[InstrumentPosition | int, list[str]]]:
+    """Converts a gongan to a dict containing the notation for the individual beats.
+
+    Args:
+        gongan (Gongan): gongan to convert
+        skipemptylines (bool, optional): if true, positions without content (only rests) are skipped. Defaults to True.
+
+    Returns:
+        list[dict[InstrumentPosition | int, list[str]]]: _description_
+    """
 
     skip = []
     alias = dict()
@@ -115,7 +129,8 @@ def gongan_to_records(gongan: Gongan, skipemptylines: bool = True) -> list[dict[
             | {beat.id: stave_to_string(beat.staves[position]) for beat in gongan.beats}
             for position in InstrumentPosition
             if position not in skip
-            if any(position in beat.staves for beat in gongan.beats) and not is_silent(gongan, position)
+            if any(position in beat.staves for beat in gongan.beats)
+            and not (is_silent(gongan, position) and skipemptylines)
         ]
         + [{InstrumentFields.POSITION: ""} | {beat.id: "" for beat in gongan.beats}]
     )
@@ -124,7 +139,13 @@ def gongan_to_records(gongan: Gongan, skipemptylines: bool = True) -> list[dict[
 
 
 def score_to_notation_file(score: Score) -> None:
-    score_dict = sum((gongan_to_records(gpngan) for gpngan in score.gongans), [])
+    """Converts a score object to notation and saves it to file.
+        This method is used to export a corrected version of the original score.
+
+    Args:
+        score (Score): The score
+    """
+    score_dict = sum((gongan_to_records(gongan) for gongan in score.gongans), [])
     score_df = pd.DataFrame.from_records(score_dict)
     filepath = path.join(
         score.source.datapath,
@@ -186,10 +207,27 @@ def create_position_range_lookup(
     return lookup
 
 
-def create_tag_to_position_lookup(fromfile: str = TAGS_DEF_FILE):
+def create_tag_to_position_lookup(fromfile: str = TAGS_DEF_FILE) -> dict[InstrumentTag, list[InstrumentPosition]]:
+    """Creates a dict that maps "free style" position tags to a list of InstumentPosition values
+
+    Args:
+        fromfile (str, optional): _description_. Defaults to TAGS_DEF_FILE.
+
+    Returns:
+        _type_: _description_
+    """
     tags_dict = pd.read_csv(fromfile, sep="\t").to_dict(orient="records")
     tags = [InstrumentTag.model_validate(record) for record in tags_dict]
-    return {t.tag: t.positions for t in tags}
+    lookup_dict = {t.tag: t.positions for t in tags}
+    # Add all InstrumentPosition values and aggregations
+    lookup_dict.update({pos.value: [pos] for pos in InstrumentPosition})
+    lookup_dict.update(
+        {
+            "GANGSA_POLOS": [InstrumentPosition.PEMADE_POLOS, InstrumentPosition.KANTILAN_POLOS],
+            "GANGSA_SANGSIH": [InstrumentPosition.PEMADE_SANGSIH, InstrumentPosition.KANTILAN_SANGSIH],
+        }
+    )
+    return lookup_dict
 
 
 if __name__ == "__main__":

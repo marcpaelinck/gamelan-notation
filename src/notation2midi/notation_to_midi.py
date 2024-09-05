@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from mido import MetaMessage, MidiFile, MidiTrack
 
-from src.common.classes import Beat, Gongan, Score, Source, TempoMeta
+from src.common.classes import Beat, Gongan, Score, Source
 from src.common.constants import DEFAULT, InstrumentPosition, MidiVersion, Pitch, Stroke
 from src.common.metadata_classes import (
     GonganMeta,
@@ -19,6 +19,7 @@ from src.common.metadata_classes import (
     MetaDataSwitch,
     RepeatMeta,
     SilenceMeta,
+    TempoMeta,
     ValidationMeta,
 )
 from src.common.utils import (
@@ -148,6 +149,7 @@ def apply_metadata(metadata: list[MetaData], gongan: Gongan, score: Score) -> No
             case KempliMeta():
                 # Suppress kempli.
                 # TODO status=ON will never be used because it is the default. So attribute status can be discarded.
+                # Unless a future version enables to switch kempli off until a Kempli ON tag is encountered.
                 gongan.gongantype = meta.data.status
                 if meta.data.status is MetaDataSwitch.OFF:
                     for beat in gongan.beats:
@@ -158,8 +160,6 @@ def apply_metadata(metadata: list[MetaData], gongan: Gongan, score: Score) -> No
                 gongan.gongantype = meta.data.type
             case SilenceMeta():
                 # Add a separate silence stave to the gongan beats for each instrument position and pass mentioned.
-                # Currently the positions given in the meta tag need to correspond with InstrumentPosition values.
-                # TODO enable to use the same position tags as used in the notation.
                 for beat in gongan.beats:
                     if beat.id in meta.data.beats or not meta.data.beats:
                         for position in meta.data.positions:
@@ -187,8 +187,9 @@ def apply_metadata(metadata: list[MetaData], gongan: Gongan, score: Score) -> No
 
 
 def passes_str_to_tuple(rangestr: str) -> list[int]:
-    """Converts a pass indicator that follows a position tag to a list of passes.
-        The indicator is preceded by a colon (:) and has one of the following formats:
+    """Converts a pass indicator following a position tag to a list of passes.
+        A colon (:) separates the position tag and the pass indicator.
+        The indicator has one of the following formats:
         <pass>[,<pass>...]
         <firstpass>-<lastpass>
         where <pass>, <firstpass> and <lastpass> are single digits.
@@ -204,17 +205,17 @@ def passes_str_to_tuple(rangestr: str) -> list[int]:
     Returns:
         list[int]: a list of passes (passes are numbered from 1)
     """
-    if not re.match("^(\d-\d|(\d,)*\d)$", rangestr):
+    if not re.match(r"^(\d-\d|(\d,)*\d)$", rangestr):
         raise ValueError(f"Invalid value for passes: {rangestr}")
-    if re.match("^\d-\d$", rangestr):
+    if re.match(r"^\d-\d$", rangestr):
         return list(range(int(rangestr[0]), int(rangestr[2]) + 1))
     else:
         return tuple(json.loads(f"[{rangestr}]"))
 
 
 def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score:
-    """Creates an object model of the notation.
-    This will simplify the generation of the MIDI file content.
+    """Creates an object model of the notation. The method aggregates each note and the corresponding diacritics
+       into a single note object, which will simplify the generation of the MIDI file content.
 
     Args:
         datapath (str): path to the data folder
@@ -229,8 +230,8 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
     filepath = path.join(source.datapath, source.infilename)
     df = pd.read_csv(filepath, sep="\t", names=columns, skip_blank_lines=False, encoding="UTF-8")
     df["id"] = df.index
-    # Create a column with the optional pass indicator (indicated by a colon (:) immediately following the position).
-    # Add a default pass value -1 if missing.
+    # Create a column with the optional pass indicator (indicated by a colon (:) immediately following a position tag).
+    # Add a default pass value -1 if pass indicator is missing.
     df["passes"] = df["orig_tag"].apply(
         lambda x: None if not isinstance(x, str) else passes_str_to_tuple(x.split(":")[1]) if ":" in x else (DEFAULT,)
     )
@@ -239,6 +240,7 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
     # insert a column with the normalized instrument/position names and duplicate rows that contain multiple positions
     df.insert(1, "tag", df["orig_tag"].apply(lambda val: TAG_TO_POSITION_LOOKUP.get(val, [])))
     df = df.explode("tag", ignore_index=True)
+    # Copy other tags (meta and comment) from orig_tag
     df["tag"] = np.where(df["tag"].isnull(), df["orig_tag"], df["tag"])
     df.drop("orig_tag", axis="columns", inplace=True)
     # Drop all empty columns

@@ -30,7 +30,6 @@ from src.common.metadata_classes import (
     MetaData,
     MetaDataSwitch,
     MetaDataType,
-    TempoMeta,
     ValidationProperty,
 )
 
@@ -239,18 +238,6 @@ class Gongan:
 
     def get_metadata(self, cls: MetaDataType):
         return next((meta.data for meta in self.metadata if isinstance(meta.data, cls)), None)
-
-
-@dataclass
-class FlowInfo:
-    # Keeps track of statements that modify the sequence of
-    # gongans or beats in the score. The main purpose of this
-    # class is to keep track of gotos that point to labels that
-    # have not yet been encountered while processing the score.
-    labels: dict[str, Beat] = field(default_factory=dict)
-    gotos: dict[str, tuple[Gongan, GoToMeta]] = field(default_factory=lambda: defaultdict(list))
-    kempli: MetaDataSwitch = MetaDataSwitch.ON
-    metadata: list[MetaData] = field(default_factory=list)
 
 
 @dataclass

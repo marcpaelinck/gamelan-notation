@@ -1,12 +1,11 @@
 import json
 import re
 from dataclasses import field
-from typing import Any, Literal, Optional, Union
+from typing import Any, ClassVar, Literal, Optional, Union
 
-import pandas as pd
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from src.common.constants import DEFAULT, PASS, InstrumentPosition, NotationEnum
+from src.common.constants import DEFAULT, InstrumentPosition, NotationEnum
 
 
 # MetaData related constants
@@ -89,10 +88,21 @@ class GonganMeta(MetaDataType):
 
 
 class SilenceMeta(MetaDataType):
+    # Pointer to cls.common.lookup.TAG_TO_POSITION_LOOKUP
+    # TODO temporary solution in order to avoid circular imports. Should look for more elegant solution.
+    # There is no guarantee that the attribute will be assigned a value before it is referred to.
+    TAG_TO_POSITION_LOOKUP: ClassVar[list] = None
+
     metatype: Literal["silence"]
     positions: list[InstrumentPosition] = field(default_factory=list)
     passes: Optional[list[int]] = field(default_factory=list)
     beats: list[int] = field(default_factory=list)
+
+    @field_validator("positions", mode="before")
+    @classmethod
+    # Converts 'free format' position tags to InstrumentPosition values.
+    def normalize_positions(cls, data: list[str]) -> list[InstrumentPosition]:
+        return sum((cls.TAG_TO_POSITION_LOOKUP[pos] for pos in data), [])
 
 
 class ValidationMeta(MetaDataType):
@@ -146,19 +156,28 @@ class MetaData(BaseModel):
         # Replace equal signs with colon.
         value = value.replace("=", ": ")
         # Split value into (fieldname, fieldvalue) pairs.
-        # Field value should be either a single string, or a list of strings starting with '[' and ending with ']'.
+        # Field value should be either a single string:
+        #   [^\[\]]*?
+        # or a list of strings starting with '[' and ending with ']':
+        #   \[[^\[\]]*?\]
+        # Field/value pairs should be separated by a comma or (in case of the last pair) a brace:
+        #   [,}]
         match = "(" + "|".join(fieldnames) + r"): *([^\[\]]*?|\[[^\[\]]*?\])[,}]"
         p = re.compile(match)
         field_list = p.findall(value)
-        # quote keywords and strings
-        # pf matches field values
-        match = r"(\b\w+\b)"
-        pf = re.compile(match)
-        # pv matches unquoted strings and omits strings representing number values.
-        # match = r"(\b\w*[A-Za-z_]\w*\b|\\.*\\)"
-        match = r"(\w*[A-Za-z_]\w*\b)"
+        # The following code put quotes around the keywords and string values.
+        # `match` matches quoted and unquoted strings and omits strings representing number values.
+        # The first component "([^"]+)" will be tried first, which prioritizes matching quoted strings.
+        # Note that the capturing brackets are placed within the quotes, so the captured values will be unquoted.
+        # If no quoted string can be matched, the second component (\w*[A-Za-z_]\w*\b) will capture single, unquoted
+        # non-numeric values.
+        match = r'"([^"]+)"|(\w*[A-Za-z_]\w*\b)'
         pv = re.compile(match)
-        quoted_fields = [": ".join((f'"{field}"', pv.sub(r'"\1"', value))) for field, value in field_list]
+        # In the substitution, \1\2 stand for the captured quoted and unquoted strings (only one of these placeholders
+        # will contain a non-empty value).
+        # Because quoted strings are captured without quotes, quoting either of these values yields
+        # the required result.
+        quoted_fields = [": ".join((f'"{field}"', pv.sub(r'"\1\2"', value))) for field, value in field_list]
         value = "{" + ", ".join(quoted_fields) + "}"
         # unquote already quoted strings (which are now double quoted)
         value = value.replace('""', "")
