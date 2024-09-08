@@ -215,12 +215,20 @@ class Beat:
 
 
 @dataclass
-class Source:
+class RunSettings(BaseModel):
+    title: str
     datapath: str
-    infilename: str
-    outfilefmt: str  # should contain 'position', 'ext' and 'midiversion' arguments
+    notationfile: str
+    midifile: str
+    midinotes_def_file: str
     font: NotationFont
     instrumentgroup: InstrumentGroup
+    midi_version: MidiVersion  # type: ignore
+    validate_settings: bool
+    detailed_validation_logging: bool
+    autocorrect: bool
+    save_corrected_to_file: bool
+    create_midifile: bool
 
 
 @dataclass
@@ -252,10 +260,7 @@ class FlowInfo:
 
 @dataclass
 class Score:
-    source: Source
-    midi_version: MidiVersion
-    midi_version: MidiVersion
-    instrumentgroup: InstrumentGroup = None
+    settings: RunSettings
     instrument_positions: set[InstrumentPosition] = None
     gongans: list[Gongan] = field(default_factory=list)
     balimusic_font_dict: dict[str, Note] = None

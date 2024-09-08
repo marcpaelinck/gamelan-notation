@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 from mido import MetaMessage, MidiFile, MidiTrack
 
-from src.common.classes import Beat, Gongan, Score, Source
-from src.common.constants import DEFAULT, InstrumentPosition, MidiVersion, Pitch, Stroke
+from src.common.classes import Beat, Gongan, RunSettings, Score
+from src.common.constants import DEFAULT, InstrumentPosition, Pitch, Stroke
 from src.common.metadata_classes import (
     GonganMeta,
     GoToMeta,
@@ -42,8 +42,9 @@ from src.notation2midi.settings import (
     METADATA,
     MIDI_NOTES_DEF_FILE,
     NON_INSTRUMENT_TAGS,
+    REJANGDEWA,
     SINOMLADRANG,
-    SINOMLADRANGMETA,
+    get_run_settings,
 )
 from src.notation2midi.settings_validation import validate_settings
 
@@ -65,7 +66,7 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
             for beat in gongan.beats:
                 beat._pass_ = 0
 
-    track = MidiTrackX(score.source.font)
+    track = MidiTrackX(score.settings.font)
     track.append(MetaMessage("track_name", name=position.value, time=0))
 
     reset_pass_counters()
@@ -213,7 +214,7 @@ def passes_str_to_tuple(rangestr: str) -> list[int]:
         return tuple(json.loads(f"[{rangestr}]"))
 
 
-def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score:
+def create_score_object_model(run_settings: RunSettings) -> Score:
     """Creates an object model of the notation. The method aggregates each note and the corresponding diacritics
        into a single note object, which will simplify the generation of the MIDI file content.
 
@@ -227,9 +228,15 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
     """
     # Create enough column titles to accommodate all the notation columns, then read the notation
     columns = ["orig_tag"] + ["BEAT" + str(i) for i in range(1, 33)]
-    filepath = path.join(source.datapath, source.infilename)
+    filepath = path.join(run_settings.datapath, run_settings.notationfile)
     df = pd.read_csv(filepath, sep="\t", names=columns, skip_blank_lines=False, encoding="UTF-8")
     df["id"] = df.index
+    # Remove empty rows at the start of the document and multiple empty rows between gongans.
+    # Gongans should be separated by exactly one empty row.
+    df.loc[0, "delete"] = True if type(df.loc[0, "orig_tag"]) == float else False
+    for i in range(1, len(df)):
+        df.loc[i, "delete"] = type(df.loc[i, "orig_tag"]) == float and type(df.loc[i - 1, "orig_tag"]) == float
+    df = df[df["delete"] == False].reset_index()
     # Create a column with the optional pass indicator (indicated by a colon (:) immediately following a position tag).
     # Add a default pass value -1 if pass indicator is missing.
     df["passes"] = df["orig_tag"].apply(
@@ -272,8 +279,7 @@ def create_score_object_model(source: Source, midiversion: MidiVersion) -> Score
     all_positions = sorted([InstrumentPosition[pos] for pos in positions_str], key=lambda p: p.sequence)
 
     score = Score(
-        source=source,
-        midi_version=midiversion,
+        settings=run_settings,
         instrument_positions=set(all_positions),
         balimusic_font_dict=SYMBOL_TO_NOTE_LOOKUP,
         midi_notes_dict=SYMBOLVALUE_TO_MIDINOTE_LOOKUP,
@@ -366,36 +372,23 @@ def create_midifile(score: Score) -> None:
         score (Score): The object model.
         separate_files (bool, optional): If True, a separate file will be created for each instrument. Defaults to False.
     """
-    outfilepathfmt = os.path.join(source.datapath, source.outfilefmt)
+    outfilepathfmt = os.path.join(score.settings.datapath, score.settings.midifile)
     mid = MidiFile(ticks_per_beat=96, type=1)
 
     for position in sorted(score.instrument_positions, key=lambda x: x.sequence):
         track = notation_to_track(score, position)
         mid.tracks.append(track)
     add_attenuation_time(mid.tracks, seconds=ATTENUATION_SECONDS_AFTER_MUSIC_END)
-    mid.save(outfilepathfmt.format(position="", version=score.midi_version, ext="mid"))
+    mid.save(outfilepathfmt.format(position="", version=score.settings.midi_version, ext="mid"))
 
 
 if __name__ == "__main__":
-    source = SINOMLADRANG
-    VERSION = MidiVersion.MULTIPLE_INSTR
-    # --------------------------
-    VALIDATE_SETTINGS = True
-    DETAILED_VALIDATION_LOGGING = False
-    AUTOCORRECT = True
-    SAVE_CORRECTED_TO_FILE = True
-    # --------------------------
-    CREATE_MIDIFILE = True
+    run_settings = get_run_settings()
 
-    read_settings(source, VERSION, MIDI_NOTES_DEF_FILE)
-    if VALIDATE_SETTINGS:
-        validate_settings(source)
-    score = create_score_object_model(source, VERSION)
-    validate_score(
-        score=score,
-        autocorrect=AUTOCORRECT,
-        save_corrected=SAVE_CORRECTED_TO_FILE,
-        detailed_logging=DETAILED_VALIDATION_LOGGING,
-    )
-    if CREATE_MIDIFILE:
+    read_settings(run_settings)
+    if run_settings.validate_settings:
+        validate_settings(run_settings)
+    score = create_score_object_model(run_settings)
+    validate_score(score=score)
+    if run_settings.create_midifile:
         create_midifile(score)

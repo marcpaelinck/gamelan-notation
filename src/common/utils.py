@@ -4,7 +4,7 @@ from os import path
 import numpy as np
 import pandas as pd
 
-from src.common.classes import Gongan, MidiNote, Note, Score, Source
+from src.common.classes import Gongan, MidiNote, Note, RunSettings, Score
 from src.common.constants import (
     InstrumentGroup,
     InstrumentPosition,
@@ -25,16 +25,16 @@ from src.common.lookups import (
 from src.common.metadata_classes import SilenceMeta
 from src.notation2midi.settings import (
     COMMENT,
+    FONT_DEF_FILES,
     METADATA,
     MIDI_NOTES_DEF_FILE,
-    NOTATIONFONT_DEF_FILES,
     TAGS_DEF_FILE,
     InstrumentFields,
     MidiNotesFields,
 )
 
 
-def read_settings(source: Source, version: MidiVersion, midi_notes_file: str) -> None:
+def read_settings(run_settings: RunSettings) -> None:
     """Initializes lookup dicts and lists from settings files
 
     Args:
@@ -43,15 +43,21 @@ def read_settings(source: Source, version: MidiVersion, midi_notes_file: str) ->
 
     """
     # global SYMBOL_TO_NOTE_LOOKUP, NOTE_LIST, SYMBOLVALUE_TO_MIDINOTE_LOOKUP
-    SYMBOL_TO_NOTE_LOOKUP.update(create_symbol_to_note_lookup(NOTATIONFONT_DEF_FILES[source.font]))
+    SYMBOL_TO_NOTE_LOOKUP.update(create_symbol_to_note_lookup(FONT_DEF_FILES[run_settings.font]))
     NOTE_LIST.extend(list(SYMBOL_TO_NOTE_LOOKUP.values()))
     SYMBOLVALUE_TO_MIDINOTE_LOOKUP.update(
-        create_symbolvalue_to_midinote_lookup(source.instrumentgroup, version, midi_notes_file)
+        create_symbolvalue_to_midinote_lookup(
+            run_settings.instrumentgroup, run_settings.midi_version, run_settings.midinotes_def_file
+        )
     )
     TAG_TO_POSITION_LOOKUP.update(create_tag_to_position_lookup())
     # TODO temporary solution in order to avoid circular imports. Should look for more elegant solution.
     SilenceMeta.TAG_TO_POSITION_LOOKUP = TAG_TO_POSITION_LOOKUP
-    POSITION_TO_RANGE_LOOKUP.update(create_position_range_lookup(source.instrumentgroup, version, midi_notes_file))
+    POSITION_TO_RANGE_LOOKUP.update(
+        create_position_range_lookup(
+            run_settings.instrumentgroup, run_settings.midi_version, run_settings.midinotes_def_file
+        )
+    )
 
 
 def is_silent(gongan: Gongan, position: InstrumentPosition):
@@ -149,7 +155,7 @@ def score_to_notation_file(score: Score) -> None:
     score_df = pd.DataFrame.from_records(score_dict)
     filepath = path.join(
         score.source.datapath,
-        score.source.outfilefmt.format(position="_CORRECTED", version="", ext="csv"),
+        score.source.midifile.format(position="_CORRECTED", version="", ext="csv"),
     )
     score_df.to_csv(filepath, sep="\t", index=False, header=False, quoting=csv.QUOTE_NONE)
 
