@@ -1,0 +1,44 @@
+notationfolder: ./data
+notationfiles:
+    rejangdewa:
+        subfolder: rejang dewa
+        notationfile: rejang dewa_font5.tsv
+        midifile: Rejang Dewa {position}_{version}.mid
+        font: BaliMusic5
+        instrumentgroup: GONG_KEBYAR
+    sinomladrang:
+        subfolder: sinom ladrang
+        notationfile: Sinom Ladrang_ubit4_font5.tsv
+        midifile: Sinom Ladrang {position}_{version}.mid
+        font: BaliMusic5
+        instrumentgroup: GONG_KEBYAR
+    cendrawasih:
+        subfolder: cendrawasih
+        notationfile: Cendrawasih_complete_font5.tsv
+        midifile: Cendrawasih {position}_{version}.mid
+        font: BaliMusic5
+        instrumentgroup: GONG_KEBYAR
+    margapati:
+        subfolder: margapati
+        notationfile: Margapati_font5.tsv
+        midifile: Margapati {position}_{version}.mid
+        font: BaliMusic5
+        instrumentgroup: GONG_KEBYAR
+    margapatireyong:
+        subfolder: margapati
+        notationfile: Margapati reyong_font5.tsv
+        midifile: Margapati {position}_{version}.mid
+        font: BaliMusic5
+        instrumentgroup: GONG_KEBYAR
+    gendinganak2:
+        subfolder: test
+        notationfile: Gending Anak-Anak.tsv
+        midifile: Gending Anak-Anak {position}_{version}.mid
+        font: BaliMusic4
+        instrumentgroup: GONG_KEBYAR
+    demo:
+        subfolder: test
+        notationfile: demo.tsv
+        midifile: Demo {position}_{version}.mid
+        font: BaliMusic4
+        instrumentgroup: GONG_KEBYAR

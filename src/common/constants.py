@@ -30,8 +30,8 @@ class NotationEnum(StrEnum):
 
 
 class NotationFont(NotationEnum):
-    BALIMUSIC4 = "Bali Music 4"
-    BALIMUSIC5 = "Bali Music 5"
+    BALIMUSIC4 = "BaliMusic4"
+    BALIMUSIC5 = "BaliMusic5"
 
 
 class NoteSource(NotationEnum):
@@ -64,6 +64,7 @@ class MidiVersion(NotationEnum):
 
 
 class InstrumentGroup(NotationEnum):
+    # TODO replace with settings file
     GONG_KEBYAR = "GONG_KEBYAR"
     SEMAR_PAGULINGAN = "SEMAR_PAGULINGAN"
     GONG_PELEGONGAN = "GONG_PELEGONGAN"
@@ -71,6 +72,7 @@ class InstrumentGroup(NotationEnum):
 
 
 class InstrumentType(NotationEnum):
+    # TODO replace with settings file
     GONGS = "GONGS"
     KEMPLI = "KEMPLI"
     CENGCENG = "CENGCENG"
@@ -88,6 +90,7 @@ class InstrumentType(NotationEnum):
 
 
 class InstrumentPosition(NotationEnum):
+    # TODO replace with settings file
     UGAL = "UGAL"
     GENDERRAMBAT = "GENDERRAMBAT"
     TROMPONG = "TROMPONG"
@@ -115,12 +118,15 @@ class InstrumentPosition(NotationEnum):
 
 
 class NoteType(NotationEnum):
+    # TODO remove, only used once in debug_tools
     MELODIC = "MELODIC"
     PERCUSSION = "PERCUSSION"
     NONE = "NONE"
 
 
 class Pitch(Enum):
+    # TODO replace with settings file
+    # Note: Pitch.NONE and Pitch.TICK are used explicitly in code.
     DING = "DING", NoteType.MELODIC, auto()
     DONG = "DONG", NoteType.MELODIC, auto()
     DENG = "DENG", NoteType.MELODIC, auto()

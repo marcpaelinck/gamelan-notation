@@ -1,13 +1,16 @@
+import os
 from enum import StrEnum
 
-from src.common.classes import Source
-from src.common.constants import InstrumentGroup, NotationFont
+import yaml
+
+from src.common.classes import RunSettings
+from src.common.constants import NotationFont
 
 BASE_NOTE_TIME = 24
 BASE_NOTES_PER_BEAT = 4
 ATTENUATION_SECONDS_AFTER_MUSIC_END = 10  # additional time in seconds to let final chord attenuate.
 MIDI_NOTES_DEF_FILE = "./settings/midinotes.tsv"
-NOTATIONFONT_DEF_FILES = {
+FONT_DEF_FILES = {
     NotationFont.BALIMUSIC4: "./settings/balimusic4font.tsv",
     NotationFont.BALIMUSIC5: "./settings/balimusic5font.tsv",
 }
@@ -17,70 +20,6 @@ SOUNDFONT_FILE = "./settings/Gong Kebyar MP2.sf2"
 METADATA = "metadata"
 COMMENT = "comment"
 NON_INSTRUMENT_TAGS = [METADATA, COMMENT]
-
-SINOMLADRANG = Source(
-    datapath=".\\data\\sinom ladrang",
-    infilename="Sinom Ladrang_ubit4_font5.tsv",
-    outfilefmt="Sinom Ladrang {position}_{version}.{ext}",
-    font=NotationFont.BALIMUSIC5,
-    instrumentgroup=InstrumentGroup.GONG_KEBYAR,
-)
-SINOMLADRANGMETA = Source(
-    datapath=".\\data\\sinom ladrang",
-    infilename="Sinom Ladrang_ubit4_font5_meta.tsv",
-    outfilefmt="Sinom Ladrang {position}_{version}.{ext}",
-    font=NotationFont.BALIMUSIC5,
-    instrumentgroup=InstrumentGroup.GONG_KEBYAR,
-)
-CENDRAWASIH = Source(
-    datapath=".\\data\\cendrawasih",
-    infilename="Cendrawasih_complete.tsv",
-    outfilefmt="Cendrawasih {position}_{version}.{ext}",
-    font=NotationFont.BALIMUSIC4,
-    instrumentgroup=InstrumentGroup.GONG_KEBYAR,
-)
-CENDRAWASIH5 = Source(
-    datapath=".\\data\\cendrawasih",
-    infilename="Cendrawasih_complete_font5.tsv",
-    outfilefmt="Cendrawasih {position}_{version}.{ext}",
-    font=NotationFont.BALIMUSIC5,
-    instrumentgroup=InstrumentGroup.GONG_KEBYAR,
-)
-MARGAPATI4 = Source(
-    datapath=".\\data\\margapati",
-    infilename="Margapati_font4.tsv",
-    outfilefmt="Margapati {position}_{version}.{ext}",
-    font=NotationFont.BALIMUSIC4,
-    instrumentgroup=InstrumentGroup.GONG_KEBYAR,
-)
-MARGAPATIREYONG3 = Source(
-    datapath=".\\data\\margapati",
-    infilename="Margapati reyong_font3.tsv",
-    outfilefmt="Margapati {position}_{version}.{ext}",
-    font=NotationFont.BALIMUSIC4,
-    instrumentgroup=InstrumentGroup.GONG_KEBYAR,
-)
-MARGAPATI5 = Source(
-    datapath=".\\data\\margapati",
-    infilename="Margapati_font5.tsv",
-    outfilefmt="Margapati {position}_{version}.{ext}",
-    font=NotationFont.BALIMUSIC5,
-    instrumentgroup=InstrumentGroup.GONG_KEBYAR,
-)
-GENDINGANAK2 = Source(
-    datapath=".\\data\\test",
-    infilename="Gending Anak-Anak.tsv",
-    outfilefmt="Gending Anak-Anak {position}_{version}.{ext}",
-    font=NotationFont.BALIMUSIC4,
-    instrumentgroup=InstrumentGroup.GONG_KEBYAR,
-)
-DEMO = Source(
-    datapath=".\\data\\test",
-    infilename="demo.tsv",
-    outfilefmt="Demo {position}_{version}.{ext}",
-    font=NotationFont.BALIMUSIC4,
-    instrumentgroup=InstrumentGroup.GONG_KEBYAR,
-)
 
 
 # list of column headers used in the settings files
@@ -131,3 +70,23 @@ class MidiNotesFields(SStrEnum):
     REMARK = "remark"
     CHANNEL = "channel"
     MIDI = "midi"
+
+
+def get_settings(filename: str) -> dict:
+    with open(os.path.join("./settings", filename), "r") as settingsfile:
+        return yaml.load(settingsfile, Loader=yaml.SafeLoader)
+
+
+def get_run_settings():
+    run_settings_dict = get_settings("run-settings.yaml")
+    notation_settings_dict = get_settings("notation-info.yaml")
+    run_settings_dict.update(notation_settings_dict["notationfiles"][run_settings_dict["title"]])
+    run_settings_dict["datapath"] = os.path.join(
+        notation_settings_dict["notationfolder"], run_settings_dict["subfolder"]
+    )
+    return RunSettings.model_validate(run_settings_dict)
+
+
+if __name__ == "__main__":
+    settings = get_run_settings()
+    print(settings)

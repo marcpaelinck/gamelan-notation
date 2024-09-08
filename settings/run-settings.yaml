@@ -1,0 +1,8 @@
+title: rejangdewa
+midinotes_def_file: ./settings/midinotes.tsv
+midi_version: midi-gk2
+validate_settings : true
+detailed_validation_logging : false
+autocorrect : true
+save_corrected_to_file : true
+create_midifile : true

@@ -1,7 +1,7 @@
 import math
 from pprint import pprint
 
-from src.common.classes import Beat, Gongan, Note, Score
+from src.common.classes import Beat, Gongan, Note, RunSettings, Score
 from src.common.constants import (
     BeatId,
     Duration,
