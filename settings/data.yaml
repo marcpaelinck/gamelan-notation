@@ -1,0 +1,65 @@
+instrument_info:
+    folder: ./data/instrument-info
+midi_definitions:
+    folder: ./data/midi-definitions
+font_definitions:
+    folder: ./data/font-definitions
+    font_files:
+        BaliMusic4: 
+            file: balimusic4font.tsv
+        BaliMusic5:
+            file: balimusic5font.tsv
+notation: 
+    folder: ./data/notation
+    compositions:
+        rejangdewa:
+            subfolder: rejang dewa
+            file: rejang dewa_font5.tsv
+            midi_out_file: Rejang Dewa {position}_{version}.mid
+            font_version: BaliMusic5
+            instrumentgroup: GONG_KEBYAR
+            gong_at_end: false
+        sinomladrang:
+            subfolder: sinom ladrang
+            file: Sinom Ladrang_ubit4_font5.tsv
+            midi_out_file: Sinom Ladrang {position}_{version}.mid
+            font_version: BaliMusic5
+            instrumentgroup: GONG_KEBYAR
+            gong_at_end: false
+        cendrawasih:
+            subfolder: cendrawasih
+            file: Cendrawasih_complete_font5.tsv
+            midi_out_file: Cendrawasih {position}_{version}.mid
+            font_version: BaliMusic5
+            instrumentgroup: GONG_KEBYAR
+            gong_at_end: false
+        margapati:
+            subfolder: margapati
+            file: Margapati_font5.tsv
+            midi_out_file: Margapati {position}_{version}.mid
+            font_version: BaliMusic5
+            instrumentgroup: GONG_KEBYAR
+            gong_at_end: false
+        margapatireyong:
+            subfolder: margapati
+            file: Margapati reyong_font5.tsv
+            midi_out_file: Margapati {position}_{version}.mid
+            font_version: BaliMusic5
+            instrumentgroup: GONG_KEBYAR
+            gong_at_end: false
+        gendinganak2:
+            subfolder: test
+            file: Gending Anak-Anak.tsv
+            midi_out_file: Gending Anak-Anak {position}_{version}.mid
+            font_version: BaliMusic4
+            instrumentgroup: GONG_KEBYAR
+            gong_at_end: false
+        demo:
+            subfolder: test
+            file: demo.tsv
+            midi_out_file: Demo {position}_{version}.mid
+            font_version: BaliMusic4
+            instrumentgroup: GONG_KEBYAR
+            gong_at_end: false
+
+

@@ -1,4 +1,4 @@
-data/*
-!data/test
+data/notation/*
+!data/notation/test
 __pycache__
 .pytest_cache/*
