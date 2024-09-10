@@ -1,6 +1,9 @@
-title: rejangdewa
-midinotes_def_file: ./settings/midinotes.tsv
+---
+composition: rejangdewa
+midinotes_file: midinotes.tsv
 midi_version: midi-gk2
+instruments_file: instruments.tsv
+instrumenttags_file: instrumenttags.tsv
 validate_settings : true
 detailed_validation_logging : false
 autocorrect : true

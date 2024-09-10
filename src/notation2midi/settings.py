@@ -1,7 +1,9 @@
 import os
 from enum import StrEnum
+from typing import Any
 
 import yaml
+from pydantic import BaseModel
 
 from src.common.classes import RunSettings
 from src.common.constants import NotationFont
@@ -9,13 +11,6 @@ from src.common.constants import NotationFont
 BASE_NOTE_TIME = 24
 BASE_NOTES_PER_BEAT = 4
 ATTENUATION_SECONDS_AFTER_MUSIC_END = 10  # additional time in seconds to let final chord attenuate.
-MIDI_NOTES_DEF_FILE = "./settings/midinotes.tsv"
-FONT_DEF_FILES = {
-    NotationFont.BALIMUSIC4: "./settings/balimusic4font.tsv",
-    NotationFont.BALIMUSIC5: "./settings/balimusic5font.tsv",
-}
-TAGS_DEF_FILE = "./settings/instrumenttags.tsv"
-SOUNDFONT_FILE = "./settings/Gong Kebyar MP2.sf2"
 
 METADATA = "metadata"
 COMMENT = "comment"
@@ -72,19 +67,72 @@ class MidiNotesFields(SStrEnum):
     MIDI = "midi"
 
 
-def get_settings(filename: str) -> dict:
-    with open(os.path.join("./settings", filename), "r") as settingsfile:
+SETTINGSFOLDER = "./settings"
+RUN_SETTINGSFILE = "run-settings.yaml"
+DATA_INFOFILE = "data.yaml"
+
+
+def read_settings(filename: str) -> dict:
+    """Retrieves settings from the given (YAML) file. The file should occur in SETTINGSFOLDER.
+
+    Args:
+        filename (str): YAML file name.
+
+    Returns:
+        dict: dict containing all the settings contained in the file.
+    """
+    with open(os.path.join(SETTINGSFOLDER, filename), "r") as settingsfile:
         return yaml.load(settingsfile, Loader=yaml.SafeLoader)
 
 
-def get_run_settings():
-    run_settings_dict = get_settings("run-settings.yaml")
-    notation_settings_dict = get_settings("notation-info.yaml")
-    run_settings_dict.update(notation_settings_dict["notationfiles"][run_settings_dict["title"]])
-    run_settings_dict["datapath"] = os.path.join(
-        notation_settings_dict["notationfolder"], run_settings_dict["subfolder"]
+def get_settings_fields(cls: BaseModel, settings_dict: dict) -> dict[str, Any]:
+    """Retrieves all the fields from run_settings_dict and data_dict that match the field names of cls.
+
+    Args:
+        cls (BaseModel): Pydantic class for which to retrieve the fields
+        settings_dict (dict): Dict containing settings fields
+
+    Returns:
+        dict[str, Any]: _description_
+    """
+    retval = {key: settings_dict[key] for key in cls.model_fields.keys() if key in settings_dict}
+    return retval
+
+
+def get_run_settings() -> RunSettings:
+    """Retrieves the run settings from the run settings yaml file, enriched with information
+       from the data information yaml file.
+
+    Returns:
+        RunSettings: settings object
+    """
+    run_settings_dict = read_settings(RUN_SETTINGSFILE)
+    data_dict = read_settings(DATA_INFOFILE)
+
+    settings_dict = dict()
+
+    composition = data_dict["notation"]["compositions"][run_settings_dict["composition"]]
+    settings_dict["notation"] = get_settings_fields(
+        RunSettings.Notation, run_settings_dict | data_dict["notation"] | composition
     )
-    return RunSettings.model_validate(run_settings_dict)
+
+    settings_dict["midi"] = get_settings_fields(RunSettings.MidiInfo, run_settings_dict | data_dict["midi_definitions"])
+
+    settings_dict["instruments"] = get_settings_fields(
+        RunSettings.InstrumentInfo, run_settings_dict | data_dict["instrument_info"] | composition
+    )
+
+    settings_dict["font"] = get_settings_fields(
+        RunSettings.FontInfo,
+        run_settings_dict
+        | data_dict["font_definitions"]
+        | composition
+        | data_dict["font_definitions"]["font_files"][composition["font_version"]],
+    )
+
+    settings_dict["switches"] = get_settings_fields(RunSettings.Switches, run_settings_dict)
+
+    return RunSettings.model_validate(settings_dict)
 
 
 if __name__ == "__main__":

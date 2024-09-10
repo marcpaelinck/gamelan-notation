@@ -25,12 +25,10 @@ from src.common.lookups import (
 from src.common.metadata_classes import SilenceMeta
 from src.notation2midi.settings import (
     COMMENT,
-    FONT_DEF_FILES,
     METADATA,
-    MIDI_NOTES_DEF_FILE,
-    TAGS_DEF_FILE,
     InstrumentFields,
     MidiNotesFields,
+    get_run_settings,
 )
 
 
@@ -43,19 +41,19 @@ def read_settings(run_settings: RunSettings) -> None:
 
     """
     # global SYMBOL_TO_NOTE_LOOKUP, NOTE_LIST, SYMBOLVALUE_TO_MIDINOTE_LOOKUP
-    SYMBOL_TO_NOTE_LOOKUP.update(create_symbol_to_note_lookup(FONT_DEF_FILES[run_settings.font]))
+    SYMBOL_TO_NOTE_LOOKUP.update(create_symbol_to_note_lookup(run_settings.font.filepath))
     NOTE_LIST.extend(list(SYMBOL_TO_NOTE_LOOKUP.values()))
     SYMBOLVALUE_TO_MIDINOTE_LOOKUP.update(
         create_symbolvalue_to_midinote_lookup(
-            run_settings.instrumentgroup, run_settings.midi_version, run_settings.midinotes_def_file
+            run_settings.instruments.instrumentgroup, run_settings.midi.midi_version, run_settings.midi.filepath
         )
     )
-    TAG_TO_POSITION_LOOKUP.update(create_tag_to_position_lookup())
+    TAG_TO_POSITION_LOOKUP.update(create_tag_to_position_lookup(run_settings.instruments.tag_filepath))
     # TODO temporary solution in order to avoid circular imports. Should look for more elegant solution.
     SilenceMeta.TAG_TO_POSITION_LOOKUP = TAG_TO_POSITION_LOOKUP
     POSITION_TO_RANGE_LOOKUP.update(
         create_position_range_lookup(
-            run_settings.instrumentgroup, run_settings.midi_version, run_settings.midinotes_def_file
+            run_settings.instruments.instrumentgroup, run_settings.midi.midi_version, run_settings.midi.filepath
         )
     )
 
@@ -213,7 +211,7 @@ def create_position_range_lookup(
     return lookup
 
 
-def create_tag_to_position_lookup(fromfile: str = TAGS_DEF_FILE) -> dict[InstrumentTag, list[InstrumentPosition]]:
+def create_tag_to_position_lookup(fromfile: str) -> dict[InstrumentTag, list[InstrumentPosition]]:
     """Creates a dict that maps "free style" position tags to a list of InstumentPosition values
 
     Args:
@@ -237,4 +235,9 @@ def create_tag_to_position_lookup(fromfile: str = TAGS_DEF_FILE) -> dict[Instrum
 
 
 if __name__ == "__main__":
-    print(create_position_range_lookup(InstrumentGroup.GONG_KEBYAR, MidiVersion.MULTIPLE_INSTR, MIDI_NOTES_DEF_FILE))
+    settings = get_run_settings()
+    print(
+        create_position_range_lookup(
+            InstrumentGroup.GONG_KEBYAR, MidiVersion.MULTIPLE_INSTR, settings.midi.midinotes_file
+        )
+    )

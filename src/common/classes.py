@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -216,19 +217,65 @@ class Beat:
 
 @dataclass
 class RunSettings(BaseModel):
-    title: str
-    datapath: str
-    notationfile: str
-    midifile: str
-    midinotes_def_file: str
-    font: NotationFont
-    instrumentgroup: InstrumentGroup
-    midi_version: MidiVersion  # type: ignore
-    validate_settings: bool
-    detailed_validation_logging: bool
-    autocorrect: bool
-    save_corrected_to_file: bool
-    create_midifile: bool
+    class Notation(BaseModel):
+        folder: str
+        subfolder: str
+        file: str
+        midi_out_file: str
+        gong_at_end: bool
+
+        @property
+        def filepath(self):
+            return os.path.join(self.folder, self.subfolder, self.file)
+
+        @property
+        def midi_out_filepath(self):
+            return os.path.join(self.folder, self.subfolder, self.midi_out_file)
+
+    class MidiInfo(BaseModel):
+        folder: str
+        midinotes_file: str
+        midi_version: str
+
+        @property
+        def filepath(self):
+            return os.path.join(self.folder, self.midinotes_file)
+
+    class InstrumentInfo(BaseModel):
+        instrumentgroup: InstrumentGroup
+        folder: str
+        instruments_file: str
+        instrumenttags_file: str
+
+        @property
+        def instr_filepath(self):
+            return os.path.join(self.folder, self.instruments_file)
+
+        @property
+        def tag_filepath(self):
+            return os.path.join(self.folder, self.instrumenttags_file)
+
+    class FontInfo(BaseModel):
+        font_version: NotationFont
+        folder: str
+        file: str
+
+        @property
+        def filepath(self):
+            return os.path.join(self.folder, self.file)
+
+    class Switches(BaseModel):
+        validate_settings: bool
+        detailed_validation_logging: bool
+        autocorrect: bool
+        save_corrected_to_file: bool
+        create_midifile: bool
+
+    notation: Notation
+    midi: MidiInfo
+    instruments: InstrumentInfo
+    font: FontInfo
+    switches: Switches
 
 
 @dataclass

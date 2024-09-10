@@ -35,15 +35,9 @@ from src.notation2midi.midi_track import MidiTrackX
 from src.notation2midi.score_validation import add_missing_staves, validate_score
 from src.notation2midi.settings import (
     ATTENUATION_SECONDS_AFTER_MUSIC_END,
-    CENDRAWASIH,
-    CENDRAWASIH5,
     COMMENT,
-    MARGAPATI5,
     METADATA,
-    MIDI_NOTES_DEF_FILE,
     NON_INSTRUMENT_TAGS,
-    REJANGDEWA,
-    SINOMLADRANG,
     get_run_settings,
 )
 from src.notation2midi.settings_validation import validate_settings
@@ -228,8 +222,7 @@ def create_score_object_model(run_settings: RunSettings) -> Score:
     """
     # Create enough column titles to accommodate all the notation columns, then read the notation
     columns = ["orig_tag"] + ["BEAT" + str(i) for i in range(1, 33)]
-    filepath = path.join(run_settings.datapath, run_settings.notationfile)
-    df = pd.read_csv(filepath, sep="\t", names=columns, skip_blank_lines=False, encoding="UTF-8")
+    df = pd.read_csv(run_settings.notation.filepath, sep="\t", names=columns, skip_blank_lines=False, encoding="UTF-8")
     df["id"] = df.index
     # Remove empty rows at the start of the document and multiple empty rows between gongans.
     # Gongans should be separated by exactly one empty row.
@@ -372,23 +365,23 @@ def create_midifile(score: Score) -> None:
         score (Score): The object model.
         separate_files (bool, optional): If True, a separate file will be created for each instrument. Defaults to False.
     """
-    outfilepathfmt = os.path.join(score.settings.datapath, score.settings.midifile)
+    outfilepathfmt = score.settings.notation.midi_out_filepath
     mid = MidiFile(ticks_per_beat=96, type=1)
 
     for position in sorted(score.instrument_positions, key=lambda x: x.sequence):
         track = notation_to_track(score, position)
         mid.tracks.append(track)
     add_attenuation_time(mid.tracks, seconds=ATTENUATION_SECONDS_AFTER_MUSIC_END)
-    mid.save(outfilepathfmt.format(position="", version=score.settings.midi_version, ext="mid"))
+    mid.save(outfilepathfmt.format(position="", version=score.settings.midi.midi_version, ext="mid"))
 
 
 if __name__ == "__main__":
     run_settings = get_run_settings()
 
     read_settings(run_settings)
-    if run_settings.validate_settings:
+    if run_settings.switches.validate_settings:
         validate_settings(run_settings)
     score = create_score_object_model(run_settings)
     validate_score(score=score)
-    if run_settings.create_midifile:
+    if run_settings.switches.create_midifile:
         create_midifile(score)
