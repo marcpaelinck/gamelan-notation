@@ -1,0 +1,23 @@
+instrumentgroup	instrumenttype	bank	preset	preset_name	midi_channel
+GONG_KEBYAR	GONGS	128	0	Gong Kebyar percussion	1
+GONG_KEBYAR	KEMPLI	128	0	Gong Kebyar percussion	1
+GONG_KEBYAR	CENGCENG	128	0	Gong Kebyar percussion	1
+GONG_KEBYAR	KENDANG	128	0	Gong Kebyar percussion	1
+GONG_KEBYAR	JEGOGAN	0	0	Gong Kebyar melodic	2
+GONG_KEBYAR	CALUNG	0	0	Gong Kebyar melodic	2
+GONG_KEBYAR	PENYACAH	0	0	Gong Kebyar melodic	2
+GONG_KEBYAR	PEMADE	0	0	Gong Kebyar melodic	2
+GONG_KEBYAR	KANTILAN	0	0	Gong Kebyar melodic	2
+GONG_KEBYAR	UGAL	0	0	Gong Kebyar melodic	2
+GONG_KEBYAR	GENDERRAMBAT	0	0	Gong Kebyar melodic	2
+GONG_KEBYAR	REYONG	0	0	Gong Kebyar melodic	2
+GONG_KEBYAR	TROMPONG	0	0	Gong Kebyar melodic	2
+SEMAR_PAGULINGAN	GONGS	128	0	Gong Kebyar percussion	1
+SEMAR_PAGULINGAN	KEMPLI	128	0	Gong Kebyar percussion	1
+SEMAR_PAGULINGAN	CENGCENG	128	0	Gong Kebyar percussion	1
+SEMAR_PAGULINGAN	KENDANG	128	0	Gong Kebyar percussion	1
+SEMAR_PAGULINGAN	JEGOGAN	0	0	Gong Kebyar melodic	2
+SEMAR_PAGULINGAN	CALUNG	0	0	Gong Kebyar melodic	2
+SEMAR_PAGULINGAN	PEMADE	0	0	Gong Kebyar melodic	2
+SEMAR_PAGULINGAN	KANTILAN	0	0	Gong Kebyar melodic	2
+SEMAR_PAGULINGAN	TROMPONG	0	0	Gong Kebyar melodic	2

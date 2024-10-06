@@ -1,7 +1,9 @@
 ---
 composition: rejangdewa
-midinotes_file: midinotes.tsv
-midi_version: midi-gk2
+midi:
+  version: MULTIPLE_INSTR
+  midi_definition_file: midinotes.tsv
+  presets_file: presets.tsv
 instruments_file: instruments.tsv
 instrumenttags_file: instrumenttags.tsv
 validate_settings : true

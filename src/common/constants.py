@@ -43,24 +43,24 @@ class NoteSource(NotationEnum):
     VALIDATOR = "VALIDATOR"
 
 
-class MidiVersion(NotationEnum):
-    """Lists the possible midi mappings to choose from in the midinotes.tsv settings file.
-    This settings file maps instrument/pitch combinations to a midi pianoroll key value.
-    """
+# class MidiVersion(NotationEnum):
+#     """Lists the possible midi mappings to choose from in the midinotes.tsv settings file.
+#     This settings file maps instrument/pitch combinations to a midi pianoroll key value.
+#     """
 
-    SINGLE_INSTR = "midi-gk1"
-    MULTIPLE_INSTR = "midi-gk2"
-    PIANO = "midi-piano"
+#     SINGLE_INSTR = "midi-gk1"
+#     MULTIPLE_INSTR = "midi-gk2"
+#     PIANO = "midi-piano"
 
-    @classmethod
-    def from_value(cls, value):
-        enum = next((el for el in cls if el.value == value), None)
-        if not enum:
-            raise ValueError(
-                f"Value {value} not in {cls.__name__} enum class. If you added a column with this name "
-                "to the midi settings file, please add the new column name to the MidiValue enum class."
-            )
-        return enum
+#     @classmethod
+#     def from_value(cls, value):
+#         enum = next((el for el in cls if el.value == value), None)
+#         if not enum:
+#             raise ValueError(
+#                 f"Value {value} not in {cls.__name__} enum class. If you added a column with this name "
+#                 "to the midi settings file, please add the new column name to the MidiValue enum class."
+#             )
+#         return enum
 
 
 class InstrumentGroup(NotationEnum):

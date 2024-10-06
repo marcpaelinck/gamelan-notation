@@ -16,7 +16,6 @@ from src.common.constants import (
     InstrumentGroup,
     InstrumentPosition,
     InstrumentType,
-    MidiVersion,
     Modifier,
     NotationFont,
     NoteSource,
@@ -29,7 +28,6 @@ from src.common.metadata_classes import (
     GonganType,
     GoToMeta,
     MetaData,
-    MetaDataSwitch,
     MetaDataType,
     ValidationProperty,
 )
@@ -113,15 +111,23 @@ class Note(NotationModel):
         )
 
 
+class Preset(NotationModel):
+    instrumenttype: InstrumentType
+    bank: int
+    preset: int
+    preset_name: str
+    midi_channel: int
+
+
 class MidiNote(NotationModel):
-    instrumentgroup: InstrumentGroup
     instrumenttype: InstrumentType
     positions: list[InstrumentPosition]
     pitch: Pitch
     octave: Optional[int]
     stroke: Stroke
-    channel: int
-    midi: int
+    midinote: int
+    sample: str
+    preset: Preset
     remark: str
 
     @field_validator("positions", mode="before")
@@ -233,13 +239,18 @@ class RunSettings(BaseModel):
             return os.path.join(self.folder, self.subfolder, self.midi_out_file)
 
     class MidiInfo(BaseModel):
+        version: str
         folder: str
-        midinotes_file: str
-        midi_version: str
+        midi_definition_file: str
+        presets_file: str
 
         @property
-        def filepath(self):
-            return os.path.join(self.folder, self.midinotes_file)
+        def notes_filepath(self):
+            return os.path.join(self.folder, self.midi_definition_file)
+
+        @property
+        def presets_filepath(self):
+            return os.path.join(self.folder, self.presets_file)
 
     class InstrumentInfo(BaseModel):
         instrumentgroup: InstrumentGroup

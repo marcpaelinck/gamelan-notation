@@ -46,7 +46,7 @@ The above notation is displayed using the BaliMusic5 TrueType font. This font wa
 
 
 ```
-comment     CENDRAWASIH
+comment     BARIS EXAMPLE
 metadata    {KEMPLI status=off}                                
 metadata    {TEMPO bpm=160}                                
 ugal        ...a,    ----     ---i     --oe     ---o     ---e     e/...    ....    ...a,

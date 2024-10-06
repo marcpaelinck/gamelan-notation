@@ -63,8 +63,16 @@ class MidiNotesFields(SStrEnum):
     OCTAVE = "octave"
     STROKE = "stroke"
     REMARK = "remark"
-    CHANNEL = "channel"
-    MIDI = "midi"
+    SAMPLE = "sample"
+    PRESET = "preset"
+
+
+class PresetsFields(SStrEnum):
+    INSTRUMENTGROUP = "instrumentgroup"
+    INSTRUMENTTYPE = "instrumenttype"
+    BANK = "bank"
+    PRESET = "preset"
+    PRESET_NAME = "preset_name"
 
 
 SETTINGSFOLDER = "./settings"
@@ -116,7 +124,9 @@ def get_run_settings() -> RunSettings:
         RunSettings.Notation, run_settings_dict | data_dict["notation"] | composition
     )
 
-    settings_dict["midi"] = get_settings_fields(RunSettings.MidiInfo, run_settings_dict | data_dict["midi_definitions"])
+    settings_dict["midi"] = get_settings_fields(
+        RunSettings.MidiInfo, run_settings_dict | run_settings_dict["midi"] | data_dict["midi_definitions"]
+    )
 
     settings_dict["instruments"] = get_settings_fields(
         RunSettings.InstrumentInfo, run_settings_dict | data_dict["instrument_info"] | composition

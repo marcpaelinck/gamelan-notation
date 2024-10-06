@@ -4,12 +4,12 @@ from os import path
 import numpy as np
 import pandas as pd
 
-from src.common.classes import Gongan, MidiNote, Note, RunSettings, Score
+from src.common.classes import Gongan, MidiNote, Note, Preset, RunSettings, Score
 from src.common.constants import (
     InstrumentGroup,
     InstrumentPosition,
+    InstrumentType,
     MIDIvalue,
-    MidiVersion,
     Octave,
     Pitch,
     Stroke,
@@ -17,6 +17,7 @@ from src.common.constants import (
 from src.common.lookups import (
     NOTE_LIST,
     POSITION_TO_RANGE_LOOKUP,
+    PRESET_LOOKUP,
     SYMBOL_TO_NOTE_LOOKUP,
     SYMBOLVALUE_TO_MIDINOTE_LOOKUP,
     TAG_TO_POSITION_LOOKUP,
@@ -28,6 +29,7 @@ from src.notation2midi.settings import (
     METADATA,
     InstrumentFields,
     MidiNotesFields,
+    PresetsFields,
     get_run_settings,
 )
 
@@ -43,19 +45,19 @@ def read_settings(run_settings: RunSettings) -> None:
     # global SYMBOL_TO_NOTE_LOOKUP, NOTE_LIST, SYMBOLVALUE_TO_MIDINOTE_LOOKUP
     SYMBOL_TO_NOTE_LOOKUP.update(create_symbol_to_note_lookup(run_settings.font.filepath))
     NOTE_LIST.extend(list(SYMBOL_TO_NOTE_LOOKUP.values()))
-    SYMBOLVALUE_TO_MIDINOTE_LOOKUP.update(
-        create_symbolvalue_to_midinote_lookup(
-            run_settings.instruments.instrumentgroup, run_settings.midi.midi_version, run_settings.midi.filepath
+    PRESET_LOOKUP.update(
+        create_instrumentposition_to_preset_lookup(
+            run_settings.instruments.instrumentgroup, run_settings.midi.presets_filepath
         )
     )
+    midinotes_list = create_midinote_list(
+        run_settings.instruments.instrumentgroup, fromfile=run_settings.midi.notes_filepath, preset_lookup=PRESET_LOOKUP
+    )
+    SYMBOLVALUE_TO_MIDINOTE_LOOKUP.update(create_symbolvalue_to_midinote_lookup(midinotes_list))
+    POSITION_TO_RANGE_LOOKUP.update(create_position_range_lookup(midinotes_list))
     TAG_TO_POSITION_LOOKUP.update(create_tag_to_position_lookup(run_settings.instruments.tag_filepath))
     # TODO temporary solution in order to avoid circular imports. Should look for more elegant solution.
     SilenceMeta.TAG_TO_POSITION_LOOKUP = TAG_TO_POSITION_LOOKUP
-    POSITION_TO_RANGE_LOOKUP.update(
-        create_position_range_lookup(
-            run_settings.instruments.instrumentgroup, run_settings.midi.midi_version, run_settings.midi.filepath
-        )
-    )
 
 
 def is_silent(gongan: Gongan, position: InstrumentPosition):
@@ -169,7 +171,9 @@ def create_symbol_to_note_lookup(fromfile: str) -> dict[str, Note]:
     return {note.symbol: note for note in balifont}
 
 
-def create_midinote_list(instrumentgroup: InstrumentGroup, version: MidiVersion, fromfile: str) -> list[MidiNote]:
+def create_midinote_list(
+    instrumentgroup: InstrumentGroup, fromfile: str, preset_lookup: dict[InstrumentType, Preset]
+) -> list[MidiNote]:
     midinotes_df = pd.read_csv(fromfile, sep="\t", comment="#")
     # Convert pre-filled positions to a list of InstrumentPosition values.
     # Fill in empty position fields with all positions for the instrument type.
@@ -177,35 +181,48 @@ def create_midinote_list(instrumentgroup: InstrumentGroup, version: MidiVersion,
     midinotes_df.loc[mask, MidiNotesFields.POSITIONS] = midinotes_df.loc[mask, MidiNotesFields.INSTRUMENTTYPE].apply(
         lambda x: [p for p in InstrumentPosition if p.instrumenttype == x]
     )
+    # Treat missing values
     midinotes_df[MidiNotesFields.OCTAVE] = midinotes_df[MidiNotesFields.OCTAVE].replace(np.nan, value="NONE")
     midinotes_df[MidiNotesFields.REMARK] = midinotes_df[MidiNotesFields.REMARK].replace(np.nan, value="")
-    # Select the required midi value
-    if version:
-        midinotes_df[MidiNotesFields.MIDI] = midinotes_df[version].values.tolist()
-        midinotes_df.drop(list(MidiVersion), axis="columns", errors="ignore", inplace=True)
-    else:
-        midinotes_df[MidiNotesFields.MIDI] = -1
+    midinotes_df[MidiNotesFields.SAMPLE] = midinotes_df[MidiNotesFields.REMARK].replace(np.nan, value="")
+    # Look up preset information in preset_lookup dict
+    midinotes_df[MidiNotesFields.PRESET.value] = midinotes_df[MidiNotesFields.INSTRUMENTTYPE].apply(
+        lambda x: preset_lookup.get(x, None)
+    )
     # Drop unrequired instrument groups and convert to dict
-    midinotes_dict = midinotes_df[midinotes_df[MidiNotesFields.INSTRUMENTGROUP] == instrumentgroup.value].to_dict(
-        orient="records"
+    midinotes_dict = (
+        midinotes_df[midinotes_df[MidiNotesFields.INSTRUMENTGROUP] == instrumentgroup.value]
+        .drop(MidiNotesFields.INSTRUMENTGROUP, axis="columns")
+        .to_dict(orient="records")
     )
     # Convert to MidiNote objects
-    return [MidiNote.model_validate(midi) for midi in midinotes_dict]
+    return [MidiNote.model_validate(midinote) for midinote in midinotes_dict]
+
+
+def create_instrumentposition_to_preset_lookup(
+    instrumentgroup: InstrumentGroup, fromfile: str
+) -> dict[InstrumentType, Preset]:
+    presets_df = pd.read_csv(fromfile, sep="\t", quoting=csv.QUOTE_NONE)
+    presets_obj = (
+        presets_df[presets_df[PresetsFields.INSTRUMENTGROUP] == instrumentgroup.value]
+        .drop(PresetsFields.INSTRUMENTGROUP, axis="columns")
+        .to_dict(orient="records")
+    )
+    presets = [Preset.model_validate(preset) for preset in presets_obj]
+    return {preset.instrumenttype: preset for preset in presets}
 
 
 def create_symbolvalue_to_midinote_lookup(
-    instrumentgroup: InstrumentGroup, version: MidiVersion, fromfile: str
+    midinotes_list: list[MidiNote],
 ) -> dict[tuple[InstrumentPosition, Pitch, Octave, Stroke], MIDIvalue]:
-    midinotes = create_midinote_list(instrumentgroup, version=version, fromfile=fromfile)
-    return {(midi.instrumenttype, midi.pitch, midi.octave, midi.stroke): midi for midi in midinotes}
+    return {(midi.instrumenttype, midi.pitch, midi.octave, midi.stroke): midi for midi in midinotes_list}
 
 
 def create_position_range_lookup(
-    instrumentgroup: InstrumentGroup, midiversion: MidiVersion, fromfile: str
+    midinotes_list: list[MidiNote],
 ) -> dict[InstrumentPosition, tuple[Pitch, Octave, Stroke]]:
-    midinotes = create_midinote_list(instrumentgroup, version=midiversion, fromfile=fromfile)
     lookup = {
-        position: [(midi.pitch, midi.octave, midi.stroke) for midi in midinotes if position in midi.positions]
+        position: [(midi.pitch, midi.octave, midi.stroke) for midi in midinotes_list if position in midi.positions]
         for position in InstrumentPosition
     }
     return lookup
@@ -236,8 +253,4 @@ def create_tag_to_position_lookup(fromfile: str) -> dict[InstrumentTag, list[Ins
 
 if __name__ == "__main__":
     settings = get_run_settings()
-    print(
-        create_position_range_lookup(
-            InstrumentGroup.GONG_KEBYAR, MidiVersion.MULTIPLE_INSTR, settings.midi.midinotes_file
-        )
-    )
+    print(create_position_range_lookup(InstrumentGroup.GONG_KEBYAR, settings.midi.midi_definition_file))

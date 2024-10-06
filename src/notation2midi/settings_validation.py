@@ -40,7 +40,7 @@ def check_font_midi_match(run_settings: RunSettings) -> None:
         run_settings.font.filepath, sep="\t", quoting=csv.QUOTE_NONE, dtype={FontFields.OCTAVE: "Int64"}
     )[font_keys]
     midi_df = pd.read_csv(
-        run_settings.midi.filepath, sep="\t", quoting=csv.QUOTE_NONE, dtype={FontFields.OCTAVE: "Int64"}
+        run_settings.midi.notes_filepath, sep="\t", quoting=csv.QUOTE_NONE, dtype={FontFields.OCTAVE: "Int64"}
     )
     midi_values = (
         midi_df[midi_df[MidiNotesFields.INSTRUMENTGROUP] == instrumentgroup]

@@ -372,7 +372,7 @@ def create_midifile(score: Score) -> None:
         track = notation_to_track(score, position)
         mid.tracks.append(track)
     add_attenuation_time(mid.tracks, seconds=ATTENUATION_SECONDS_AFTER_MUSIC_END)
-    mid.save(outfilepathfmt.format(position="", version=score.settings.midi.midi_version, ext="mid"))
+    mid.save(outfilepathfmt.format(position="", version=score.settings.midi.version, ext="mid"))
 
 
 if __name__ == "__main__":
