@@ -10,104 +10,113 @@ from src.common.classes import RunSettings
 from src.common.constants import InstrumentType
 from src.notation2midi.settings import get_run_settings
 
-MidiDict = list[dict[str, str | int | None]]
+MidiDict = dict[str, list[dict[str, str | int | None]]]
 BOLD = Font(bold=True)
 
 
-class Sheet:
+class SoundfontSheet:
     sheet: Worksheet = None
+    midi_dict: MidiDict
+    preset_dict: MidiDict
+    settings: RunSettings
 
-    def __init__(self, sheet: Worksheet):
+    def __init__(self, sheet: Worksheet, midi_dict: MidiDict, preset_dict: MidiDict, settings: RunSettings):
         self.sheet = sheet
+        self.midi_dict = midi_dict
+        self.preset_dict = preset_dict
+        self.settings = settings
 
-    def isempty(self) -> bool:
+    def _isempty(self) -> bool:
         return [row for row in self.sheet.rows] == []
 
-    def next_empty_row_nbr(self):
-        return 1 if self.isempty() else self.sheet.max_row + 1
+    def _next_empty_row_nbr(self):
+        return 1 if self._isempty() else self.sheet.max_row + 1
 
-    def add_row(self, titles: list[str], bold: bool | list[bool] = False) -> None:
-        row = self.next_empty_row_nbr()
+    def _add_row(self, titles: list[str], bold: bool | list[bool] = False) -> None:
+        row = self._next_empty_row_nbr()
         for col, title in enumerate(titles):
             self.sheet.cell(row=row, column=col + 1).value = title
             if (isinstance(bold, bool) and bold) or (isinstance(bold, list) and bold[col]):
                 self.sheet.cell(row=row, column=col + 1).font = BOLD
 
-    def add_separator(self) -> None:
-        row = self.next_empty_row_nbr()
+    def _add_separator(self) -> None:
+        row = self._next_empty_row_nbr()
         for col in range(1, 8):
             self.sheet.cell(row, col).fill = PatternFill(fill_type="mediumGray")
 
+    def _add_sample_section(self) -> None:
+        # Add title row
+        self._add_row(["Samples", "Name", "Loop S-E", "Root key", "Correction", "File name", "Folder"], bold=True)
+        for records in self.midi_dict.values():
+            for record in records:
+                self._add_row(["", record["sample_name"], "", record["midinote"], "", record["sample"]])
+        self._add_row(["Search paths:", os.path.abspath(self.settings.samples.folder)], bold=[True, False])
+        self._add_separator()
 
-def add_sample_section(sheet: Sheet, midi_dict: MidiDict, settings: RunSettings) -> None:
-    # Add title row
-    sheet.add_row(["Samples", "Name", "Loop S-E", "Root key", "Correction", "File name", "Folder"], bold=True)
-    for record in midi_dict:
-        sheet.add_row(["", record["sample_name"], "", record["midinote"], "", record["sample"]])
-    sheet.add_row(["Search paths:", os.path.abspath(settings.samples.folder)], bold=[True, False])
-    sheet.add_separator()
+    def _add_instrument_section(self) -> None:
+        self._add_row(["Instruments", "Name", "Generators"], bold=True)
+        for instrumenttype, records in self.midi_dict.items():
+            self._add_row(["", instrumenttype])
+            bolds = [False, False, True, False] + ([False] * len(records))
+            self._add_row(["", "", "Sample name", "Global"] + [record["sample_name"] for record in records], bold=bolds)
+            self._add_row(
+                ["", "", "Key Range"] + [f"{record['midinote']}-{record['midinote']}" for record in records], bold=bolds
+            )
+            self._add_row(["", "", "Root Key"] + [record["midinote"] for record in records], bold=bolds)
+        self._add_separator()
 
+    def _add_preset_section(self) -> None:
+        self._add_row(["Presets", "Name", "Generators", "Bank", "Preset"], bold=True)
+        for (preset_name, bank, preset), records in self.preset_dict.items():
+            self._add_row(["", preset_name, "", bank, preset])
+            bolds = [False, False, True, False] + ([False] * len(records))
+            self._add_row(
+                ["", "", "Instrument name", "Global"] + [record["instrumenttype"] for record in records], bold=bolds
+            )
+        self._add_row(["End of data"], bold=True)
+        self._add_separator()
 
-def add_instrument_section(sheet: Sheet, midi_dict: MidiDict) -> None:
-    sheet.add_row(["Instruments", "Name", "Generators"], bold=True)
-    midi_dict_grouped = {
-        instr: [record for record in midi_dict if record["instrumenttype"] == instr]
-        for instr in {record["instrumenttype"] for record in midi_dict}
-    }
-    for instrumenttype, records in midi_dict_grouped.items():
-        sheet.add_row(["", instrumenttype])
-        bolds = [False, False, True] + ([False] * len(records))
-        sheet.add_row(
-            ["", "", "Sample name"] + [record["sample_name"] for record in records],
-            bold=bolds
-        )
-        sheet.add_row(
-            ["", "", "Key Range"] + [f"{record["midinote"]}-{record["midinote"]}" for record in records],
-           bold=bolds
-        )
-        sheet.add_row(
-            ["", "", "Root Key"] + [record["midinote"] for record in records],
-           bold=bolds
-        )
-    sheet.add_separator()
-
-
-def add_preset_section(sheet: Worksheet, preset_dict: MidiDict) -> None: ...
+    def setup_soundfont_definition(self):
+        self._add_sample_section()
+        self._add_instrument_section()
+        self._add_preset_section()
 
 
 def get_midi_dict(settings: RunSettings) -> MidiDict:
     midi_df = pd.read_csv(settings.midi.notes_filepath, sep="\t", dtype={"octave": "Int64", "midinote": "Int64"})
+    to_records = partial(pd.DataFrame.to_dict, orient="records")
     midi_dict = (
         midi_df[(midi_df["instrumentgroup"] == settings.instruments.instrumentgroup) & pd.notnull(midi_df["sample"])]
         .sort_values(by=["midinote", "stroke", "instrumenttype"], ascending=[True, False, True])
         .drop(["instrumentgroup", "remark", "positions"], axis="columns")
         .drop_duplicates("midinote")
-        .to_dict(orient="records")
+        .groupby(["instrumenttype"])[["instrumenttype", "pitch", "octave", "stroke", "midinote", "sample"]]
+        .apply(to_records)
+        .to_dict()
     )
-    for record in midi_dict:
-        record["sample_name"] = (
-            record["instrumenttype"] + " " + record["pitch"] + str(record["octave"] or "") + " " + record["stroke"]
-        )
+    for instrumenttype, records in midi_dict.items():
+        for record in records:
+            record["sample_name"] = (
+                instrumenttype + " " + record["pitch"] + str(record["octave"] or "") + " " + record["stroke"]
+            )
     return midi_dict
 
 
-def get_preset_dict(settings: RunSettings) -> list[dict[str, str | int | None]]:
+def get_preset_dict(settings: RunSettings) -> MidiDict:
     def sortkey(value: pd.Series):
-        match value.name:
-            case "instrumenttype":
-                return value.apply(lambda val: InstrumentType[val].sequence)
-            case _:
-                return value
+        if value.name == "instrumenttype":
+            return value.apply(lambda val: InstrumentType[val].sequence)
+        else:
+            return value
 
     to_records = partial(pd.DataFrame.to_dict, orient="records")
     preset_df = pd.read_csv(settings.midi.presets_filepath, sep="\t")
     preset_dict = (
         preset_df[preset_df["instrumentgroup"] == settings.instruments.instrumentgroup]
         .sort_values(by=["bank", "preset", "instrumenttype"], key=sortkey)
-        .drop(["instrumentgroup"], axis="columns")
-        # .groupby("instrumenttype")[["bank", "preset", "preset_name"]]
-        # .apply(to_records)
-        .to_dict(orient="records")
+        .groupby(["preset_name", "bank", "preset"])[["instrumenttype", "instrumentgroup"]]
+        .apply(to_records)
+        .to_dict()
     )
     return preset_dict
 
@@ -118,10 +127,8 @@ def create_soundfont_file():
     preset_dict = get_preset_dict(run_settings)
     workbook = Workbook()
     workbook.active.title = "Viena definition"
-    sheet = Sheet(workbook.active)
-    add_sample_section(sheet, midi_dict, run_settings)
-    add_instrument_section(sheet, midi_dict)
-    add_preset_section(sheet, preset_dict)
+    sheet = SoundfontSheet(workbook.active, midi_dict=midi_dict, preset_dict=preset_dict, settings=run_settings)
+    sheet.setup_soundfont_definition()
     workbook.save("./data/soundfont/viena_definition.xlsx")
 
 
