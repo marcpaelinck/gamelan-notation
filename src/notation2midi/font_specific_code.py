@@ -262,12 +262,12 @@ def postprocess(score: Score) -> Score:
     Returns:
         Score: _description_
     """
-    if score.settings.font.font_version is NotationFont.BALIMUSIC4:
+    if score.settings.font.fontversion is NotationFont.BALIMUSIC4:
         postprocess_font4(score)
-    elif score.settings.font.font_version is NotationFont.BALIMUSIC5:
+    elif score.settings.font.fontversion is NotationFont.BALIMUSIC5:
         postprocess_font5(score)
     else:
-        raise ValueError(f"Unexpected font value {score.settings.font.font_version}")
+        raise ValueError(f"Unexpected font value {score.settings.font.fontversion}")
 
 
 def create_note(

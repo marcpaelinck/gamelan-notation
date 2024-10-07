@@ -1,4 +1,6 @@
-data/notation/*
+# Ignore subfolders of data/samples and data/notation folders,  but not files
+data/samples/*/
+data/notation/*/
 !data/notation/test
 __pycache__
 .pytest_cache/*

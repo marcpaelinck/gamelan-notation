@@ -1,5 +1,6 @@
 import os
 from enum import StrEnum
+from pprint import pprint
 from typing import Any
 
 import yaml
@@ -117,34 +118,48 @@ def get_run_settings() -> RunSettings:
     run_settings_dict = read_settings(RUN_SETTINGSFILE)
     data_dict = read_settings(DATA_INFOFILE)
 
+    # YAML fieldnames
+    NOTATION = "notation"
+    MIDI = "midi"
+    SAMPLES = "samples"
+    INSTRUMENTS = "instruments"
+    FONT = "font"
+    SWITCHES = "switches"
+    COMPOSITION = "composition"
+    INSTRUMENTGROUP = "instrumentgroup"
+    MIDIVERSION = "midiversion"
+    FONTVERSION = "fontversion"
+
     settings_dict = dict()
 
-    composition = data_dict["notation"]["compositions"][run_settings_dict["composition"]]
-    settings_dict["notation"] = get_settings_fields(
-        RunSettings.Notation, run_settings_dict | data_dict["notation"] | composition
+    composition = data_dict[NOTATION][COMPOSITION][run_settings_dict[NOTATION][COMPOSITION]]
+    settings_dict[NOTATION] = get_settings_fields(
+        RunSettings.NotationInfo, run_settings_dict[NOTATION] | data_dict[NOTATION] | composition
     )
 
-    settings_dict["midi"] = get_settings_fields(
-        RunSettings.MidiInfo, run_settings_dict | run_settings_dict["midi"] | data_dict["midi_definitions"]
+    midiversion = data_dict[MIDI][MIDIVERSION][run_settings_dict[MIDI][MIDIVERSION]]
+    settings_dict[MIDI] = get_settings_fields(
+        RunSettings.MidiInfo, data_dict[MIDI] | run_settings_dict[MIDI] | midiversion
     )
 
-    settings_dict["instruments"] = get_settings_fields(
-        RunSettings.InstrumentInfo, run_settings_dict | data_dict["instrument_info"] | composition
+    samples = data_dict[SAMPLES][INSTRUMENTGROUP][run_settings_dict[SAMPLES][INSTRUMENTGROUP]]
+    settings_dict[SAMPLES] = get_settings_fields(
+        RunSettings.SampleInfo, samples | run_settings_dict[SAMPLES] | data_dict[SAMPLES]
     )
 
-    settings_dict["font"] = get_settings_fields(
-        RunSettings.FontInfo,
-        run_settings_dict
-        | data_dict["font_definitions"]
-        | composition
-        | data_dict["font_definitions"]["font_files"][composition["font_version"]],
+    instruments = data_dict[INSTRUMENTS][INSTRUMENTGROUP][run_settings_dict[INSTRUMENTS][INSTRUMENTGROUP]]
+    settings_dict[INSTRUMENTS] = get_settings_fields(
+        RunSettings.InstrumentInfo, instruments | data_dict[INSTRUMENTS] | run_settings_dict[INSTRUMENTS]
     )
 
-    settings_dict["switches"] = get_settings_fields(RunSettings.Switches, run_settings_dict)
+    font = data_dict[FONT][FONTVERSION][composition[FONTVERSION]] | {FONTVERSION: composition[FONTVERSION]}
+    settings_dict[FONT] = get_settings_fields(RunSettings.FontInfo, data_dict[FONT] | font)
+
+    settings_dict[SWITCHES] = get_settings_fields(RunSettings.Switches, run_settings_dict[SWITCHES])
 
     return RunSettings.model_validate(settings_dict)
 
 
 if __name__ == "__main__":
     settings = get_run_settings()
-    print(settings)
+    pprint(settings)

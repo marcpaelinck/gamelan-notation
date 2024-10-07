@@ -1,13 +1,15 @@
 ---
-composition: rejangdewa
+notation:
+  composition: rejangdewa
+instruments: 
+  instrumentgroup: GONG_KEBYAR
 midi:
-  version: MULTIPLE_INSTR
-  midi_definition_file: midinotes.tsv
-  presets_file: presets.tsv
-instruments_file: instruments.tsv
-instrumenttags_file: instrumenttags.tsv
-validate_settings : true
-detailed_validation_logging : false
-autocorrect : true
-save_corrected_to_file : true
-create_midifile : true
+  midiversion: GONG_KEBYAR1
+samples:
+  instrumentgroup: GONG_KEBYAR
+switches:
+  validate_settings : true
+  detailed_validation_logging : false
+  autocorrect : true
+  save_corrected_to_file : true
+  create_midifile : true

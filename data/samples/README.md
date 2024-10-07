@@ -1,0 +1,1 @@
+This folder should contain subfolders, each containing samples for one type of orchestra (e.g. `gong kebyar`, `angklung`)

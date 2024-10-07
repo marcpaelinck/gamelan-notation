@@ -112,11 +112,12 @@ class Note(NotationModel):
 
 
 class Preset(NotationModel):
+    # See http://www.synthfont.com/The_Definitions_File.pdf
     instrumenttype: InstrumentType
-    bank: int
-    preset: int
+    bank: int  # 0..128, where 128 is reserved for percussion instruments.
+    preset: int  # 0..128
     preset_name: str
-    midi_channel: int
+    midi_channel: int  # channel will be used when generating MIDI output.
 
 
 class MidiNote(NotationModel):
@@ -125,8 +126,8 @@ class MidiNote(NotationModel):
     pitch: Pitch
     octave: Optional[int]
     stroke: Stroke
-    midinote: int
-    sample: str
+    midinote: int  # 0..128, used when generating MIDI output.
+    sample: str  # file name of the (mp3) sample.
     preset: Preset
     remark: str
 
@@ -223,7 +224,7 @@ class Beat:
 
 @dataclass
 class RunSettings(BaseModel):
-    class Notation(BaseModel):
+    class NotationInfo(BaseModel):
         folder: str
         subfolder: str
         file: str
@@ -239,7 +240,7 @@ class RunSettings(BaseModel):
             return os.path.join(self.folder, self.subfolder, self.midi_out_file)
 
     class MidiInfo(BaseModel):
-        version: str
+        midiversion: str
         folder: str
         midi_definition_file: str
         presets_file: str
@@ -252,11 +253,15 @@ class RunSettings(BaseModel):
         def presets_filepath(self):
             return os.path.join(self.folder, self.presets_file)
 
+    class SampleInfo(BaseModel):
+        folder: str
+        subfolder: str
+
     class InstrumentInfo(BaseModel):
         instrumentgroup: InstrumentGroup
         folder: str
         instruments_file: str
-        instrumenttags_file: str
+        tags_file: str
 
         @property
         def instr_filepath(self):
@@ -264,10 +269,10 @@ class RunSettings(BaseModel):
 
         @property
         def tag_filepath(self):
-            return os.path.join(self.folder, self.instrumenttags_file)
+            return os.path.join(self.folder, self.tags_file)
 
     class FontInfo(BaseModel):
-        font_version: NotationFont
+        fontversion: NotationFont
         folder: str
         file: str
 
@@ -282,8 +287,9 @@ class RunSettings(BaseModel):
         save_corrected_to_file: bool
         create_midifile: bool
 
-    notation: Notation
+    notation: NotationInfo
     midi: MidiInfo
+    samples: SampleInfo
     instruments: InstrumentInfo
     font: FontInfo
     switches: Switches

@@ -352,6 +352,12 @@ def create_score_object_model(run_settings: RunSettings) -> Score:
 
 
 def add_attenuation_time(tracks: list[MidiTrackX], seconds: int) -> None:
+    """Extends the duration of the final note in each channel to avoid an abrupt ending of the audio.
+
+    Args:
+        tracks (list[MidiTrackX]): Tracks for which to extend the last note.
+        seconds (int): Duration of the extension.
+    """
     max_ticks = max(track.total_tick_time() for track in tracks)
     for track in tracks:
         if track.total_tick_time() == max_ticks:
@@ -372,7 +378,7 @@ def create_midifile(score: Score) -> None:
         track = notation_to_track(score, position)
         mid.tracks.append(track)
     add_attenuation_time(mid.tracks, seconds=ATTENUATION_SECONDS_AFTER_MUSIC_END)
-    mid.save(outfilepathfmt.format(position="", version=score.settings.midi.version, ext="mid"))
+    mid.save(outfilepathfmt.format(position="", version=score.settings.midi.midiversion, ext="mid"))
 
 
 if __name__ == "__main__":
