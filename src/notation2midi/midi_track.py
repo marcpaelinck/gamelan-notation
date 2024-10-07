@@ -67,7 +67,6 @@ class MidiTrackX(MidiTrack):
             self.append(
                 Message(
                     type="note_on",
-                    channel=midinote.preset.midi_channel,
                     note=midinote.midinote,
                     velocity=character.velocity,
                     time=self.time_since_last_note_end,
@@ -76,7 +75,6 @@ class MidiTrackX(MidiTrack):
             self.append(
                 Message(
                     type="note_off",
-                    channel=midinote.preset.midi_channel,
                     note=midinote.midinote,
                     velocity=70,
                     time=round(character.duration * BASE_NOTE_TIME),

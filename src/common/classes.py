@@ -117,7 +117,6 @@ class Preset(NotationModel):
     bank: int  # 0..128, where 128 is reserved for percussion instruments.
     preset: int  # 0..128
     preset_name: str
-    midi_channel: int  # channel will be used when generating MIDI output.
 
 
 class MidiNote(NotationModel):
