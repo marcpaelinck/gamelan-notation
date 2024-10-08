@@ -124,6 +124,7 @@ def get_run_settings() -> RunSettings:
     SAMPLES = "samples"
     INSTRUMENTS = "instruments"
     FONT = "font"
+    SOUNDFONT = "soundfont"
     SWITCHES = "switches"
     COMPOSITION = "composition"
     INSTRUMENTGROUP = "instrumentgroup"
@@ -155,11 +156,16 @@ def get_run_settings() -> RunSettings:
     font = data_dict[FONT][FONTVERSION][composition[FONTVERSION]] | {FONTVERSION: composition[FONTVERSION]}
     settings_dict[FONT] = get_settings_fields(RunSettings.FontInfo, data_dict[FONT] | font)
 
+    settings_dict[SOUNDFONT] = get_settings_fields(
+        RunSettings.SoundfontInfo, data_dict[SOUNDFONT] | run_settings_dict[SOUNDFONT]
+    )
+
     settings_dict[SWITCHES] = get_settings_fields(RunSettings.Switches, run_settings_dict[SWITCHES])
 
     return RunSettings.model_validate(settings_dict)
 
 
 if __name__ == "__main__":
+    # For testing
     settings = get_run_settings()
     pprint(settings)

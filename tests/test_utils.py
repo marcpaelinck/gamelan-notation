@@ -8,7 +8,7 @@ from src.common.utils import (
     stave_to_string,
 )
 from src.notation2midi.notation_to_midi import passes_str_to_tuple
-from src.notation2midi.settings import InstrumentFields
+from src.settings.settings import InstrumentFields
 
 BALIFONT5_TO_CHARACTER_DICT = create_symbol_to_note_lookup(fromfile="tests/data/balimusic5font.tsv")
 

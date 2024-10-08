@@ -279,6 +279,15 @@ class RunSettings(BaseModel):
         def filepath(self):
             return os.path.join(self.folder, self.file)
 
+    class SoundfontInfo(BaseModel):
+        folder: str
+        sheetname: str
+        outputfile: str
+
+        @property
+        def filepath(self):
+            return os.path.join(self.folder, self.outputfile)
+
     class Switches(BaseModel):
         validate_settings: bool
         detailed_validation_logging: bool
@@ -291,6 +300,7 @@ class RunSettings(BaseModel):
     samples: SampleInfo
     instruments: InstrumentInfo
     font: FontInfo
+    soundfont: SoundfontInfo
     switches: Switches
 
 

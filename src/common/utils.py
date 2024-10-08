@@ -24,7 +24,7 @@ from src.common.lookups import (
     InstrumentTag,
 )
 from src.common.metadata_classes import SilenceMeta
-from src.notation2midi.settings import (
+from src.settings.settings import (
     COMMENT,
     METADATA,
     InstrumentFields,

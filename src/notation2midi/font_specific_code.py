@@ -9,7 +9,7 @@ from src.common.constants import (
     Stroke,
 )
 from src.common.utils import NOTE_LIST
-from src.notation2midi.settings import BASE_NOTE_TIME
+from src.settings.settings import BASE_NOTE_TIME
 
 # ==================== BALI MUSIC 4 FONT =====================================
 
@@ -246,6 +246,9 @@ def postprocess_font5(score: Score) -> Score:
                     stave.extend(new_stave)
 
                 beat.duration = max(sum(note.total_duration for note in notes) for notes in list(beat.staves.values()))
+
+
+# ==================== GENERAL CODE =====================================
 
 
 def postprocess(score: Score) -> Score:

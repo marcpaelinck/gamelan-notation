@@ -1,3 +1,9 @@
+""" Creates a midi file based on a notation file.
+    See ./data/README.md for more information about notation files and ./data/notation/test for an example of a notation file.
+
+    Main method: convert_notation_to_midi()
+"""
+
 import json
 import os
 import re
@@ -33,14 +39,14 @@ from src.common.utils import (
 from src.notation2midi.font_specific_code import postprocess
 from src.notation2midi.midi_track import MidiTrackX
 from src.notation2midi.score_validation import add_missing_staves, validate_score
-from src.notation2midi.settings import (
+from src.settings.settings import (
     ATTENUATION_SECONDS_AFTER_MUSIC_END,
     COMMENT,
     METADATA,
     NON_INSTRUMENT_TAGS,
     get_run_settings,
 )
-from src.notation2midi.settings_validation import validate_settings
+from src.settings.settings_validation import validate_settings
 
 
 def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
@@ -49,7 +55,6 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
     Args:
         score (Score): The object model containing the notation.
         position (InstrumentPosition): the instrument position
-        version (version): Used to define which midi mapping to use from the midinotes.csv file.
 
     Returns:
         MidiTrack: MIDI track for the instrument.
@@ -378,16 +383,24 @@ def create_midifile(score: Score) -> None:
         track = notation_to_track(score, position)
         mid.tracks.append(track)
     add_attenuation_time(mid.tracks, seconds=ATTENUATION_SECONDS_AFTER_MUSIC_END)
-    mid.save(outfilepathfmt.format(position="", version=score.settings.midi.midiversion, ext="mid"))
+    mid.save(outfilepathfmt.format(position="", midiversion=score.settings.midi.midiversion, ext="mid"))
 
 
-if __name__ == "__main__":
+def convert_notation_to_midi():
+    """This method does all the work.
+    All settings are read from the (YAML) settings files.
+    """
     run_settings = get_run_settings()
-
     read_settings(run_settings)
     if run_settings.switches.validate_settings:
         validate_settings(run_settings)
+
     score = create_score_object_model(run_settings)
     validate_score(score=score)
+
     if run_settings.switches.create_midifile:
         create_midifile(score)
+
+
+if __name__ == "__main__":
+    convert_notation_to_midi()

@@ -7,7 +7,7 @@ import pandas as pd
 
 from src.common.classes import RunSettings
 from src.common.constants import Pitch
-from src.notation2midi.settings import FontFields, MidiNotesFields
+from src.settings.settings import FontFields, MidiNotesFields
 
 
 def check_unique_character_values(run_settings: RunSettings) -> None:

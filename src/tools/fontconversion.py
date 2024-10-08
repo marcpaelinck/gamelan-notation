@@ -14,7 +14,7 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.cell.cell import Cell
 from openpyxl.styles import Font
 
-from src.notation2midi.settings import MARGAPATI4, MARGAPATI5, MARGAPATIREYONG3
+from src.settings.settings import MARGAPATI4, MARGAPATI5, MARGAPATIREYONG3
 
 Symbol = str
 Path = str

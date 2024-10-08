@@ -3,7 +3,7 @@ from mido import Message, MetaMessage, MidiTrack, bpm2tempo
 from src.common.classes import Note
 from src.common.constants import InstrumentPosition, NotationFont, Pitch, Stroke
 from src.common.utils import SYMBOLVALUE_TO_MIDINOTE_LOOKUP
-from src.notation2midi.settings import BASE_NOTE_TIME, BASE_NOTES_PER_BEAT
+from src.settings.settings import BASE_NOTE_TIME, BASE_NOTES_PER_BEAT
 
 
 class MidiTrackX(MidiTrack):
