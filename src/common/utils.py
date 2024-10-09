@@ -220,7 +220,7 @@ def create_symbolvalue_to_midinote_lookup(
 
 def create_position_range_lookup(
     midinotes_list: list[MidiNote],
-) -> dict[InstrumentPosition, tuple[Pitch, Octave, Stroke]]:
+) -> dict[InstrumentPosition, list[tuple[Pitch, Octave, Stroke]]]:
     lookup = {
         position: [(midi.pitch, midi.octave, midi.stroke) for midi in midinotes_list if position in midi.positions]
         for position in InstrumentPosition

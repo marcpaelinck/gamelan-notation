@@ -29,6 +29,12 @@ class NotationEnum(StrEnum):
         return list(self.__class__).index(self)
 
 
+# TODO should we create enums dynamically from settings files?
+# See https://stackoverflow.com/questions/47299036/how-can-i-construct-an-enum-enum-from-a-dictionary-of-values
+# Advantage: enum always in sync with data.
+# Disadvantage: no autocomplete for values.
+
+
 class NotationFont(NotationEnum):
     BALIMUSIC4 = "BaliMusic4"
     BALIMUSIC5 = "BaliMusic5"
@@ -43,26 +49,6 @@ class NoteSource(NotationEnum):
     VALIDATOR = "VALIDATOR"
 
 
-# class MidiVersion(NotationEnum):
-#     """Lists the possible midi mappings to choose from in the midinotes.tsv settings file.
-#     This settings file maps instrument/pitch combinations to a midi pianoroll key value.
-#     """
-
-#     SINGLE_INSTR = "midi-gk1"
-#     MULTIPLE_INSTR = "midi-gk2"
-#     PIANO = "midi-piano"
-
-#     @classmethod
-#     def from_value(cls, value):
-#         enum = next((el for el in cls if el.value == value), None)
-#         if not enum:
-#             raise ValueError(
-#                 f"Value {value} not in {cls.__name__} enum class. If you added a column with this name "
-#                 "to the midi settings file, please add the new column name to the MidiValue enum class."
-#             )
-#         return enum
-
-
 class InstrumentGroup(NotationEnum):
     # TODO replace with settings file
     GONG_KEBYAR = "GONG_KEBYAR"
@@ -72,7 +58,6 @@ class InstrumentGroup(NotationEnum):
 
 
 class InstrumentType(NotationEnum):
-    # TODO replace with settings file
     GONGS = "GONGS"
     KEMPLI = "KEMPLI"
     CENGCENG = "CENGCENG"
@@ -117,56 +102,38 @@ class InstrumentPosition(NotationEnum):
         return InstrumentType[self.split("_")[0]]
 
 
-class NoteType(NotationEnum):
-    # TODO remove, only used once in debug_tools
-    MELODIC = "MELODIC"
-    PERCUSSION = "PERCUSSION"
-    NONE = "NONE"
-
-
-class Pitch(Enum):
+class Pitch(NotationEnum):
     # TODO replace with settings file
     # Note: Pitch.NONE and Pitch.TICK are used explicitly in code.
-    DING = "DING", NoteType.MELODIC, auto()
-    DONG = "DONG", NoteType.MELODIC, auto()
-    DENG = "DENG", NoteType.MELODIC, auto()
-    DEUNG = "DEUNG", NoteType.MELODIC, auto()
-    DUNG = "DUNG", NoteType.MELODIC, auto()
-    DANG = "DANG", NoteType.MELODIC, auto()
-    DAING = "DAING", NoteType.MELODIC, auto()
-    DENGDING = "DENGDING", NoteType.MELODIC, auto()
-    BYONG = "BYONG", NoteType.PERCUSSION, auto()
-    BYOT = "BYOT", NoteType.PERCUSSION, auto()
-    KA = "KA", NoteType.PERCUSSION, auto()
-    PAK = "PAK", NoteType.PERCUSSION, auto()
-    DE = "DE", NoteType.PERCUSSION, auto()
-    TUT = "TUT", NoteType.PERCUSSION, auto()
-    JU = "JU", NoteType.PERCUSSION, auto()
-    KUNG = "KUNG", NoteType.PERCUSSION, auto()
-    PLAK = "PLAK", NoteType.PERCUSSION, auto()
-    DAG = "DAG", NoteType.PERCUSSION, auto()
-    DUG = "DUG", NoteType.PERCUSSION, auto()
-    GIR = "GIR", NoteType.PERCUSSION, auto()
-    JET = "JET", NoteType.PERCUSSION, auto()
-    MUTED = "MUTED", NoteType.PERCUSSION, auto()
-    OPEN = "OPEN", NoteType.PERCUSSION, auto()
-    PEK = "PEK", NoteType.PERCUSSION, auto()
-    PUR = "PUR", NoteType.PERCUSSION, auto()
-    TICK = "TICK", NoteType.PERCUSSION, auto()
-    TICK_2_PANGGUL = "TICK_2_PANGGUL", NoteType.PERCUSSION, auto()
-    TONG = "TONG", NoteType.PERCUSSION, auto()
-    NONE = "NONE", NoteType.NONE, auto()
-
-    def __init__(self, notename: str, notetype: NoteType, sequence: int):
-        self._value_ = notename
-        self.type = notetype
-        self.sequence = sequence
-
-    def __repr__(self):
-        return self.value
-
-    def __str__(self):
-        return self.value
+    DING = "DING"
+    DONG = "DONG"
+    DENG = "DENG"
+    DEUNG = "DEUNG"
+    DUNG = "DUNG"
+    DANG = "DANG"
+    DAING = "DAING"
+    DENGDING = "DENGDING"
+    BYONG = "BYONG"
+    BYOT = "BYOT"
+    KA = "KA"
+    PAK = "PAK"
+    DE = "DE"
+    TUT = "TUT"
+    JU = "JU"
+    KUNG = "KUNG"
+    PLAK = "PLAK"
+    DAG = "DAG"
+    DUG = "DUG"
+    GIR = "GIR"
+    JET = "JET"
+    MUTED = "MUTED"
+    OPEN = "OPEN"
+    PEK = "PEK"
+    PUR = "PUR"
+    TICK = "TICK"
+    TICK_2_PANGGUL = "TICK_2_PANGGUL"
+    TONG = "TONG"
+    NONE = "NONE"
 
 
 class Stroke(NotationEnum):

@@ -197,11 +197,7 @@ def rename_notes_in_filenames(folderpath: str, group: InstrumentGroup, print_onl
     filenotes = sum([[f"Ding {i}", f"Dong {i}", f"Deng {i}", f"Dung {i}", f"Dang {i}"] for i in range(1, 4)], [])
     lookup = create_position_range_lookup(group)
     lookup = {
-        instrtype: [
-            note
-            for note in notes
-            if note.isnote and note.note.type == NoteType.MELODIC and note.mutingtype == Stroke.OPEN
-        ]
+        instrtype: [pitch for (pitch, octave, stroke) in notes if octave and stroke == Stroke.OPEN]
         for instrtype, notes in lookup.items()
         if instrtype in instrdict.values()
     }
