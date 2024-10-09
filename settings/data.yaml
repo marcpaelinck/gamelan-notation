@@ -1,0 +1,84 @@
+# Describes the contents of the data folder.
+instruments:
+    folder: ./data/instruments
+    instrumentgroup:
+        GONG_KEBYAR:
+            instruments_file: gk_instruments.tsv
+            tags_file: gk_instrumenttags.tsv
+midi:
+    folder: ./data/midi
+    midiversion:
+        GONG_KEBYAR1:
+            comment: two presets (melodic and percussion)
+            midi_definition_file: gk_midinotes.tsv
+            presets_file: gk_presets.tsv
+font:
+    folder: ./data/font
+    fontversion:
+        BaliMusic4: 
+            file: balimusic4font.tsv
+        BaliMusic5:
+            file: balimusic5font.tsv
+samples:
+    folder: ./data/samples
+    instrumentgroup:
+        GONG_KEBYAR:
+            subfolder: gong_kebyar
+soundfont:
+    folder: ./data/soundfont
+    sheetname: Viena definitions
+notation:
+    folder: ./data/notation
+    composition:
+    # `gong_at_end` indicates whether the notation has the gir at the end of each gongan (Balinese concept) or at the beginning.
+        rejangdewa:
+            subfolder: rejang dewa
+            file: rejang dewa_font5.tsv
+            midi_out_file: Rejang Dewa {position}_{midiversion}.mid
+            fontversion: BaliMusic5
+            instrumentgroup: GONG_KEBYAR
+            gong_at_end: false
+        sinomladrang:
+            subfolder: sinom ladrang
+            file: Sinom Ladrang_ubit4_font5.tsv
+            midi_out_file: Sinom Ladrang {position}_{midiversion}.mid
+            fontversion: BaliMusic5
+            instrumentgroup: GONG_KEBYAR
+            gong_at_end: false
+        cendrawasih:
+            subfolder: cendrawasih
+            file: Cendrawasih_complete_font5.tsv
+            midi_out_file: Cendrawasih {position}_{midiversion}.mid
+            fontversion: BaliMusic5
+            instrumentgroup: GONG_KEBYAR
+            gong_at_end: false
+        margapati:
+            subfolder: margapati
+            file: Margapati_font5.tsv
+            midi_out_file: Margapati {position}_{midiversion}.mid
+            fontversion: BaliMusic5
+            instrumentgroup: GONG_KEBYAR
+            gong_at_end: false
+        margapatireyong:
+            subfolder: margapati
+            file: Margapati reyong_font5.tsv
+            midi_out_file: Margapati {position}_{midiversion}.mid
+            fontversion: BaliMusic5
+            instrumentgroup: GONG_KEBYAR
+            gong_at_end: false
+        gendinganak2:
+            subfolder: test
+            file: Gending Anak-Anak.tsv
+            midi_out_file: Gending Anak-Anak {position}_{midiversion}.mid
+            fontversion: BaliMusic4
+            instrumentgroup: GONG_KEBYAR
+            gong_at_end: false
+        demo:
+            subfolder: test
+            file: demo.tsv
+            midi_out_file: Demo {position}_{midiversion}.mid
+            fontversion: BaliMusic4
+            instrumentgroup: GONG_KEBYAR
+            gong_at_end: false
+
+

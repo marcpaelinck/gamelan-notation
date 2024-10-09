@@ -1,27 +1,35 @@
 import json
+import os
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Literal, Optional, Union
+from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
+from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
 from src.common.constants import (
-    ALL_PASSES,
     BPM,
+    DEFAULT,
     PASS,
     Duration,
-    GonganType,
     InstrumentGroup,
     InstrumentPosition,
     InstrumentType,
-    MidiVersion,
     Modifier,
     NotationFont,
-    Note,
+    NoteSource,
     Octave,
+    Pass,
+    Pitch,
     Stroke,
+)
+from src.common.metadata_classes import (
+    GonganType,
+    GoToMeta,
+    MetaData,
+    MetaDataType,
+    ValidationProperty,
 )
 
 
@@ -64,19 +72,21 @@ class NotationModel(BaseModel):
             raise ValueError(f"Cannot convert value {value} to a list of {el_type}")
 
 
-class Character(NotationModel):
+class Note(NotationModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    source: NoteSource = NoteSource.SCORE
     symbol: str
     unicode: str
     symbol_description: str
     balifont_symbol_description: str
     # symbolvalue: SymbolValue  # Phase out
-    note: Note
+    pitch: Pitch
     octave: Optional[int]
     stroke: Stroke
     duration: Optional[float]
     rest_after: Optional[float]
+    velocity: Optional[int] = 100
     modifier: Modifier
     description: str
 
@@ -91,9 +101,9 @@ class Character(NotationModel):
             return None
         return value
 
-    def matches(self, note: Note, octave: Octave, stroke: Stroke, duration: Duration, rest_after: Duration) -> bool:
+    def matches(self, pitch: Pitch, octave: Octave, stroke: Stroke, duration: Duration, rest_after: Duration) -> bool:
         return (
-            note == self.note
+            pitch == self.pitch
             and self.octave == octave
             and self.stroke == stroke
             and self.duration == duration
@@ -101,15 +111,24 @@ class Character(NotationModel):
         )
 
 
+class Preset(NotationModel):
+    # See http://www.synthfont.com/The_Definitions_File.pdf
+    instrumenttype: InstrumentType
+    bank: int  # 0..128, where 128 is reserved for percussion instruments.
+    preset: int  # 0..128
+    preset_name: str
+
+
 class MidiNote(NotationModel):
-    instrumentgroup: InstrumentGroup
     instrumenttype: InstrumentType
     positions: list[InstrumentPosition]
-    note: Note
+    pitch: Pitch
     octave: Optional[int]
     stroke: Stroke
-    channel: int
-    midi: int
+    midinote: int  # 0..128, used when generating MIDI output.
+    sample: str  # file name of the (mp3) sample.
+    preset: Preset
+    remark: str
 
     @field_validator("positions", mode="before")
     @classmethod
@@ -133,71 +152,6 @@ class InstrumentTag(NotationModel):
     @classmethod
     def validate_pos(cls, value):
         return cls.to_list(value, InstrumentPosition)
-
-
-#
-# Metadata
-#
-class Tempo(BaseModel):
-    type: Literal["tempo"]
-    bpm: int
-    passes: list[PASS] = field(default_factory=list)
-    first_beat: Optional[int] = 1
-    beats: Optional[int] = 0
-    passes: Optional[list[int]] = field(
-        default_factory=lambda: list([ALL_PASSES])
-    )  # On which pass(es) should goto be performed?
-    passes: Optional[list[int]] = field(
-        default_factory=lambda: list([ALL_PASSES])
-    )  # On which pass(es) should goto be performed?
-
-    @property
-    def first_beat_seq(self) -> int:
-        # Returns the pythonic sequence id (numbered from 0)
-        return self.first_beat - 1
-
-    # @model_validator(mode="after")
-    # def set_default_pass(self):
-    #     if not self.passes:
-    #         self.passes.append(DEFAULT)
-    #     return self
-    # @model_validator(mode="after")
-    # def set_default_pass(self):
-    #     if not self.passes:
-    #         self.passes.append(DEFAULT)
-    #     return self
-
-
-class Label(BaseModel):
-    type: Literal["label"]
-    label: str
-    beat_nr: Optional[int] = 1
-
-    @property
-    def beat_seq(self) -> int:
-        # Returns the pythonic sequence id (numbered from 0)
-        return self.beat_nr - 1
-
-
-class GoTo(BaseModel):
-    type: Literal["goto"]
-    label: str
-    beat_nr: Optional[int] | None = None  # Beat number from which to goto. Default is last beat of the system.
-    passes: Optional[list[int]] = field(default_factory=list)  # On which pass(es) should goto be performed?
-
-    @property
-    def beat_seq(self) -> int:
-        # Returns the pythonic sequence id (numbered from 0)
-        return self.beat_nr - 1 if self.beat_nr else -1
-
-
-class Gongan(BaseModel):
-    type: Literal["gongan"]
-    kind: str
-
-
-class MetaData(BaseModel):
-    data: Union[Tempo, Label, GoTo, Gongan] = Field(..., discriminator="type")
 
 
 #
@@ -225,9 +179,13 @@ class Beat:
     bpm_end: dict[PASS, BPM]  # tempo at end of beat (can vary per pass)
     duration: float
     tempo_changes: dict[PASS, TempoChange] = field(default_factory=dict)
-    staves: dict[InstrumentPosition, list[Character]] = field(default_factory=dict)
+    staves: dict[InstrumentPosition, list[Note]] = field(default_factory=dict)
+    # Exceptions contains alternative staves for specific passes.
+    exceptions: dict[(InstrumentPosition, Pass), list[Note]] = field(default_factory=dict)
+    prev: "Beat" = field(default=None, repr=False)
     next: "Beat" = field(default=None, repr=False)
     goto: dict[PASS, "Beat"] = field(default_factory=dict)
+    validation_ignore: list[ValidationProperty] = field(default_factory=list)
     _pass_: PASS = 0  # Counts the number of times the beat is passed during generation of MIDI file.
 
     @computed_field
@@ -241,17 +199,20 @@ class Beat:
         # Returns the pythonic sequence id (numbered from 0)
         return self.sys_id - 1
 
+    def next_beat_in_flow(self, pass_=None):
+        return self.goto.get(pass_ or self._pass_, self.next)
+
     def get_bpm_start(self):
-        return self.bpm_start.get(self._pass_, self.bpm_start.get(ALL_PASSES, None))
-        return self.bpm_start.get(self._pass_, self.bpm_start.get(ALL_PASSES, None))
+        return self.bpm_start.get(self._pass_, self.bpm_start.get(DEFAULT, None))
 
     def get_bpm_end(self):
-        return self.bpm_end.get(self._pass_, self.bpm_end.get(ALL_PASSES, None))
-        return self.bpm_end.get(self._pass_, self.bpm_end.get(ALL_PASSES, None))
+        return self.bpm_end.get(self._pass_, self.bpm_end.get(DEFAULT, None))
+
+    def get_bpm_end_last_pass(self):
+        return self.bpm_end.get(self._pass_, self.bpm_end.get(DEFAULT, None))
 
     def get_changed_tempo(self, current_tempo: BPM) -> BPM | None:
-        tempo_change = self.tempo_changes.get(self._pass_, self.tempo_changes.get(ALL_PASSES, None))
-        tempo_change = self.tempo_changes.get(self._pass_, self.tempo_changes.get(ALL_PASSES, None))
+        tempo_change = self.tempo_changes.get(self._pass_, self.tempo_changes.get(DEFAULT, None))
         if tempo_change and tempo_change.new_tempo != current_tempo:
             if tempo_change.incremental:
                 return current_tempo + int((tempo_change.new_tempo - current_tempo) / tempo_change.steps)
@@ -261,57 +222,121 @@ class Beat:
 
 
 @dataclass
-class Source:
-    datapath: str
-    infilename: str
-    outfilefmt: str  # should contain 'position', 'ext' and 'midiversion' arguments
-    font: NotationFont
-    instrumentgroup: InstrumentGroup
+class RunSettings(BaseModel):
+    class NotationInfo(BaseModel):
+        folder: str
+        subfolder: str
+        file: str
+        midi_out_file: str
+        gong_at_end: bool
+
+        @property
+        def filepath(self):
+            return os.path.join(self.folder, self.subfolder, self.file)
+
+        @property
+        def midi_out_filepath(self):
+            return os.path.join(self.folder, self.subfolder, self.midi_out_file)
+
+    class MidiInfo(BaseModel):
+        midiversion: str
+        folder: str
+        midi_definition_file: str
+        presets_file: str
+
+        @property
+        def notes_filepath(self):
+            return os.path.join(self.folder, self.midi_definition_file)
+
+        @property
+        def presets_filepath(self):
+            return os.path.join(self.folder, self.presets_file)
+
+    class SampleInfo(BaseModel):
+        folder: str
+        subfolder: str
+
+    class InstrumentInfo(BaseModel):
+        instrumentgroup: InstrumentGroup
+        folder: str
+        instruments_file: str
+        tags_file: str
+
+        @property
+        def instr_filepath(self):
+            return os.path.join(self.folder, self.instruments_file)
+
+        @property
+        def tag_filepath(self):
+            return os.path.join(self.folder, self.tags_file)
+
+    class FontInfo(BaseModel):
+        fontversion: NotationFont
+        folder: str
+        file: str
+
+        @property
+        def filepath(self):
+            return os.path.join(self.folder, self.file)
+
+    class SoundfontInfo(BaseModel):
+        folder: str
+        sheetname: str
+        outputfile: str
+
+        @property
+        def filepath(self):
+            return os.path.join(self.folder, self.outputfile)
+
+    class Switches(BaseModel):
+        validate_settings: bool
+        detailed_validation_logging: bool
+        autocorrect: bool
+        save_corrected_to_file: bool
+        create_midifile: bool
+
+    notation: NotationInfo
+    midi: MidiInfo
+    samples: SampleInfo
+    instruments: InstrumentInfo
+    font: FontInfo
+    soundfont: SoundfontInfo
+    switches: Switches
 
 
 @dataclass
-class System:
+class Gongan:
     # A set of beats.
-    # A System will usually span one gongan.
+    # A Gongan consists of a set of instrument parts.
+    # Gongans in the input file are separated from each other by an empty line.
     id: int
     beats: list[Beat] = field(default_factory=list)
     beat_duration: int = 4
     gongantype: GonganType = GonganType.REGULAR
     metadata: list[MetaData] = field(default_factory=list)
+    comments: list[str] = field(default_factory=list)
+    _pass_: PASS = 0  # Counts the number of times the gongan is passed during generation of MIDI file.
+
+    def get_metadata(self, cls: MetaDataType):
+        return next((meta.data for meta in self.metadata if isinstance(meta.data, cls)), None)
 
 
 @dataclass
 class FlowInfo:
     # Keeps track of statements that modify the sequence of
-    # systems or beats in the score. The main purpose of this
+    # gongans or beats in the score. The main purpose of this
     # class is to keep track of gotos that point to labels that
     # have not yet been encountered while processing the score.
     labels: dict[str, Beat] = field(default_factory=dict)
-    gotos: dict[str, tuple[System, GoTo]] = field(default_factory=lambda: defaultdict(list))
-    gongantype: GonganType = GonganType.REGULAR
-    metadata: list[MetaData] = field(default_factory=list)
-
-
-@dataclass
-class FlowInfo:
-    # Keeps track of statements that modify the sequence of
-    # systems or beats in the score. The main purpose of this
-    # class is to keep track of gotos that point to labels that
-    # have not yet been encountered while processing the score.
-    labels: dict[str, Beat] = field(default_factory=dict)
-    gotos: dict[str, tuple[System, GoTo]] = field(default_factory=lambda: defaultdict(list))
+    gotos: dict[str, tuple[Gongan, GoToMeta]] = field(default_factory=lambda: defaultdict(list))
 
 
 @dataclass
 class Score:
-    source: Source
-    midi_version: MidiVersion
-    midi_version: MidiVersion
-    instrumentgroup: InstrumentGroup = None
+    settings: RunSettings
     instrument_positions: set[InstrumentPosition] = None
-    instrument_positions: set[InstrumentPosition] = None
-    systems: list[System] = field(default_factory=list)
-    balimusic_font_dict: dict[str, Character] = None
-    midi_notes_dict: dict[tuple[InstrumentPosition, Note, Octave, Stroke], MidiNote] = None
-    position_range_lookup: dict[InstrumentPosition, tuple[Note, Octave, Stroke]] = None
+    gongans: list[Gongan] = field(default_factory=list)
+    balimusic_font_dict: dict[str, Note] = None
+    midi_notes_dict: dict[tuple[InstrumentPosition, Pitch, Octave, Stroke], MidiNote] = None
+    position_range_lookup: dict[InstrumentPosition, tuple[Pitch, Octave, Stroke]] = None
     flowinfo: FlowInfo = field(default_factory=FlowInfo)

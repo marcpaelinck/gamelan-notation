@@ -10,12 +10,18 @@ from os import path
 from pprint import pprint
 
 import pandas as pd
-from openpyxl import load_workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.cell.cell import Cell
 from openpyxl.styles import Font
 
+from src.settings.settings import MARGAPATI4, MARGAPATI5, MARGAPATIREYONG3
 
-def get_files_with_symbols(folderpath: str, symbollist: list[str]):
+Symbol = str
+Path = str
+WorksheetName = str
+
+
+def get_files_with_symbols_old(folderpath: str, symbollist: list[str]) -> dict[Path, list[Symbol]]:
     """Prints the names of Excel notation files containing one or more of the symbols
        in the symbol list.
 
@@ -41,21 +47,51 @@ def get_files_with_symbols(folderpath: str, symbollist: list[str]):
             )
             for sym in symbollist:
                 if sym in uniques:
-                    infiles[sym].add(path.basename(file))
+                    infiles[path.basename(file)].add(sym)
 
-    pprint(infiles)
+    return infiles
 
 
-def get_all_used_symbols(folderpath: str):
+def get_files_with_symbols(folderpath: str, symbollist: list[str]) -> dict[Path, list[Symbol]]:
+    """Prints the names of Excel notation files containing one or more of the symbols
+       in the symbol list.
+
+    Args:
+        folderpath (str): path to the folder containing the files to search in.
+        symbollist (list[str]): list of characters to search for.
+    """
+    infiles = defaultdict(set)
+    files = glob(path.join(folderpath, "*.xlsx"))
+    wb: Workbook
+    cell: Cell
+    font: Font
+    for file in files:
+        wb = load_workbook(file)
+        for sheet in [sheet for sheet in wb.worksheets if sheet.title != "formules"]:
+            print(path.basename(file) + " " + sheet.title)
+            for row in sheet.iter_rows():
+                for cell in row:
+                    if (
+                        cell.font.name == "Bali Music 5"
+                        and cell.value
+                        and any(sym in str(cell.value) for sym in symbollist)
+                    ):
+                        infiles[(path.basename(file), sheet.title)].add(cell.coordinate)
+        wb.close()
+
+    return infiles
+
+
+def get_all_used_symbols(folderpath: str) -> tuple[set[Symbol], dict[Symbol, tuple[Path, WorksheetName]]]:
     """Prints a list of all the distinct symbols that occur in the notation files found
        in the given folder.
 
     Args:
         folderpath (str): path to the folder containing the files to search in.
     """
-    all_uniques = set()
+    used_symbols = set()
     files = glob(path.join(folderpath, "*.xlsx"))
-    where = dict()
+    symbol_dict = dict()
     for file in files:
         wb = load_workbook(file)
         sheets = set(wb.sheetnames) - {"formules"}
@@ -70,11 +106,10 @@ def get_all_used_symbols(folderpath: str):
                     if set(df[col][df[col].apply(lambda x: isinstance(x, str))])
                 ]
             )
-            all_uniques.update(uniques)
+            used_symbols.update(uniques)
             for s in uniques:
-                where[s] = (path.basename(file), sheet)
-    print(all_uniques)
-    pprint(where)
+                symbol_dict[s] = (path.basename(file), sheet)
+    return used_symbols, symbol_dict
 
 
 def replace_cell_content(
@@ -303,24 +338,16 @@ def substitutefont_all_xlsx_files(
 
 SYMBOLREPLACETABLEPATH = "./settings/convert4to5font.tsv"
 
-XL_FOLDERPATH = "C:/Users/marcp/Documents/administratie/_VRIJETIJD_REIZEN/Gamelangroepen/Studiemateriaal/Muzieknotatie/balimusic4/superscript-replaced"
+XL_FOLDERPATH = "C:/Users/marcp/Documents/administratie/_VRIJETIJD_REIZEN/Gamelangroepen/Studiemateriaal/Muzieknotatie"
 XL_SAVEFOLDERPATH = (
     "C:/Users/marcp/Documents/administratie/_VRIJETIJD_REIZEN/Gamelangroepen/Studiemateriaal/Muzieknotatie/balimusic5"
 )
-TSV_FILEPATH = "C:/Users/marcp/Documents/administratie/_VRIJETIJD_REIZEN/Scripts-Programmas/PythonProjects/gamelan-notation/data/cendrawasih/Cendrawasih_complete.csv"
-TSV_SAVEPATH = "C:/Users/marcp/Documents/administratie/_VRIJETIJD_REIZEN/Scripts-Programmas/PythonProjects/gamelan-notation/data/cendrawasih/Cendrawasih_complete_font5.csv"
-
+TSV_SETTING = MARGAPATIREYONG3
 if __name__ == "__main__":
-    FONTFROM = "Bali Music 4"
-    FONTTO = "Bali Music 5"
-    substitutefont_all_xlsx_files(
-        folderpath=XL_FOLDERPATH,
-        savepath=XL_SAVEFOLDERPATH,
-        fontreplacepair=(FONTFROM, FONTTO),
-        symbolreplacetablepath=SYMBOLREPLACETABLEPATH,
-    )
     # substitutefont_tsv_file(
-    #     filepath=FILEPATH,
-    #     savepath=SAVEPATH,
+    #     filepath=os.path.join(TSV_SETTING.datapath, TSV_SETTING.infilename),
+    #     savepath=os.path.join(TSV_SETTING.datapath, "Margapati reyong_font5.tsv"),
     #     symbolreplacetablepath=SYMBOLREPLACETABLEPATH,
     # )
+    result = get_files_with_symbols(XL_FOLDERPATH, ["1", "2", "3", "5", "6", "7"])
+    pprint(result)

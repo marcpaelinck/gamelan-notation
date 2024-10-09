@@ -8,7 +8,6 @@ from pprint import pprint
 import pandas as pd
 from scipy.io import wavfile
 
-from src.common.classes import InstrumentTag
 from src.common.constants import (
     InstrumentGroup,
     InstrumentPosition,
@@ -16,6 +15,7 @@ from src.common.constants import (
     NoteType,
     Stroke,
 )
+from src.common.lookups import InstrumentTag
 from src.common.utils import create_position_range_lookup
 
 
@@ -145,7 +145,7 @@ def merge_parts(datapath: str, basefile: str, mergefile: str, resultfile: str):
     # Drop all empty columns
     base_df.dropna(how="all", axis="columns", inplace=True)
     merge_df.dropna(how="all", axis="columns", inplace=True)
-    # Number the systems: blank lines denote start of new system. Then delete blank lines.
+    # Number the gongans: blank lines denote start of new gongan. Then delete blank lines.
     base_df["sysnr"] = base_df["tag"].isna().cumsum()[~base_df["tag"].isna()] + 1
     merge_df["sysnr"] = merge_df["tag"].isna().cumsum()[~merge_df["tag"].isna()] + 1
     merge_df = merge_df[~merge_df["tag"].isin(["gangsa p", "gangsa s"])]
@@ -157,7 +157,7 @@ def merge_parts(datapath: str, basefile: str, mergefile: str, resultfile: str):
     # Sort the new table
     new_df["tagid"] = new_df["tag"].apply(lambda tag: sortingorder.index(tag))
     new_df.sort_values(by=["sysnr", "tagid"], inplace=True, ignore_index=True)
-    # Add empty lines between systems
+    # Add empty lines between gongans
     mask = new_df["sysnr"].ne(new_df["sysnr"].shift(-1))
     empties = pd.DataFrame("", index=mask.index[mask] + 0.5, columns=new_df.columns)
     new_df = pd.concat([new_df, empties]).sort_index().reset_index(drop=True).iloc[:-1]
@@ -197,11 +197,7 @@ def rename_notes_in_filenames(folderpath: str, group: InstrumentGroup, print_onl
     filenotes = sum([[f"Ding {i}", f"Dong {i}", f"Deng {i}", f"Dung {i}", f"Dang {i}"] for i in range(1, 4)], [])
     lookup = create_position_range_lookup(group)
     lookup = {
-        instrtype: [
-            note
-            for note in notes
-            if note.isnote and note.note.type == NoteType.MELODIC and note.mutingtype == Stroke.OPEN
-        ]
+        instrtype: [pitch for (pitch, octave, stroke) in notes if octave and stroke == Stroke.OPEN]
         for instrtype, notes in lookup.items()
         if instrtype in instrdict.values()
     }
