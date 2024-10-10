@@ -71,9 +71,10 @@ class SoundfontSheet:
             bolds = [False, False, True, False] + ([False] * len(records))
             self._add_row(["", "", "Sample name", "Global"] + [record["sample_name"] for record in records], bold=bolds)
             self._add_row(
-                ["", "", "Key Range"] + [f"{record['midinote']}-{record['midinote']}" for record in records], bold=bolds
+                ["", "", "Key Range", ""] + [f"{record['midinote']}-{record['midinote']}" for record in records],
+                bold=bolds,
             )
-            self._add_row(["", "", "Root Key"] + [record["midinote"] for record in records], bold=bolds)
+            self._add_row(["", "", "Root Key", ""] + [record["midinote"] for record in records], bold=bolds)
         self._add_separator()
 
     def _add_preset_section(self) -> None:
@@ -94,6 +95,19 @@ class SoundfontSheet:
         self._add_sample_section()
         self._add_instrument_section()
         self._add_preset_section()
+
+
+def create_sample_name(instrumenttype: str, pitch: int, octave: int | None, stroke: str) -> str:
+    octave_str = str(octave) if octave is not None else ""
+    parts = [instrumenttype, " ", pitch, octave_str, " ", stroke]
+
+    # maximum length is 20.
+    surplus = max(sum(len(part) for part in parts) - 20, 0)
+    # truncate longest components
+    for _ in range(surplus):
+        idx = parts.index(max(parts, key=len))
+        parts[idx] = parts[idx][:-1]
+    return "".join(parts)
 
 
 def get_midi_dict(settings: RunSettings) -> MidiDict:
@@ -121,13 +135,13 @@ def get_midi_dict(settings: RunSettings) -> MidiDict:
     )
     for instrumenttype, records in midi_dict.items():
         for record in records:
-            record["sample_name"] = (
-                instrumenttype + " " + record["pitch"] + str(record["octave"] or "") + " " + record["stroke"]
+            record["sample_name"] = create_sample_name(
+                instrumenttype, record["pitch"], record["octave"], record["stroke"]
             )
     return midi_dict
 
 
-def get_preset_dict(settings: RunSettings) -> MidiDict:
+def get_preset_dict(settings: RunSettings, instruments: list[InstrumentType]) -> MidiDict:
     """Reads the presets table and converts it into a dict of the form:
         {(<preset_name>, <bank>, <preset>): [<record>, <record>, ...]}
     where <record> has the form
@@ -149,7 +163,10 @@ def get_preset_dict(settings: RunSettings) -> MidiDict:
     to_records = partial(pd.DataFrame.to_dict, orient="records")
     preset_df = pd.read_csv(settings.midi.presets_filepath, sep="\t")
     preset_dict = (
-        preset_df[preset_df["instrumentgroup"] == settings.instruments.instrumentgroup]
+        preset_df[
+            (preset_df["instrumentgroup"] == settings.instruments.instrumentgroup)
+            & preset_df["instrumenttype"].isin(instruments)
+        ]
         .sort_values(by=["bank", "preset", "instrumenttype"], key=sortkey)
         .groupby(["preset_name", "bank", "preset"])[["instrumenttype", "instrumentgroup"]]
         .apply(to_records)
@@ -167,7 +184,7 @@ def create_soundfont_file():
         validate_settings(run_settings)
 
     midi_dict = get_midi_dict(run_settings)
-    preset_dict = get_preset_dict(run_settings)
+    preset_dict = get_preset_dict(run_settings, midi_dict.keys())
 
     workbook = Workbook()
     workbook.active.title = run_settings.soundfont.sheetname
