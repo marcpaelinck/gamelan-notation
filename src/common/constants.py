@@ -9,6 +9,7 @@ BeatId = str
 Pass = int
 Octave = int
 MIDIvalue = int
+MidiDict = dict[str, list[dict[str, str | int | None]]]
 
 
 class NotationEnum(StrEnum):
