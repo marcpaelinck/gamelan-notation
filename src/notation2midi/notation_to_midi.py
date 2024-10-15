@@ -5,14 +5,12 @@
 """
 
 import json
-import os
 import re
 from collections import defaultdict
-from os import path
 
 import numpy as np
 import pandas as pd
-from mido import MetaMessage, MidiFile, MidiTrack
+from mido import MetaMessage, MidiFile
 
 from src.common.classes import Beat, Gongan, RunSettings, Score
 from src.common.constants import DEFAULT, InstrumentPosition, Pitch, Stroke
@@ -49,7 +47,7 @@ from src.settings.settings import (
 from src.settings.settings_validation import validate_settings
 
 
-def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
+def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrackX:
     """Generates the MIDI content for a single instrument position.
 
     Args:
@@ -65,7 +63,7 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
             for beat in gongan.beats:
                 beat._pass_ = 0
 
-    track = MidiTrackX(score.settings.font)
+    track = MidiTrackX(position, score.settings.font)
     track.append(MetaMessage("track_name", name=position.value, time=0))
 
     reset_pass_counters()

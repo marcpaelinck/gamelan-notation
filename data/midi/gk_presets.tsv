@@ -1,23 +1,23 @@
-instrumentgroup	instrumenttype	bank	preset	preset_name
-GONG_KEBYAR	GONGS	128	0	Gong Kebyar percussion
-GONG_KEBYAR	KEMPLI	128	0	Gong Kebyar percussion
-GONG_KEBYAR	CENGCENG	128	0	Gong Kebyar percussion
-GONG_KEBYAR	KENDANG	128	0	Gong Kebyar percussion
-GONG_KEBYAR	JEGOGAN	0	0	Gong Kebyar melodic
-GONG_KEBYAR	CALUNG	0	0	Gong Kebyar melodic
-GONG_KEBYAR	PENYACAH	0	0	Gong Kebyar melodic
-GONG_KEBYAR	PEMADE	0	0	Gong Kebyar melodic
-GONG_KEBYAR	KANTILAN	0	0	Gong Kebyar melodic
-GONG_KEBYAR	UGAL	0	0	Gong Kebyar melodic
-GONG_KEBYAR	GENDERRAMBAT	0	0	Gong Kebyar melodic
-GONG_KEBYAR	REYONG	0	0	Gong Kebyar melodic
-GONG_KEBYAR	TROMPONG	0	0	Gong Kebyar melodic
-SEMAR_PAGULINGAN	GONGS	128	0	Gong Kebyar percussion
-SEMAR_PAGULINGAN	KEMPLI	128	0	Gong Kebyar percussion
-SEMAR_PAGULINGAN	CENGCENG	128	0	Gong Kebyar percussion
-SEMAR_PAGULINGAN	KENDANG	128	0	Gong Kebyar percussion
-SEMAR_PAGULINGAN	JEGOGAN	0	0	Gong Kebyar melodic
-SEMAR_PAGULINGAN	CALUNG	0	0	Gong Kebyar melodic
-SEMAR_PAGULINGAN	PEMADE	0	0	Gong Kebyar melodic
-SEMAR_PAGULINGAN	KANTILAN	0	0	Gong Kebyar melodic
-SEMAR_PAGULINGAN	TROMPONG	0	0	Gong Kebyar melodic
+instrumentgroup	instrumenttype	bank	preset	channel	preset_name
+GONG_KEBYAR	GONGS	128	1	2	Gong Kebyar percussion
+GONG_KEBYAR	KEMPLI	128	1	2	Gong Kebyar percussion
+GONG_KEBYAR	CENGCENG	128	1	2	Gong Kebyar percussion
+GONG_KEBYAR	KENDANG	128	1	2	Gong Kebyar percussion
+GONG_KEBYAR	JEGOGAN	1	1	1	Gong Kebyar melodic
+GONG_KEBYAR	CALUNG	1	1	1	Gong Kebyar melodic
+GONG_KEBYAR	PENYACAH	1	1	1	Gong Kebyar melodic
+GONG_KEBYAR	PEMADE	1	1	1	Gong Kebyar melodic
+GONG_KEBYAR	KANTILAN	1	1	1	Gong Kebyar melodic
+GONG_KEBYAR	UGAL	1	1	1	Gong Kebyar melodic
+GONG_KEBYAR	GENDERRAMBAT	1	1	1	Gong Kebyar melodic
+GONG_KEBYAR	REYONG	1	1	1	Gong Kebyar melodic
+GONG_KEBYAR	TROMPONG	1	1	1	Gong Kebyar melodic
+SEMAR_PAGULINGAN	GONGS	128	1	2	Gong Kebyar percussion
+SEMAR_PAGULINGAN	KEMPLI	128	1	2	Gong Kebyar percussion
+SEMAR_PAGULINGAN	CENGCENG	128	1	2	Gong Kebyar percussion
+SEMAR_PAGULINGAN	KENDANG	128	1	2	Gong Kebyar percussion
+SEMAR_PAGULINGAN	JEGOGAN	1	1	1	Gong Kebyar melodic
+SEMAR_PAGULINGAN	CALUNG	1	1	1	Gong Kebyar melodic
+SEMAR_PAGULINGAN	PEMADE	1	1	1	Gong Kebyar melodic
+SEMAR_PAGULINGAN	KANTILAN	1	1	1	Gong Kebyar melodic
+SEMAR_PAGULINGAN	TROMPONG	1	1	1	Gong Kebyar melodic

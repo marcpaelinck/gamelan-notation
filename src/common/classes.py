@@ -114,8 +114,9 @@ class Note(NotationModel):
 class Preset(NotationModel):
     # See http://www.synthfont.com/The_Definitions_File.pdf
     instrumenttype: InstrumentType
-    bank: int  # 0..128, where 128 is reserved for percussion instruments.
-    preset: int  # 0..128
+    bank: int  # 1..128, where 128 is reserved for percussion instruments.
+    preset: int  # 1..128
+    channel: int  # 1..16
     preset_name: str
 
 

@@ -1,39 +1,57 @@
 from mido import Message, MetaMessage, MidiTrack, bpm2tempo
 
 from src.common.classes import Note
-from src.common.constants import InstrumentPosition, NotationFont, Pitch, Stroke
+from src.common.constants import (
+    InstrumentPosition,
+    InstrumentType,
+    NotationFont,
+    Pitch,
+    Stroke,
+)
+from src.common.lookups import get_bank_mido, get_channel_mido, get_preset_mido
 from src.common.utils import SYMBOLVALUE_TO_MIDINOTE_LOOKUP
 from src.settings.settings import BASE_NOTE_TIME, BASE_NOTES_PER_BEAT
 
 
 class MidiTrackX(MidiTrack):
+    position: InstrumentPosition
     font: NotationFont
     last_note_end_msg = None
     time_since_last_note_end: int = 0
     current_bpm: int = 0
     current_signature: int = 0
 
-    def __init__(self, font: NotationFont):
-        self.font = font
+    def set_channel_bank_and_preset(self):
+        channel = get_channel_mido(self.position.instrumenttype)
+        bank = get_bank_mido(self.position.instrumenttype)
+        preset = get_preset_mido(self.position.instrumenttype)
+        self.append(MetaMessage("channel_prefix", channel))
+        self.append(Message(type="control_change", control=0, value=bank))
+        self.append(Message(type="program_change", program=preset))
+
+    def __init__(self, position: InstrumentPosition, font: NotationFont):
         super(MidiTrackX, self).__init__()
+        self.font = font
+        self.position = position
+        self.set_channel_bank_and_preset()
 
     def total_tick_time(self):
         return sum(msg.time for msg in self)
 
-    def update_signature(self, new_signature) -> None:
-        if new_signature != self.current_signature:
-            self.append(
-                MetaMessage(
-                    "time_signature",
-                    numerator=round(new_signature),
-                    denominator=4,
-                    clocks_per_click=36,
-                    notated_32nd_notes_per_beat=8,
-                    time=self.time_since_last_note_end,
-                )
-            )
-            self.time_since_last_note_end = 0
-            self.current_signature = new_signature
+    # def update_signature(self, new_signature) -> None:
+    #     if new_signature != self.current_signature:
+    #         self.append(
+    #             MetaMessage(
+    #                 "time_signature",
+    #                 numerator=round(new_signature),
+    #                 denominator=4,
+    #                 clocks_per_click=36,
+    #                 notated_32nd_notes_per_beat=8,
+    #                 time=self.time_since_last_note_end,
+    #             )
+    #         )
+    #         self.time_since_last_note_end = 0
+    #         self.current_signature = new_signature
 
     def update_tempo(self, new_bpm, debug=False):
         if debug:
