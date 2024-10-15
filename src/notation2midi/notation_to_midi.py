@@ -394,7 +394,7 @@ def convert_notation_to_midi():
         validate_settings(run_settings)
 
     score = create_score_object_model(run_settings)
-    validate_score(score=score)
+    validate_score(score=score, settings=run_settings)
 
     if run_settings.switches.create_midifile:
         create_midifile(score)

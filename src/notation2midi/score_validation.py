@@ -220,7 +220,7 @@ def incorrect_kempyung(
                                         duration=sangsih.duration,
                                         rest_after=sangsih.rest_after,
                                         symbol=sangsih.symbol,  # will be returned with corrected note symbol
-                                        font=score.source.font,
+                                        font=score.settings.font.fontversion,
                                     )
                                     beat.staves[pair[1]][seq] = correct_sangsih
                                     autocorrected = True
@@ -294,9 +294,10 @@ def add_missing_staves(score: Score):
 
 def validate_score(
     score: Score,
-    autocorrect: bool = False,
-    save_corrected: bool = False,
-    detailed_logging: bool = False,
+    settings: RunSettings,
+    # autocorrect: bool = False,
+    # save_corrected: bool = False,
+    # detailed_logging: bool = False,
 ) -> None:
     """Performs consistency checks and prints results.
 
@@ -324,6 +325,10 @@ def validate_score(
     count_ignored_invalid_kempyung = 0
     count_ignored_beats_with_incorrect_norot = 0
     count_ignored_beats_with_incorrect_ubitan = 0
+
+    autocorrect = settings.switches.autocorrect
+    save_corrected = settings.switches.save_corrected_to_file
+    detailed_logging = settings.switches.detailed_validation_logging
 
     filler = next(
         note

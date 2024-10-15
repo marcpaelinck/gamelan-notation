@@ -13,7 +13,7 @@ soundfont:
   outputfile: viena_definitions_{midiversion}.xlsx
 switches:
   validate_settings : true
-  detailed_validation_logging : false
+  detailed_validation_logging : true
   autocorrect : true
-  save_corrected_to_file : true
+  save_corrected_to_file : false
   create_midifile : true

@@ -232,6 +232,10 @@ class RunSettings(BaseModel):
         gong_at_end: bool
 
         @property
+        def subfolderpath(self):
+            return os.path.join(self.folder, self.subfolder)
+
+        @property
         def filepath(self):
             return os.path.join(self.folder, self.subfolder, self.file)
 
