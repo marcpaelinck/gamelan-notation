@@ -253,4 +253,7 @@ def create_tag_to_position_lookup(fromfile: str) -> dict[InstrumentTag, list[Ins
 
 if __name__ == "__main__":
     settings = get_run_settings()
-    print(create_position_range_lookup(InstrumentGroup.GONG_KEBYAR, settings.midi.midi_definition_file))
+    read_settings(settings)
+    from src.common.lookups import get_channel_mido
+
+    print(get_channel_mido(InstrumentType.CALUNG))

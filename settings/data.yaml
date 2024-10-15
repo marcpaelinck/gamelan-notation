@@ -52,6 +52,13 @@ notation:
             fontversion: BaliMusic5
             instrumentgroup: GONG_KEBYAR
             gong_at_end: false
+        cendrawasih-channels:
+            subfolder: cendrawasih
+            file: Cendrawasih_complete_font5.tsv
+            midi_out_file: Cendrawasih {position}_{midiversion}_channels.mid
+            fontversion: BaliMusic5
+            instrumentgroup: GONG_KEBYAR
+            gong_at_end: false
         margapati:
             subfolder: margapati
             file: Margapati_font5.tsv

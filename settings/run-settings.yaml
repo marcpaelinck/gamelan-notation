@@ -8,7 +8,7 @@ midi:
 samples:
   instrumentgroup: GONG_KEBYAR
 notation:
-  composition: cendrawasih
+  composition: cendrawasih-channels
 soundfont:
   outputfile: viena_definitions_{midiversion}.xlsx
 switches:

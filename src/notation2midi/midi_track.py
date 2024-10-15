@@ -25,7 +25,7 @@ class MidiTrackX(MidiTrack):
         channel = get_channel_mido(self.position.instrumenttype)
         bank = get_bank_mido(self.position.instrumenttype)
         preset = get_preset_mido(self.position.instrumenttype)
-        self.append(MetaMessage("channel_prefix", channel))
+        self.append(MetaMessage("channel_prefix", channel=channel))
         self.append(Message(type="control_change", control=0, value=bank))
         self.append(Message(type="program_change", program=preset))
 
