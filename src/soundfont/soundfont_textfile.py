@@ -73,3 +73,4 @@ class SoundfontTextfile:
         outfilepath = path_without_ext + ".txt"
         with open(outfilepath, "w") as outfile:
             outfile.write(self.content)
+        return outfilepath

@@ -326,9 +326,9 @@ def validate_score(
     count_ignored_beats_with_incorrect_norot = 0
     count_ignored_beats_with_incorrect_ubitan = 0
 
-    autocorrect = settings.switches.autocorrect
-    save_corrected = settings.switches.save_corrected_to_file
-    detailed_logging = settings.switches.detailed_validation_logging
+    autocorrect = settings.options.autocorrect
+    save_corrected = settings.options.save_corrected_to_file
+    detailed_logging = settings.options.detailed_validation_logging
 
     filler = next(
         note

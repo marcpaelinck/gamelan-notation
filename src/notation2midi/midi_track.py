@@ -14,26 +14,32 @@ from src.settings.settings import BASE_NOTE_TIME, BASE_NOTES_PER_BEAT
 
 
 class MidiTrackX(MidiTrack):
+    name: str
     position: InstrumentPosition
-    font: NotationFont
+    instrumenttype: InstrumentType
+    channel: int
+    bank: int
+    preset: int
     last_note_end_msg = None
     time_since_last_note_end: int = 0
     current_bpm: int = 0
     current_signature: int = 0
 
     def set_channel_bank_and_preset(self):
-        channel = get_channel_mido(self.position.instrumenttype)
-        bank = get_bank_mido(self.position.instrumenttype)
-        preset = get_preset_mido(self.position.instrumenttype)
-        self.append(MetaMessage("channel_prefix", channel=channel))
-        self.append(Message(type="control_change", control=0, value=bank))
-        self.append(Message(type="program_change", program=preset))
+        self.append(MetaMessage("track_name", name=self.name, time=0))
+        self.append(Message(type="control_change", control=0, value=self.bank, channel=self.channel))
+        # self.append(Message(type="control_change", control=32, value=self.bank, channel=self.channel))
+        # self.append(Message(type="program_change", program=self.preset, channel=self.channel))
 
-    def __init__(self, position: InstrumentPosition, font: NotationFont):
+    def __init__(self, position: InstrumentPosition):
         super(MidiTrackX, self).__init__()
-        self.font = font
+        self.name = position.value
         self.position = position
+        self.channel = get_channel_mido(self.position.instrumenttype)
+        self.bank = get_bank_mido(self.position.instrumenttype)
+        self.preset = get_preset_mido(self.position.instrumenttype)
         self.set_channel_bank_and_preset()
+        print(f"Track {self.name}: channel{self.channel}, bank{self.bank}, preset{self.preset}")
 
     def total_tick_time(self):
         return sum(msg.time for msg in self)
@@ -88,6 +94,7 @@ class MidiTrackX(MidiTrack):
                     note=midinote.midinote,
                     velocity=character.velocity,
                     time=self.time_since_last_note_end,
+                    channel=self.channel,
                 )
             )
             self.append(
@@ -96,6 +103,7 @@ class MidiTrackX(MidiTrack):
                     note=midinote.midinote,
                     velocity=70,
                     time=round(character.duration * BASE_NOTE_TIME),
+                    channel=self.channel,
                 )
             )
             self.last_note_end_msg = self[-1]

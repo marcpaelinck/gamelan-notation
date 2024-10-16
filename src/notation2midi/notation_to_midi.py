@@ -63,8 +63,7 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrackX:
             for beat in gongan.beats:
                 beat._pass_ = 0
 
-    track = MidiTrackX(position, score.settings.font)
-    track.append(MetaMessage("track_name", name=position.value, time=0))
+    track = MidiTrackX(position)
 
     reset_pass_counters()
     beat = score.gongans[0].beats[0]
@@ -381,7 +380,9 @@ def create_midifile(score: Score) -> None:
         track = notation_to_track(score, position)
         mid.tracks.append(track)
     add_attenuation_time(mid.tracks, seconds=ATTENUATION_SECONDS_AFTER_MUSIC_END)
-    mid.save(outfilepathfmt.format(position="", midiversion=score.settings.midi.midiversion, ext="mid"))
+    outfilepath = outfilepathfmt.format(position="", midiversion=score.settings.midi.midiversion, ext="mid")
+    mid.save(outfilepath)
+    print(f"File saved as {outfilepath}")
 
 
 def convert_notation_to_midi():
@@ -390,13 +391,13 @@ def convert_notation_to_midi():
     """
     run_settings = get_run_settings()
     read_settings(run_settings)
-    if run_settings.switches.validate_settings:
+    if run_settings.options.validate_settings:
         validate_settings(run_settings)
 
     score = create_score_object_model(run_settings)
     validate_score(score=score, settings=run_settings)
 
-    if run_settings.switches.create_midifile:
+    if run_settings.options.create_midifile:
         create_midifile(score)
 
 

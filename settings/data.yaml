@@ -12,6 +12,10 @@ midi:
             comment: two presets (melodic and percussion)
             midi_definition_file: gk_midinotes.tsv
             presets_file: gk_presets.tsv
+        GONG_KEBYAR2:
+            comment: three presets (percussion, metallophones, melodic gongs)
+            midi_definition_file: gk_midinotes2.tsv
+            presets_file: gk_presets2.tsv
 font:
     folder: ./data/font
     fontversion:
@@ -56,6 +60,13 @@ notation:
             subfolder: cendrawasih
             file: Cendrawasih_complete_font5.tsv
             midi_out_file: Cendrawasih {position}_{midiversion}_channels.mid
+            fontversion: BaliMusic5
+            instrumentgroup: GONG_KEBYAR
+            gong_at_end: false
+        cendrawasih-nochannels:
+            subfolder: cendrawasih
+            file: Cendrawasih_complete_font5.tsv
+            midi_out_file: Cendrawasih {position}_{midiversion}_nochannels.mid
             fontversion: BaliMusic5
             instrumentgroup: GONG_KEBYAR
             gong_at_end: false

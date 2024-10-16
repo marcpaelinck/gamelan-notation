@@ -125,7 +125,7 @@ def get_run_settings() -> RunSettings:
     INSTRUMENTS = "instruments"
     FONT = "font"
     SOUNDFONT = "soundfont"
-    SWITCHES = "switches"
+    OPTIONS = "options"
     COMPOSITION = "composition"
     INSTRUMENTGROUP = "instrumentgroup"
     MIDIVERSION = "midiversion"
@@ -160,7 +160,7 @@ def get_run_settings() -> RunSettings:
         RunSettings.SoundfontInfo, data_dict[SOUNDFONT] | run_settings_dict[SOUNDFONT]
     )
 
-    settings_dict[SWITCHES] = get_settings_fields(RunSettings.Switches, run_settings_dict[SWITCHES])
+    settings_dict[OPTIONS] = get_settings_fields(RunSettings.Options, run_settings_dict[OPTIONS])
 
     return RunSettings.model_validate(settings_dict)
 

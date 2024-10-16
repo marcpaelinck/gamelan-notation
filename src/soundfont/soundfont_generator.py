@@ -111,16 +111,17 @@ def create_soundfont_file():
     All settings are read from the (YAML) settings files.
     """
     run_settings = get_run_settings()
-    if run_settings.switches.validate_settings:
+    if run_settings.options.validate_settings:
         validate_settings(run_settings)
 
     midi_dict = get_midi_dict(run_settings)
     preset_dict = get_preset_dict(run_settings, midi_dict.keys())
 
     # workbook = SoundfontWorkbook(midi_dict=midi_dict, preset_dict=preset_dict, settings=run_settings)
-    workbook = SoundfontTextfile(midi_dict=midi_dict, preset_dict=preset_dict, settings=run_settings)
-    workbook.create_soundfont_definition()
-    workbook.save()
+    sf_file = SoundfontTextfile(midi_dict=midi_dict, preset_dict=preset_dict, settings=run_settings)
+    sf_file.create_soundfont_definition()
+    filepath = sf_file.save()
+    print(f"SoundFont definition saved to {filepath}")
 
 
 if __name__ == "__main__":

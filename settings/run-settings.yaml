@@ -1,19 +1,19 @@
 ---
-# The settings below (except for switches) refer to values in the data.yaml file.
-# The font setting is contained in the selected notation component.
+# The settings below (except for options) refer to values in the data.yaml file.
+# The font selection is defined in the details of the selected notation component (see data.yaml file).
 instruments: 
   instrumentgroup: GONG_KEBYAR
 midi:
-  midiversion: GONG_KEBYAR1
+  midiversion: GONG_KEBYAR2
 samples:
   instrumentgroup: GONG_KEBYAR
 notation:
   composition: cendrawasih-channels
 soundfont:
   outputfile: viena_definitions_{midiversion}.xlsx
-switches:
+options:
   validate_settings : true
-  detailed_validation_logging : true
+  detailed_validation_logging : false
   autocorrect : true
   save_corrected_to_file : false
   create_midifile : true

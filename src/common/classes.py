@@ -293,7 +293,7 @@ class RunSettings(BaseModel):
         def filepath(self):
             return os.path.join(self.folder, self.outputfile)
 
-    class Switches(BaseModel):
+    class Options(BaseModel):
         validate_settings: bool
         detailed_validation_logging: bool
         autocorrect: bool
@@ -306,7 +306,7 @@ class RunSettings(BaseModel):
     instruments: InstrumentInfo
     font: FontInfo
     soundfont: SoundfontInfo
-    switches: Switches
+    options: Options
 
 
 @dataclass
