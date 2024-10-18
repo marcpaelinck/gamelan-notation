@@ -15,6 +15,7 @@ from src.common.constants import (
     Stroke,
 )
 from src.common.lookups import (
+    MIDINOTE_LOOKUP,
     NOTE_LIST,
     POSITION_TO_RANGE_LOOKUP,
     PRESET_LOOKUP,
@@ -34,7 +35,7 @@ from src.settings.settings import (
 )
 
 
-def read_settings(run_settings: RunSettings) -> None:
+def initialize_lookups(run_settings: RunSettings) -> None:
     """Initializes lookup dicts and lists from settings files
 
     Args:
@@ -50,9 +51,14 @@ def read_settings(run_settings: RunSettings) -> None:
             run_settings.instruments.instrumentgroup, run_settings.midi.presets_filepath
         )
     )
-    midinotes_list = create_midinote_list(
-        run_settings.instruments.instrumentgroup, fromfile=run_settings.midi.notes_filepath, preset_lookup=PRESET_LOOKUP
+    MIDINOTE_LOOKUP.update(
+        create_instrumentposition_to_midinote_lookup(
+            run_settings.instruments.instrumentgroup,
+            fromfile=run_settings.midi.notes_filepath,
+            preset_lookup=PRESET_LOOKUP,
+        )
     )
+    midinotes_list = [note for notelist in MIDINOTE_LOOKUP.values() for note in notelist]
     SYMBOLVALUE_TO_MIDINOTE_LOOKUP.update(create_symbolvalue_to_midinote_lookup(midinotes_list))
     POSITION_TO_RANGE_LOOKUP.update(create_position_range_lookup(midinotes_list))
     TAG_TO_POSITION_LOOKUP.update(create_tag_to_position_lookup(run_settings.instruments.tag_filepath))
@@ -169,9 +175,9 @@ def create_symbol_to_note_lookup(fromfile: str) -> dict[str, Note]:
     return {note.symbol: note for note in balifont}
 
 
-def create_midinote_list(
+def create_instrumentposition_to_midinote_lookup(
     instrumentgroup: InstrumentGroup, fromfile: str, preset_lookup: dict[InstrumentType, Preset]
-) -> list[MidiNote]:
+) -> tuple[dict[InstrumentType, MidiNote], list[MidiNote]]:
     midinotes_df = pd.read_csv(fromfile, sep="\t", comment="#")
     # Convert pre-filled positions to a list of InstrumentPosition values.
     # Fill in empty position fields with all positions for the instrument type.
@@ -182,7 +188,7 @@ def create_midinote_list(
     # Treat missing values
     midinotes_df[MidiNotesFields.OCTAVE] = midinotes_df[MidiNotesFields.OCTAVE].replace(np.nan, value="NONE")
     midinotes_df[MidiNotesFields.REMARK] = midinotes_df[MidiNotesFields.REMARK].replace(np.nan, value="")
-    midinotes_df[MidiNotesFields.SAMPLE] = midinotes_df[MidiNotesFields.REMARK].replace(np.nan, value="")
+    midinotes_df[MidiNotesFields.SAMPLE] = midinotes_df[MidiNotesFields.SAMPLE].replace(np.nan, value="")
     # Look up preset information in preset_lookup dict
     midinotes_df[MidiNotesFields.PRESET.value] = midinotes_df[MidiNotesFields.INSTRUMENTTYPE].apply(
         lambda x: preset_lookup.get(x, None)
@@ -194,7 +200,12 @@ def create_midinote_list(
         .to_dict(orient="records")
     )
     # Convert to MidiNote objects
-    return [MidiNote.model_validate(midinote) for midinote in midinotes_dict]
+    midinotes = [MidiNote.model_validate(midinote) for midinote in midinotes_dict]
+    instumenttypes = {midinote.instrumenttype for midinote in midinotes}
+    return {
+        instrumenttype: [midinote for midinote in midinotes if midinote.instrumenttype == instrumenttype]
+        for instrumenttype in instumenttypes
+    }
 
 
 def create_instrumentposition_to_preset_lookup(
@@ -251,7 +262,4 @@ def create_tag_to_position_lookup(fromfile: str) -> dict[InstrumentTag, list[Ins
 
 if __name__ == "__main__":
     settings = get_run_settings()
-    read_settings(settings)
-    from src.common.lookups import get_channel_mido
-
-    print(get_channel_mido(InstrumentType.CALUNG))
+    initialize_lookups(settings)

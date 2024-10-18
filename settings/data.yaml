@@ -52,21 +52,7 @@ notation:
         cendrawasih:
             subfolder: cendrawasih
             file: Cendrawasih_complete_font5.tsv
-            midi_out_file: Cendrawasih {position}_{midiversion}.mid
-            fontversion: BaliMusic5
-            instrumentgroup: GONG_KEBYAR
-            gong_at_end: false
-        cendrawasih-channels:
-            subfolder: cendrawasih
-            file: Cendrawasih_complete_font5.tsv
             midi_out_file: Cendrawasih {position}_{midiversion}_channels.mid
-            fontversion: BaliMusic5
-            instrumentgroup: GONG_KEBYAR
-            gong_at_end: false
-        cendrawasih-nochannels:
-            subfolder: cendrawasih
-            file: Cendrawasih_complete_font5.tsv
-            midi_out_file: Cendrawasih {position}_{midiversion}_nochannels.mid
             fontversion: BaliMusic5
             instrumentgroup: GONG_KEBYAR
             gong_at_end: false
@@ -96,6 +82,13 @@ notation:
             file: demo.tsv
             midi_out_file: Demo {position}_{midiversion}.mid
             fontversion: BaliMusic4
+            instrumentgroup: GONG_KEBYAR
+            gong_at_end: false
+        preset-test:
+            subfolder: test
+            file: bank-preset-test.tsv
+            midi_out_file: Bank-Preset test {position}_{midiversion}.mid
+            fontversion: BaliMusic5
             instrumentgroup: GONG_KEBYAR
             gong_at_end: false
 

@@ -1,6 +1,6 @@
 from mido import Message, MetaMessage, MidiTrack, bpm2tempo
 
-from src.common.classes import Note
+from src.common.classes import Note, Preset
 from src.common.constants import (
     InstrumentPosition,
     InstrumentType,
@@ -8,7 +8,6 @@ from src.common.constants import (
     Pitch,
     Stroke,
 )
-from src.common.lookups import get_bank_mido, get_channel_mido, get_preset_mido
 from src.common.utils import SYMBOLVALUE_TO_MIDINOTE_LOOKUP
 from src.settings.settings import BASE_NOTE_TIME, BASE_NOTES_PER_BEAT
 
@@ -27,37 +26,22 @@ class MidiTrackX(MidiTrack):
 
     def set_channel_bank_and_preset(self):
         self.append(MetaMessage("track_name", name=self.name, time=0))
-        self.append(Message(type="control_change", control=0, value=self.bank, channel=self.channel))
-        # self.append(Message(type="control_change", control=32, value=self.bank, channel=self.channel))
-        # self.append(Message(type="program_change", program=self.preset, channel=self.channel))
+        self.append(Message(type="control_change", skip_checks=True, control=0, value=self.bank, channel=self.channel))
+        self.append(Message(type="control_change", control=32, value=self.preset, channel=self.channel))
+        self.append(Message(type="program_change", program=0, channel=self.channel))
 
-    def __init__(self, position: InstrumentPosition):
+    def __init__(self, position: InstrumentPosition, preset: Preset):
         super(MidiTrackX, self).__init__()
         self.name = position.value
         self.position = position
-        self.channel = get_channel_mido(self.position.instrumenttype)
-        self.bank = get_bank_mido(self.position.instrumenttype)
-        self.preset = get_preset_mido(self.position.instrumenttype)
+        self.channel = preset.channel
+        self.bank = preset.bank
+        self.preset = preset.preset
         self.set_channel_bank_and_preset()
-        print(f"Track {self.name}: channel{self.channel}, bank{self.bank}, preset{self.preset}")
+        # print(f"Track {self.name}: channel {self.channel}, bank {self.bank}, preset {self.preset}")
 
     def total_tick_time(self):
         return sum(msg.time for msg in self)
-
-    # def update_signature(self, new_signature) -> None:
-    #     if new_signature != self.current_signature:
-    #         self.append(
-    #             MetaMessage(
-    #                 "time_signature",
-    #                 numerator=round(new_signature),
-    #                 denominator=4,
-    #                 clocks_per_click=36,
-    #                 notated_32nd_notes_per_beat=8,
-    #                 time=self.time_since_last_note_end,
-    #             )
-    #         )
-    #         self.time_since_last_note_end = 0
-    #         self.current_signature = new_signature
 
     def update_tempo(self, new_bpm, debug=False):
         if debug:

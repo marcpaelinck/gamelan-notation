@@ -114,9 +114,9 @@ class Note(NotationModel):
 class Preset(NotationModel):
     # See http://www.synthfont.com/The_Definitions_File.pdf
     instrumenttype: InstrumentType
-    bank: int  # 1..128, where 128 is reserved for percussion instruments.
-    preset: int  # 1..128
-    channel: int  # 1..16
+    bank: int  # 0..127, where 127 is reserved for percussion instruments.
+    preset: int  # 0..127
+    channel: int  # 0..15
     preset_name: str
 
 
@@ -223,6 +223,49 @@ class Beat:
 
 
 @dataclass
+class Gongan:
+    # A set of beats.
+    # A Gongan consists of a set of instrument parts.
+    # Gongans in the input file are separated from each other by an empty line.
+    id: int
+    beats: list[Beat] = field(default_factory=list)
+    beat_duration: int = 4
+    gongantype: GonganType = GonganType.REGULAR
+    metadata: list[MetaData] = field(default_factory=list)
+    comments: list[str] = field(default_factory=list)
+    _pass_: PASS = 0  # Counts the number of times the gongan is passed during generation of MIDI file.
+
+    def get_metadata(self, cls: MetaDataType):
+        return next((meta.data for meta in self.metadata if isinstance(meta.data, cls)), None)
+
+
+@dataclass
+class FlowInfo:
+    # Keeps track of statements that modify the sequence of
+    # gongans or beats in the score. The main purpose of this
+    # class is to keep track of gotos that point to labels that
+    # have not yet been encountered while processing the score.
+    labels: dict[str, Beat] = field(default_factory=dict)
+    gotos: dict[str, tuple[Gongan, GoToMeta]] = field(default_factory=lambda: defaultdict(list))
+
+
+@dataclass
+class Score:
+    settings: "RunSettings"
+    instrument_positions: set[InstrumentPosition] = None
+    gongans: list[Gongan] = field(default_factory=list)
+    balimusic_font_dict: dict[str, Note] = None
+    midi_notes_dict: dict[tuple[InstrumentPosition, Pitch, Octave, Stroke], MidiNote] = None
+    position_range_lookup: dict[InstrumentPosition, tuple[Pitch, Octave, Stroke]] = None
+    flowinfo: FlowInfo = field(default_factory=FlowInfo)
+
+
+#
+# # RUN SETTINGS
+#
+
+
+@dataclass
 class RunSettings(BaseModel):
     class NotationInfo(BaseModel):
         folder: str
@@ -294,12 +337,21 @@ class RunSettings(BaseModel):
             return os.path.join(self.folder, self.outputfile)
 
     class Options(BaseModel):
-        validate_settings: bool
-        detailed_validation_logging: bool
-        autocorrect: bool
-        save_corrected_to_file: bool
-        create_midifile: bool
+        class NotationToMidiOptions(BaseModel):
+            run: bool
+            detailed_validation_logging: bool
+            autocorrect: bool
+            save_corrected_to_file: bool
+            create_midifile: bool
 
+        class SoundfontOptions(BaseModel):
+            run: bool
+
+        validate_settings: bool
+        notation_to_midi: NotationToMidiOptions
+        soundfont: SoundfontOptions
+
+    # attributes of class RunSettings
     notation: NotationInfo
     midi: MidiInfo
     samples: SampleInfo
@@ -307,41 +359,3 @@ class RunSettings(BaseModel):
     font: FontInfo
     soundfont: SoundfontInfo
     options: Options
-
-
-@dataclass
-class Gongan:
-    # A set of beats.
-    # A Gongan consists of a set of instrument parts.
-    # Gongans in the input file are separated from each other by an empty line.
-    id: int
-    beats: list[Beat] = field(default_factory=list)
-    beat_duration: int = 4
-    gongantype: GonganType = GonganType.REGULAR
-    metadata: list[MetaData] = field(default_factory=list)
-    comments: list[str] = field(default_factory=list)
-    _pass_: PASS = 0  # Counts the number of times the gongan is passed during generation of MIDI file.
-
-    def get_metadata(self, cls: MetaDataType):
-        return next((meta.data for meta in self.metadata if isinstance(meta.data, cls)), None)
-
-
-@dataclass
-class FlowInfo:
-    # Keeps track of statements that modify the sequence of
-    # gongans or beats in the score. The main purpose of this
-    # class is to keep track of gotos that point to labels that
-    # have not yet been encountered while processing the score.
-    labels: dict[str, Beat] = field(default_factory=dict)
-    gotos: dict[str, tuple[Gongan, GoToMeta]] = field(default_factory=lambda: defaultdict(list))
-
-
-@dataclass
-class Score:
-    settings: RunSettings
-    instrument_positions: set[InstrumentPosition] = None
-    gongans: list[Gongan] = field(default_factory=list)
-    balimusic_font_dict: dict[str, Note] = None
-    midi_notes_dict: dict[tuple[InstrumentPosition, Pitch, Octave, Stroke], MidiNote] = None
-    position_range_lookup: dict[InstrumentPosition, tuple[Pitch, Octave, Stroke]] = None
-    flowinfo: FlowInfo = field(default_factory=FlowInfo)

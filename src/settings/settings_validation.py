@@ -66,7 +66,7 @@ def check_font_midi_match(run_settings: RunSettings) -> None:
         print(f"ALL CHARACTERS HAVE A CORRESPONDING NOTE IN THE MIDINOTES DEFINITION FOR {instrumentgroup}.")
 
 
-def validate_settings(run_settings: RunSettings):
+def validate_input_data(run_settings: RunSettings):
     print("======== SETTINGS VALIDATION ========")
     check_unique_character_values(run_settings)
     print("-------------------------------------")

@@ -73,6 +73,7 @@ class PresetsFields(SStrEnum):
     INSTRUMENTTYPE = "instrumenttype"
     BANK = "bank"
     PRESET = "preset"
+    CHANNEL = "channel"
     PRESET_NAME = "preset_name"
 
 

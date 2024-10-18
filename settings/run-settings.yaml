@@ -8,12 +8,16 @@ midi:
 samples:
   instrumentgroup: GONG_KEBYAR
 notation:
-  composition: cendrawasih-channels
+  composition: cendrawasih
 soundfont:
   outputfile: viena_definitions_{midiversion}.xlsx
 options:
   validate_settings : true
-  detailed_validation_logging : false
-  autocorrect : true
-  save_corrected_to_file : false
-  create_midifile : true
+  notation_to_midi:
+    run: true
+    detailed_validation_logging : false
+    autocorrect : true
+    save_corrected_to_file : false
+    create_midifile : true
+  soundfont:
+    run: false

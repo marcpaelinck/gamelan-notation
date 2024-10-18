@@ -10,10 +10,11 @@ from collections import defaultdict
 
 import numpy as np
 import pandas as pd
-from mido import MetaMessage, MidiFile
+from mido import MidiFile
 
 from src.common.classes import Beat, Gongan, RunSettings, Score
 from src.common.constants import DEFAULT, InstrumentPosition, Pitch, Stroke
+from src.common.lookups import PRESET_LOOKUP
 from src.common.metadata_classes import (
     GonganMeta,
     GoToMeta,
@@ -32,7 +33,7 @@ from src.common.utils import (
     SYMBOLVALUE_TO_MIDINOTE_LOOKUP,
     TAG_TO_POSITION_LOOKUP,
     create_rest_stave,
-    read_settings,
+    initialize_lookups,
 )
 from src.notation2midi.font_specific_code import postprocess
 from src.notation2midi.midi_track import MidiTrackX
@@ -44,7 +45,7 @@ from src.settings.settings import (
     NON_INSTRUMENT_TAGS,
     get_run_settings,
 )
-from src.settings.settings_validation import validate_settings
+from src.settings.settings_validation import validate_input_data
 
 
 def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrackX:
@@ -63,7 +64,7 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrackX:
             for beat in gongan.beats:
                 beat._pass_ = 0
 
-    track = MidiTrackX(position)
+    track = MidiTrackX(position, PRESET_LOOKUP[position.instrumenttype])
 
     reset_pass_counters()
     beat = score.gongans[0].beats[0]
@@ -385,21 +386,20 @@ def create_midifile(score: Score) -> None:
     print(f"File saved as {outfilepath}")
 
 
-def convert_notation_to_midi():
+def convert_notation_to_midi(run_settings: RunSettings):
     """This method does all the work.
     All settings are read from the (YAML) settings files.
     """
-    run_settings = get_run_settings()
-    read_settings(run_settings)
-    if run_settings.options.validate_settings:
-        validate_settings(run_settings)
-
+    print("======== NOTATION TO MIDI CONVERSION ========")
+    print(f"input file: {run_settings.notation.file}")
+    initialize_lookups(run_settings)
     score = create_score_object_model(run_settings)
     validate_score(score=score, settings=run_settings)
 
-    if run_settings.options.create_midifile:
+    if run_settings.options.notation_to_midi.create_midifile:
         create_midifile(score)
+    print("=====================================")
 
 
 if __name__ == "__main__":
-    convert_notation_to_midi()
+    ...

@@ -304,7 +304,7 @@ def validate_score(
     Args:
         score (Score): the score to analyze.
     """
-    print("========= SCORE VALIDATION =========")
+    print("--- SCORE VALIDATION ---")
     beats_with_length_not_pow2 = []
     beats_with_unequal_stave_lengths = []
     beats_with_note_out_of_instrument_range = []
@@ -326,9 +326,9 @@ def validate_score(
     count_ignored_beats_with_incorrect_norot = 0
     count_ignored_beats_with_incorrect_ubitan = 0
 
-    autocorrect = settings.options.autocorrect
-    save_corrected = settings.options.save_corrected_to_file
-    detailed_logging = settings.options.detailed_validation_logging
+    autocorrect = settings.options.notation_to_midi.autocorrect
+    save_corrected = settings.options.notation_to_midi.save_corrected_to_file
+    detailed_logging = settings.options.notation_to_midi.detailed_validation_logging
 
     filler = next(
         note
@@ -388,7 +388,7 @@ def validate_score(
         pprint(corrected_invalid_kempyung)
     print("remaining invalids:")
     pprint(beats_with_incorrect_kempyung)
-    print("====================================")
+    print("---------------------")
 
     if save_corrected:
         score_to_notation_file(score)
