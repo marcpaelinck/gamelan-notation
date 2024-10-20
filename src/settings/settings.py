@@ -8,6 +8,9 @@ from pydantic import BaseModel
 
 from src.common.classes import RunSettings
 from src.common.constants import NotationFont
+from src.common.logger import get_logger
+
+logger = get_logger(__name__)
 
 BASE_NOTE_TIME = 24
 BASE_NOTES_PER_BEAT = 4

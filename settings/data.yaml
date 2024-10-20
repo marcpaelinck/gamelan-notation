@@ -16,6 +16,10 @@ midi:
             comment: three presets (percussion, metallophones, melodic gongs)
             midi_definition_file: gk_midinotes2.tsv
             presets_file: gk_presets2.tsv
+        GONG_KEBYAR3:
+            comment: one preset for each instrument
+            midi_definition_file: gk_midinotes3.tsv
+            presets_file: gk_presets3.tsv
 font:
     folder: ./data/font
     fontversion:

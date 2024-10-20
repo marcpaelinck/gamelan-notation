@@ -7,6 +7,9 @@ from mido import MidiFile
 
 from src.common.classes import TimedMessage, TimingData
 from src.common.constants import FROM_PIANO, MIDI_TO_COURIER, VALID_MIDI_MESSAGE_TYPES
+from src.common.logger import get_logger
+
+logger = get_logger(__name__)
 
 # datafolder = ".\\data\\puspanjali\\"
 datafolder = ".\\data\\cendrawasih\\"
@@ -182,4 +185,4 @@ if __name__ == "__main__":
     s_gongans = ["|".join("".join([note for note in beat]) for beat in gongan) for gongan in grouping_sangsih]
 
     notation = "\n\n".join("\n".join((p_gongan, s_gongan)) for (p_gongan, s_gongan) in zip(p_gongans, s_gongans))
-    print(notation)
+    logger.info(notation)

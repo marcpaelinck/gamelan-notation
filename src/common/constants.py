@@ -1,5 +1,8 @@
-from enum import Enum, StrEnum, auto
-from typing import Any
+from enum import StrEnum
+
+from src.common.logger import get_logger
+
+logger = get_logger(__name__)
 
 BPM = int
 PASS = int
@@ -182,4 +185,4 @@ VALID_MIDI_MESSAGE_TYPES = ["note_on", "note_off", "rest"]
 
 
 if __name__ == "__main__":
-    print(InstrumentType.CALUNG.sequence)
+    logger.info(InstrumentType.CALUNG.sequence)

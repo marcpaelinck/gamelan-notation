@@ -4,11 +4,11 @@
 instruments: 
   instrumentgroup: GONG_KEBYAR
 midi:
-  midiversion: GONG_KEBYAR2
+  midiversion: GONG_KEBYAR3
 samples:
   instrumentgroup: GONG_KEBYAR
 notation:
-  composition: cendrawasih
+  composition: preset-test
 soundfont:
   outputfile: viena_definitions_{midiversion}.xlsx
 options:
@@ -20,4 +20,4 @@ options:
     save_corrected_to_file : false
     create_midifile : true
   soundfont:
-    run: false
+    run: true

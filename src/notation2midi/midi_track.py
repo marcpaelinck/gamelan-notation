@@ -8,8 +8,11 @@ from src.common.constants import (
     Pitch,
     Stroke,
 )
+from src.common.logger import get_logger
 from src.common.utils import SYMBOLVALUE_TO_MIDINOTE_LOOKUP
 from src.settings.settings import BASE_NOTE_TIME, BASE_NOTES_PER_BEAT
+
+logger = get_logger(__name__)
 
 
 class MidiTrackX(MidiTrack):
@@ -26,9 +29,9 @@ class MidiTrackX(MidiTrack):
 
     def set_channel_bank_and_preset(self):
         self.append(MetaMessage("track_name", name=self.name, time=0))
+        # Note that MSB (control 0) seems to accept values larger than 127.
         self.append(Message(type="control_change", skip_checks=True, control=0, value=self.bank, channel=self.channel))
-        self.append(Message(type="control_change", control=32, value=self.preset, channel=self.channel))
-        self.append(Message(type="program_change", program=0, channel=self.channel))
+        self.append(Message(type="program_change", program=self.preset, channel=self.channel))
 
     def __init__(self, position: InstrumentPosition, preset: Preset):
         super(MidiTrackX, self).__init__()
@@ -38,17 +41,17 @@ class MidiTrackX(MidiTrack):
         self.bank = preset.bank
         self.preset = preset.preset
         self.set_channel_bank_and_preset()
-        # print(f"Track {self.name}: channel {self.channel}, bank {self.bank}, preset {self.preset}")
+        # logger.info(f"Track {self.name}: channel {self.channel}, bank {self.bank}, preset {self.preset}")
 
     def total_tick_time(self):
         return sum(msg.time for msg in self)
 
     def update_tempo(self, new_bpm, debug=False):
         if debug:
-            print(f"     midi_track: request received to change bpm to {new_bpm}, current bpm={self.current_bpm}")
+            logger.info(f"     midi_track: request received to change bpm to {new_bpm}, current bpm={self.current_bpm}")
         if new_bpm != self.current_bpm:
             if debug:
-                print(f"                 setting metamessage with new tempo {new_bpm}")
+                logger.info(f"                 setting metamessage with new tempo {new_bpm}")
             self.append(MetaMessage("set_tempo", tempo=bpm2tempo(new_bpm)))
             self.current_bpm = new_bpm
 
