@@ -82,9 +82,7 @@ class SoundfontTextfile:
         self._add_preset_section()
 
     def save(self):
-        outfilepath = self.settings.soundfont.filepath.format(midiversion=self.settings.midi.midiversion)
-        path_without_ext, ext = os.path.splitext(outfilepath)
-        outfilepath = path_without_ext + ".txt"
+        outfilepath = self.settings.soundfont.filepath
         with open(outfilepath, "w") as outfile:
             outfile.write(self.content)
         return outfilepath

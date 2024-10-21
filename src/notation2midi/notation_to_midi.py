@@ -376,14 +376,13 @@ def create_midifile(score: Score) -> None:
         score (Score): The object model.
         separate_files (bool, optional): If True, a separate file will be created for each instrument. Defaults to False.
     """
-    outfilepathfmt = score.settings.notation.midi_out_filepath
     mid = MidiFile(ticks_per_beat=96, type=1)
 
     for position in sorted(score.instrument_positions, key=lambda x: x.sequence):
         track = notation_to_track(score, position)
         mid.tracks.append(track)
     add_attenuation_time(mid.tracks, seconds=ATTENUATION_SECONDS_AFTER_MUSIC_END)
-    outfilepath = outfilepathfmt.format(position="", midiversion=score.settings.midi.midiversion, ext="mid")
+    outfilepath = score.settings.notation.midi_out_filepath
     mid.save(outfilepath)
     logger.info(f"File saved as {outfilepath}")
 

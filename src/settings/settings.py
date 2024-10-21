@@ -1,13 +1,12 @@
 import os
+import re
 from enum import StrEnum
-from pprint import pprint
 from typing import Any
 
 import yaml
 from pydantic import BaseModel
 
 from src.common.classes import RunSettings
-from src.common.constants import NotationFont
 from src.common.logger import get_logger
 
 logger = get_logger(__name__)
@@ -83,6 +82,34 @@ class PresetsFields(SStrEnum):
 SETTINGSFOLDER = "./settings"
 RUN_SETTINGSFILE = "run-settings.yaml"
 DATA_INFOFILE = "data.yaml"
+
+
+def post_process(subdict: dict[str, Any], run_settings_dict: dict[str, Any] = None):
+    """This function enables references to yaml key values using ${<yaml_path>} notation.
+    The function substitutes these values with the corresponding yaml settings values.
+    Does not (yet) implement usage of references within a list structure.
+
+    Args:
+        subdict (dict[str, Any]): Part of a yaml stucture in Python format.
+        run_settings_dict(dict[str, Any]): Full yaml structure in Python dict format.
+    """
+    found: re.Match
+
+    for key, value in subdict.items():
+        if isinstance(value, dict):
+            # Iterate through dict structures until a root node is found
+            subdict[key] = post_process(value, run_settings_dict or subdict)
+        elif isinstance(value, str):
+            # Only implemented for key: str items. Does not operate on list structures (yet)
+            while found := re.search(r"\$\{([\w\.]+)\}", value):
+                keys = found.group(1).split(".")
+                item = run_settings_dict
+                for key1 in keys:
+                    item = item[key1]
+                value = value.replace(found.group(0), item)
+                i = 1
+            subdict[key] = value
+    return subdict
 
 
 def read_settings(filename: str) -> dict:
@@ -166,10 +193,13 @@ def get_run_settings() -> RunSettings:
 
     settings_dict[OPTIONS] = get_settings_fields(RunSettings.Options, run_settings_dict[OPTIONS])
 
+    settings_dict = post_process(settings_dict)
+
     return RunSettings.model_validate(settings_dict)
 
 
 if __name__ == "__main__":
     # For testing
     settings = get_run_settings()
-    pprint(settings)
+    print(settings.soundfont)
+    print(settings.soundfont.sf_filepath_list)

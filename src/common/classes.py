@@ -113,10 +113,12 @@ class Note(NotationModel):
 
 class Preset(NotationModel):
     # See http://www.synthfont.com/The_Definitions_File.pdf
+    # For port, see https://github.com/spessasus/SpessaSynth/wiki/About-Multi-Port
     instrumenttype: InstrumentType
     bank: int  # 0..127, where 127 is reserved for percussion instruments.
     preset: int  # 0..127
     channel: int  # 0..15
+    port: int  # 0..255
     preset_name: str
 
 
@@ -265,7 +267,6 @@ class Score:
 #
 
 
-@dataclass
 class RunSettings(BaseModel):
     class NotationInfo(BaseModel):
         folder: str
@@ -329,12 +330,23 @@ class RunSettings(BaseModel):
 
     class SoundfontInfo(BaseModel):
         folder: str
-        sheetname: str
-        outputfile: str
+        path_to_viena_app: str
+        definition_file_out: str
+        soundfont_file_out: str
+        soundfont_destination_folders: list[str]
 
         @property
-        def filepath(self):
-            return os.path.join(self.folder, self.outputfile)
+        def def_filepath(self) -> str:
+            return os.path.normpath(
+                os.path.abspath(os.path.join(os.path.expanduser(self.folder), self.definition_file_out))
+            )
+
+        @property
+        def sf_filepath_list(self) -> list[str]:
+            return [
+                os.path.normpath(os.path.abspath(os.path.join(os.path.expanduser(folder), self.soundfont_file_out)))
+                for folder in self.soundfont_destination_folders
+            ]
 
     class Options(BaseModel):
         class NotationToMidiOptions(BaseModel):
@@ -346,6 +358,7 @@ class RunSettings(BaseModel):
 
         class SoundfontOptions(BaseModel):
             run: bool
+            create_sf2_files: bool
 
         validate_settings: bool
         notation_to_midi: NotationToMidiOptions

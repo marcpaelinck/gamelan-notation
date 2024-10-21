@@ -10,7 +10,11 @@ samples:
 notation:
   composition: preset-test
 soundfont:
-  outputfile: viena_definitions_{midiversion}.xlsx
+  definition_file_out: viena_definitions_${midi.midiversion}.txt
+  soundfont_file_out: ${midi.midiversion}.sf2
+  soundfont_destination_folders:
+    - ~/Documents/SynthFont
+    - ~/Documents/administratie/_VRIJETIJD_REIZEN/Scripts-Programmas/JavaScriptProjects/midi-player/data/soundfont
 options:
   validate_settings : true
   notation_to_midi:
@@ -21,3 +25,4 @@ options:
     create_midifile : true
   soundfont:
     run: true
+    create_sf2_files: true

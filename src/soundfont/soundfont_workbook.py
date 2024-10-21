@@ -89,5 +89,5 @@ class SoundfontWorkbook:
         self._add_preset_section()
 
     def save(self):
-        outfilepath = self.settings.soundfont.filepath.format(midiversion=self.settings.midi.midiversion)
+        outfilepath = self.settings.soundfont.filepath
         self.workbook.save(outfilepath)

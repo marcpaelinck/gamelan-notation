@@ -20,6 +20,7 @@ class MidiTrackX(MidiTrack):
     position: InstrumentPosition
     instrumenttype: InstrumentType
     channel: int
+    port: int
     bank: int
     preset: int
     last_note_end_msg = None
@@ -29,15 +30,20 @@ class MidiTrackX(MidiTrack):
 
     def set_channel_bank_and_preset(self):
         self.append(MetaMessage("track_name", name=self.name, time=0))
-        # Note that MSB (control 0) seems to accept values larger than 127.
+        self.append(MetaMessage(type="midi_port", port=self.port))
+        # Note: MSB (control 0) seems to accept values larger than 127.
         self.append(Message(type="control_change", skip_checks=True, control=0, value=self.bank, channel=self.channel))
         self.append(Message(type="program_change", program=self.preset, channel=self.channel))
+        self.append(
+            Message(type="control_change", control=7, value=65 if self.channel > 4 else 127, channel=self.channel)
+        )
 
     def __init__(self, position: InstrumentPosition, preset: Preset):
         super(MidiTrackX, self).__init__()
         self.name = position.value
         self.position = position
         self.channel = preset.channel
+        self.port = preset.port
         self.bank = preset.bank
         self.preset = preset.preset
         self.set_channel_bank_and_preset()

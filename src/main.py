@@ -6,7 +6,7 @@ from src.common.classes import RunSettings
 from src.notation2midi.notation_to_midi import convert_notation_to_midi
 from src.settings.settings import get_run_settings
 from src.settings.settings_validation import validate_input_data
-from src.soundfont.soundfont_generator import create_soundfont_file
+from src.soundfont.soundfont_generator import create_soundfont_files
 
 
 def import_run_settings() -> RunSettings:
@@ -22,4 +22,4 @@ if run_settings.options.notation_to_midi.run:
     convert_notation_to_midi(run_settings)
 
 if run_settings.options.soundfont.run:
-    create_soundfont_file(run_settings)
+    create_soundfont_files(run_settings)

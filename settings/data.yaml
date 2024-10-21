@@ -34,64 +34,65 @@ samples:
             subfolder: gong_kebyar
 soundfont:
     folder: ./data/soundfont
-    sheetname: Viena definitions
+    path_to_viena_app: C:/Program Files/Viena/Viena64.exe
 notation:
     folder: ./data/notation
     composition:
     # `gong_at_end` indicates whether the notation has the gir at the end of each gongan (Balinese concept) or at the beginning.
+    # ${midi.midiversion} will resolve to the value that is set in run-settings.yaml
         rejangdewa:
             subfolder: rejang dewa
             file: rejang dewa_font5.tsv
-            midi_out_file: Rejang Dewa {position}_{midiversion}.mid
+            midi_out_file: Rejang Dewa_${midi.midiversion}.mid
             fontversion: BaliMusic5
             instrumentgroup: GONG_KEBYAR
             gong_at_end: false
         sinomladrang:
             subfolder: sinom ladrang
             file: Sinom Ladrang_ubit4_font5.tsv
-            midi_out_file: Sinom Ladrang {position}_{midiversion}.mid
+            midi_out_file: Sinom Ladrang_${midi.midiversion}.mid
             fontversion: BaliMusic5
             instrumentgroup: GONG_KEBYAR
             gong_at_end: false
         cendrawasih:
             subfolder: cendrawasih
             file: Cendrawasih_complete_font5.tsv
-            midi_out_file: Cendrawasih {position}_{midiversion}_channels.mid
+            midi_out_file: Cendrawasih_${midi.midiversion}_channels.mid
             fontversion: BaliMusic5
             instrumentgroup: GONG_KEBYAR
             gong_at_end: false
         margapati:
             subfolder: margapati
             file: Margapati_font5.tsv
-            midi_out_file: Margapati {position}_{midiversion}.mid
+            midi_out_file: Margapati_${midi.midiversion}.mid
             fontversion: BaliMusic5
             instrumentgroup: GONG_KEBYAR
             gong_at_end: false
         margapatireyong:
             subfolder: margapati
             file: Margapati reyong_font5.tsv
-            midi_out_file: Margapati {position}_{midiversion}.mid
+            midi_out_file: Margapati_${midi.midiversion}.mid
             fontversion: BaliMusic5
             instrumentgroup: GONG_KEBYAR
             gong_at_end: false
         gendinganak2:
             subfolder: test
             file: Gending Anak-Anak.tsv
-            midi_out_file: Gending Anak-Anak {position}_{midiversion}.mid
+            midi_out_file: Gending Anak-Anak_${midi.midiversion}.mid
             fontversion: BaliMusic4
             instrumentgroup: GONG_KEBYAR
             gong_at_end: false
         demo:
             subfolder: test
             file: demo.tsv
-            midi_out_file: Demo {position}_{midiversion}.mid
+            midi_out_file: Demo_${midi.midiversion}.mid
             fontversion: BaliMusic4
             instrumentgroup: GONG_KEBYAR
             gong_at_end: false
         preset-test:
             subfolder: test
             file: bank-preset-test.tsv
-            midi_out_file: Bank-Preset test {position}_{midiversion}.mid
+            midi_out_file: Bank-Preset test_${midi.midiversion}.mid
             fontversion: BaliMusic5
             instrumentgroup: GONG_KEBYAR
             gong_at_end: false

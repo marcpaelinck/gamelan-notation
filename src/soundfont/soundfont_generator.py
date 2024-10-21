@@ -4,19 +4,27 @@
     Main method: create_soundfont_file()
 """
 
+import os
+import subprocess
+import time
+
+import pyautogui
+
 from src.common.classes import RunSettings
 from src.common.logger import get_logger
 from src.common.lookups import MIDINOTE_LOOKUP, PRESET_LOOKUP
 from src.common.utils import initialize_lookups
+from src.settings.settings import get_run_settings
 from src.soundfont.soundfont_textfile import SoundfontTextfile
-from src.soundfont.soundfont_workbook import SoundfontWorkbook
 
 logger = get_logger(__name__)
 
 
-def create_soundfont_file(run_settings: RunSettings):
-    """This method does all the work.
-    All settings are read from the (YAML) settings files.
+def create_soundfont_definition_file(run_settings: RunSettings) -> None:
+    """Creates a text file with soundfont definitions that can be imported into the Viena application.
+
+    Args:
+        run_settings (RunSettings): _description_
     """
     logger.info("======== SOUNDFONT CREATION ========")
     logger.info(f"input file: {run_settings.soundfont.sheetname}")
@@ -30,5 +38,45 @@ def create_soundfont_file(run_settings: RunSettings):
     logger.info("=====================================")
 
 
+def generate_sf2_with_viena(settings: RunSettings) -> None:
+    """Creates and saves sf2 SoundFont files using Viena. Uses Keystrokes to execute Viena menu commands.
+       Imports the SoundFont definition file and saves sf2 file(s) to the destination folder(s) in the run settings.
+
+    Args:
+        path_to_viena_app (str): _description_
+        sf2_filepaths (list[str]): _description_
+    """
+    with subprocess.Popen(settings.soundfont.path_to_viena_app) as viena:
+        time.sleep(3)
+        pyautogui.hotkey("ctrl", "f4", interval=0.1)  # Close current file (if opened)
+        pyautogui.hotkey("ctrl", "alt", "d", interval=0.1)  # Import definitions file
+        pyautogui.write(os.path.abspath(settings.soundfont.def_filepath))  # Type full path in "File name" field.
+        time.sleep(0.01)
+        pyautogui.press("enter", interval=0.1)  # Import
+        pyautogui.hotkey("enter", interval=0.1)  # Confirm create new SoundFont
+        for outfilepath in settings.soundfont.sf_filepath_list:
+            pyautogui.hotkey("shift", "ctrl", "s", interval=0.1)  # Save As ...
+            pyautogui.press("tab", interval=0.1)  #
+            pyautogui.press("tab", interval=0.1)  # Press tab twice to move cursor to File Name field.
+            pyautogui.write(outfilepath)
+            time.sleep(0.01)
+            pyautogui.press("tab", interval=0.1)  # Focus to Save button
+            pyautogui.press("enter", interval=0.1)  # Save
+            pyautogui.press("y", interval=0.1)  # Answer Y to overwrite (no effect if file does not exist)
+        viena.kill()
+
+
+def create_soundfont_files(run_settings: RunSettings) -> None:
+    """This method does all the work. Generates a soundfont definition file and creates sf2 files with the Viena application.
+
+    Args:
+        run_settings (RunSettings): _description_
+    """
+    # create_soundfont_definition_file(run_settings)
+    if run_settings.options.soundfont.create_sf2_files:
+        generate_sf2_with_viena(run_settings)
+
+
 if __name__ == "__main__":
-    ...
+    run_settings = get_run_settings()
+    create_soundfont_files(run_settings)
