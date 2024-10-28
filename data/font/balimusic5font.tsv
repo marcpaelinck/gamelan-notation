@@ -1,12 +1,12 @@
 symbol	unicode	symbol_description	balifont_symbol_description	pitch	octave	stroke	duration	rest_after	modifier	description
 (	0x0028	left round bracket	t	TUT		OPEN	1.0	0.0	NONE	kendang tut (lanang)
-)	0x0029	right round bracket	serifless u	KUNG		OPEN	1.0	0.0	NONE	kendang kung (lanang)
+)	0x0029	right round bracket	serifless u	KUNG		OPEN	1.0	0.0	NONE	kendang kung (ladon)
 *	0x002a	asterisk	p	PAK		OPEN	1.0	0.0	NONE	kendang pak (lanang)
 ,	0x002c	comma	dot under preceding note character	NONE	0	NONE	0	0	OCTAVE_0	sets octave of preceding note to 0
 -	0x002d	hyphen	dash	NONE		EXTENSION	1.0	0.0	NONE	extends note duration
 .	0x002e	period	dot	NONE		SILENCE	0.0	1.0	NONE	silence (muted note) open
 /	0x002f	forward slash	slash right of char (combining)	NONE		ABBREVIATED	0.4	0.6	ABBREVIATE	abbreviates precceding note
-0	0x0030	digit 0	serifless u upside-down	JU		OPEN	1.0	0.0	NONE	kendang ju (wadon)
+0	0x0030	digit 0	serifless n	CUNG		OPEN	1.0	0.0	NONE	kendang cung (wadon)
 8	0x0038	digit 8	k	KA		OPEN	1.0	0.0	NONE	kendang ka (wadon)
 9	0x0039	digit 9	d	DE		OPEN	1.0	0.0	NONE	kendang dé (wadon)
 :	0x003A	colon	three vertical lines above char (combining)	NONE		NONE	0	0	TREMOLO_ACCELERATING	"repeated, rapid beats on preceding note "

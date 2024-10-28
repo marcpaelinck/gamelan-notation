@@ -123,7 +123,7 @@ class Pitch(NotationEnum):
     PAK = "PAK"
     DE = "DE"
     TUT = "TUT"
-    JU = "JU"
+    CUNG = "CUNG"
     KUNG = "KUNG"
     PLAK = "PLAK"
     DAG = "DAG"

@@ -53,9 +53,7 @@ def initialize_lookups(run_settings: RunSettings) -> None:
     )
     MIDINOTE_LOOKUP.update(
         create_instrumentposition_to_midinote_lookup(
-            run_settings.instruments.instrumentgroup,
-            fromfile=run_settings.midi.notes_filepath,
-            preset_lookup=PRESET_LOOKUP,
+            run_settings.instruments.instrumentgroup, fromfile=run_settings.midi.notes_filepath
         )
     )
     midinotes_list = [note for notelist in MIDINOTE_LOOKUP.values() for note in notelist]
@@ -176,7 +174,7 @@ def create_symbol_to_note_lookup(fromfile: str) -> dict[str, Note]:
 
 
 def create_instrumentposition_to_midinote_lookup(
-    instrumentgroup: InstrumentGroup, fromfile: str, preset_lookup: dict[InstrumentType, Preset]
+    instrumentgroup: InstrumentGroup, fromfile: str
 ) -> tuple[dict[InstrumentType, MidiNote], list[MidiNote]]:
     midinotes_df = pd.read_csv(fromfile, sep="\t", comment="#")
     # Convert pre-filled positions to a list of InstrumentPosition values.
@@ -190,9 +188,10 @@ def create_instrumentposition_to_midinote_lookup(
     midinotes_df[MidiNotesFields.REMARK] = midinotes_df[MidiNotesFields.REMARK].replace(np.nan, value="")
     midinotes_df[MidiNotesFields.SAMPLE] = midinotes_df[MidiNotesFields.SAMPLE].replace(np.nan, value="")
     # Look up preset information in preset_lookup dict
-    midinotes_df[MidiNotesFields.PRESET.value] = midinotes_df[MidiNotesFields.INSTRUMENTTYPE].apply(
-        lambda x: preset_lookup.get(x, None)
-    )
+    # PRESET VALUE IS NEVER USED!
+    # midinotes_df[MidiNotesFields.PRESET.value] = midinotes_df[MidiNotesFields.INSTRUMENTTYPE].apply(
+    #     lambda x: preset_lookup.get(x, None)
+    # )
     # Drop unrequired instrument groups and convert to dict
     midinotes_dict = (
         midinotes_df[midinotes_df[MidiNotesFields.INSTRUMENTGROUP] == instrumentgroup.value]
@@ -212,13 +211,22 @@ def create_instrumentposition_to_preset_lookup(
     instrumentgroup: InstrumentGroup, fromfile: str
 ) -> dict[InstrumentType, Preset]:
     presets_df = pd.read_csv(fromfile, sep="\t", quoting=csv.QUOTE_NONE)
+    # Fill in empty position fields with a list of all positions for the instrument type.
+    # Then "explode" (repeat row for each element in the position list)
+    # TODO not yet working!!!!
+    mask = presets_df[PresetsFields.POSITION].isnull()
+    presets_df.loc[mask, PresetsFields.POSITION] = presets_df.loc[mask, PresetsFields.INSTRUMENTTYPE].apply(
+        lambda x: [p for p in InstrumentPosition if p.instrumenttype == x]
+    )
+    presets_df = presets_df.explode(column=PresetsFields.POSITION, ignore_index=True)
+    # Create a dict and cast items to Preset objects.
     presets_obj = (
         presets_df[presets_df[PresetsFields.INSTRUMENTGROUP] == instrumentgroup.value]
         .drop(PresetsFields.INSTRUMENTGROUP, axis="columns")
         .to_dict(orient="records")
     )
     presets = [Preset.model_validate(preset) for preset in presets_obj]
-    return {preset.instrumenttype: preset for preset in presets}
+    return {preset.position: preset for preset in presets}
 
 
 def create_symbolvalue_to_midinote_lookup(

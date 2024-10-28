@@ -35,7 +35,7 @@ class MidiTrackX(MidiTrack):
         self.append(Message(type="control_change", skip_checks=True, control=0, value=self.bank, channel=self.channel))
         self.append(Message(type="program_change", program=self.preset, channel=self.channel))
         self.append(
-            Message(type="control_change", control=7, value=65 if self.channel > 4 else 127, channel=self.channel)
+            Message(type="control_change", control=7, value=127 if self.channel > 4 else 127, channel=self.channel)
         )
 
     def __init__(self, position: InstrumentPosition, preset: Preset):

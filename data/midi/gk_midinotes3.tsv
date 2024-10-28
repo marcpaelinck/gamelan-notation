@@ -1,6 +1,6 @@
 instrumentgroup	instrumenttype	positions	pitch	octave	stroke	remark	midinote	sample
-GONG_KEBYAR	GONGS		GIR		OPEN		1	Gong OPEN.wav
-GONG_KEBYAR	GONGS		PUR		OPEN		2	Kempur OPEN.wav
+GONG_KEBYAR	GONGS		GIR		OPEN		1	Gong OPEN_sonic.wav
+GONG_KEBYAR	GONGS		PUR		OPEN		2	Kempur OPEN_sonic.wav
 GONG_KEBYAR	GONGS		TONG		OPEN		3	Kemong OPEN.wav
 GONG_KEBYAR	KEMPLI		TICK		OPEN		1	Kempli MUTED.wav
 GONG_KEBYAR	CENGCENG		OPEN		OPEN		1	Cengceng OPEN.wav

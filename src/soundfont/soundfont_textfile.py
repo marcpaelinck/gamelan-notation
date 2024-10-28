@@ -1,29 +1,51 @@
+"""Generates the content of the soundfont definition file.
+Using a separate class for this makes it easy to create an other format
+by creating another class.
+
+Returns:
+    _type_: _description_
+"""
+
 import os
 
 from src.common.classes import MidiNote, Preset, RunSettings
-from src.common.constants import InstrumentType, MidiDict
-from src.soundfont.utils import sample_name
+from src.common.constants import InstrumentPosition, InstrumentType, MidiDict
+from src.soundfont.utils import sample_name_lookup, sample_notes_lookup, truncated_name
+
+SampleFileName = str
+SampleName = str
 
 
 class SoundfontTextfile:
     content: str = ""
-    midi_dict: dict[InstrumentType, list[MidiNote]]
-    preset_dict: dict[InstrumentType, Preset]
+    type_to_midi_dict: dict[InstrumentType, list[MidiNote]]
+    pos_to_midi_dict: dict[InstrumentPosition, list[MidiNote]]
+    sample_name_lookup: dict[SampleFileName, SampleName]
+    preset_dict: dict[InstrumentPosition, Preset]
     settings: RunSettings
 
     def __init__(
         self,
         midi_dict: dict[InstrumentType, list[MidiNote]],
-        preset_dict: dict[InstrumentType, Preset],
+        preset_dict: dict[InstrumentPosition, Preset],
         settings: RunSettings,
     ):
-        self.midi_dict = {
+        self.type_to_midi_dict = {
             instr: [note for note in notes if note.sample]
             for instr, notes in midi_dict.items()
             if any(note.sample for note in notes)
         }
-        self.preset_dict = {instr: preset for instr, preset in preset_dict.items() if instr in self.midi_dict.keys()}
+        self.pos_to_midi_dict = {
+            pos: notes
+            for i_type, notes in self.type_to_midi_dict.items()
+            for pos in InstrumentPosition
+            if pos.instrumenttype == i_type
+        }
+        self.preset_dict = {
+            pos: preset for pos, preset in preset_dict.items() if pos.instrumenttype in self.type_to_midi_dict.keys()
+        }
         self.settings = settings
+        self.sample_name_lookup = sample_name_lookup(self.type_to_midi_dict)
 
     def _add_row(self, values: list[str]) -> None:
         # adds a new tab separated row containing the given values
@@ -38,18 +60,22 @@ class SoundfontTextfile:
     def _add_sample_section(self) -> None:
         # Generates the first section of the Soundfont definition
         self._add_row(["Samples", "Name", "Loop S-E", "Root key", "Correction", "File name", "Folder"])
-        for midinotes in self.midi_dict.values():
-            for midinote in midinotes:
-                self._add_row(["", sample_name(midinote), "", midinote.midinote, "", midinote.sample])
+        # Use the sample_note_lookup to make the list, in order to include each sample only once.
+        # If multiple notes use the same sample, the root key is set here as the midinote value of the first note in the list.
+        sample_note_lookup = sample_notes_lookup(self.type_to_midi_dict)
+        for sample_file, sample_name in self.sample_name_lookup.items():
+            self._add_row(["", sample_name, "", sample_note_lookup[sample_file][0].midinote, "", sample_file])
         self._add_row(["Search paths:", os.path.abspath(self.settings.samples.folder)])
         self._add_separator()
 
     def _add_instrument_section(self) -> None:
         # Generates the second section of the Soundfont definition
         self._add_row(["Instruments", "Name", "Generators"])
-        for instrumenttype, midinotes in self.midi_dict.items():
-            self._add_row(["", instrumenttype])
-            self._add_row(["", "", "Sample name", "Global"] + [sample_name(midinote) for midinote in midinotes])
+        for instrumentpos, midinotes in self.pos_to_midi_dict.items():
+            self._add_row(["", instrumentpos])
+            self._add_row(
+                ["", "", "Sample name", "Global"] + [self.sample_name_lookup[midinote.sample] for midinote in midinotes]
+            )
             self._add_row(
                 ["", "", "Key Range", ""] + [f"{midinote.midinote}-{midinote.midinote}" for midinote in midinotes]
             )
@@ -61,7 +87,7 @@ class SoundfontTextfile:
         keys = {(preset.preset_name, preset.bank, preset.preset) for preset in self.preset_dict.values()}
         preset_dict = {
             key: [
-                preset.instrumenttype
+                preset.position
                 for preset in self.preset_dict.values()
                 if (preset.preset_name, preset.bank, preset.preset) == key
             ]
@@ -82,7 +108,7 @@ class SoundfontTextfile:
         self._add_preset_section()
 
     def save(self):
-        outfilepath = self.settings.soundfont.filepath
+        outfilepath = self.settings.soundfont.def_filepath
         with open(outfilepath, "w") as outfile:
             outfile.write(self.content)
         return outfilepath

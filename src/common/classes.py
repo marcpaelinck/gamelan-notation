@@ -115,6 +115,7 @@ class Preset(NotationModel):
     # See http://www.synthfont.com/The_Definitions_File.pdf
     # For port, see https://github.com/spessasus/SpessaSynth/wiki/About-Multi-Port
     instrumenttype: InstrumentType
+    position: InstrumentPosition
     bank: int  # 0..127, where 127 is reserved for percussion instruments.
     preset: int  # 0..127
     channel: int  # 0..15
@@ -130,7 +131,7 @@ class MidiNote(NotationModel):
     stroke: Stroke
     midinote: int  # 0..128, used when generating MIDI output.
     sample: str  # file name of the (mp3) sample.
-    preset: Preset
+    # preset: Preset
     remark: str
 
     @field_validator("positions", mode="before")

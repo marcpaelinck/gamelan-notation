@@ -27,7 +27,7 @@ def create_soundfont_definition_file(run_settings: RunSettings) -> None:
         run_settings (RunSettings): _description_
     """
     logger.info("======== SOUNDFONT CREATION ========")
-    logger.info(f"input file: {run_settings.soundfont.sheetname}")
+    logger.info(f"Midi version: {run_settings.midi.midiversion}")
     initialize_lookups(run_settings)
 
     # workbook = SoundfontWorkbook(midi_dict=midi_dict, preset_dict=preset_dict, settings=run_settings)
@@ -72,11 +72,12 @@ def create_soundfont_files(run_settings: RunSettings) -> None:
     Args:
         run_settings (RunSettings): _description_
     """
-    # create_soundfont_definition_file(run_settings)
+    create_soundfont_definition_file(run_settings)
     if run_settings.options.soundfont.create_sf2_files:
         generate_sf2_with_viena(run_settings)
 
 
 if __name__ == "__main__":
     run_settings = get_run_settings()
+    run_settings.options.soundfont.run = True
     create_soundfont_files(run_settings)

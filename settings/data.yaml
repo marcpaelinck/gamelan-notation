@@ -20,6 +20,10 @@ midi:
             comment: one preset for each instrument
             midi_definition_file: gk_midinotes3.tsv
             presets_file: gk_presets3.tsv
+        GONG_KEBYAR4:
+            comment: one preset for each instrument position
+            midi_definition_file: gk_midinotes4.tsv
+            presets_file: gk_presets4.tsv
 font:
     folder: ./data/font
     fontversion:
@@ -57,7 +61,7 @@ notation:
         cendrawasih:
             subfolder: cendrawasih
             file: Cendrawasih_complete_font5.tsv
-            midi_out_file: Cendrawasih_${midi.midiversion}_channels.mid
+            midi_out_file: Cendrawasih_${midi.midiversion}.mid
             fontversion: BaliMusic5
             instrumentgroup: GONG_KEBYAR
             gong_at_end: false

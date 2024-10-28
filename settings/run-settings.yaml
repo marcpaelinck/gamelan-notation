@@ -4,17 +4,17 @@
 instruments: 
   instrumentgroup: GONG_KEBYAR
 midi:
-  midiversion: GONG_KEBYAR3
+  midiversion: GONG_KEBYAR4
 samples:
   instrumentgroup: GONG_KEBYAR
 notation:
-  composition: preset-test
+  composition: sinomladrang
 soundfont:
   definition_file_out: viena_definitions_${midi.midiversion}.txt
   soundfont_file_out: ${midi.midiversion}.sf2
   soundfont_destination_folders:
     - ~/Documents/SynthFont
-    - ~/Documents/administratie/_VRIJETIJD_REIZEN/Scripts-Programmas/JavaScriptProjects/midi-player/data/soundfont
+    - ~/Documents/administratie/_VRIJETIJD_REIZEN/Scripts-Programmas/JavaScriptProjects/midi-player/midiplayer/data/soundfont
 options:
   validate_settings : true
   notation_to_midi:
@@ -24,5 +24,7 @@ options:
     save_corrected_to_file : false
     create_midifile : true
   soundfont:
-    run: true
+    run: false
     create_sf2_files: true
+
+    

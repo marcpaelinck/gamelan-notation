@@ -126,7 +126,7 @@ z	0x007a	lowercase z	a underdot	DANG	0	OPEN	1	0	NONE	dang0 open
 Ÿ	0x0178	uppercase Y trema	x slashed, double macron	TICK		MUTED	0.05	0.2	NONE	tick quarter duration muted
 Ž	0x017d	uppercase Z caron	slash with macron	NONE		NONE	0.2	0.3	MODIFIER_PREV1	long mutes previous note, half duration
 ž	0x017e	lowercase Z caron	slash with double macron	NONE		NONE	0.1	0.15	MODIFIER_PREV1	long mutes previous note, quarter duration
-ṁ	0x1e41	lowercase m overdot	serifless lowercase u	KRUM		OPEN	1	0	NONE	krum open
+ṁ	0x1e41	lowercase m overdot	serifless lowercase u	KUNG		OPEN	1	0	NONE	kung open
 ṃ	0x1e43	lowercase m underdot	lowercase t	TUT		OPEN	1	0	NONE	tut open
-ṅ	0x1e45	lowercase n overdot	serifless lowercase u, upside down	PUNG		OPEN	1	0	NONE	pung open
+ṅ	0x1e45	lowercase n overdot	serifless lowercase n	CUNG		OPEN	1	0	NONE	cung open
 ṇ	0x1e47	lowercase n underdot	lowercase d	DUG		OPEN	1	0	NONE	dug open

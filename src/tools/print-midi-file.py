@@ -2,7 +2,7 @@ import os
 
 from mido import MidiFile
 
-midifile_name = "data/notation/test/Bank-Preset test _GONG_KEBYAR3.mid"
+midifile_name = r"C:\Users\marcp\Documents\administratie\_VRIJETIJD_REIZEN\Scripts-Programmas\JavaScriptProjects\midi-player\midiplayer\data\midifiles\Cendrawasih_GONG_KEBYAR4.mid"
 mid = MidiFile(midifile_name)
 txt = os.path.splitext(midifile_name)[0] + ".txt"
 

@@ -73,6 +73,7 @@ class MidiNotesFields(SStrEnum):
 class PresetsFields(SStrEnum):
     INSTRUMENTGROUP = "instrumentgroup"
     INSTRUMENTTYPE = "instrumenttype"
+    POSITION = "position"
     BANK = "bank"
     PRESET = "preset"
     CHANNEL = "channel"

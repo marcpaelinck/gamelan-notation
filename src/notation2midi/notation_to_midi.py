@@ -66,7 +66,7 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrackX:
             for beat in gongan.beats:
                 beat._pass_ = 0
 
-    track = MidiTrackX(position, PRESET_LOOKUP[position.instrumenttype])
+    track = MidiTrackX(position, PRESET_LOOKUP[position])
 
     reset_pass_counters()
     beat = score.gongans[0].beats[0]
