@@ -29,6 +29,7 @@ from src.settings.settings import (
     COMMENT,
     METADATA,
     InstrumentFields,
+    InstrumentTagFields,
     MidiNotesFields,
     PresetsFields,
     get_run_settings,
@@ -59,7 +60,7 @@ def initialize_lookups(run_settings: RunSettings) -> None:
     midinotes_list = [note for notelist in MIDINOTE_LOOKUP.values() for note in notelist]
     SYMBOLVALUE_TO_MIDINOTE_LOOKUP.update(create_symbolvalue_to_midinote_lookup(midinotes_list))
     POSITION_TO_RANGE_LOOKUP.update(create_position_range_lookup(midinotes_list))
-    TAG_TO_POSITION_LOOKUP.update(create_tag_to_position_lookup(run_settings.instruments.tag_filepath))
+    TAG_TO_POSITION_LOOKUP.update(create_tag_to_position_lookup(run_settings.instruments))
     # TODO temporary solution in order to avoid circular imports. Should look for more elegant solution.
     SilenceMeta.TAG_TO_POSITION_LOOKUP = TAG_TO_POSITION_LOOKUP
 
@@ -74,6 +75,23 @@ def stave_to_string(stave: list[Note]) -> str:
     return "".join((n.symbol for n in stave))
 
 
+def find_note(pitch: Pitch, stroke: Stroke, duration: float, note_list: list[Note]) -> Note:
+    return next(
+        (
+            note
+            for note in note_list
+            if (not pitch or note.pitch == pitch)
+            and (not stroke or note.stroke == stroke)
+            and (not duration or note.duration == duration)
+        ),
+        None,
+    )
+
+
+def get_whole_rest_note(resttype: Stroke):
+    return next((note for note in NOTE_LIST if note.stroke == resttype and note.total_duration == 1), None)
+
+
 def create_rest_stave(resttype: Stroke, duration: float) -> list[Note]:
     """Creates a stave with rests of the given type for the given duration.
     If the duration is non-integer, the stave will also contain half and/or quarter rests.
@@ -86,7 +104,7 @@ def create_rest_stave(resttype: Stroke, duration: float) -> list[Note]:
         list[Note]: _description_
     """
     # TODO exception handling
-    whole_rest: Note = next((note for note in NOTE_LIST if note.stroke == resttype and note.total_duration == 1), None)
+    whole_rest: Note = get_whole_rest_note(resttype)
     attribute = "duration" if whole_rest.duration > 0 else "rest_after"
     return [whole_rest.model_copy(update={attribute: duration})]
     # half_rest = whole_rest.model_copy(
@@ -183,15 +201,17 @@ def create_instrumentposition_to_midinote_lookup(
     midinotes_df.loc[mask, MidiNotesFields.POSITIONS] = midinotes_df.loc[mask, MidiNotesFields.INSTRUMENTTYPE].apply(
         lambda x: [p for p in InstrumentPosition if p.instrumenttype == x]
     )
+    # midinote field can be either int or list[int]. Convert all int values in list[int].
+    midinotes_df[MidiNotesFields.MIDINOTE] = midinotes_df[MidiNotesFields.MIDINOTE].apply(
+        lambda x: eval(x) if x.startswith("[") else [int(x)]
+    )
+
     # Treat missing values
     midinotes_df[MidiNotesFields.OCTAVE] = midinotes_df[MidiNotesFields.OCTAVE].replace(np.nan, value="NONE")
     midinotes_df[MidiNotesFields.REMARK] = midinotes_df[MidiNotesFields.REMARK].replace(np.nan, value="")
     midinotes_df[MidiNotesFields.SAMPLE] = midinotes_df[MidiNotesFields.SAMPLE].replace(np.nan, value="")
-    # Look up preset information in preset_lookup dict
-    # PRESET VALUE IS NEVER USED!
-    # midinotes_df[MidiNotesFields.PRESET.value] = midinotes_df[MidiNotesFields.INSTRUMENTTYPE].apply(
-    #     lambda x: preset_lookup.get(x, None)
-    # )
+    midinotes_df[MidiNotesFields.ROOTNOTE] = midinotes_df[MidiNotesFields.ROOTNOTE].replace(np.nan, value=None)
+
     # Drop unrequired instrument groups and convert to dict
     midinotes_dict = (
         midinotes_df[midinotes_df[MidiNotesFields.INSTRUMENTGROUP] == instrumentgroup.value]
@@ -229,10 +249,19 @@ def create_instrumentposition_to_preset_lookup(
     return {preset.position: preset for preset in presets}
 
 
-def create_symbolvalue_to_midinote_lookup(
+def create_symbolvalue_to_midinote_lookup_old(
     midinotes_list: list[MidiNote],
 ) -> dict[tuple[InstrumentPosition, Pitch, Octave, Stroke], MIDIvalue]:
     return {(midi.instrumenttype, midi.pitch, midi.octave, midi.stroke): midi for midi in midinotes_list}
+
+
+def create_symbolvalue_to_midinote_lookup(
+    midinotes_list: list[MidiNote],
+) -> dict[tuple[InstrumentPosition, Pitch, Octave, Stroke], MIDIvalue]:
+    retval = {
+        (position, midi.pitch, midi.octave, midi.stroke): midi for midi in midinotes_list for position in midi.positions
+    }
+    return retval
 
 
 def create_position_range_lookup(
@@ -245,7 +274,9 @@ def create_position_range_lookup(
     return lookup
 
 
-def create_tag_to_position_lookup(fromfile: str) -> dict[InstrumentTag, list[InstrumentPosition]]:
+def create_tag_to_position_lookup(
+    instruments: RunSettings.InstrumentInfo,
+) -> dict[InstrumentTag, list[InstrumentPosition]]:
     """Creates a dict that maps "free style" position tags to a list of InstumentPosition values
 
     Args:
@@ -254,17 +285,26 @@ def create_tag_to_position_lookup(fromfile: str) -> dict[InstrumentTag, list[Ins
     Returns:
         _type_: _description_
     """
-    tags_dict = pd.read_csv(fromfile, sep="\t").to_dict(orient="records")
-    tags = [InstrumentTag.model_validate(record) for record in tags_dict]
-    lookup_dict = {t.tag: t.positions for t in tags}
-    # Add all InstrumentPosition values and aggregations
-    lookup_dict.update({pos.value: [pos] for pos in InstrumentPosition})
-    lookup_dict.update(
-        {
-            "GANGSA_POLOS": [InstrumentPosition.PEMADE_POLOS, InstrumentPosition.KANTILAN_POLOS],
-            "GANGSA_SANGSIH": [InstrumentPosition.PEMADE_SANGSIH, InstrumentPosition.KANTILAN_SANGSIH],
-        }
+    tags_dict = (
+        pd.read_csv(instruments.tag_filepath, sep="\t")
+        .drop(columns=[InstrumentTagFields.INFILE])
+        .to_dict(orient="records")
     )
+    tags_dict = (
+        tags_dict
+        + [
+            {
+                InstrumentTagFields.TAG: instr,
+                InstrumentTagFields.POSITIONS: [pos for pos in InstrumentPosition if pos.instrumenttype == instr],
+            }
+            for instr in InstrumentType
+        ]
+        + [{InstrumentTagFields.TAG: pos, InstrumentTagFields.POSITIONS: [pos]} for pos in InstrumentPosition]
+    )
+    tags = [InstrumentTag.model_validate(record) for record in tags_dict]
+
+    lookup_dict = {t.tag: t.positions for t in tags}
+
     return lookup_dict
 
 

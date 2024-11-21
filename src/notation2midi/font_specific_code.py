@@ -147,7 +147,7 @@ def postprocess_font5(score: Score) -> Score:
                                 # Check if there is a separate MIDI entry for the muted/abbreviated variant of this note.
                                 prevnote = new_stave.pop(-1)
                                 if (
-                                    position.instrumenttype,
+                                    position,
                                     prevnote.pitch,
                                     prevnote.octave,
                                     note.stroke,
@@ -271,6 +271,11 @@ def postprocess(score: Score) -> Score:
         postprocess_font5(score)
     else:
         raise ValueError(f"Unexpected font value {score.settings.font.fontversion}")
+
+    # Add global metadata items to each gongan.
+    if score.global_metadata:
+        for gongan in score.gongans:
+            gongan.metadata.extend(score.global_metadata)
 
 
 def create_note(

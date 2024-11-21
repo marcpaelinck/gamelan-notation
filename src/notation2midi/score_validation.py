@@ -1,5 +1,4 @@
 import math
-import pprint
 from typing import Any
 
 from src.common.classes import Beat, Gongan, Note, RunSettings, Score
@@ -19,7 +18,12 @@ from src.common.metadata_classes import (
     MetaDataSwitch,
     ValidationProperty,
 )
-from src.common.utils import create_rest_stave, score_to_notation_file
+from src.common.utils import (
+    create_rest_stave,
+    find_note,
+    get_whole_rest_note,
+    score_to_notation_file,
+)
 from src.notation2midi.font_specific_code import get_note
 
 logger = get_logger(__name__)
@@ -60,7 +64,9 @@ def invalid_beat_lengths(gongan: Gongan, autocorrect: bool) -> tuple[list[tuple[
     return invalids, corrected, ignored
 
 
-def unequal_stave_lengths(gongan: Gongan, autocorrect: bool, filler: Note) -> tuple[list[tuple[BeatId, Duration]]]:
+def unequal_stave_lengths(
+    gongan: Gongan, beat_at_end: bool, autocorrect: bool, filler: Note
+) -> tuple[list[tuple[BeatId, Duration]]]:
     """Checks that the stave lengths of the individual instrument in each beat of the given gongan are all equal.
 
     Args:
@@ -95,7 +101,13 @@ def unequal_stave_lengths(gongan: Gongan, autocorrect: bool, filler: Note) -> tu
                         stave_duration = sum(note.total_duration for note in notes)
                         # Add rests of duration 1 to match the integer part of the beat's duration
                         if int(beat.duration - stave_duration) >= 1:
-                            notes.extend([filler.model_copy() for count in range(int(beat.duration - len(notes)))])
+                            fill_content = [filler.model_copy() for count in range(int(beat.duration - len(notes)))]
+                            if beat_at_end:
+                                fill_content.extend(notes)
+                                notes.clear()
+                                notes.extend(fill_content)
+                            else:
+                                notes.extend(fill_content)
                             stave_duration = sum(note.total_duration for note in notes)
                         # Add an extra rest for any fractional part of the beat's duration
                         if stave_duration < beat.duration:
@@ -260,25 +272,36 @@ def create_missing_staves(beat: Beat, prevbeat: Beat, score: Score) -> dict[Inst
     if missing_positions := ((score.instrument_positions | {InstrumentPosition.KEMPLI}) - set(beat.staves.keys())):
         silence = Stroke.SILENCE
         extension = Stroke.EXTENSION
+        kemplinote = find_note(Pitch.STRIKE, Stroke.MUTED, 1, score.balimusic_font_dict.values())
         prevstrokes = {pos: (prevbeat.staves[pos][-1].stroke if prevbeat else silence) for pos in missing_positions}
         resttypes = {pos: silence if prevstroke is silence else extension for pos, prevstroke in prevstrokes.items()}
         staves = {position: create_rest_stave(resttypes[position], beat.duration) for position in missing_positions}
         gongan = score.gongans[beat.sys_seq]
+        beat_at_end = score.settings.notation.beat_at_end
         # Add a kempli beat, except if a metadata label indicates otherwise or if the kempli part was already given in the original score
+        kempli_on = not (kempli := gongan.get_metadata(KempliMeta)) or kempli.status != MetaDataSwitch.OFF
         if (
             InstrumentPosition.KEMPLI in staves.keys()
-            and (not (kempli := gongan.get_metadata(KempliMeta)) or kempli.status != MetaDataSwitch.OFF)
+            and kempli_on
             and gongan.gongantype not in [GonganType.KEBYAR, GonganType.GINEMAN]
         ):
-            kemplibeat = next(
-                (
-                    note
-                    for note in score.balimusic_font_dict.values()
-                    if note.pitch == Pitch.TICK and note.stroke == Stroke.OPEN and note.duration == 1
-                ),
-                None,
+            rests = create_rest_stave(Stroke.EXTENSION, beat.duration - 1)
+            staves[InstrumentPosition.KEMPLI] = (
+                rests + [kemplinote] if score.settings.notation.beat_at_end else [kemplinote] + rests
             )
-            staves[InstrumentPosition.KEMPLI] = [kemplibeat] + create_rest_stave(Stroke.EXTENSION, beat.duration - 1)
+        # if beat_at_end is true and this is the first beat of a gongan and the beat status of the previous gongan is different,
+        # the current kempli status should be applied to the last beat of the previous gongan.
+        if beat_at_end and beat.id == 1 and prevbeat:
+            prevgongan = score.gongans[prevbeat.sys_seq]
+            prevbeat_kempli_on = not (
+                (kempli := prevgongan.get_metadata(KempliMeta)) and kempli.status != MetaDataSwitch.OFF
+            )
+            if prevbeat_kempli_on != kempli_on:
+                new_kemplinote = (
+                    kemplinote.model_copy() if kempli_on else get_whole_rest_note(Stroke.EXTENSION).model_copy()
+                )
+                prevbeat.staves[InstrumentPosition.KEMPLI][-1] = new_kemplinote
+
         return staves
     else:
         return dict()
@@ -351,7 +374,9 @@ def validate_score(
         corrected_beat_lengths.extend(corrected)
         ignored_beat_lengths.extend(ignored)
 
-        invalids, corrected, ignored = unequal_stave_lengths(gongan, filler=filler, autocorrect=autocorrect)
+        invalids, corrected, ignored = unequal_stave_lengths(
+            gongan, beat_at_end=settings.notation.beat_at_end, filler=filler, autocorrect=autocorrect
+        )
         remaining_bad_stave_lengths.extend(invalids)
         corrected_stave_lengths.extend(corrected)
         ignored_stave_lengths.extend(ignored)
@@ -361,12 +386,13 @@ def validate_score(
         corrected_note_out_of_range.extend(corrected)
         ignored_note_out_of_range.extend(corrected)
 
-        invalids, corrected, ignored = incorrect_kempyung(
-            gongan, score=score, ranges=score.position_range_lookup, autocorrect=autocorrect
-        )
-        remaining_incorrect_kempyung.extend(invalids)
-        corrected_invalid_kempyung.extend(corrected)
-        ignored_invalid_kempyung.extend(corrected)
+        if score.settings.options.notation_to_midi.autocorrect_kempyung:
+            invalids, corrected, ignored = incorrect_kempyung(
+                gongan, score=score, ranges=score.position_range_lookup, autocorrect=autocorrect
+            )
+            remaining_incorrect_kempyung.extend(invalids)
+            corrected_invalid_kempyung.extend(corrected)
+            ignored_invalid_kempyung.extend(corrected)
 
     def log_list(loglevel: callable, title: str, list: list[Any]) -> None:
         loglevel(title)

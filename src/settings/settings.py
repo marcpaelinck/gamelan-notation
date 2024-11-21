@@ -47,14 +47,14 @@ class FontFields(SStrEnum):
 class InstrumentFields(SStrEnum):
     POSITION = "position"
     INSTRUMENT = "instrument"
-    GROUP = "groups"
+    GROUP = "group"
 
 
 # instrumenttags.tsv
 class InstrumentTagFields(SStrEnum):
     TAG = "tag"
     INFILE = "infile"
-    POSITION = "positions"
+    POSITIONS = "positions"
 
 
 # midinotes.tsv
@@ -66,8 +66,9 @@ class MidiNotesFields(SStrEnum):
     OCTAVE = "octave"
     STROKE = "stroke"
     REMARK = "remark"
+    MIDINOTE = "midinote"
+    ROOTNOTE = "rootnote"
     SAMPLE = "sample"
-    PRESET = "preset"
 
 
 class PresetsFields(SStrEnum):
@@ -140,7 +141,7 @@ def get_settings_fields(cls: BaseModel, settings_dict: dict) -> dict[str, Any]:
     return retval
 
 
-def get_run_settings() -> RunSettings:
+def get_run_settings(notation: dict[str, str] = None) -> RunSettings:
     """Retrieves the run settings from the run settings yaml file, enriched with information
        from the data information yaml file.
 
@@ -159,16 +160,26 @@ def get_run_settings() -> RunSettings:
     SOUNDFONT = "soundfont"
     OPTIONS = "options"
     COMPOSITION = "composition"
+    FILE = "file"
+    PART = "part"
+    LOOP = "loop"
+    FULL = "full"
     INSTRUMENTGROUP = "instrumentgroup"
     MIDIVERSION = "midiversion"
     FONTVERSION = "fontversion"
+
+    if notation:
+        run_settings_dict[NOTATION] = notation
 
     settings_dict = dict()
 
     composition = data_dict[NOTATION][COMPOSITION][run_settings_dict[NOTATION][COMPOSITION]]
     settings_dict[NOTATION] = get_settings_fields(
-        RunSettings.NotationInfo, run_settings_dict[NOTATION] | data_dict[NOTATION] | composition
+        RunSettings.NotationInfo, data_dict[NOTATION] | composition | run_settings_dict[NOTATION]
     )
+    settings_dict[NOTATION][FILE] = composition[PART][run_settings_dict[NOTATION][PART]]
+    # Only 'full' composition will be extended with 'attenuation time'.
+    settings_dict[NOTATION][LOOP] = run_settings_dict[NOTATION][PART] != FULL
 
     midiversion = data_dict[MIDI][MIDIVERSION][run_settings_dict[MIDI][MIDIVERSION]]
     settings_dict[MIDI] = get_settings_fields(
@@ -180,9 +191,12 @@ def get_run_settings() -> RunSettings:
         RunSettings.SampleInfo, samples | run_settings_dict[SAMPLES] | data_dict[SAMPLES]
     )
 
-    instruments = data_dict[INSTRUMENTS][INSTRUMENTGROUP][run_settings_dict[INSTRUMENTS][INSTRUMENTGROUP]]
+    instruments = data_dict[INSTRUMENTS][INSTRUMENTGROUP][composition[INSTRUMENTGROUP]]
     settings_dict[INSTRUMENTS] = get_settings_fields(
-        RunSettings.InstrumentInfo, instruments | data_dict[INSTRUMENTS] | run_settings_dict[INSTRUMENTS]
+        RunSettings.InstrumentInfo,
+        data_dict[INSTRUMENTS]
+        | data_dict[NOTATION][COMPOSITION][run_settings_dict[NOTATION][COMPOSITION]]
+        | instruments,
     )
 
     font = data_dict[FONT][FONTVERSION][composition[FONTVERSION]] | {FONTVERSION: composition[FONTVERSION]}

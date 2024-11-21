@@ -5,7 +5,12 @@ from typing import Any, ClassVar, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from src.common.constants import DEFAULT, InstrumentPosition, NotationEnum
+from src.common.constants import (
+    DEFAULT,
+    InstrumentPosition,
+    InstrumentType,
+    NotationEnum,
+)
 
 
 # MetaData related constants
@@ -27,13 +32,19 @@ class ValidationProperty(NotationEnum):
     KEMPYUNG = "kempyung"
 
 
-class MetaDataType(BaseModel):
+class Range(NotationEnum):
+    GONGAN = "GONGAN"
+    SCORE = "SCORE"
+
+
+class MetaDataSubType(BaseModel):
     metatype: Literal[""]
+    range: Optional[Range] = Range.GONGAN
     _processingorder_ = 99
 
 
-class TempoMeta(MetaDataType):
-    metatype: Literal["tempo"]
+class TempoMeta(MetaDataSubType):
+    metatype: Literal["TEMPO"]
     bpm: int
     first_beat: Optional[int] = 1
     beat_count: Optional[int] = 0
@@ -47,8 +58,8 @@ class TempoMeta(MetaDataType):
         return self.first_beat - 1
 
 
-class LabelMeta(MetaDataType):
-    metatype: Literal["label"]
+class LabelMeta(MetaDataSubType):
+    metatype: Literal["LABEL"]
     name: str
     beat: Optional[int] = 1
     # Make sure that labels are processed before gotos in same gongan.
@@ -60,8 +71,8 @@ class LabelMeta(MetaDataType):
         return self.beat - 1
 
 
-class GoToMeta(MetaDataType):
-    metatype: Literal["goto"]
+class GoToMeta(MetaDataSubType):
+    metatype: Literal["GOTO"]
     label: str
     from_beat: Optional[int] | None = None  # Beat number from which to goto. Default is last beat of the gongan.
     passes: Optional[list[int]] = field(default_factory=list)  # On which pass(es) should goto be performed?
@@ -72,28 +83,29 @@ class GoToMeta(MetaDataType):
         return self.from_beat - 1 if self.from_beat else -1
 
 
-class RepeatMeta(MetaDataType):
-    metatype: Literal["repeat"]
+class RepeatMeta(MetaDataSubType):
+    metatype: Literal["REPEAT"]
     count: int = 1
 
 
-class KempliMeta(MetaDataType):
-    metatype: Literal["kempli"]
+class KempliMeta(MetaDataSubType):
+    metatype: Literal["KEMPLI"]
     status: MetaDataSwitch
+    beats: list[int] = field(default_factory=list)
 
 
-class GonganMeta(MetaDataType):
-    metatype: Literal["gongan"]
+class GonganMeta(MetaDataSubType):
+    metatype: Literal["GONGAN"]
     type: GonganType
 
 
-class SilenceMeta(MetaDataType):
+class SilenceMeta(MetaDataSubType):
     # Pointer to cls.common.lookup.TAG_TO_POSITION_LOOKUP
     # TODO temporary solution in order to avoid circular imports. Should look for more elegant solution.
     # There is no guarantee that the attribute will be assigned a value before it is referred to.
     TAG_TO_POSITION_LOOKUP: ClassVar[list] = None
 
-    metatype: Literal["silence"]
+    metatype: Literal["SILENCE"]
     positions: list[InstrumentPosition] = field(default_factory=list)
     passes: Optional[list[int]] = field(default_factory=list)
     beats: list[int] = field(default_factory=list)
@@ -105,13 +117,19 @@ class SilenceMeta(MetaDataType):
         return sum((cls.TAG_TO_POSITION_LOOKUP[pos] for pos in data), [])
 
 
-class ValidationMeta(MetaDataType):
-    metatype: Literal["validation"]
+class ValidationMeta(MetaDataSubType):
+    metatype: Literal["VALIDATION"]
     beats: Optional[list[int]] = field(default_factory=list)
     ignore: list[ValidationProperty]
 
 
-MetaDataType = Union[
+class OctavateMeta(MetaDataSubType):
+    metatype: Literal["OCTAVATE"]
+    instrument: InstrumentType
+    octaves: int
+
+
+MetaDataSubType = Union[
     TempoMeta,
     LabelMeta,
     GoToMeta,
@@ -120,15 +138,16 @@ MetaDataType = Union[
     GonganMeta,
     ValidationMeta,
     SilenceMeta,
+    OctavateMeta,
 ]
 
 
 class MetaData(BaseModel):
-    data: MetaDataType = Field(..., discriminator="metatype")
+    data: MetaDataSubType = Field(..., discriminator="metatype")
 
     @classmethod
     def __get_all_subtype_fieldnames__(cls):
-        membertypes = list(MetaDataType.__dict__.values())[4]
+        membertypes = list(MetaDataSubType.__dict__.values())[4]
         return {fieldname for member in membertypes for fieldname in member.model_fields.keys()}
 
     @classmethod
@@ -152,7 +171,7 @@ class MetaData(BaseModel):
         match = r"\{(\w+)"
         p = re.compile(match)
         keyword_uc = p.findall(value)[0]
-        value = value.replace(keyword_uc, "metatype: " + keyword_uc.lower() + ", ")
+        value = value.replace(keyword_uc, "metatype: " + keyword_uc + ", ")
         # Replace equal signs with colon.
         value = value.replace("=", ": ")
         # Split value into (fieldname, fieldvalue) pairs.

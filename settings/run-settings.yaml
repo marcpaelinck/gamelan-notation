@@ -4,11 +4,12 @@
 instruments: 
   instrumentgroup: GONG_KEBYAR
 midi:
-  midiversion: GONG_KEBYAR4
+  midiversion: GAMELAN1
 samples:
-  instrumentgroup: GONG_KEBYAR
+  instrumentgroup: GAMELAN
 notation:
-  composition: sinomladrang
+  composition: pendet
+  part: full
 soundfont:
   definition_file_out: viena_definitions_${midi.midiversion}.txt
   soundfont_file_out: ${midi.midiversion}.sf2
@@ -21,6 +22,7 @@ options:
     run: true
     detailed_validation_logging : false
     autocorrect : true
+    autocorrect_kempyung : false
     save_corrected_to_file : false
     create_midifile : true
   soundfont:

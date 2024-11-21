@@ -23,6 +23,8 @@ from src.common.metadata_classes import (
     LabelMeta,
     MetaData,
     MetaDataSwitch,
+    OctavateMeta,
+    Range,
     RepeatMeta,
     SilenceMeta,
     TempoMeta,
@@ -153,14 +155,19 @@ def apply_metadata(metadata: list[MetaData], gongan: Gongan, score: Score) -> No
                 gongan.gongantype = meta.data.status
                 if meta.data.status is MetaDataSwitch.OFF:
                     for beat in gongan.beats:
-                        if InstrumentPosition.KEMPLI in beat.staves:
-                            beat.staves[InstrumentPosition.KEMPLI] = create_rest_stave(Stroke.SILENCE, beat.duration)
+                        # Default is all beats
+                        if beat.id in meta.data.beats or not meta.data.beats:
+                            if InstrumentPosition.KEMPLI in beat.staves:
+                                beat.staves[InstrumentPosition.KEMPLI] = create_rest_stave(
+                                    Stroke.SILENCE, beat.duration
+                                )
             case GonganMeta():
                 # TODO: how to safely synchronize all instruments starting from next regular gongan?
                 gongan.gongantype = meta.data.type
             case SilenceMeta():
                 # Add a separate silence stave to the gongan beats for each instrument position and pass mentioned.
                 for beat in gongan.beats:
+                    # Default is all beats
                     if beat.id in meta.data.beats or not meta.data.beats:
                         for position in meta.data.positions:
                             beat.exceptions.update(
@@ -172,8 +179,13 @@ def apply_metadata(metadata: list[MetaData], gongan: Gongan, score: Score) -> No
             case ValidationMeta():
                 for beat in [b for b in gongan.beats if b.id in meta.data.beats] or gongan.beats:
                     beat.validation_ignore.extend(meta.data.ignore)
-
-                pass
+            case OctavateMeta():
+                for beat in gongan.beats:
+                    if meta.data.instrument in beat.staves:
+                        for idx in range(len(stave := beat.staves[meta.data.instrument])):
+                            note = stave[idx]
+                            if note.octave != None:
+                                stave[idx] = note.model_copy(update={"octave": note.octave + meta.data.octaves})
             case _:
                 raise ValueError(f"Metadata value {meta.data.metatype} is not supported.")
 
@@ -330,7 +342,11 @@ def create_score_object_model(run_settings: RunSettings) -> Score:
             for meta in beat_info.get(METADATA, []):
                 # Note that `meta`` is not a valid json string.
                 # It will be converted to the required json format by the MetaData class.
-                metadata.append(MetaData(data=meta))
+                metadata_obj = MetaData(data=meta)
+                if metadata_obj.data.range == Range.SCORE:
+                    score.global_metadata.append(metadata_obj)
+                else:
+                    metadata.append(metadata_obj)
 
             # Add comment tags to the beat
             for comment in beat_info.get(COMMENT, []):
@@ -381,7 +397,8 @@ def create_midifile(score: Score) -> None:
     for position in sorted(score.instrument_positions, key=lambda x: x.sequence):
         track = notation_to_track(score, position)
         mid.tracks.append(track)
-    add_attenuation_time(mid.tracks, seconds=ATTENUATION_SECONDS_AFTER_MUSIC_END)
+    if not score.settings.notation.loop:
+        add_attenuation_time(mid.tracks, seconds=ATTENUATION_SECONDS_AFTER_MUSIC_END)
     outfilepath = score.settings.notation.midi_out_filepath
     mid.save(outfilepath)
     logger.info(f"File saved as {outfilepath}")

@@ -76,6 +76,7 @@ class InstrumentType(NotationEnum):
     GENDERRAMBAT = "GENDERRAMBAT"
     TROMPONG = "TROMPONG"
     GENDERWAYANG = "GENDERWAYANG"
+    SULING = "SULING"
 
 
 class InstrumentPosition(NotationEnum):
@@ -100,6 +101,7 @@ class InstrumentPosition(NotationEnum):
     TROMPONG = "TROMPONG"
     GENDERWAYANG_POLOS = "GENDERWAYANG_POLOS"
     GENDERWAYANG_SANGSIH = "GENDERWAYANG_SANGSIH"
+    SULING = "SULING"
 
     @property
     def instrumenttype(self):
@@ -108,7 +110,7 @@ class InstrumentPosition(NotationEnum):
 
 class Pitch(NotationEnum):
     # TODO replace with settings file
-    # Note: Pitch.NONE and Pitch.TICK are used explicitly in code.
+    # Note: Pitch.NONE and Pitch.STRIKE are used explicitly in code.
     DING = "DING"
     DONG = "DONG"
     DENG = "DENG"
@@ -134,8 +136,7 @@ class Pitch(NotationEnum):
     OPEN = "OPEN"
     PEK = "PEK"
     PUR = "PUR"
-    TICK = "TICK"
-    TICK_2_PANGGUL = "TICK_2_PANGGUL"
+    STRIKE = "STRIKE"
     TONG = "TONG"
     NONE = "NONE"
 
@@ -144,6 +145,8 @@ class Stroke(NotationEnum):
     OPEN = "OPEN"
     MUTED = "MUTED"
     ABBREVIATED = "ABBREVIATED"
+    TICK1 = "TICK1"
+    TICK2 = "TICK2"
     EXTENSION = "EXTENSION"
     SILENCE = "SILENCE"
     NONE = "NONE"

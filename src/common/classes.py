@@ -28,7 +28,7 @@ from src.common.metadata_classes import (
     GonganType,
     GoToMeta,
     MetaData,
-    MetaDataType,
+    MetaDataSubType,
     ValidationProperty,
 )
 
@@ -86,7 +86,7 @@ class Note(NotationModel):
     stroke: Stroke
     duration: Optional[float]
     rest_after: Optional[float]
-    velocity: Optional[int] = 100
+    velocity: Optional[int] = 127
     modifier: Modifier
     description: str
 
@@ -129,7 +129,8 @@ class MidiNote(NotationModel):
     pitch: Pitch
     octave: Optional[int]
     stroke: Stroke
-    midinote: int  # 0..128, used when generating MIDI output.
+    midinote: list[int]  # 0..128, used when generating MIDI output.
+    rootnote: Optional[str]
     sample: str  # file name of the (mp3) sample.
     # preset: Preset
     remark: str
@@ -149,8 +150,8 @@ class MidiNote(NotationModel):
 
 class InstrumentTag(NotationModel):
     tag: str
-    infile: str
     positions: list[InstrumentPosition]
+    infile: str = ""
 
     @field_validator("positions", mode="before")
     @classmethod
@@ -238,7 +239,7 @@ class Gongan:
     comments: list[str] = field(default_factory=list)
     _pass_: PASS = 0  # Counts the number of times the gongan is passed during generation of MIDI file.
 
-    def get_metadata(self, cls: MetaDataType):
+    def get_metadata(self, cls: MetaDataSubType):
         return next((meta.data for meta in self.metadata if isinstance(meta.data, cls)), None)
 
 
@@ -261,6 +262,7 @@ class Score:
     midi_notes_dict: dict[tuple[InstrumentPosition, Pitch, Octave, Stroke], MidiNote] = None
     position_range_lookup: dict[InstrumentPosition, tuple[Pitch, Octave, Stroke]] = None
     flowinfo: FlowInfo = field(default_factory=FlowInfo)
+    global_metadata: list[MetaData] = field(default_factory=list)
 
 
 #
@@ -270,11 +272,14 @@ class Score:
 
 class RunSettings(BaseModel):
     class NotationInfo(BaseModel):
+        instrumentgroup: InstrumentGroup
         folder: str
         subfolder: str
         file: str
+        part: str
         midi_out_file: str
-        gong_at_end: bool
+        beat_at_end: bool
+        loop: bool = False  # set to True if only part of a piece is selected.
 
         @property
         def subfolderpath(self):
@@ -354,6 +359,7 @@ class RunSettings(BaseModel):
             run: bool
             detailed_validation_logging: bool
             autocorrect: bool
+            autocorrect_kempyung: bool
             save_corrected_to_file: bool
             create_midifile: bool
 
