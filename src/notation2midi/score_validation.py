@@ -12,16 +12,12 @@ from src.common.constants import (
     Stroke,
 )
 from src.common.logger import get_logger
-from src.common.metadata_classes import (
-    GonganType,
-    KempliMeta,
-    MetaDataSwitch,
-    ValidationProperty,
-)
+from src.common.metadata_classes import GonganType, ValidationProperty
 from src.common.utils import (
     create_rest_stave,
     find_note,
     get_whole_rest_note,
+    has_kempli_beat,
     score_to_notation_file,
 )
 from src.notation2midi.font_specific_code import get_note
@@ -62,6 +58,19 @@ def invalid_beat_lengths(gongan: Gongan, autocorrect: bool) -> tuple[list[tuple[
         if gongan.gongantype == GonganType.REGULAR and 2 ** int(math.log2(beat.duration)) != beat.duration:
             invalids.append((beat.full_id, beat.duration))
     return invalids, corrected, ignored
+
+
+def complement_shorthand_pokok_staves(score: Score):
+    """Adds EXTENSION notes to pokok staves that only contain one note (shorthand notation)
+
+    Args:
+        score (Score):
+    """
+    filler = get_whole_rest_note(Stroke.EXTENSION)
+    for gongan in score.gongans:
+        unequal_stave_lengths(
+            gongan=gongan, beat_at_end=score.settings.notation.beat_at_end, autocorrect=True, filler=filler
+        )
 
 
 def unequal_stave_lengths(
@@ -257,7 +266,9 @@ def incorrect_kempyung(
     return invalids, corrected, ignored
 
 
-def create_missing_staves(beat: Beat, prevbeat: Beat, score: Score) -> dict[InstrumentPosition, list[Note]]:
+def create_missing_staves(
+    beat: Beat, prevbeat: Beat, score: Score, add_kempli: bool = True, force_silence=[]
+) -> dict[InstrumentPosition, list[Note]]:
     """Returns staves for missing positions, containing rests (silence) for the duration of the given beat.
     This ensures that positions that do not occur in all the gongans will remain in sync.
 
@@ -269,51 +280,60 @@ def create_missing_staves(beat: Beat, prevbeat: Beat, score: Score) -> dict[Inst
         dict[InstrumentPosition, list[Note]]: A dict with the generated staves.
     """
 
-    if missing_positions := ((score.instrument_positions | {InstrumentPosition.KEMPLI}) - set(beat.staves.keys())):
+    all_instruments = (
+        score.instrument_positions | {InstrumentPosition.KEMPLI} if add_kempli else score.instrument_positions
+    )
+    if missing_positions := (all_instruments - set(beat.staves.keys())):
         silence = Stroke.SILENCE
         extension = Stroke.EXTENSION
-        kemplinote = find_note(Pitch.STRIKE, Stroke.MUTED, 1, score.balimusic_font_dict.values())
         prevstrokes = {pos: (prevbeat.staves[pos][-1].stroke if prevbeat else silence) for pos in missing_positions}
-        resttypes = {pos: silence if prevstroke is silence else extension for pos, prevstroke in prevstrokes.items()}
+        resttypes = {
+            pos: silence if prevstroke is silence or pos in force_silence else extension
+            for pos, prevstroke in prevstrokes.items()
+        }
         staves = {position: create_rest_stave(resttypes[position], beat.duration) for position in missing_positions}
         gongan = score.gongans[beat.sys_seq]
-        beat_at_end = score.settings.notation.beat_at_end
+
         # Add a kempli beat, except if a metadata label indicates otherwise or if the kempli part was already given in the original score
-        kempli_on = not (kempli := gongan.get_metadata(KempliMeta)) or kempli.status != MetaDataSwitch.OFF
-        if (
-            InstrumentPosition.KEMPLI in staves.keys()
-            and kempli_on
-            and gongan.gongantype not in [GonganType.KEBYAR, GonganType.GINEMAN]
-        ):
+        if InstrumentPosition.KEMPLI in staves.keys() and has_kempli_beat(gongan):
+            kemplinote = find_note(Pitch.STRIKE, Stroke.MUTED, 1, score.balimusic_font_dict.values())
             rests = create_rest_stave(Stroke.EXTENSION, beat.duration - 1)
-            staves[InstrumentPosition.KEMPLI] = (
-                rests + [kemplinote] if score.settings.notation.beat_at_end else [kemplinote] + rests
-            )
+            staves[InstrumentPosition.KEMPLI] = [kemplinote] + rests
+            # (
+            #     rests + [kemplinote] if score.settings.notation.beat_at_end else [kemplinote] + rests
+            # )
+        # beat_at_end = score.settings.notation.beat_at_end
         # if beat_at_end is true and this is the first beat of a gongan and the beat status of the previous gongan is different,
         # the current kempli status should be applied to the last beat of the previous gongan.
-        if beat_at_end and beat.id == 1 and prevbeat:
-            prevgongan = score.gongans[prevbeat.sys_seq]
-            prevbeat_kempli_on = not (
-                (kempli := prevgongan.get_metadata(KempliMeta)) and kempli.status != MetaDataSwitch.OFF
-            )
-            if prevbeat_kempli_on != kempli_on:
-                new_kemplinote = (
-                    kemplinote.model_copy() if kempli_on else get_whole_rest_note(Stroke.EXTENSION).model_copy()
-                )
-                prevbeat.staves[InstrumentPosition.KEMPLI][-1] = new_kemplinote
+        # if beat_at_end and beat.id == 1 and prevbeat:
+        #     prevgongan = score.gongans[prevbeat.sys_seq]
+        #     prevbeat_kempli_on = not (
+        #         (kempli := prevgongan.get_metadata(KempliMeta)) and kempli.status != MetaDataSwitch.OFF
+        #     )
+        #     if prevbeat_kempli_on != kempli_on:
+        #         new_kemplinote = (
+        #             kemplinote.model_copy() if kempli_on else get_whole_rest_note(Stroke.EXTENSION).model_copy()
+        #         )
+        #         prevbeat.staves[InstrumentPosition.KEMPLI][-1] = new_kemplinote
 
         return staves
     else:
         return dict()
 
 
-def add_missing_staves(score: Score):
+def add_missing_staves(score: Score, add_kempli: bool = True):
     prev_beat = None
     for gongan in score.gongans:
+        gongan_missing_instr = [
+            pos for pos in InstrumentPosition if all(pos not in beat.staves for beat in gongan.beats)
+        ]
         for beat in gongan.beats:
             # Not all positions occur in each gongan.
             # Therefore we need to add blank staves (all rests) for missing positions.
-            missing_staves = create_missing_staves(beat, prev_beat, score)
+            # If an instrument is missing in the entire gongan, the last beat should consist
+            # of silences (.) rather than note extensions (-). This avoids unexpected results in some rare cases.
+            force_silence = gongan_missing_instr if beat == gongan.beats[-1] else []
+            missing_staves = create_missing_staves(beat, prev_beat, score, add_kempli, force_silence=force_silence)
             beat.staves.update(missing_staves)
             # Update all positions of the score
             score.instrument_positions.update({pos for pos in missing_staves})
@@ -361,12 +381,6 @@ def validate_score(
     save_corrected = settings.options.notation_to_midi.save_corrected_to_file
     detailed_logging = settings.options.notation_to_midi.detailed_validation_logging
 
-    filler = next(
-        note
-        for note in score.balimusic_font_dict.values()
-        if note.stroke == Stroke.EXTENSION and note.total_duration == 1
-    )
-
     for gongan in score.gongans:
         # Determine if the beat duration is a power of 2 (ignore kebyar)
         invalids, corrected, ignored = invalid_beat_lengths(gongan, autocorrect)
@@ -375,7 +389,10 @@ def validate_score(
         ignored_beat_lengths.extend(ignored)
 
         invalids, corrected, ignored = unequal_stave_lengths(
-            gongan, beat_at_end=settings.notation.beat_at_end, filler=filler, autocorrect=autocorrect
+            gongan,
+            beat_at_end=settings.notation.beat_at_end,
+            autocorrect=autocorrect,
+            filler=get_whole_rest_note(Stroke.EXTENSION),
         )
         remaining_bad_stave_lengths.extend(invalids)
         corrected_stave_lengths.extend(corrected)

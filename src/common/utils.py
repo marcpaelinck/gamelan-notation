@@ -1,10 +1,11 @@
 import csv
 from os import path
+from statistics import mode
 
 import numpy as np
 import pandas as pd
 
-from src.common.classes import Gongan, MidiNote, Note, Preset, RunSettings, Score
+from src.common.classes import Beat, Gongan, MidiNote, Note, Preset, RunSettings, Score
 from src.common.constants import (
     InstrumentGroup,
     InstrumentPosition,
@@ -24,7 +25,12 @@ from src.common.lookups import (
     TAG_TO_POSITION_LOOKUP,
     InstrumentTag,
 )
-from src.common.metadata_classes import SilenceMeta
+from src.common.metadata_classes import (
+    GonganType,
+    KempliMeta,
+    MetaDataSwitch,
+    SilenceMeta,
+)
 from src.settings.settings import (
     COMMENT,
     METADATA,
@@ -63,6 +69,20 @@ def initialize_lookups(run_settings: RunSettings) -> None:
     TAG_TO_POSITION_LOOKUP.update(create_tag_to_position_lookup(run_settings.instruments))
     # TODO temporary solution in order to avoid circular imports. Should look for more elegant solution.
     SilenceMeta.TAG_TO_POSITION_LOOKUP = TAG_TO_POSITION_LOOKUP
+
+
+def has_kempli_beat(gongan: Gongan):
+    return (
+        not (kempli := gongan.get_metadata(KempliMeta)) or kempli.status != MetaDataSwitch.OFF
+    ) and gongan.gongantype not in [GonganType.KEBYAR, GonganType.GINEMAN]
+
+
+def most_occurring_beat_duration(beats: list[Beat]):
+    return mode(beat.duration for beat in beats)
+
+
+def most_occurring_stave_duration(staves: dict[InstrumentPosition, list[Note]]):
+    return mode(sum(note.total_duration for note in notes) for notes in list(staves.values()))
 
 
 def is_silent(gongan: Gongan, position: InstrumentPosition):
@@ -104,20 +124,17 @@ def create_rest_stave(resttype: Stroke, duration: float) -> list[Note]:
         list[Note]: _description_
     """
     # TODO exception handling
+    notes = []
     whole_rest: Note = get_whole_rest_note(resttype)
-    attribute = "duration" if whole_rest.duration > 0 else "rest_after"
-    return [whole_rest.model_copy(update={attribute: duration})]
-    # half_rest = whole_rest.model_copy(
-    #     update={"duration": whole_rest.duration / 2, "rest_after": whole_rest.rest_after / 2}
-    # )
-    # quarter_rest = whole_rest.model_copy(
-    #     update={"duration": whole_rest.duration / 4, "rest_after": whole_rest.rest_after / 4}
-    # )
-    # rest_count = int(duration)
-    # half_rest_count = int((duration - rest_count) * 2)
-    # quarter_rest_count = int((duration - rest_count - 0.5 * half_rest_count) * 4)
-    # rests = [copy(whole_rest)] * rest_count + [half_rest] * half_rest_count + [quarter_rest] * quarter_rest_count
-    # return rests
+    for i in range(int(duration)):
+        notes.append(whole_rest.model_copy())
+
+    # if duration is not integer, add the fractional part as an extra rest.
+    if frac_duration := duration - int(duration):
+        attribute = "duration" if whole_rest.duration > 0 else "rest_after"
+        notes.append(whole_rest.model_copy(update={attribute: frac_duration}))
+
+    return notes
 
 
 def gongan_to_records(gongan: Gongan, skipemptylines: bool = True) -> list[dict[InstrumentPosition | int, list[str]]]:

@@ -36,11 +36,19 @@ from src.common.utils import (
     SYMBOLVALUE_TO_MIDINOTE_LOOKUP,
     TAG_TO_POSITION_LOOKUP,
     create_rest_stave,
+    get_whole_rest_note,
+    has_kempli_beat,
     initialize_lookups,
+    most_occurring_beat_duration,
+    most_occurring_stave_duration,
 )
 from src.notation2midi.font_specific_code import postprocess
 from src.notation2midi.midi_track import MidiTrackX
-from src.notation2midi.score_validation import add_missing_staves, validate_score
+from src.notation2midi.score_validation import (
+    add_missing_staves,
+    complement_shorthand_pokok_staves,
+    validate_score,
+)
 from src.settings.settings import (
     ATTENUATION_SECONDS_AFTER_MUSIC_END,
     COMMENT,
@@ -84,6 +92,51 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrackX:
         beat = beat.goto.get(beat._pass_, beat.next)
 
     return track
+
+
+def move_beat_to_start(score: Score) -> None:
+    # If the last gongan is regular (has a kempli beat), create an additional gongan with an empty beat
+    last_gongan = score.gongans[-1]
+    if has_kempli_beat(last_gongan):
+        new_gongan = Gongan(id=last_gongan.id + 1, beats=[], beat_duration=0)
+        score.gongans.append(new_gongan)
+        last_beat = last_gongan.beats[-1]
+        new_beat = Beat(
+            id=1,
+            sys_id=last_gongan.id + 1,
+            bpm_start={-1, last_beat.bpm_end[-1]},
+            bpm_end={-1, last_beat.bpm_end[-1]},
+            duration=0,
+            prev=last_beat,
+        )
+        last_beat.next = new_beat
+        for instrument, notes in last_beat.staves.items():
+            new_beat.staves[instrument] = []
+        new_gongan.beats.append(new_beat)
+
+    # Iterate through the beats starting from the end.
+    # Move the end note of each instrument in the previous beat to the start of the current beat.
+    beat = score.gongans[-1].beats[-1]
+    while beat.prev:
+        for instrument, notes in beat.prev.staves.items():
+            if notes:
+                # move notes with a total of 1 duration unit
+                notes_to_move = []
+                while notes and sum((note.total_duration for note in notes_to_move), 0) < 1:
+                    notes_to_move.append(notes.pop())
+                if not instrument in beat.staves:
+                    beat.staves[instrument] = []
+                beat.staves[instrument][0:0] = notes_to_move  # insert at beginning
+        # update beat and gongan duration values
+        beat.duration = most_occurring_stave_duration(beat.staves)
+        # beat.duration = max(sum(note.total_duration for note in notes) for notes in list(beat.staves.values()))
+        gongan = score.gongans[beat.sys_seq]
+        gongan.beat_duration = most_occurring_beat_duration(gongan.beats)
+        beat = beat.prev
+
+    # Add a rest at the beginning of the first beat
+    for instrument, notes in score.gongans[0].beats[0].staves.items():
+        notes.insert(0, get_whole_rest_note(Stroke.SILENCE))
 
 
 def apply_metadata(metadata: list[MetaData], gongan: Gongan, score: Score) -> None:
@@ -355,7 +408,11 @@ def create_score_object_model(run_settings: RunSettings) -> Score:
         # Create a new gongan
         if beats:
             gongan = Gongan(
-                id=int(sys_id), beats=beats, beat_duration=beats[0].duration, metadata=metadata, comments=comments
+                id=int(sys_id),
+                beats=beats,
+                beat_duration=most_occurring_beat_duration(beats),
+                metadata=metadata,
+                comments=comments,
             )
             score.gongans.append(gongan)
             metadata = []
@@ -364,10 +421,21 @@ def create_score_object_model(run_settings: RunSettings) -> Score:
 
     # Apply font-specific modifications
     postprocess(score)
+    filler = next(
+        note
+        for note in score.balimusic_font_dict.values()
+        if note.stroke == Stroke.EXTENSION and note.total_duration == 1
+    )
+    complement_shorthand_pokok_staves(score)
+    # Add blank staves for all other omitted instruments
+    add_missing_staves(score=score, add_kempli=False)
+    if score.settings.notation.beat_at_end:
+        # This simplifies the addition of missing staves and correct processing of metadata
+        move_beat_to_start(score)
     for gongan in score.gongans:
         apply_metadata(gongan.metadata, gongan, score)
-    # Add kempli beats and blank staves for all other omitted instruments
-    add_missing_staves(score)
+    # Add kempli beats
+    add_missing_staves(score=score, add_kempli=True)
 
     return score
 

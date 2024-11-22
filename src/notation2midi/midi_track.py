@@ -60,7 +60,8 @@ class MidiTrackX(MidiTrack):
         if new_bpm != self.current_bpm:
             if debug:
                 logger.info(f"                 setting metamessage with new tempo {new_bpm}")
-            self.append(MetaMessage("set_tempo", tempo=bpm2tempo(new_bpm)))
+            self.append(MetaMessage("set_tempo", tempo=bpm2tempo(new_bpm), time=self.time_since_last_note_end))
+            self.time_since_last_note_end = 0
             self.current_bpm = new_bpm
 
     def extend_last_note(self, seconds: int) -> None:

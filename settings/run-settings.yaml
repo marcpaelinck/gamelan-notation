@@ -22,8 +22,8 @@ options:
     run: true
     detailed_validation_logging : false
     autocorrect : true
-    autocorrect_kempyung : false
-    save_corrected_to_file : false
+    autocorrect_kempyung : true
+    save_corrected_to_file : true
     create_midifile : true
   soundfont:
     run: false

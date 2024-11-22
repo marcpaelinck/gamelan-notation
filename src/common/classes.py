@@ -187,9 +187,11 @@ class Beat:
     staves: dict[InstrumentPosition, list[Note]] = field(default_factory=dict)
     # Exceptions contains alternative staves for specific passes.
     exceptions: dict[(InstrumentPosition, Pass), list[Note]] = field(default_factory=dict)
-    prev: "Beat" = field(default=None, repr=False)
-    next: "Beat" = field(default=None, repr=False)
-    goto: dict[PASS, "Beat"] = field(default_factory=dict)
+    prev: "Beat" = field(default=None, repr=False)  # previous beat in the score
+    next: "Beat" = field(default=None, repr=False)  # next beat in the score
+    goto: dict[PASS, "Beat"] = field(
+        default_factory=dict
+    )  # next beat to be played according to the flow (GOTO metadata)
     validation_ignore: list[ValidationProperty] = field(default_factory=list)
     _pass_: PASS = 0  # Counts the number of times the beat is passed during generation of MIDI file.
 
