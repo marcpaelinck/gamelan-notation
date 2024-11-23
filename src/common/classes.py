@@ -104,10 +104,10 @@ class Note(NotationModel):
     def matches(self, pitch: Pitch, octave: Octave, stroke: Stroke, duration: Duration, rest_after: Duration) -> bool:
         return (
             pitch == self.pitch
-            and self.octave == octave
             and self.stroke == stroke
             and self.duration == duration
-            and self.rest_after == rest_after
+            and (self.octave == octave or octave is None)
+            and (self.rest_after == rest_after or rest_after is None)
         )
 
 

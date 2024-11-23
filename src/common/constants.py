@@ -81,31 +81,37 @@ class InstrumentType(NotationEnum):
 
 class InstrumentPosition(NotationEnum):
     # TODO replace with settings file
-    GONGS = "GONGS"
-    KEMPLI = "KEMPLI"
-    CENGCENG = "CENGCENG"
-    KENDANG = "KENDANG"
-    JEGOGAN = "JEGOGAN"
-    CALUNG = "CALUNG"
-    PENYACAH = "PENYACAH"
+    # The sorting order affects the layout of the
+    # corrected score (see common.utils.gongan_to_records)
+    UGAL = "UGAL"
+    SULING = "SULING"
+    GENDERRAMBAT = "GENDERRAMBAT"
+    TROMPONG = "TROMPONG"
     PEMADE_POLOS = "PEMADE_POLOS"
     PEMADE_SANGSIH = "PEMADE_SANGSIH"
     KANTILAN_POLOS = "KANTILAN_POLOS"
     KANTILAN_SANGSIH = "KANTILAN_SANGSIH"
-    UGAL = "UGAL"
     REYONG_1 = "REYONG_1"
     REYONG_2 = "REYONG_2"
     REYONG_3 = "REYONG_3"
     REYONG_4 = "REYONG_4"
-    GENDERRAMBAT = "GENDERRAMBAT"
-    TROMPONG = "TROMPONG"
+    PENYACAH = "PENYACAH"
+    CALUNG = "CALUNG"
+    JEGOGAN = "JEGOGAN"
+    KENDANG = "KENDANG"
+    CENGCENG = "CENGCENG"
+    GONGS = "GONGS"
+    KEMPLI = "KEMPLI"
     GENDERWAYANG_POLOS = "GENDERWAYANG_POLOS"
     GENDERWAYANG_SANGSIH = "GENDERWAYANG_SANGSIH"
-    SULING = "SULING"
 
     @property
     def instrumenttype(self):
         return InstrumentType[self.split("_")[0]]
+
+    @property
+    def shortcode(self):
+        return self.value.replace("_POLOS", "_P").replace("_SANGSIH", "_S").replace("WAYANG", "").replace("RAMBAT", "")
 
 
 class Pitch(NotationEnum):

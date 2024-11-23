@@ -123,7 +123,7 @@ def move_beat_to_start(score: Score) -> None:
                 # move notes with a total of 1 duration unit
                 notes_to_move = []
                 while notes and sum((note.total_duration for note in notes_to_move), 0) < 1:
-                    notes_to_move.append(notes.pop())
+                    notes_to_move.insert(0, notes.pop())
                 if not instrument in beat.staves:
                     beat.staves[instrument] = []
                 beat.staves[instrument][0:0] = notes_to_move  # insert at beginning

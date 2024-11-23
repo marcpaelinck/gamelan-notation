@@ -8,7 +8,7 @@ midi:
 samples:
   instrumentgroup: GAMELAN
 notation:
-  composition: pendet
+  composition: cendrawasih
   part: full
 soundfont:
   definition_file_out: viena_definitions_${midi.midiversion}.txt
@@ -20,7 +20,7 @@ options:
   validate_settings : true
   notation_to_midi:
     run: true
-    detailed_validation_logging : false
+    detailed_validation_logging : true
     autocorrect : true
     autocorrect_kempyung : true
     save_corrected_to_file : true

@@ -149,7 +149,8 @@ def gongan_to_records(gongan: Gongan, skipemptylines: bool = True) -> list[dict[
     """
 
     skip = []
-    alias = dict()
+    # Label to use for each position in the notation
+    pos_tags = {position: position.shortcode for position in InstrumentPosition}
     # If pemade and kantilan staves are identical, replace both positions with a single "GANGSA" position.
     for p_pos, k_pos in [
         (InstrumentPosition.PEMADE_POLOS, InstrumentPosition.KANTILAN_POLOS),
@@ -161,7 +162,7 @@ def gongan_to_records(gongan: Gongan, skipemptylines: bool = True) -> list[dict[
             and all(beat.staves[p_pos] == beat.staves[k_pos] for beat in gongan.beats)
         ):
             skip.append(k_pos)
-            alias[p_pos] = "GANGSA_" + p_pos.value.split("_")[1]
+            pos_tags[p_pos] = "GANGSA_" + p_pos.value.split("_")[1][0]
 
     result = (
         [{InstrumentFields.POSITION: COMMENT, 1: comment} for comment in gongan.comments]
@@ -170,7 +171,7 @@ def gongan_to_records(gongan: Gongan, skipemptylines: bool = True) -> list[dict[
             for metadata in gongan.metadata
         ]
         + [
-            {InstrumentFields.POSITION: alias.get(position, position)}
+            {InstrumentFields.POSITION: pos_tags.get(position, position)}
             | {beat.id: stave_to_string(beat.staves[position]) for beat in gongan.beats}
             for position in InstrumentPosition
             if position not in skip

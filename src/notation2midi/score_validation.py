@@ -20,7 +20,7 @@ from src.common.utils import (
     has_kempli_beat,
     score_to_notation_file,
 )
-from src.notation2midi.font_specific_code import get_note
+from src.notation2midi.font_specific_code import create_note
 
 logger = get_logger(__name__)
 
@@ -239,7 +239,7 @@ def incorrect_kempyung(
                             ):
                                 if autocorrect and iteration == 1:
                                     correct_note, correct_octave = kempyung_dict[(polos.pitch, polos.octave)]
-                                    correct_sangsih = get_note(
+                                    correct_sangsih = create_note(
                                         pitch=correct_note,
                                         octave=correct_octave,
                                         stroke=sangsih.stroke,
@@ -283,6 +283,12 @@ def create_missing_staves(
     all_instruments = (
         score.instrument_positions | {InstrumentPosition.KEMPLI} if add_kempli else score.instrument_positions
     )
+    # a kempli beat is a muted stroke
+    # Note: these two line are BaliMusic5 font exclusive!
+    # kempli_stroke = find_note(Pitch.STRIKE, Stroke.OPEN, 1, score.balimusic_font_dict.values())
+    kempli_stroke = create_note(pitch=Pitch.STRIKE, stroke=Stroke.OPEN, duration=1)
+    KEMPLI_BEAT = kempli_stroke.model_copy(update={"stroke": Stroke.MUTED, "symbol": kempli_stroke.symbol + "?"})
+
     if missing_positions := (all_instruments - set(beat.staves.keys())):
         silence = Stroke.SILENCE
         extension = Stroke.EXTENSION
@@ -296,9 +302,8 @@ def create_missing_staves(
 
         # Add a kempli beat, except if a metadata label indicates otherwise or if the kempli part was already given in the original score
         if InstrumentPosition.KEMPLI in staves.keys() and has_kempli_beat(gongan):
-            kemplinote = find_note(Pitch.STRIKE, Stroke.MUTED, 1, score.balimusic_font_dict.values())
             rests = create_rest_stave(Stroke.EXTENSION, beat.duration - 1)
-            staves[InstrumentPosition.KEMPLI] = [kemplinote] + rests
+            staves[InstrumentPosition.KEMPLI] = [KEMPLI_BEAT] + rests
             # (
             #     rests + [kemplinote] if score.settings.notation.beat_at_end else [kemplinote] + rests
             # )
@@ -409,7 +414,7 @@ def validate_score(
             )
             remaining_incorrect_kempyung.extend(invalids)
             corrected_invalid_kempyung.extend(corrected)
-            ignored_invalid_kempyung.extend(corrected)
+            ignored_invalid_kempyung.extend(ignored)
 
     def log_list(loglevel: callable, title: str, list: list[Any]) -> None:
         loglevel(title)

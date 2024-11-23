@@ -10,38 +10,14 @@ from src.common.constants import (
     Pitch,
     Stroke,
 )
-from src.common.utils import NOTE_LIST, initialize_lookups
+from src.common.utils import (
+    NOTE_LIST,
+    initialize_lookups,
+    most_occurring_stave_duration,
+)
 from src.settings.settings import BASE_NOTE_TIME, get_run_settings
 
 # ==================== BALI MUSIC 4 FONT =====================================
-
-
-def create_note_font4(
-    pitch: Pitch,
-    octave: Octave,
-    stroke: Stroke,
-    duration: Duration,
-    rest_after: Duration = None,
-    symbol: str = None,
-    font: NotationFont = NotationFont.BALIMUSIC5,
-) -> Note:
-    """Returns the first note with the given characteristics
-
-    Args:
-        pitch (Pitch): _description_
-        octave (Octave): _description_
-        stroke (Stroke): _description_
-        duration (Duration): _description_
-        rest_after (Duration): _description_
-        symbol (str): _description_
-        font(NotationFont): the font used
-
-    Returns:
-        Note: a copy of a Note from the note list if a match is found, otherwise an newly created Note object.
-    """
-    return get_nearest_note(
-        pitch=pitch, stroke=stroke, duration=duration, rest_after=rest_after, octave=octave, note_list=NOTE_LIST
-    )
 
 
 def postprocess_font4(score: Score) -> Score:
@@ -86,65 +62,6 @@ TREMOLO_NR_OF_NOTES_PER_QUARTERNOTE: int = 3  # should be a divisor of BASE_NOTE
 # Should also be an even number so that alternating note patterns end on the second note.
 TREMOLO_ACCELERATING_PATTERN: list[int] = [48, 40, 32, 26, 22, 18, 14, 10, 10, 10, 10, 10]
 TREMOLO_ACCELERATING_VELOCITY: list[int] = [100] * (len(TREMOLO_ACCELERATING_PATTERN) - 5) + [90, 80, 70, 60, 50]
-
-
-# note = next((note for note in NOTE_LIST if note.matches(pitch, octave, stroke, duration, rest_after)), None)
-# note = note or next((note for note in NOTE_LIST if note.matches(pitch, octave, stroke, 1, 0)), None)
-# note = note or next((note for note in NOTE_LIST if note.matches(pitch, 1, stroke, 1, 0)), None)
-# note = note or next((note for note in NOTE_LIST if note.matches(pitch, 1, Stroke.OPEN, 1, 0)), None)
-# note = note or create_note(pitch, octave, stroke, duration, rest_after, symbol="")
-
-
-def create_note_font5(
-    pitch: Pitch,
-    octave: Octave,
-    stroke: Stroke,
-    duration: Duration,
-    rest_after: Duration = None,
-    symbol: str = None,
-    font: NotationFont = NotationFont.BALIMUSIC5,
-) -> Note:
-    """Returns the first note with the given characteristics
-
-    Args:
-        pitch (Pitch): _description_
-        octave (Octave): _description_
-        stroke (Stroke): _description_
-        duration (Duration): _description_
-        rest_after (Duration): _description_
-        symbol (str): _description_
-        font(NotationFont): the font used
-
-    Returns:
-        Note: a copy of a Note from the note list if a match is found, otherwise an newly created Note object.
-    """
-    # note = next((note for note in NOTE_LIST if note.matches(pitch, octave, stroke, duration, rest_after)), None)
-    # note = note or next((note for note in NOTE_LIST if note.matches(pitch, octave, stroke, 1, 0)), None)
-    # note = note or next((note for note in NOTE_LIST if note.matches(pitch, 1, stroke, 1, 0)), None)
-    # note = note or next((note for note in NOTE_LIST if note.matches(pitch, 1, Stroke.OPEN, 1, 0)), None)
-    note = get_nearest_note(pitch, stroke, duration, rest_after, octave, NOTE_LIST)
-    # TODO error handling if note == None
-    note_symbol = note.symbol
-
-    # With BALIMUSIC5 font, symbol can consist of more than one character: a pitch symbol followed by one or more modifier symbols
-    additional_symbol = ""
-    symbol = note_symbol
-    if font is NotationFont.BALIMUSIC5:
-        if symbol[0] in "1234567" and note_symbol in "ioeruas":
-            # replace regular pitch symbol with grace note equivalent
-            note_symbol = "1234567"["ioeruas".find(note_symbol)]
-        additional_symbol = "," if octave == 0 else "<" if octave == 2 else ""
-        additional_symbol += "/" if stroke == Stroke.ABBREVIATED else "?" if stroke == Stroke.MUTED else ""
-
-    return note.model_copy(
-        update={
-            "symbol": note_symbol + additional_symbol + symbol[1:],
-            "octave": octave if octave else note.octave,
-            "stroke": stroke if stroke else note.stroke,
-            "duration": duration if duration else note.duration,
-            "rest_after": rest_after if rest_after else note.rest_after,
-        }
-    )
 
 
 def apply_ratio(note: Note, ratio_note: Note) -> tuple[Duration, Duration]:
@@ -367,57 +284,40 @@ def postprocess(score: Score) -> Score:
             gongan.metadata.extend(score.global_metadata)
 
 
-def get_nearest_note(
-    pitch: Pitch,
-    stroke: Stroke,
-    duration: float = None,
-    rest_after: float = None,
-    octave: int = None,
-    note_list: list[Note] = NOTE_LIST,
-) -> Note:
-    """Searches for the note with the best match
-
-    Args:
-        pitch (Pitch): _description_
-        stroke (Stroke): _description_
-        duration (float, optional): _description_. Defaults to None.
-        rest_after (float, optional): _description_. Defaults to None.
-        octave (int, optional): _description_. Defaults to None.
-        note_list (list[Note], optional): _description_. Defaults to NOTE_LIST.
-
-    Returns:
-        Note: a note if found, otherwise None
-    """
-    stroke_alt = {stroke} | set({Stroke.OPEN} if stroke in [Stroke.ABBREVIATED, Stroke.MUTED] else {})
-    duration_alt = {duration} | set({1} if duration else {})
-    rest_after_alt = {rest_after} | set({0} if duration else {})
-    octave_alt = {octave} | set({1} if octave else {})
-    attempts = list(product(stroke_alt, duration_alt, rest_after_alt, octave_alt))
-
-    for stroke_, duration_, rest_after_, octave_ in attempts:
-        note = next(
-            (
-                note
-                for note in note_list
-                if (note.pitch == pitch)
-                and (note.stroke == stroke_)
-                and (duration_ == None or note.duration == duration_)
-                and (rest_after_ == None or note.rest_after == rest_after_)
-                and (octave_ == None or note.octave == octave_)
-            ),
-            None,
-        )
-        if note:
-            return note
-    return note
-
-
 def create_note(
     pitch: Pitch,
+    octave: int,
+    stroke: Stroke,
+    duration: float,
+    rest_after: float,
+    symbol: str = "",
+    unicode: str = "",
+    symbol_description: str = "",
+    balifont_symbol_description: str = "",
+    modifier: Modifier = Modifier.NONE,
+    description: str = "",
+) -> Note:
+    return Note(
+        pitch=pitch,
+        octave=octave,
+        stroke=stroke,
+        duration=duration,
+        rest_after=rest_after,
+        symbol=symbol,
+        unicode=unicode,
+        symbol_description=symbol_description,
+        balifont_symbol_description=balifont_symbol_description,
+        modifier=modifier,
+        description=description,
+    )
+
+
+def get_note(
+    pitch: Pitch,
+    octave: Octave,
     stroke: Stroke,
     duration: Duration,
-    rest_after: Duration = None,
-    octave: Octave = None,
+    rest_after: Duration,
     symbol: str = None,
     font: NotationFont = NotationFont.BALIMUSIC5,
 ) -> Note:
@@ -435,29 +335,42 @@ def create_note(
     Returns:
         Note: a copy of a Note from the note list if a match is found, otherwise an newly created Note object.
     """
-    if font is NotationFont.BALIMUSIC4:
-        return create_note_font4(
-            pitch=pitch,
-            octave=octave,
-            stroke=stroke,
-            duration=duration,
-            rest_after=rest_after,
-            symbol=symbol,
-            font=font,
-        )
-    elif font is NotationFont.BALIMUSIC5:
-        return create_note_font5(
-            pitch=pitch,
-            octave=octave,
-            stroke=stroke,
-            duration=duration,
-            rest_after=rest_after,
-            symbol=symbol,
-            font=font,
-        )
+    note = next((note for note in NOTE_LIST if note.matches(pitch, octave, stroke, duration, rest_after)), None)
+    note = note or next((note for note in NOTE_LIST if note.matches(pitch, octave, stroke, 1, 0)), None)
+    note = note or next((note for note in NOTE_LIST if note.matches(pitch, 1, stroke, 1, 0)), None)
+    note = note or next((note for note in NOTE_LIST if note.matches(pitch, 1, Stroke.OPEN, 1, 0)), None)
+    note = note or create_note(pitch, octave, stroke, duration, rest_after, symbol="")
+    note_symbol = note.symbol
+    if not symbol:
+        symbol = note_symbol
+    additional_symbol = ""
+    if font is NotationFont.BALIMUSIC5:
+        # symbol can consist of more than one character: a pitch symbol followed by one or more modifier symbols
+        if symbol[0] in "1234567" and note_symbol in "ioeruas":
+            # replace regular pitch symbol with grace note equivalent
+            note_symbol = "1234567"["ioeruas".find(note_symbol)]
+        additional_symbol = "," if octave == 0 else "<" if octave == 2 else ""
+
+    return note.model_copy(
+        update={
+            "symbol": note_symbol + additional_symbol + symbol[1:],
+            "octave": octave,
+            "stroke": stroke,
+            "duration": duration,
+            "rest_after": rest_after,
+        }
+    )
 
 
 if __name__ == "__main__":
     settings = get_run_settings()
     initialize_lookups(settings)
-    print(create_note(pitch=Pitch.STRIKE, stroke=Stroke.MUTED, duration=1))
+    print(
+        get_note(
+            pitch=Pitch.STRIKE,
+            octave=None,
+            stroke=Stroke.MUTED,
+            duration=1,
+            rest_after=0,
+        )
+    )
