@@ -7,7 +7,10 @@ import pandas as pd
 
 from src.common.classes import RunSettings
 from src.common.constants import Pitch
+from src.common.logger import get_logger
 from src.settings.settings import FontFields, MidiNotesFields
+
+logger = get_logger(__name__)
 
 
 def check_unique_character_values(run_settings: RunSettings) -> None:
@@ -18,10 +21,10 @@ def check_unique_character_values(run_settings: RunSettings) -> None:
     font_df = pd.read_csv(run_settings.font.filepath, sep="\t", quoting=csv.QUOTE_NONE)[groupby + [FontFields.SYMBOL]]
     duplicates = font_df[font_df.duplicated(groupby, keep=False)].groupby(groupby)[FontFields.SYMBOL].apply(list)
     if duplicates.size > 0:
-        print("DUPLICATE CHARACTER VALUES:")
-        print(duplicates)
+        logger.warning("DUPLICATE CHARACTER VALUES:")
+        logger.warning(duplicates)
     else:
-        print("NO DUPLICATE CHARACTER VALUES FOUND.")
+        logger.info("NO DUPLICATE CHARACTER VALUES FOUND.")
 
 
 def check_font_midi_match(run_settings: RunSettings) -> None:
@@ -50,25 +53,25 @@ def check_font_midi_match(run_settings: RunSettings) -> None:
     merged = midi_values.merge(font_df, how="left", left_on=(midi_keys), right_on=(font_keys), suffixes=["_F", "_M"])
     missing = merged[merged[FontFields.PITCH].isna()]
     if missing.size > 0:
-        print(f"MIDI NOTES MISSING A CHARACTER EQUIVALENT IN THE FONT DEFINITION FOR {instrumentgroup}:")
-        print(missing[midi_keys].drop_duplicates())
+        logger.warning(f"MIDI NOTES MISSING A CHARACTER EQUIVALENT IN THE FONT DEFINITION FOR {instrumentgroup}:")
+        logger.warning(missing[midi_keys].drop_duplicates())
     else:
-        print(f"ALL MIDI NOTES HAVE A CORRESPONDING CHARACTER IN THE FONT DEFINITION FOR {instrumentgroup}.")
+        logger.info(f"ALL MIDI NOTES HAVE A CORRESPONDING CHARACTER IN THE FONT DEFINITION FOR {instrumentgroup}.")
 
     # 2. Find notes without corresponding midi value.
     merged = font_df.merge(midi_values, how="left", left_on=(font_keys), right_on=(midi_keys), suffixes=["_F", "_M"])
     missing = merged[merged[MidiNotesFields.PITCH].isna() & ~(merged[FontFields.PITCH] == Pitch.NONE.value)]
     if missing.size > 0:
-        print("-------------------------------------")
-        print(f"CHARACTERS IN THE FONT DEFINITION MISSING A MIDI NOTE EQUIVALENT FOR {instrumentgroup}:")
-        print(missing[font_keys].drop_duplicates())
+        logger.info("-------------------------------------")
+        logger.warning(f"CHARACTERS IN THE FONT DEFINITION MISSING A MIDI NOTE EQUIVALENT FOR {instrumentgroup}:")
+        logger.warning(missing[font_keys].drop_duplicates())
     else:
-        print(f"ALL CHARACTERS HAVE A CORRESPONDING NOTE IN THE MIDINOTES DEFINITION FOR {instrumentgroup}.")
+        logger.info(f"ALL CHARACTERS HAVE A CORRESPONDING NOTE IN THE MIDINOTES DEFINITION FOR {instrumentgroup}.")
 
 
-def validate_settings(run_settings: RunSettings):
-    print("======== SETTINGS VALIDATION ========")
+def validate_input_data(run_settings: RunSettings):
+    logger.info("======== SETTINGS VALIDATION ========")
     check_unique_character_values(run_settings)
-    print("-------------------------------------")
+    logger.info("-------------------------------------")
     check_font_midi_match(run_settings)
-    print("=====================================")
+    logger.info("=====================================")

@@ -1,5 +1,8 @@
-from enum import Enum, StrEnum, auto
-from typing import Any
+from enum import StrEnum
+
+from src.common.logger import get_logger
+
+logger = get_logger(__name__)
 
 BPM = int
 PASS = int
@@ -9,6 +12,7 @@ BeatId = str
 Pass = int
 Octave = int
 MIDIvalue = int
+MidiDict = dict[str, list[dict[str, str | int | None]]]
 
 
 class NotationEnum(StrEnum):
@@ -68,15 +72,19 @@ class InstrumentType(NotationEnum):
     PEMADE = "PEMADE"
     KANTILAN = "KANTILAN"
     UGAL = "UGAL"
-    GENDERRAMBAT = "GENDERRAMBAT"
-    GENDERWAYANG = "GENDERWAYANG"
     REYONG = "REYONG"
+    GENDERRAMBAT = "GENDERRAMBAT"
     TROMPONG = "TROMPONG"
+    GENDERWAYANG = "GENDERWAYANG"
+    SULING = "SULING"
 
 
 class InstrumentPosition(NotationEnum):
     # TODO replace with settings file
+    # The sorting order affects the layout of the
+    # corrected score (see common.utils.gongan_to_records)
     UGAL = "UGAL"
+    SULING = "SULING"
     GENDERRAMBAT = "GENDERRAMBAT"
     TROMPONG = "TROMPONG"
     PEMADE_POLOS = "PEMADE_POLOS"
@@ -87,13 +95,13 @@ class InstrumentPosition(NotationEnum):
     REYONG_2 = "REYONG_2"
     REYONG_3 = "REYONG_3"
     REYONG_4 = "REYONG_4"
+    PENYACAH = "PENYACAH"
     CALUNG = "CALUNG"
     JEGOGAN = "JEGOGAN"
-    PENYACAH = "PENYACAH"
-    CENGCENG = "CENGCENG"
     KENDANG = "KENDANG"
-    KEMPLI = "KEMPLI"
+    CENGCENG = "CENGCENG"
     GONGS = "GONGS"
+    KEMPLI = "KEMPLI"
     GENDERWAYANG_POLOS = "GENDERWAYANG_POLOS"
     GENDERWAYANG_SANGSIH = "GENDERWAYANG_SANGSIH"
 
@@ -101,10 +109,14 @@ class InstrumentPosition(NotationEnum):
     def instrumenttype(self):
         return InstrumentType[self.split("_")[0]]
 
+    @property
+    def shortcode(self):
+        return self.value.replace("_POLOS", "_P").replace("_SANGSIH", "_S").replace("WAYANG", "").replace("RAMBAT", "")
+
 
 class Pitch(NotationEnum):
     # TODO replace with settings file
-    # Note: Pitch.NONE and Pitch.TICK are used explicitly in code.
+    # Note: Pitch.NONE and Pitch.STRIKE are used explicitly in code.
     DING = "DING"
     DONG = "DONG"
     DENG = "DENG"
@@ -119,7 +131,7 @@ class Pitch(NotationEnum):
     PAK = "PAK"
     DE = "DE"
     TUT = "TUT"
-    JU = "JU"
+    CUNG = "CUNG"
     KUNG = "KUNG"
     PLAK = "PLAK"
     DAG = "DAG"
@@ -130,8 +142,7 @@ class Pitch(NotationEnum):
     OPEN = "OPEN"
     PEK = "PEK"
     PUR = "PUR"
-    TICK = "TICK"
-    TICK_2_PANGGUL = "TICK_2_PANGGUL"
+    STRIKE = "STRIKE"
     TONG = "TONG"
     NONE = "NONE"
 
@@ -140,6 +151,8 @@ class Stroke(NotationEnum):
     OPEN = "OPEN"
     MUTED = "MUTED"
     ABBREVIATED = "ABBREVIATED"
+    TICK1 = "TICK1"
+    TICK2 = "TICK2"
     EXTENSION = "EXTENSION"
     SILENCE = "SILENCE"
     NONE = "NONE"
@@ -181,4 +194,4 @@ VALID_MIDI_MESSAGE_TYPES = ["note_on", "note_off", "rest"]
 
 
 if __name__ == "__main__":
-    print(InstrumentType.CALUNG.sequence)
+    logger.info(InstrumentType.CALUNG.sequence)

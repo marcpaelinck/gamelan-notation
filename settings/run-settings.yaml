@@ -1,19 +1,32 @@
 ---
-# The settings below (except for switches) refer to values in the data.yaml file.
-# The font setting is contained in the selected notation component.
+# The settings below (except for options) refer to values in the data.yaml file.
+# The font selection is defined in the details of the selected notation component (see data.yaml file).
 instruments: 
   instrumentgroup: GONG_KEBYAR
 midi:
-  midiversion: GONG_KEBYAR1
+  midiversion: GAMELAN1
 samples:
-  instrumentgroup: GONG_KEBYAR
+  instrumentgroup: GAMELAN
 notation:
-  composition: rejangdewa
+  composition: cendrawasih
+  part: full
 soundfont:
-  outputfile: viena_definitions_{midiversion}.xlsx
-switches:
+  definition_file_out: viena_definitions_${midi.midiversion}.txt
+  soundfont_file_out: ${midi.midiversion}.sf2
+  soundfont_destination_folders:
+    - ~/Documents/SynthFont
+    - ~/Documents/administratie/_VRIJETIJD_REIZEN/Scripts-Programmas/JavaScriptProjects/midi-player/midiplayer/data/soundfont
+options:
   validate_settings : true
-  detailed_validation_logging : false
-  autocorrect : true
-  save_corrected_to_file : true
-  create_midifile : true
+  notation_to_midi:
+    run: true
+    detailed_validation_logging : true
+    autocorrect : true
+    autocorrect_kempyung : true
+    save_corrected_to_file : true
+    create_midifile : true
+  soundfont:
+    run: false
+    create_sf2_files: true
+
+    

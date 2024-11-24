@@ -1,17 +1,18 @@
 symbol	unicode	symbol_description	balifont_symbol_description	pitch	octave	stroke	duration	rest_after	modifier	description
 (	0x0028	left round bracket	t	TUT		OPEN	1.0	0.0	NONE	kendang tut (lanang)
-)	0x0029	right round bracket	serifless u	KUNG		OPEN	1.0	0.0	NONE	kendang kung (lanang)
+)	0x0029	right round bracket	serifless u	KUNG		OPEN	1.0	0.0	NONE	kendang kung (ladon)
 *	0x002a	asterisk	p	PAK		OPEN	1.0	0.0	NONE	kendang pak (lanang)
 ,	0x002c	comma	dot under preceding note character	NONE	0	NONE	0	0	OCTAVE_0	sets octave of preceding note to 0
 -	0x002d	hyphen	dash	NONE		EXTENSION	1.0	0.0	NONE	extends note duration
 .	0x002e	period	dot	NONE		SILENCE	0.0	1.0	NONE	silence (muted note) open
 /	0x002f	forward slash	slash right of char (combining)	NONE		ABBREVIATED	0.4	0.6	ABBREVIATE	abbreviates precceding note
-0	0x0030	digit 0	serifless u upside-down	JU		OPEN	1.0	0.0	NONE	kendang ju (wadon)
+0	0x0030	digit 0	serifless n	CUNG		OPEN	1.0	0.0	NONE	kendang cung (wadon)
 8	0x0038	digit 8	k	KA		OPEN	1.0	0.0	NONE	kendang ka (wadon)
 9	0x0039	digit 9	d	DE		OPEN	1.0	0.0	NONE	kendang dé (wadon)
 :	0x003A	colon	three vertical lines above char (combining)	NONE		NONE	0	0	TREMOLO_ACCELERATING	"repeated, rapid beats on preceding note "
 ;	0x003B	semicolon	three vertical lines of increasing length above char (combining)	NONE		NONE	0	0	TREMOLO	repeated beats on preceding note, starting slowly and accelerating
 A	0x0041	uppercase A	superscript a in front of next note	DANG	1	OPEN	0.5	0	GRACE_NOTE	grace note dang, subtracts own duration from preceding note
+B	0x0041	uppercase B	superscript b in front of next note	BYONG		OPEN	0.5	0	GRACE_NOTE	grace note byong, subtracts own duration from preceding note
 E	0x0045	uppercase E	superscript e in front of next note	DENG	1	OPEN	0.5	0	GRACE_NOTE	grace note deng, subtracts own duration from preceding note
 G	0x0047	uppercase G	G	GIR		OPEN	1.0	0.0	NONE	gir
 I	0x0049	uppercase I	superscript i in front of next note	DING	1	OPEN	0.5	0	GRACE_NOTE	grace note ding, subtracts own duration from preceding note
@@ -19,19 +20,20 @@ O	0x004F	uppercase O	superscript o in front of next note	DONG	1	OPEN	0.5	0	GRACE
 P	0x0050	uppercase P	P	PUR		OPEN	1.0	0.0	NONE	pur
 T	0x0054	uppercase T	T	TONG		OPEN	1.0	0.0	NONE	tong
 U	0x0055	uppercase U	superscript u in front of next note	DUNG	1	OPEN	0.5	0	GRACE_NOTE	grace note dung, subtracts own duration from preceding note
-X	0x0058	uppercase X	superscript x in front of next note	TICK		OPEN	0.5	0	GRACE_NOTE	grace tick, subtracts own duration from preceding note
+X	0x0058	uppercase X	superscript x in front of next note	STRIKE		TICK1	0.5	0	GRACE_NOTE	grace tick, subtracts own duration from preceding note
 a	0x0061	lowercase a	a	DANG	1	OPEN	1.0	0.0	NONE	dang1 open
 b	0x0062	lowercase b	b	BYONG		OPEN	1.0	0.0	NONE	byong
 e	0x0065	lowercase e	e	DENG	1	OPEN	1.0	0.0	NONE	deng1 open
 i	0x0069	lowercase i	dotless i	DING	1	OPEN	1.0	0.0	NONE	ding1 open
+k	0x006b	lowercase k	k	STRIKE		OPEN	1.0	0	NONE	kempli tick (not used in notation, but used in code)
 n	0x006e	lowercase n	n	NONE		NONE	0	0	NOROT	norot for the entire beat duration. The preceding note is the base note.
 o	0x006f	lowercase o	o	DONG	1	OPEN	1.0	0.0	NONE	dong1 open
 r	0x0072	lowercase r	e and u combined	DEUNG	1	OPEN	1.0	0.0	NONE	deung open
 s	0x0073	lowercase s	a and i combined	DAING	1	OPEN	1.0	0.0	NONE	daing open
-t	0x0074	lowercase t	e and i combined	DENGDING	0	OPEN	1.0	0.0	NONE	dengding open (reyong 1)
+t	0x0074	lowercase t	e and i combined	DENGDING		OPEN	1.0	0.0	NONE	dengding open (reyong 1)
 u	0x0075	lowercase u	u	DUNG	1	OPEN	1.0	0.0	NONE	dung1 open
-x	0x0078	lowercase x	x	TICK		OPEN	1.0	0.0	NONE	tick open (with one panggul)
-y	0x0079	lowercase y	y	TICK_2_PANGGUL		OPEN	1.0	0.0	NONE	tick open with two panggul
+x	0x0078	lowercase x	x	STRIKE		TICK1	1.0	0.0	NONE	tick open (with one panggul)
+y	0x0079	lowercase y	y	STRIKE		TICK2	1.0	0.0	NONE	tick open with two panggul
 <	0x003c	less than	overdot (combining)	NONE	2	NONE	0	0	OCTAVE_2	sets octave of preceding note to 2
 =	0x003d	equal	double macron (combining)	NONE		NONE	0.25	0	QUARTER_NOTE	sets the duration of the preceding note to 1/4
 ?	0x003f	question mark	slash through char (combining)	NONE		MUTED	0.25	0.75	MUTE	mutes preceding note

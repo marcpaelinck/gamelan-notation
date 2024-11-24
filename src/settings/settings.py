@@ -1,13 +1,15 @@
 import os
+import re
 from enum import StrEnum
-from pprint import pprint
 from typing import Any
 
 import yaml
 from pydantic import BaseModel
 
 from src.common.classes import RunSettings
-from src.common.constants import NotationFont
+from src.common.logger import get_logger
+
+logger = get_logger(__name__)
 
 BASE_NOTE_TIME = 24
 BASE_NOTES_PER_BEAT = 4
@@ -45,14 +47,14 @@ class FontFields(SStrEnum):
 class InstrumentFields(SStrEnum):
     POSITION = "position"
     INSTRUMENT = "instrument"
-    GROUP = "groups"
+    GROUP = "group"
 
 
 # instrumenttags.tsv
 class InstrumentTagFields(SStrEnum):
     TAG = "tag"
     INFILE = "infile"
-    POSITION = "positions"
+    POSITIONS = "positions"
 
 
 # midinotes.tsv
@@ -64,21 +66,52 @@ class MidiNotesFields(SStrEnum):
     OCTAVE = "octave"
     STROKE = "stroke"
     REMARK = "remark"
+    MIDINOTE = "midinote"
+    ROOTNOTE = "rootnote"
     SAMPLE = "sample"
-    PRESET = "preset"
 
 
 class PresetsFields(SStrEnum):
     INSTRUMENTGROUP = "instrumentgroup"
     INSTRUMENTTYPE = "instrumenttype"
+    POSITION = "position"
     BANK = "bank"
     PRESET = "preset"
+    CHANNEL = "channel"
     PRESET_NAME = "preset_name"
 
 
 SETTINGSFOLDER = "./settings"
 RUN_SETTINGSFILE = "run-settings.yaml"
 DATA_INFOFILE = "data.yaml"
+
+
+def post_process(subdict: dict[str, Any], run_settings_dict: dict[str, Any] = None):
+    """This function enables references to yaml key values using ${<yaml_path>} notation.
+    The function substitutes these values with the corresponding yaml settings values.
+    Does not (yet) implement usage of references within a list structure.
+
+    Args:
+        subdict (dict[str, Any]): Part of a yaml stucture in Python format.
+        run_settings_dict(dict[str, Any]): Full yaml structure in Python dict format.
+    """
+    found: re.Match
+
+    for key, value in subdict.items():
+        if isinstance(value, dict):
+            # Iterate through dict structures until a root node is found
+            subdict[key] = post_process(value, run_settings_dict or subdict)
+        elif isinstance(value, str):
+            # Only implemented for key: str items. Does not operate on list structures (yet)
+            while found := re.search(r"\$\{([\w\.]+)\}", value):
+                keys = found.group(1).split(".")
+                item = run_settings_dict
+                for key1 in keys:
+                    item = item[key1]
+                value = value.replace(found.group(0), item)
+                i = 1
+            subdict[key] = value
+    return subdict
 
 
 def read_settings(filename: str) -> dict:
@@ -108,7 +141,7 @@ def get_settings_fields(cls: BaseModel, settings_dict: dict) -> dict[str, Any]:
     return retval
 
 
-def get_run_settings() -> RunSettings:
+def get_run_settings(notation: dict[str, str] = None) -> RunSettings:
     """Retrieves the run settings from the run settings yaml file, enriched with information
        from the data information yaml file.
 
@@ -125,18 +158,28 @@ def get_run_settings() -> RunSettings:
     INSTRUMENTS = "instruments"
     FONT = "font"
     SOUNDFONT = "soundfont"
-    SWITCHES = "switches"
+    OPTIONS = "options"
     COMPOSITION = "composition"
+    FILE = "file"
+    PART = "part"
+    LOOP = "loop"
+    FULL = "full"
     INSTRUMENTGROUP = "instrumentgroup"
     MIDIVERSION = "midiversion"
     FONTVERSION = "fontversion"
+
+    if notation:
+        run_settings_dict[NOTATION] = notation
 
     settings_dict = dict()
 
     composition = data_dict[NOTATION][COMPOSITION][run_settings_dict[NOTATION][COMPOSITION]]
     settings_dict[NOTATION] = get_settings_fields(
-        RunSettings.NotationInfo, run_settings_dict[NOTATION] | data_dict[NOTATION] | composition
+        RunSettings.NotationInfo, data_dict[NOTATION] | composition | run_settings_dict[NOTATION]
     )
+    settings_dict[NOTATION][FILE] = composition[PART][run_settings_dict[NOTATION][PART]]
+    # Only 'full' composition will be extended with 'attenuation time'.
+    settings_dict[NOTATION][LOOP] = run_settings_dict[NOTATION][PART] != FULL
 
     midiversion = data_dict[MIDI][MIDIVERSION][run_settings_dict[MIDI][MIDIVERSION]]
     settings_dict[MIDI] = get_settings_fields(
@@ -148,9 +191,12 @@ def get_run_settings() -> RunSettings:
         RunSettings.SampleInfo, samples | run_settings_dict[SAMPLES] | data_dict[SAMPLES]
     )
 
-    instruments = data_dict[INSTRUMENTS][INSTRUMENTGROUP][run_settings_dict[INSTRUMENTS][INSTRUMENTGROUP]]
+    instruments = data_dict[INSTRUMENTS][INSTRUMENTGROUP][composition[INSTRUMENTGROUP]]
     settings_dict[INSTRUMENTS] = get_settings_fields(
-        RunSettings.InstrumentInfo, instruments | data_dict[INSTRUMENTS] | run_settings_dict[INSTRUMENTS]
+        RunSettings.InstrumentInfo,
+        data_dict[INSTRUMENTS]
+        | data_dict[NOTATION][COMPOSITION][run_settings_dict[NOTATION][COMPOSITION]]
+        | instruments,
     )
 
     font = data_dict[FONT][FONTVERSION][composition[FONTVERSION]] | {FONTVERSION: composition[FONTVERSION]}
@@ -160,7 +206,9 @@ def get_run_settings() -> RunSettings:
         RunSettings.SoundfontInfo, data_dict[SOUNDFONT] | run_settings_dict[SOUNDFONT]
     )
 
-    settings_dict[SWITCHES] = get_settings_fields(RunSettings.Switches, run_settings_dict[SWITCHES])
+    settings_dict[OPTIONS] = get_settings_fields(RunSettings.Options, run_settings_dict[OPTIONS])
+
+    settings_dict = post_process(settings_dict)
 
     return RunSettings.model_validate(settings_dict)
 
@@ -168,4 +216,5 @@ def get_run_settings() -> RunSettings:
 if __name__ == "__main__":
     # For testing
     settings = get_run_settings()
-    pprint(settings)
+    print(settings.soundfont)
+    print(settings.soundfont.sf_filepath_list)

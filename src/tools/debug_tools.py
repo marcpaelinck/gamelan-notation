@@ -12,11 +12,13 @@ from src.common.constants import (
     InstrumentGroup,
     InstrumentPosition,
     InstrumentType,
-    NoteType,
     Stroke,
 )
+from src.common.logger import get_logger
 from src.common.lookups import InstrumentTag
 from src.common.utils import create_position_range_lookup
+
+logger = get_logger(__name__)
 
 
 def get_all_tags():
@@ -111,7 +113,7 @@ def map_positions():
                 mytag.positions.extend(positions)
                 break
     tags_dict = [mytag.model_dump() for mytag in tags]
-    print([t.tag for t in tags if not t.positions])
+    logger.info([t.tag for t in tags if not t.positions])
     tags_df = pd.DataFrame.from_records(tags_dict)
     tags_df.sort_values(by="tag", key=lambda col: col.str.lower())
     tags_df.to_csv("./settings/instrumenttags.csv", sep="\t", index=False)
@@ -178,11 +180,11 @@ def rename_files(folderpath: str, filter: str, findtext: str, replacetext: str, 
             if newfilename != filename:
                 break
         if print_only:
-            print(f"{os.path.basename(filename)} -> {os.path.basename(newfilename)}")
+            logger.info(f"{os.path.basename(filename)} -> {os.path.basename(newfilename)}")
         else:
             os.rename(filename, newfilename)
     if print_only:
-        print("No files were renamed (print_only==True)")
+        logger.info("No files were renamed (print_only==True)")
 
 
 def rename_notes_in_filenames(folderpath: str, group: InstrumentGroup, print_only: bool = True):

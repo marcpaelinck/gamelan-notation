@@ -5,17 +5,17 @@
 """
 
 import json
-import os
 import re
 from collections import defaultdict
-from os import path
 
 import numpy as np
 import pandas as pd
-from mido import MetaMessage, MidiFile, MidiTrack
+from mido import MidiFile
 
 from src.common.classes import Beat, Gongan, RunSettings, Score
 from src.common.constants import DEFAULT, InstrumentPosition, Pitch, Stroke
+from src.common.logger import get_logger
+from src.common.lookups import PRESET_LOOKUP
 from src.common.metadata_classes import (
     GonganMeta,
     GoToMeta,
@@ -23,6 +23,8 @@ from src.common.metadata_classes import (
     LabelMeta,
     MetaData,
     MetaDataSwitch,
+    OctavateMeta,
+    Range,
     RepeatMeta,
     SilenceMeta,
     TempoMeta,
@@ -34,22 +36,31 @@ from src.common.utils import (
     SYMBOLVALUE_TO_MIDINOTE_LOOKUP,
     TAG_TO_POSITION_LOOKUP,
     create_rest_stave,
-    read_settings,
+    get_whole_rest_note,
+    has_kempli_beat,
+    initialize_lookups,
+    most_occurring_beat_duration,
+    most_occurring_stave_duration,
 )
 from src.notation2midi.font_specific_code import postprocess
 from src.notation2midi.midi_track import MidiTrackX
-from src.notation2midi.score_validation import add_missing_staves, validate_score
+from src.notation2midi.score_validation import (
+    add_missing_staves,
+    complement_shorthand_pokok_staves,
+    validate_score,
+)
 from src.settings.settings import (
     ATTENUATION_SECONDS_AFTER_MUSIC_END,
     COMMENT,
     METADATA,
     NON_INSTRUMENT_TAGS,
-    get_run_settings,
 )
-from src.settings.settings_validation import validate_settings
+from src.settings.settings_validation import validate_input_data
+
+logger = get_logger(__name__)
 
 
-def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
+def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrackX:
     """Generates the MIDI content for a single instrument position.
 
     Args:
@@ -65,8 +76,7 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
             for beat in gongan.beats:
                 beat._pass_ = 0
 
-    track = MidiTrackX(score.settings.font)
-    track.append(MetaMessage("track_name", name=position.value, time=0))
+    track = MidiTrackX(position, PRESET_LOOKUP[position])
 
     reset_pass_counters()
     beat = score.gongans[0].beats[0]
@@ -82,6 +92,51 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrack:
         beat = beat.goto.get(beat._pass_, beat.next)
 
     return track
+
+
+def move_beat_to_start(score: Score) -> None:
+    # If the last gongan is regular (has a kempli beat), create an additional gongan with an empty beat
+    last_gongan = score.gongans[-1]
+    if has_kempli_beat(last_gongan):
+        new_gongan = Gongan(id=last_gongan.id + 1, beats=[], beat_duration=0)
+        score.gongans.append(new_gongan)
+        last_beat = last_gongan.beats[-1]
+        new_beat = Beat(
+            id=1,
+            sys_id=last_gongan.id + 1,
+            bpm_start={-1, last_beat.bpm_end[-1]},
+            bpm_end={-1, last_beat.bpm_end[-1]},
+            duration=0,
+            prev=last_beat,
+        )
+        last_beat.next = new_beat
+        for instrument, notes in last_beat.staves.items():
+            new_beat.staves[instrument] = []
+        new_gongan.beats.append(new_beat)
+
+    # Iterate through the beats starting from the end.
+    # Move the end note of each instrument in the previous beat to the start of the current beat.
+    beat = score.gongans[-1].beats[-1]
+    while beat.prev:
+        for instrument, notes in beat.prev.staves.items():
+            if notes:
+                # move notes with a total of 1 duration unit
+                notes_to_move = []
+                while notes and sum((note.total_duration for note in notes_to_move), 0) < 1:
+                    notes_to_move.insert(0, notes.pop())
+                if not instrument in beat.staves:
+                    beat.staves[instrument] = []
+                beat.staves[instrument][0:0] = notes_to_move  # insert at beginning
+        # update beat and gongan duration values
+        beat.duration = most_occurring_stave_duration(beat.staves)
+        # beat.duration = max(sum(note.total_duration for note in notes) for notes in list(beat.staves.values()))
+        gongan = score.gongans[beat.sys_seq]
+        gongan.beat_duration = most_occurring_beat_duration(gongan.beats)
+        beat = beat.prev
+
+    # Add a rest at the beginning of the first beat
+    for instrument, notes in score.gongans[0].beats[0].staves.items():
+        notes.insert(0, get_whole_rest_note(Stroke.SILENCE))
 
 
 def apply_metadata(metadata: list[MetaData], gongan: Gongan, score: Score) -> None:
@@ -153,14 +208,19 @@ def apply_metadata(metadata: list[MetaData], gongan: Gongan, score: Score) -> No
                 gongan.gongantype = meta.data.status
                 if meta.data.status is MetaDataSwitch.OFF:
                     for beat in gongan.beats:
-                        if InstrumentPosition.KEMPLI in beat.staves:
-                            beat.staves[InstrumentPosition.KEMPLI] = create_rest_stave(Stroke.SILENCE, beat.duration)
+                        # Default is all beats
+                        if beat.id in meta.data.beats or not meta.data.beats:
+                            if InstrumentPosition.KEMPLI in beat.staves:
+                                beat.staves[InstrumentPosition.KEMPLI] = create_rest_stave(
+                                    Stroke.SILENCE, beat.duration
+                                )
             case GonganMeta():
                 # TODO: how to safely synchronize all instruments starting from next regular gongan?
                 gongan.gongantype = meta.data.type
             case SilenceMeta():
                 # Add a separate silence stave to the gongan beats for each instrument position and pass mentioned.
                 for beat in gongan.beats:
+                    # Default is all beats
                     if beat.id in meta.data.beats or not meta.data.beats:
                         for position in meta.data.positions:
                             beat.exceptions.update(
@@ -172,8 +232,13 @@ def apply_metadata(metadata: list[MetaData], gongan: Gongan, score: Score) -> No
             case ValidationMeta():
                 for beat in [b for b in gongan.beats if b.id in meta.data.beats] or gongan.beats:
                     beat.validation_ignore.extend(meta.data.ignore)
-
-                pass
+            case OctavateMeta():
+                for beat in gongan.beats:
+                    if meta.data.instrument in beat.staves:
+                        for idx in range(len(stave := beat.staves[meta.data.instrument])):
+                            note = stave[idx]
+                            if note.octave != None:
+                                stave[idx] = note.model_copy(update={"octave": note.octave + meta.data.octaves})
             case _:
                 raise ValueError(f"Metadata value {meta.data.metatype} is not supported.")
 
@@ -330,7 +395,11 @@ def create_score_object_model(run_settings: RunSettings) -> Score:
             for meta in beat_info.get(METADATA, []):
                 # Note that `meta`` is not a valid json string.
                 # It will be converted to the required json format by the MetaData class.
-                metadata.append(MetaData(data=meta))
+                metadata_obj = MetaData(data=meta)
+                if metadata_obj.data.range == Range.SCORE:
+                    score.global_metadata.append(metadata_obj)
+                else:
+                    metadata.append(metadata_obj)
 
             # Add comment tags to the beat
             for comment in beat_info.get(COMMENT, []):
@@ -339,7 +408,11 @@ def create_score_object_model(run_settings: RunSettings) -> Score:
         # Create a new gongan
         if beats:
             gongan = Gongan(
-                id=int(sys_id), beats=beats, beat_duration=beats[0].duration, metadata=metadata, comments=comments
+                id=int(sys_id),
+                beats=beats,
+                beat_duration=most_occurring_beat_duration(beats),
+                metadata=metadata,
+                comments=comments,
             )
             score.gongans.append(gongan)
             metadata = []
@@ -348,10 +421,21 @@ def create_score_object_model(run_settings: RunSettings) -> Score:
 
     # Apply font-specific modifications
     postprocess(score)
+    filler = next(
+        note
+        for note in score.balimusic_font_dict.values()
+        if note.stroke == Stroke.EXTENSION and note.total_duration == 1
+    )
+    complement_shorthand_pokok_staves(score)
+    # Add blank staves for all other omitted instruments
+    add_missing_staves(score=score, add_kempli=False)
+    if score.settings.notation.beat_at_end:
+        # This simplifies the addition of missing staves and correct processing of metadata
+        move_beat_to_start(score)
     for gongan in score.gongans:
         apply_metadata(gongan.metadata, gongan, score)
-    # Add kempli beats and blank staves for all other omitted instruments
-    add_missing_staves(score)
+    # Add kempli beats
+    add_missing_staves(score=score, add_kempli=True)
 
     return score
 
@@ -376,31 +460,32 @@ def create_midifile(score: Score) -> None:
         score (Score): The object model.
         separate_files (bool, optional): If True, a separate file will be created for each instrument. Defaults to False.
     """
-    outfilepathfmt = score.settings.notation.midi_out_filepath
     mid = MidiFile(ticks_per_beat=96, type=1)
 
     for position in sorted(score.instrument_positions, key=lambda x: x.sequence):
         track = notation_to_track(score, position)
         mid.tracks.append(track)
-    add_attenuation_time(mid.tracks, seconds=ATTENUATION_SECONDS_AFTER_MUSIC_END)
-    mid.save(outfilepathfmt.format(position="", midiversion=score.settings.midi.midiversion, ext="mid"))
+    if not score.settings.notation.loop:
+        add_attenuation_time(mid.tracks, seconds=ATTENUATION_SECONDS_AFTER_MUSIC_END)
+    outfilepath = score.settings.notation.midi_out_filepath
+    mid.save(outfilepath)
+    logger.info(f"File saved as {outfilepath}")
 
 
-def convert_notation_to_midi():
+def convert_notation_to_midi(run_settings: RunSettings):
     """This method does all the work.
     All settings are read from the (YAML) settings files.
     """
-    run_settings = get_run_settings()
-    read_settings(run_settings)
-    if run_settings.switches.validate_settings:
-        validate_settings(run_settings)
-
+    logger.info("======== NOTATION TO MIDI CONVERSION ========")
+    logger.info(f"input file: {run_settings.notation.file}")
+    initialize_lookups(run_settings)
     score = create_score_object_model(run_settings)
-    validate_score(score=score)
+    validate_score(score=score, settings=run_settings)
 
-    if run_settings.switches.create_midifile:
+    if run_settings.options.notation_to_midi.create_midifile:
         create_midifile(score)
+    logger.info("=====================================")
 
 
 if __name__ == "__main__":
-    convert_notation_to_midi()
+    ...

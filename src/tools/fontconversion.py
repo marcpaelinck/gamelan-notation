@@ -14,7 +14,10 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.cell.cell import Cell
 from openpyxl.styles import Font
 
+from src.common.logger import get_logger
 from src.settings.settings import MARGAPATI4, MARGAPATI5, MARGAPATIREYONG3
+
+logger = get_logger(__name__)
 
 Symbol = str
 Path = str
@@ -36,7 +39,7 @@ def get_files_with_symbols_old(folderpath: str, symbollist: list[str]) -> dict[P
         sheets = set(wb.sheetnames) - {"formules"}
         wb.close()
         for sheet in sheets:
-            print(path.basename(file) + " " + sheet)
+            logger.info(path.basename(file) + " " + sheet)
             df = pd.read_excel(file, sheet_name=sheet).iloc[:, 1:]
             uniques = set().union(
                 *[
@@ -68,7 +71,7 @@ def get_files_with_symbols(folderpath: str, symbollist: list[str]) -> dict[Path,
     for file in files:
         wb = load_workbook(file)
         for sheet in [sheet for sheet in wb.worksheets if sheet.title != "formules"]:
-            print(path.basename(file) + " " + sheet.title)
+            logger.info(path.basename(file) + " " + sheet.title)
             for row in sheet.iter_rows():
                 for cell in row:
                     if (
@@ -97,7 +100,7 @@ def get_all_used_symbols(folderpath: str) -> tuple[set[Symbol], dict[Symbol, tup
         sheets = set(wb.sheetnames) - {"formules"}
         wb.close()
         for sheet in sheets:
-            # print(path.basename(file) + " " + sheet)
+            # logger.info(path.basename(file) + " " + sheet)
             df = pd.read_excel(file, sheet_name=sheet).iloc[:, 1:]
             uniques = set().union(
                 *[
@@ -273,7 +276,7 @@ def substitutefont_xlsx_file(
                     changes = {key: (changes[key] or cell_changes[key]) for key in changes.keys()}
 
     changed_items = " and ".join([key for key, modified in changes.items() if modified] or ["nothing"])
-    print(f"{path.basename(filepath)}: {changed_items} changed")
+    logger.info(f"{path.basename(filepath)}: {changed_items} changed")
     wb.save(path.join(savepath, path.basename(filepath).replace("_4", "_5")))
 
 

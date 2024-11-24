@@ -72,7 +72,23 @@ gong        ----     ----     ----     ---G     ---P     ----     ---P     ---G
 
 
 
-## Terminology
-`Muted`: key instruments: the key is muted with the left hand while striking it. Reyong: only used for `jet`: strike the gongs without lifting the panggul.
-`Abbreviated`: key instruments: the key is muted shortly after being stricken. Reyong: only used for `byot`: strike the gongs and then immediately mute them.
+## Vocabulary
+### Balinese Music
+- `Muted`: key instruments: the key is muted with the left hand while striking it. Reyong: only used for `jet`.
+- `Abbreviated`: key instruments: the key is muted shortly after being stricken. Reyong: only used for `byot`.
+- `byot`: strike the gongs and then immediately mute them.
+- `jet`: strike the gongs without lifting the panggul.
+
+### MIDI files
+
+
+### MIDI Soundfont files
+- `SoundFont`: file which contains audio samples. The samples are organized in a hierachy: `bank` -> `preset` -> `zone` -> `split`
+- `bank`: top level of the soundfont hierarchy. Banks are numbered 0..127.
+- `preset`: second level of the soundfont hierarchy. Presets are numbered 0..127. Synonymns for preset are `instrument`, `patch` and `program`. A preset defines a unique mapping between audio samples and MIDI notes. A preset can be mapped to a MIDI channel which in turn can be mapped to a MIDI device such as a keyboard.
+- `zone`: corresponds with a subset of the MIDI notes of a preset. There is always one zone called `Global`. Zones can be used to further split up the note range into logical groups, for instance in case a preset contains more than one instrument. Concretely this would mean that diffent ranges of a MIDI keyboard that is mapped to the preset would correspond with different instruments. Synonymns for zone are `layer` and `instrument` (note that a preset is sometimes also called an instrument).
+- `split`: lowest level of the soundfont hierarchy. A split corresponds with a single audio sample which is mapped to a single MIDI note or to a range of MIDI notes. In the latter case, the `root key` of the split indicates the MIDI note that corresponds with the pitch of the audio sample. The other MIDI notes in the split correspond with a modulation of the audio sample. This modulation is performed by the synthesizer that is connected to the MIDI device (e.g. keyboard). The soundfont includes tuning generators (see below) to specify the required pitch modification.
+
+Zones and splits can contain parameters (usually called `generators`) that can alter the sound of the audio samples. E.g. Velocity Range, Attenuation, Tuning, Volume envelopes for attack, sustain and decay. The zone parameters act as multiplicators for the corresponding split parameters. Presets can share zones and can each have a separate set of generator values for the same zone (instrument). So the same instrument may sound differently depending on which preset is selected.
+
 

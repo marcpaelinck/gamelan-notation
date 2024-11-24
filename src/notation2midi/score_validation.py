@@ -1,5 +1,5 @@
 import math
-from pprint import pprint
+from typing import Any
 
 from src.common.classes import Beat, Gongan, Note, RunSettings, Score
 from src.common.constants import (
@@ -11,14 +11,18 @@ from src.common.constants import (
     Pitch,
     Stroke,
 )
-from src.common.metadata_classes import (
-    GonganType,
-    KempliMeta,
-    MetaDataSwitch,
-    ValidationProperty,
+from src.common.logger import get_logger
+from src.common.metadata_classes import GonganType, ValidationProperty
+from src.common.utils import (
+    create_rest_stave,
+    find_note,
+    get_whole_rest_note,
+    has_kempli_beat,
+    score_to_notation_file,
 )
-from src.common.utils import create_rest_stave, score_to_notation_file
-from src.notation2midi.font_specific_code import get_note
+from src.notation2midi.font_specific_code import create_note
+
+logger = get_logger(__name__)
 
 POSITIONS_AUTOCORRECT_UNEQUAL_STAVES = [
     InstrumentPosition.UGAL,
@@ -56,13 +60,29 @@ def invalid_beat_lengths(gongan: Gongan, autocorrect: bool) -> tuple[list[tuple[
     return invalids, corrected, ignored
 
 
-def unequal_stave_lengths(gongan: Gongan, autocorrect: bool, filler: Note) -> tuple[list[tuple[BeatId, Duration]]]:
+def complement_shorthand_pokok_staves(score: Score):
+    """Adds EXTENSION notes to pokok staves that only contain one note (shorthand notation)
+
+    Args:
+        score (Score):
+    """
+    filler = get_whole_rest_note(Stroke.EXTENSION)
+    for gongan in score.gongans:
+        unequal_stave_lengths(
+            gongan=gongan, beat_at_end=score.settings.notation.beat_at_end, autocorrect=True, filler=filler
+        )
+
+
+def unequal_stave_lengths(
+    gongan: Gongan, beat_at_end: bool, autocorrect: bool, filler: Note
+) -> tuple[list[tuple[BeatId, Duration]]]:
     """Checks that the stave lengths of the individual instrument in each beat of the given gongan are all equal.
 
     Args:
         gongan (Gongan): the gongan to check
         autocorrect (bool): if True, an attempt will be made to correct the stave lengths of specific instruments (pokok, gongs and kempli)
                     In most scores, the notation of these instruments is simplified by omitting dashes (extensions) after each long note.
+        filler (Note): Note representing the extension of the preceding note with duration 1 (a dash in the notation)
 
     Returns:
         tuple[list[tuple[BeatId, Duration]]]: list of remaining invalid beats and of corrected beats.
@@ -83,24 +103,30 @@ def unequal_stave_lengths(gongan: Gongan, autocorrect: bool, filler: Note) -> tu
         }
         if unequal_lengths:
             if autocorrect:
+                corrected_positions = dict()
                 for position, notes in unequal_lengths.items():
+                    uncorrected_position = {position: sum(note.total_duration for note in notes)}
                     if position in POSITIONS_AUTOCORRECT_UNEQUAL_STAVES:
                         stave_duration = sum(note.total_duration for note in notes)
                         # Add rests of duration 1 to match the integer part of the beat's duration
                         if int(beat.duration - stave_duration) >= 1:
-                            notes.extend([filler.model_copy() for count in range(int(beat.duration - len(notes)))])
+                            fill_content = [filler.model_copy() for count in range(int(beat.duration - len(notes)))]
+                            if beat_at_end:
+                                fill_content.extend(notes)
+                                notes.clear()
+                                notes.extend(fill_content)
+                            else:
+                                notes.extend(fill_content)
                             stave_duration = sum(note.total_duration for note in notes)
                         # Add an extra rest for any fractional part of the beat's duration
                         if stave_duration < beat.duration:
                             attr = "duration" if filler.stroke == Stroke.EXTENSION else "rest_after"
                             notes.append(filler.model_copy(update={attr: beat.duration - stave_duration}))
-                        corrected.append(
-                            {"BEAT " + beat.full_id: beat.duration}
-                            | {
-                                pos: sum(note.total_duration for note in notes)
-                                for pos, notes in unequal_lengths.items()
-                            },
-                        )
+                        if sum(note.total_duration for note in notes) == beat.duration:
+                            # store the original (incorrect) value
+                            corrected_positions |= uncorrected_position
+                if corrected_positions:
+                    corrected.append({"BEAT " + beat.full_id: beat.duration} | corrected_positions)
 
             unequal_lengths = {
                 position: notes
@@ -213,14 +239,14 @@ def incorrect_kempyung(
                             ):
                                 if autocorrect and iteration == 1:
                                     correct_note, correct_octave = kempyung_dict[(polos.pitch, polos.octave)]
-                                    correct_sangsih = get_note(
+                                    correct_sangsih = create_note(
                                         pitch=correct_note,
                                         octave=correct_octave,
                                         stroke=sangsih.stroke,
                                         duration=sangsih.duration,
                                         rest_after=sangsih.rest_after,
                                         symbol=sangsih.symbol,  # will be returned with corrected note symbol
-                                        font=score.source.font,
+                                        font=score.settings.font.fontversion,
                                     )
                                     beat.staves[pair[1]][seq] = correct_sangsih
                                     autocorrected = True
@@ -240,7 +266,9 @@ def incorrect_kempyung(
     return invalids, corrected, ignored
 
 
-def create_missing_staves(beat: Beat, prevbeat: Beat, score: Score) -> dict[InstrumentPosition, list[Note]]:
+def create_missing_staves(
+    beat: Beat, prevbeat: Beat, score: Score, add_kempli: bool = True, force_silence=[]
+) -> dict[InstrumentPosition, list[Note]]:
     """Returns staves for missing positions, containing rests (silence) for the duration of the given beat.
     This ensures that positions that do not occur in all the gongans will remain in sync.
 
@@ -252,40 +280,65 @@ def create_missing_staves(beat: Beat, prevbeat: Beat, score: Score) -> dict[Inst
         dict[InstrumentPosition, list[Note]]: A dict with the generated staves.
     """
 
-    if missing_positions := ((score.instrument_positions | {InstrumentPosition.KEMPLI}) - set(beat.staves.keys())):
+    all_instruments = (
+        score.instrument_positions | {InstrumentPosition.KEMPLI} if add_kempli else score.instrument_positions
+    )
+    # a kempli beat is a muted stroke
+    # Note: these two line are BaliMusic5 font exclusive!
+    # kempli_stroke = find_note(Pitch.STRIKE, Stroke.OPEN, 1, score.balimusic_font_dict.values())
+    kempli_stroke = create_note(pitch=Pitch.STRIKE, stroke=Stroke.OPEN, duration=1)
+    KEMPLI_BEAT = kempli_stroke.model_copy(update={"stroke": Stroke.MUTED, "symbol": kempli_stroke.symbol + "?"})
+
+    if missing_positions := (all_instruments - set(beat.staves.keys())):
         silence = Stroke.SILENCE
         extension = Stroke.EXTENSION
         prevstrokes = {pos: (prevbeat.staves[pos][-1].stroke if prevbeat else silence) for pos in missing_positions}
-        resttypes = {pos: silence if prevstroke is silence else extension for pos, prevstroke in prevstrokes.items()}
+        resttypes = {
+            pos: silence if prevstroke is silence or pos in force_silence else extension
+            for pos, prevstroke in prevstrokes.items()
+        }
         staves = {position: create_rest_stave(resttypes[position], beat.duration) for position in missing_positions}
         gongan = score.gongans[beat.sys_seq]
+
         # Add a kempli beat, except if a metadata label indicates otherwise or if the kempli part was already given in the original score
-        if (
-            InstrumentPosition.KEMPLI in staves.keys()
-            and (not (kempli := gongan.get_metadata(KempliMeta)) or kempli.status != MetaDataSwitch.OFF)
-            and gongan.gongantype not in [GonganType.KEBYAR, GonganType.GINEMAN]
-        ):
-            kemplibeat = next(
-                (
-                    note
-                    for note in score.balimusic_font_dict.values()
-                    if note.pitch == Pitch.TICK and note.stroke == Stroke.OPEN and note.duration == 1
-                ),
-                None,
-            )
-            staves[InstrumentPosition.KEMPLI] = [kemplibeat] + create_rest_stave(Stroke.EXTENSION, beat.duration - 1)
+        if InstrumentPosition.KEMPLI in staves.keys() and has_kempli_beat(gongan):
+            rests = create_rest_stave(Stroke.EXTENSION, beat.duration - 1)
+            staves[InstrumentPosition.KEMPLI] = [KEMPLI_BEAT] + rests
+            # (
+            #     rests + [kemplinote] if score.settings.notation.beat_at_end else [kemplinote] + rests
+            # )
+        # beat_at_end = score.settings.notation.beat_at_end
+        # if beat_at_end is true and this is the first beat of a gongan and the beat status of the previous gongan is different,
+        # the current kempli status should be applied to the last beat of the previous gongan.
+        # if beat_at_end and beat.id == 1 and prevbeat:
+        #     prevgongan = score.gongans[prevbeat.sys_seq]
+        #     prevbeat_kempli_on = not (
+        #         (kempli := prevgongan.get_metadata(KempliMeta)) and kempli.status != MetaDataSwitch.OFF
+        #     )
+        #     if prevbeat_kempli_on != kempli_on:
+        #         new_kemplinote = (
+        #             kemplinote.model_copy() if kempli_on else get_whole_rest_note(Stroke.EXTENSION).model_copy()
+        #         )
+        #         prevbeat.staves[InstrumentPosition.KEMPLI][-1] = new_kemplinote
+
         return staves
     else:
         return dict()
 
 
-def add_missing_staves(score: Score):
+def add_missing_staves(score: Score, add_kempli: bool = True):
     prev_beat = None
     for gongan in score.gongans:
+        gongan_missing_instr = [
+            pos for pos in InstrumentPosition if all(pos not in beat.staves for beat in gongan.beats)
+        ]
         for beat in gongan.beats:
             # Not all positions occur in each gongan.
             # Therefore we need to add blank staves (all rests) for missing positions.
-            missing_staves = create_missing_staves(beat, prev_beat, score)
+            # If an instrument is missing in the entire gongan, the last beat should consist
+            # of silences (.) rather than note extensions (-). This avoids unexpected results in some rare cases.
+            force_silence = gongan_missing_instr if beat == gongan.beats[-1] else []
+            missing_staves = create_missing_staves(beat, prev_beat, score, add_kempli, force_silence=force_silence)
             beat.staves.update(missing_staves)
             # Update all positions of the score
             score.instrument_positions.update({pos for pos in missing_staves})
@@ -294,96 +347,133 @@ def add_missing_staves(score: Score):
 
 def validate_score(
     score: Score,
-    autocorrect: bool = False,
-    save_corrected: bool = False,
-    detailed_logging: bool = False,
+    settings: RunSettings,
+    # autocorrect: bool = False,
+    # save_corrected: bool = False,
+    # detailed_logging: bool = False,
 ) -> None:
     """Performs consistency checks and prints results.
 
     Args:
         score (Score): the score to analyze.
     """
-    print("========= SCORE VALIDATION =========")
-    beats_with_length_not_pow2 = []
-    beats_with_unequal_stave_lengths = []
-    beats_with_note_out_of_instrument_range = []
-    beats_with_incorrect_kempyung = []
-    beats_with_incorrect_norot = []
-    beats_with_incorrect_ubitan = []
-    corrected_stave_lengths = []
-    corrected_invalid_kempyung = []
-    count_corrected_beat_lengths = 0
-    count_corrected_stave_lengths = 0
-    count_corrected_notes_out_of_range = 0
-    count_corrected_invalid_kempyung = 0
-    count_corrected_beats_with_incorrect_norot = 0
-    count_corrected_beats_with_incorrect_ubitan = 0
-    count_ignored_beat_lengths = 0
-    count_ignored_stave_lengths = 0
-    count_ignored_notes_out_of_range = 0
-    count_ignored_invalid_kempyung = 0
-    count_ignored_beats_with_incorrect_norot = 0
-    count_ignored_beats_with_incorrect_ubitan = 0
+    logger.info("--- SCORE VALIDATION ---")
+    corrected_beat_lengths = []
+    ignored_beat_lengths = []
+    remaining_bad_beat_lengths = []
 
-    filler = next(
-        note
-        for note in score.balimusic_font_dict.values()
-        if note.stroke == Stroke.EXTENSION and note.total_duration == 1
-    )
+    corrected_stave_lengths = []
+    ignored_stave_lengths = []
+    remaining_bad_stave_lengths = []
+
+    corrected_note_out_of_range = []
+    ignored_note_out_of_range = []
+    remaining_note_out_of_range = []
+
+    corrected_invalid_kempyung = []
+    ignored_invalid_kempyung = []
+    remaining_incorrect_kempyung = []
+
+    corrected_incorrect_norot = []
+    ignored_incorrect_norot = []
+    remaining_incorrect_norot = []
+
+    corrected_incorrect_ubitan = []
+    ignored_incorrect_ubitan = []
+    remaining_incorrect_ubitan = []
+
+    autocorrect = settings.options.notation_to_midi.autocorrect
+    save_corrected = settings.options.notation_to_midi.save_corrected_to_file
+    detailed_logging = settings.options.notation_to_midi.detailed_validation_logging
 
     for gongan in score.gongans:
         # Determine if the beat duration is a power of 2 (ignore kebyar)
         invalids, corrected, ignored = invalid_beat_lengths(gongan, autocorrect)
-        beats_with_length_not_pow2.extend(invalids)
-        count_corrected_beat_lengths += len(corrected)
-        count_ignored_beat_lengths += len(ignored)
+        remaining_bad_beat_lengths.extend(invalids)
+        corrected_beat_lengths.extend(corrected)
+        ignored_beat_lengths.extend(ignored)
 
-        invalids, corrected, ignored = unequal_stave_lengths(gongan, filler=filler, autocorrect=autocorrect)
-        beats_with_unequal_stave_lengths.extend(invalids)
+        invalids, corrected, ignored = unequal_stave_lengths(
+            gongan,
+            beat_at_end=settings.notation.beat_at_end,
+            autocorrect=autocorrect,
+            filler=get_whole_rest_note(Stroke.EXTENSION),
+        )
+        remaining_bad_stave_lengths.extend(invalids)
         corrected_stave_lengths.extend(corrected)
-        count_corrected_stave_lengths += len(corrected)
-        count_ignored_stave_lengths += len(ignored)
+        ignored_stave_lengths.extend(ignored)
 
         invalids, corrected, ignored = out_of_range(gongan, ranges=score.position_range_lookup, autocorrect=autocorrect)
-        beats_with_note_out_of_instrument_range.extend(invalids)
-        count_corrected_notes_out_of_range += len(corrected)
-        count_ignored_notes_out_of_range += len(ignored)
+        remaining_note_out_of_range.extend(invalids)
+        corrected_note_out_of_range.extend(corrected)
+        ignored_note_out_of_range.extend(corrected)
 
-        invalids, corrected, ignored = incorrect_kempyung(
-            gongan, score=score, ranges=score.position_range_lookup, autocorrect=autocorrect
-        )
-        beats_with_incorrect_kempyung.extend(invalids)
-        corrected_invalid_kempyung.extend(corrected)
-        count_corrected_invalid_kempyung += len(corrected)
-        count_ignored_invalid_kempyung += len(ignored)
+        if score.settings.options.notation_to_midi.autocorrect_kempyung:
+            invalids, corrected, ignored = incorrect_kempyung(
+                gongan, score=score, ranges=score.position_range_lookup, autocorrect=autocorrect
+            )
+            remaining_incorrect_kempyung.extend(invalids)
+            corrected_invalid_kempyung.extend(corrected)
+            ignored_invalid_kempyung.extend(ignored)
 
-    print(
-        f"INCORRECT BEAT LENGTHS (corrected {count_corrected_beat_lengths}, ignored {count_ignored_beat_lengths} beats):"
+    def log_list(loglevel: callable, title: str, list: list[Any]) -> None:
+        loglevel(title)
+        for element in list:
+            loglevel(f"    {str(element)}")
+
+    def log_results(title: str, corrected: list[Any], ignored: list[Any], remaining: list[Any]) -> None:
+        logger.info(f"{title}: corrected {len(corrected)}, ignored {len(ignored)}, remaining: {len(remaining)}")
+        if detailed_logging:
+            if corrected:
+                log_list(logger.info, "corrected:", corrected)
+            if ignored:
+                log_list(logger.info, "ignored:", ignored)
+        if remaining:
+            log_list(logger.warning, "remaining invalids:", remaining)
+
+    log_results("INCORRECT BEAT LENGTHS", corrected_beat_lengths, ignored_beat_lengths, remaining_bad_beat_lengths)
+    log_results(
+        "BEATS WITH UNEQUAL STAVE LENGTHS", corrected_stave_lengths, ignored_stave_lengths, remaining_bad_stave_lengths
     )
-    if count_corrected_beat_lengths > 0:
-        pprint([])
-    pprint(beats_with_length_not_pow2)
-    print(
-        f"UNEQUAL STAVE LENGTHS WITHIN BEAT (corrected {count_corrected_stave_lengths}, ignored {count_ignored_stave_lengths} beats):"
+    log_results(
+        "BEATS WITH NOTES OUT OF INSTRUMENT RANGE",
+        corrected_note_out_of_range,
+        ignored_note_out_of_range,
+        remaining_note_out_of_range,
     )
-    if detailed_logging:
-        print("corrected:")
-        pprint(corrected_stave_lengths)
-    print("remaining invalids:")
-    pprint(beats_with_unequal_stave_lengths)
-    print(
-        f"NOTES NOT IN INSTRUMENT RANGE (corrected {count_corrected_notes_out_of_range}, ignored {count_ignored_notes_out_of_range} beats):"
+    log_results(
+        "INCORRECT KEMPYUNG", corrected_invalid_kempyung, ignored_invalid_kempyung, remaining_incorrect_kempyung
     )
-    pprint(beats_with_note_out_of_instrument_range)
-    print(
-        f"INCORRECT KEMPYUNG (corrected {count_corrected_invalid_kempyung}, ignored {count_ignored_invalid_kempyung} beats):"
-    )
-    if detailed_logging:
-        print("corrected:")
-        pprint(corrected_invalid_kempyung)
-    print("remaining invalids:")
-    pprint(beats_with_incorrect_kempyung)
-    print("====================================")
+    # logger.info(
+    #     f"INCORRECT BEAT LENGTHS (corrected {len(corrected_beat_lengths)}, ignored {len(ignored_beat_lengths)} beats)"
+    # )
+    # if detailed_logging and corrected_beat_lengths:
+    #     logger.info("corrected:")
+    #     logger.info(corrected_beat_lengths)
+    # if ignored_beat_lengths:
+    #     logger.warning("ignored:")
+    #     logger.warning(incorrect_beat_lengths)
+    # logger.info(
+    #     f"UNEQUAL STAVE LENGTHS WITHIN BEAT (corrected {count_corrected_stave_lengths}, ignored {count_ignored_stave_lengths} beats)"
+    # )
+    # if detailed_logging:
+    #     logger.info("corrected:")
+    #     pprint(corrected_stave_lengths)
+    # logger.warning("remaining invalids:")
+    # pprint(beats_with_unequal_stave_lengths)
+    # logger.info(
+    #     f"NOTES NOT IN INSTRUMENT RANGE (corrected {count_corrected_notes_out_of_range}, ignored {count_ignored_notes_out_of_range} beats)"
+    # )
+    # pprint(beats_with_note_out_of_instrument_range)
+    # logger.info(
+    #     f"INCORRECT KEMPYUNG (corrected {count_corrected_invalid_kempyung}, ignored {count_ignored_invalid_kempyung} beats)"
+    # )
+    # if detailed_logging:
+    #     logger.info("corrected:")
+    #     pprint(corrected_invalid_kempyung)
+    # logger.warning("remaining invalids:")
+    # pprint(beats_with_incorrect_kempyung)
+    # logger.info("---------------------")
 
     if save_corrected:
         score_to_notation_file(score)

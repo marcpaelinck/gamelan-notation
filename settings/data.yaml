@@ -3,8 +3,11 @@ instruments:
     folder: ./data/instruments
     instrumentgroup:
         GONG_KEBYAR:
-            instruments_file: gk_instruments.tsv
-            tags_file: gk_instrumenttags.tsv
+            instruments_file: instruments.tsv
+            tags_file: instrumenttags.tsv
+        SEMAR_PAGULINGAN:
+            instruments_file: instruments.tsv
+            tags_file: instrumenttags.tsv
 midi:
     folder: ./data/midi
     midiversion:
@@ -12,6 +15,22 @@ midi:
             comment: two presets (melodic and percussion)
             midi_definition_file: gk_midinotes.tsv
             presets_file: gk_presets.tsv
+        GONG_KEBYAR2:
+            comment: three presets (percussion, metallophones, melodic gongs)
+            midi_definition_file: gk_midinotes2.tsv
+            presets_file: gk_presets2.tsv
+        GONG_KEBYAR3:
+            comment: one preset for each instrument
+            midi_definition_file: gk_midinotes3.tsv
+            presets_file: gk_presets3.tsv
+        GONG_KEBYAR4:
+            comment: one preset for each instrument position
+            midi_definition_file: gk_midinotes4.tsv
+            presets_file: gk_presets4.tsv
+        GAMELAN1:
+            comment: GK + SP, one sample per instrument
+            midi_definition_file: gamelan_midinotes1.tsv
+            presets_file: gamelan_presets1.tsv
 font:
     folder: ./data/font
     fontversion:
@@ -24,61 +43,133 @@ samples:
     instrumentgroup:
         GONG_KEBYAR:
             subfolder: gong_kebyar
+        GAMELAN:
+            subfolder: gamelan
 soundfont:
     folder: ./data/soundfont
-    sheetname: Viena definitions
+    path_to_viena_app: C:/Program Files/Viena/Viena64.exe
 notation:
     folder: ./data/notation
     composition:
-    # `gong_at_end` indicates whether the notation has the gir at the end of each gongan (Balinese concept) or at the beginning.
+    # `beat_at_end` indicates whether the notation has the gir at the end of each gongan (Balinese concept) or at the beginning.
+    # the entries under the 'files' label will be referred to as 'part'.
+    # ${midi.midiversion} will resolve to the value that is set in run-settings.yaml
+    # ${notation.part} will resolve to the label of the selected part.
+    # If `part`==full, the last note of each instrument will be extended for a natural fade out.
+    # Otherwise the midi file will end abruptly to allow looping.
         rejangdewa:
             subfolder: rejang dewa
-            file: rejang dewa_font5.tsv
-            midi_out_file: Rejang Dewa {position}_{midiversion}.mid
+            part:
+                full: rejang dewa_font5.tsv
+                intro: rejang dewa intro_font5.tsv
+                pengecet: rejang dewa pengecet_font5.tsv
+            midi_out_file: Rejang Dewa_${notation.part}_${midi.midiversion}.mid
             fontversion: BaliMusic5
             instrumentgroup: GONG_KEBYAR
-            gong_at_end: false
-        sinomladrang:
+            beat_at_end: false
+        sinomladrang-sp:
             subfolder: sinom ladrang
-            file: Sinom Ladrang_ubit4_font5.tsv
-            midi_out_file: Sinom Ladrang {position}_{midiversion}.mid
+            part:
+                full: Sinom Ladrang_SP_font5.tsv
+                pengawak: Sinom Ladrang_SP_font5_pengawak.tsv
+                pengecet: Sinom Ladrang_SP_font5_pengecet.tsv
+            midi_out_file: Sinom Ladrang_SP_${notation.part}_${midi.midiversion}.mid
+            fontversion: BaliMusic5
+            instrumentgroup: SEMAR_PAGULINGAN
+            beat_at_end: false
+        sinomladrang-gk:
+            subfolder: sinom ladrang
+            part:
+                full: Sinom Ladrang_GK_ubit4_font5.tsv
+            midi_out_file: Sinom Ladrang_GK_ubit4_${notation.part}_${midi.midiversion}.mid
             fontversion: BaliMusic5
             instrumentgroup: GONG_KEBYAR
-            gong_at_end: false
+            beat_at_end: false
+        lengker:
+            subfolder: lengker
+            part:
+                full: Lengker Ubud font5.tsv
+                penyalit: Lengker Ubud font5_penyalit.tsv
+                pengecet: Lengker Ubud font5_pengecet.tsv
+                pengawak: Lengker Ubud font5_pengawak.tsv
+            midi_out_file: Lengker Ubud_${notation.part}_${midi.midiversion}.mid
+            fontversion: BaliMusic5
+            instrumentgroup: SEMAR_PAGULINGAN
+            beat_at_end: false
+        godekmiring:
+            subfolder: godek miring
+            part:
+                full: Godek Miring font5.tsv
+                penyalit: Godek Miring font5_penyalit.tsv
+                penyalit-angsel: Godek Miring font5_penyalit with angsel.tsv
+                pengecet: Godek Miring font5_pengecet.tsv
+                pengawak: Godek Miring font5_pengawak.tsv
+            midi_out_file: Godek Miring_${notation.part}_${midi.midiversion}.mid
+            fontversion: BaliMusic5
+            instrumentgroup: SEMAR_PAGULINGAN
+            beat_at_end: false
         cendrawasih:
             subfolder: cendrawasih
-            file: Cendrawasih_complete_font5.tsv
-            midi_out_file: Cendrawasih {position}_{midiversion}.mid
+            part:
+                full: Cendrawasih_complete_font5.tsv
+            midi_out_file: Cendrawasih_${notation.part}_${midi.midiversion}.mid
             fontversion: BaliMusic5
             instrumentgroup: GONG_KEBYAR
-            gong_at_end: false
+            beat_at_end: false
         margapati:
             subfolder: margapati
-            file: Margapati_font5.tsv
-            midi_out_file: Margapati {position}_{midiversion}.mid
+            part:
+                full: Margapati_font5.tsv
+                full: Margapati reyong_font5.tsv
+            midi_out_file: Margapati_${notation.part}_${midi.midiversion}.mid
             fontversion: BaliMusic5
             instrumentgroup: GONG_KEBYAR
-            gong_at_end: false
-        margapatireyong:
-            subfolder: margapati
-            file: Margapati reyong_font5.tsv
-            midi_out_file: Margapati {position}_{midiversion}.mid
+            beat_at_end: false
+        pendet:
+            subfolder: pendet
+            part:
+                full: pendet_font5_beat_at_end.tsv
+            midi_out_file: Pendet_${notation.part}_${midi.midiversion}.mid
             fontversion: BaliMusic5
             instrumentgroup: GONG_KEBYAR
-            gong_at_end: false
+            beat_at_end: true
         gendinganak2:
             subfolder: test
-            file: Gending Anak-Anak.tsv
-            midi_out_file: Gending Anak-Anak {position}_{midiversion}.mid
+            part:
+                full: Gending Anak-Anak.tsv
+            midi_out_file: Gending Anak-Anak_${notation.part}_${midi.midiversion}.mid
             fontversion: BaliMusic4
             instrumentgroup: GONG_KEBYAR
-            gong_at_end: false
+            beat_at_end: false
         demo:
             subfolder: test
-            file: demo.tsv
-            midi_out_file: Demo {position}_{midiversion}.mid
+            part:
+                full: demo.tsv
+            midi_out_file: Demo_${notation.part}_${midi.midiversion}.mid
             fontversion: BaliMusic4
             instrumentgroup: GONG_KEBYAR
-            gong_at_end: false
-
-
+            beat_at_end: false
+        preset-test:
+            subfolder: test
+            part:
+                full: bank-preset-test.tsv
+            midi_out_file: Bank-Preset test_${notation.part}_${midi.midiversion}.mid
+            fontversion: BaliMusic5
+            instrumentgroup: GONG_KEBYAR
+            beat_at_end: false
+        muting-gk:
+            subfolder: test
+            part:
+                full: muting-pitch-gk.tsv
+            midi_out_file: Muting-pitch-GK_${notation.part}_${midi.midiversion}.mid
+            fontversion: BaliMusic5
+            instrumentgroup: GONG_KEBYAR
+            beat_at_end: false
+        muting-sp:
+            subfolder: test
+            part:
+                full: muting-pitch-sp.tsv
+            midi_out_file: Muting-pitch-SP_${notation.part}_${midi.midiversion}.mid
+            fontversion: BaliMusic5
+            instrumentgroup: SEMAR_PAGULINGAN
+            beat_at_end: false
