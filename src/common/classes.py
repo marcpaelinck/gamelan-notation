@@ -281,6 +281,7 @@ class RunSettings(BaseModel):
         part: str
         midi_out_file: str
         beat_at_end: bool
+        autocorrect_kempyung: bool
         loop: bool = False  # set to True if only part of a piece is selected.
 
         @property
@@ -361,7 +362,6 @@ class RunSettings(BaseModel):
             run: bool
             detailed_validation_logging: bool
             autocorrect: bool
-            autocorrect_kempyung: bool
             save_corrected_to_file: bool
             create_midifile: bool
 
@@ -369,6 +369,7 @@ class RunSettings(BaseModel):
             run: bool
             create_sf2_files: bool
 
+        debug_logging: bool
         validate_settings: bool
         notation_to_midi: NotationToMidiOptions
         soundfont: SoundfontOptions

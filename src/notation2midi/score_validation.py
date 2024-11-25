@@ -336,7 +336,8 @@ def add_missing_staves(score: Score, add_kempli: bool = True):
             # Not all positions occur in each gongan.
             # Therefore we need to add blank staves (all rests) for missing positions.
             # If an instrument is missing in the entire gongan, the last beat should consist
-            # of silences (.) rather than note extensions (-). This avoids unexpected results in some rare cases.
+            # of silences (.) rather than note extensions (-). This avoids unexpected results when the next beat
+            # is repeated and the kempli beat is at the end of the beat.
             force_silence = gongan_missing_instr if beat == gongan.beats[-1] else []
             missing_staves = create_missing_staves(beat, prev_beat, score, add_kempli, force_silence=force_silence)
             beat.staves.update(missing_staves)
@@ -408,7 +409,7 @@ def validate_score(
         corrected_note_out_of_range.extend(corrected)
         ignored_note_out_of_range.extend(corrected)
 
-        if score.settings.options.notation_to_midi.autocorrect_kempyung:
+        if score.settings.notation.autocorrect_kempyung:
             invalids, corrected, ignored = incorrect_kempyung(
                 gongan, score=score, ranges=score.position_range_lookup, autocorrect=autocorrect
             )

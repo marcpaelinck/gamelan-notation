@@ -82,6 +82,8 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrackX:
     beat = score.gongans[0].beats[0]
     while beat:
         beat._pass_ += 1
+        if score.settings.options.debug_logging:
+            track.comment(f"beat {beat.full_id} pass{beat._pass_}")
         # Set new tempo
         if new_bpm := beat.get_changed_tempo(track.current_bpm):
             track.update_tempo(new_bpm or beat.get_bpm_start())
@@ -421,11 +423,7 @@ def create_score_object_model(run_settings: RunSettings) -> Score:
 
     # Apply font-specific modifications
     postprocess(score)
-    filler = next(
-        note
-        for note in score.balimusic_font_dict.values()
-        if note.stroke == Stroke.EXTENSION and note.total_duration == 1
-    )
+    # Add extension notes to pokok notation having only one note per beat
     complement_shorthand_pokok_staves(score)
     # Add blank staves for all other omitted instruments
     add_missing_staves(score=score, add_kempli=False)

@@ -153,6 +153,7 @@ def get_run_settings(notation: dict[str, str] = None) -> RunSettings:
 
     # YAML fieldnames
     NOTATION = "notation"
+    DEFAULTS = "defaults"
     MIDI = "midi"
     SAMPLES = "samples"
     INSTRUMENTS = "instruments"
@@ -175,7 +176,8 @@ def get_run_settings(notation: dict[str, str] = None) -> RunSettings:
 
     composition = data_dict[NOTATION][COMPOSITION][run_settings_dict[NOTATION][COMPOSITION]]
     settings_dict[NOTATION] = get_settings_fields(
-        RunSettings.NotationInfo, data_dict[NOTATION] | composition | run_settings_dict[NOTATION]
+        RunSettings.NotationInfo,
+        data_dict[NOTATION][COMPOSITION][DEFAULTS] | data_dict[NOTATION] | composition | run_settings_dict[NOTATION],
     )
     settings_dict[NOTATION][FILE] = composition[PART][run_settings_dict[NOTATION][PART]]
     # Only 'full' composition will be extended with 'attenuation time'.

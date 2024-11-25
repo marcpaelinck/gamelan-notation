@@ -57,6 +57,11 @@ notation:
     # ${notation.part} will resolve to the label of the selected part.
     # If `part`==full, the last note of each instrument will be extended for a natural fade out.
     # Otherwise the midi file will end abruptly to allow looping.
+        defaults:
+            fontversion: BaliMusic5
+            instrumentgroup: GONG_KEBYAR
+            beat_at_end: false
+            autocorrect_kempyung : true
         rejangdewa:
             subfolder: rejang dewa
             part:
@@ -96,6 +101,7 @@ notation:
             fontversion: BaliMusic5
             instrumentgroup: SEMAR_PAGULINGAN
             beat_at_end: false
+            autocorrect_kempyung : false
         godekmiring:
             subfolder: godek miring
             part:
@@ -108,6 +114,7 @@ notation:
             fontversion: BaliMusic5
             instrumentgroup: SEMAR_PAGULINGAN
             beat_at_end: false
+            autocorrect_kempyung : false
         cendrawasih:
             subfolder: cendrawasih
             part:

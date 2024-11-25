@@ -1,13 +1,7 @@
 from mido import Message, MetaMessage, MidiTrack, bpm2tempo
 
 from src.common.classes import Note, Preset
-from src.common.constants import (
-    InstrumentPosition,
-    InstrumentType,
-    NotationFont,
-    Pitch,
-    Stroke,
-)
+from src.common.constants import InstrumentPosition, InstrumentType, Pitch, Stroke
 from src.common.logger import get_logger
 from src.common.utils import SYMBOLVALUE_TO_MIDINOTE_LOOKUP
 from src.settings.settings import BASE_NOTE_TIME, BASE_NOTES_PER_BEAT
@@ -23,7 +17,9 @@ class MidiTrackX(MidiTrack):
     port: int
     bank: int
     preset: int
-    last_note_end_msg = None
+    # The next attribute keeps track of the end message of the last note.
+    # The time of this message will be delayed if an extension character is encountered.
+    last_noteoff_msg = None
     time_since_last_note_end: int = 0
     current_bpm: int = 0
     current_signature: int = 0
@@ -65,9 +61,12 @@ class MidiTrackX(MidiTrack):
             self.current_bpm = new_bpm
 
     def extend_last_note(self, seconds: int) -> None:
-        if self.last_note_end_msg:
+        if self.last_noteoff_msg:
             beats = round(self.current_bpm * seconds / 60)
-            self.last_note_end_msg.time += beats * BASE_NOTE_TIME * BASE_NOTES_PER_BEAT
+            self.last_noteoff_msg.time += beats * BASE_NOTE_TIME * BASE_NOTES_PER_BEAT
+
+    def comment(self, message: str) -> None:
+        self.append(MetaMessage("marker", text=message))
 
     def add_note(self, position: InstrumentPosition, character: Note):
         """Converts a note into a midi event
@@ -95,7 +94,7 @@ class MidiTrackX(MidiTrack):
                 )
             for count, midivalue in enumerate(midinote.midinote):
                 self.append(
-                    Message(
+                    off_msg := Message(
                         type="note_off",
                         note=midivalue,
                         velocity=70,
@@ -103,17 +102,24 @@ class MidiTrackX(MidiTrack):
                         channel=self.channel,
                     )
                 )
-            self.last_note_end_msg = self[-1]
+                if count == 0:
+                    # If the character corresponds with more than one MIDI note (e.g. reyong `byong`),
+                    # we keep track of the note_off message of the first of these notes.
+                    # If the combined note needs to be extended, we should only delay
+                    # the note-off message of this first note.
+                    self.last_noteoff_msg = off_msg
+
             self.time_since_last_note_end = round(character.rest_after * BASE_NOTE_TIME)
         # TODO next two ifs can now be combined
         elif character.stroke is Stroke.SILENCE:
             # Increment time since last note ended
             self.time_since_last_note_end += round(character.rest_after * BASE_NOTE_TIME)
+            self.last_noteoff_msg = None
         elif character.stroke is Stroke.EXTENSION:
             # Extension of note duration: add duration to last note
             # If a SILENCE occurred previously, treat the EXTENSION as a SILENCE
-            if self.last_note_end_msg and self.time_since_last_note_end == 0:
-                self.last_note_end_msg.time += round(character.duration * BASE_NOTE_TIME)
+            if self.last_noteoff_msg and self.time_since_last_note_end == 0:
+                self.last_noteoff_msg.time += round(character.duration * BASE_NOTE_TIME)
             else:
                 self.time_since_last_note_end += round(character.duration * BASE_NOTE_TIME)
         else:
