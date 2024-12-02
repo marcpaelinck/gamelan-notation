@@ -1,4 +1,4 @@
-from mido import Message, MetaMessage, MidiTrack, bpm2tempo
+from mido import Message, MetaMessage, MidiTrack, bpm2tempo, tempo2bpm
 
 from src.common.classes import Note, Preset
 from src.common.constants import InstrumentPosition, InstrumentType, Pitch, Stroke
@@ -17,6 +17,7 @@ class MidiTrackX(MidiTrack):
     port: int
     bank: int
     preset: int
+    PPQ: int  # pulses per quarternote
     # The next attribute keeps track of the end message of the last note.
     # The time of this message will be delayed if an extension character is encountered.
     last_noteoff_msg = None
@@ -36,7 +37,7 @@ class MidiTrackX(MidiTrack):
         #     Message(type="control_change", control=7, value=127 if self.channel > 4 else 127, channel=self.channel)
         # )
 
-    def __init__(self, position: InstrumentPosition, preset: Preset):
+    def __init__(self, position: InstrumentPosition, preset: Preset, ppq: int):
         super(MidiTrackX, self).__init__()
         self.name = position.value
         self.position = position
@@ -44,11 +45,21 @@ class MidiTrackX(MidiTrack):
         self.port = preset.port
         self.bank = preset.bank
         self.preset = preset.preset
+        self.PPQ = ppq
         self.set_channel_bank_and_preset()
         # logger.info(f"Track {self.name}: channel {self.channel}, bank {self.bank}, preset {self.preset}")
 
     def total_tick_time(self):
         return sum(msg.time for msg in self)
+
+    def current_time_in_millis(self):
+        time_in_millis = 0
+        bpm = 120
+        for msg in self:
+            if isinstance(msg, MetaMessage) and msg.type == "set_tempo":
+                bpm = tempo2bpm(msg.tempo)
+            time_in_millis += msg.time * 60000 / (bpm * self.PPQ)
+        return time_in_millis
 
     def update_tempo(self, new_bpm, debug=False):
         if debug:
@@ -66,6 +77,9 @@ class MidiTrackX(MidiTrack):
             self.last_noteoff_msg.time += beats * BASE_NOTE_TIME * BASE_NOTES_PER_BEAT
 
     def comment(self, message: str) -> None:
+        self.append(MetaMessage("text", text=message))
+
+    def marker(self, message: str) -> None:
         self.append(MetaMessage("marker", text=message))
 
     def add_note(self, position: InstrumentPosition, character: Note):

@@ -43,19 +43,27 @@ class MetaDataSubType(BaseModel):
     _processingorder_ = 99
 
 
-class TempoMeta(MetaDataSubType):
-    metatype: Literal["TEMPO"]
-    bpm: int
-    first_beat: Optional[int] = 1
-    beat_count: Optional[int] = 0
-    passes: Optional[list[int]] = field(
-        default_factory=lambda: list([DEFAULT])
-    )  # On which pass(es) should goto be performed?
+class GonganMeta(MetaDataSubType):
+    metatype: Literal["GONGAN"]
+    type: GonganType
+
+
+class GoToMeta(MetaDataSubType):
+    metatype: Literal["GOTO"]
+    label: str
+    from_beat: Optional[int] | None = None  # Beat number from which to goto. Default is last beat of the gongan.
+    passes: Optional[list[int]] = field(default_factory=list)  # On which pass(es) should goto be performed?
 
     @property
-    def first_beat_seq(self) -> int:
+    def beat_seq(self) -> int:
         # Returns the pythonic sequence id (numbered from 0)
-        return self.first_beat - 1
+        return self.from_beat - 1 if self.from_beat else -1
+
+
+class KempliMeta(MetaDataSubType):
+    metatype: Literal["KEMPLI"]
+    status: MetaDataSwitch
+    beats: list[int] = field(default_factory=list)
 
 
 class LabelMeta(MetaDataSubType):
@@ -71,32 +79,20 @@ class LabelMeta(MetaDataSubType):
         return self.beat - 1
 
 
-class GoToMeta(MetaDataSubType):
-    metatype: Literal["GOTO"]
-    label: str
-    from_beat: Optional[int] | None = None  # Beat number from which to goto. Default is last beat of the gongan.
-    passes: Optional[list[int]] = field(default_factory=list)  # On which pass(es) should goto be performed?
+class OctavateMeta(MetaDataSubType):
+    metatype: Literal["OCTAVATE"]
+    instrument: InstrumentType
+    octaves: int
 
-    @property
-    def beat_seq(self) -> int:
-        # Returns the pythonic sequence id (numbered from 0)
-        return self.from_beat - 1 if self.from_beat else -1
+
+class PartMeta(MetaDataSubType):
+    metatype: Literal["PART"]
+    name: str
 
 
 class RepeatMeta(MetaDataSubType):
     metatype: Literal["REPEAT"]
     count: int = 1
-
-
-class KempliMeta(MetaDataSubType):
-    metatype: Literal["KEMPLI"]
-    status: MetaDataSwitch
-    beats: list[int] = field(default_factory=list)
-
-
-class GonganMeta(MetaDataSubType):
-    metatype: Literal["GONGAN"]
-    type: GonganType
 
 
 class SilenceMeta(MetaDataSubType):
@@ -117,16 +113,25 @@ class SilenceMeta(MetaDataSubType):
         return sum((cls.TAG_TO_POSITION_LOOKUP[pos] for pos in data), [])
 
 
+class TempoMeta(MetaDataSubType):
+    metatype: Literal["TEMPO"]
+    bpm: int
+    first_beat: Optional[int] = 1
+    beat_count: Optional[int] = 0
+    passes: Optional[list[int]] = field(
+        default_factory=lambda: list([DEFAULT])
+    )  # On which pass(es) should goto be performed?
+
+    @property
+    def first_beat_seq(self) -> int:
+        # Returns the pythonic sequence id (numbered from 0)
+        return self.first_beat - 1
+
+
 class ValidationMeta(MetaDataSubType):
     metatype: Literal["VALIDATION"]
     beats: Optional[list[int]] = field(default_factory=list)
     ignore: list[ValidationProperty]
-
-
-class OctavateMeta(MetaDataSubType):
-    metatype: Literal["OCTAVATE"]
-    instrument: InstrumentType
-    octaves: int
 
 
 MetaDataSubType = Union[
@@ -139,6 +144,7 @@ MetaDataSubType = Union[
     ValidationMeta,
     SilenceMeta,
     OctavateMeta,
+    PartMeta,
 ]
 
 
@@ -190,7 +196,7 @@ class MetaData(BaseModel):
         # Note that the capturing brackets are placed within the quotes, so the captured values will be unquoted.
         # If no quoted string can be matched, the second component (\w*[A-Za-z_]\w*\b) will capture single, unquoted
         # non-numeric values.
-        match = r'"([^"]+)"|(\w*[A-Za-z_]\w*\b)'
+        match = r'"([^"]+)"|(\w*[A-Za-z_ ]\w*\b)'
         pv = re.compile(match)
         # In the substitution, \1\2 stand for the captured quoted and unquoted strings (only one of these placeholders
         # will contain a non-empty value).

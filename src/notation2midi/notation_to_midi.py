@@ -6,14 +6,11 @@
 
 import json
 import re
-from collections import defaultdict
 
-import numpy as np
-import pandas as pd
 from mido import MidiFile
 
 from src.common.classes import Beat, Gongan, RunSettings, Score
-from src.common.constants import DEFAULT, InstrumentPosition, Pitch, Stroke
+from src.common.constants import DEFAULT, InstrumentPosition, Pitch, SpecialTags, Stroke
 from src.common.logger import get_logger
 from src.common.lookups import PRESET_LOOKUP
 from src.common.metadata_classes import (
@@ -24,17 +21,18 @@ from src.common.metadata_classes import (
     MetaData,
     MetaDataSwitch,
     OctavateMeta,
+    PartMeta,
     Range,
     RepeatMeta,
     SilenceMeta,
     TempoMeta,
     ValidationMeta,
 )
+from src.common.playercontent_classes import Part, Song
 from src.common.utils import (
     POSITION_TO_RANGE_LOOKUP,
     SYMBOL_TO_NOTE_LOOKUP,
     SYMBOLVALUE_TO_MIDINOTE_LOOKUP,
-    TAG_TO_POSITION_LOOKUP,
     create_rest_stave,
     get_whole_rest_note,
     has_kempli_beat,
@@ -42,7 +40,7 @@ from src.common.utils import (
     most_occurring_beat_duration,
     most_occurring_stave_duration,
 )
-from src.notation2midi.font_specific_code import postprocess
+from src.notation2midi.font5_specific_code import get_parser
 from src.notation2midi.midi_track import MidiTrackX
 from src.notation2midi.score_validation import (
     add_missing_staves,
@@ -51,11 +49,9 @@ from src.notation2midi.score_validation import (
 )
 from src.settings.settings import (
     ATTENUATION_SECONDS_AFTER_MUSIC_END,
-    COMMENT,
-    METADATA,
-    NON_INSTRUMENT_TAGS,
+    get_midiplayer_content,
+    save_midiplayer_content,
 )
-from src.settings.settings_validation import validate_input_data
 
 logger = get_logger(__name__)
 
@@ -76,11 +72,24 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrackX:
             for beat in gongan.beats:
                 beat._pass_ = 0
 
-    track = MidiTrackX(position, PRESET_LOOKUP[position])
+    def store_part_info(beat: Beat, score: Score):
+        gongan = score.gongans[beat.sys_seq]
+        if partinfo := gongan.get_metadata(PartMeta):
+            curr_time = track.current_time_in_millis()
+            # check if part was already set by another trach
+            time = score.midiplayer_data.markers.get(partinfo.name)
+            if time and time < curr_time:
+                # keep the earliest time
+                return
+            score.midiplayer_data.markers[partinfo.name] = int(curr_time)
+
+    track = MidiTrackX(position, PRESET_LOOKUP[position], score.settings.midi.PPQ)
 
     reset_pass_counters()
     beat = score.gongans[0].beats[0]
     while beat:
+        # If a new part is encountered, store timestamp and name in the midiplayer_data section of the score
+        store_part_info(beat, score)
         beat._pass_ += 1
         if score.settings.options.debug_logging:
             track.comment(f"beat {beat.full_id} pass{beat._pass_}")
@@ -241,6 +250,8 @@ def apply_metadata(metadata: list[MetaData], gongan: Gongan, score: Score) -> No
                             note = stave[idx]
                             if note.octave != None:
                                 stave[idx] = note.model_copy(update={"octave": note.octave + meta.data.octaves})
+            case PartMeta():
+                pass
             case _:
                 raise ValueError(f"Metadata value {meta.data.metatype} is not supported.")
 
@@ -292,86 +303,46 @@ def create_score_object_model(run_settings: RunSettings) -> Score:
     Returns:
         Score: Object model containing the notation information.
     """
-    # Create enough column titles to accommodate all the notation columns, then read the notation
-    columns = ["orig_tag"] + ["BEAT" + str(i) for i in range(1, 33)]
-    df = pd.read_csv(run_settings.notation.filepath, sep="\t", names=columns, skip_blank_lines=False, encoding="UTF-8")
-    df["id"] = df.index
-    # Remove empty rows at the start of the document and multiple empty rows between gongans.
-    # Gongans should be separated by exactly one empty row.
-    df.loc[0, "delete"] = True if type(df.loc[0, "orig_tag"]) == float else False
-    for i in range(1, len(df)):
-        df.loc[i, "delete"] = type(df.loc[i, "orig_tag"]) == float and type(df.loc[i - 1, "orig_tag"]) == float
-    df = df[df["delete"] == False].reset_index()
-    # Create a column with the optional pass indicator (indicated by a colon (:) immediately following a position tag).
-    # Add a default pass value -1 if pass indicator is missing.
-    df["passes"] = df["orig_tag"].apply(
-        lambda x: None if not isinstance(x, str) else passes_str_to_tuple(x.split(":")[1]) if ":" in x else (DEFAULT,)
-    )
-    # Remove optional pass indicator from orig_tag
-    df["orig_tag"] = df["orig_tag"].apply(lambda x: x.split(":")[0] if isinstance(x, str) and ":" in x else x)
-    # insert a column with the normalized instrument/position names and duplicate rows that contain multiple positions
-    df.insert(1, "tag", df["orig_tag"].apply(lambda val: TAG_TO_POSITION_LOOKUP.get(val, [])))
-    df = df.explode("tag", ignore_index=True)
-    # Copy other tags (meta and comment) from orig_tag
-    df["tag"] = np.where(df["tag"].isnull(), df["orig_tag"], df["tag"])
-    df.drop("orig_tag", axis="columns", inplace=True)
-    # Drop all empty columns
-    df.dropna(how="all", axis=1, inplace=True)
-    # Number the gongans: blank lines denote start of new gongan. Then delete blank lines.
-    df["sysnr"] = df["tag"].isna().cumsum()[~df["tag"].isna()] + 1
-    # Reshape dataframe so that there is one beat per row. Column "BEAT" will contain the beat content.
-    df = pd.wide_to_long(df, ["BEAT"], i=["sysnr", "tag", "passes", "id"], j="beat_nr").reset_index(inplace=False)
-    df = df[~df["BEAT"].isna()]
-    df["sysnr"] = df["sysnr"].astype("int16")
+    parser = get_parser(run_settings.font.fontversion, run_settings.notation.filepath)
+    notation_dict, all_positions = parser.parse_notation()
 
-    # convert to list of gongans, each gongan containing optional metadata and a list of instrument parts.
-    df_dict = df.groupby(["sysnr", "beat_nr", "tag", "passes"])["BEAT"].apply(lambda g: g.values.tolist()).to_dict()
-    # Create notation dict that is grouped by gongan and beat
-    notation = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
-    for (sysnr, beat_nr, tag, passes), beat in df_dict.items():
-        if tag in InstrumentPosition:
-            # Notation contains optional pass information (default (-1,) was added above for gongans without pass info)
-            position = tag  # for code clarity
-            for pass_ in passes:
-                # In case of notation, beat contains exactly one element: a string of notation characters for the position.
-                notation[sysnr][beat_nr][position][pass_] = beat[0]
-        else:
-            # other tags (metadata, comment). Beat can contain multiple values for each tag.
-            notation[sysnr][beat_nr][tag] = beat
-
-    # create a list of all instrument positions
-    positions_str = set(df[~df["tag"].isin(NON_INSTRUMENT_TAGS)]["tag"].unique())
-    all_positions = sorted([InstrumentPosition[pos] for pos in positions_str], key=lambda p: p.sequence)
+    if parser.has_errors():
+        logger.error("Program halted.")
+        exit()
 
     score = Score(
+        title=run_settings.notation.title,
+        font_parser=parser,
         settings=run_settings,
         instrument_positions=set(all_positions),
         balimusic_font_dict=SYMBOL_TO_NOTE_LOOKUP,
         midi_notes_dict=SYMBOLVALUE_TO_MIDINOTE_LOOKUP,
         position_range_lookup=POSITION_TO_RANGE_LOOKUP,
+        midiplayer_data=Part(
+            name=run_settings.notation.part.name,
+            file=run_settings.notation.midi_out_file,
+            loop=run_settings.notation.part.loop,
+        ),
     )
     beats: list[Beat] = []
     metadata: list[MetaData] = []
     comments: list[str] = []
-    for sys_id, sys_info in notation.items():
+    for sys_id, sys_info in notation_dict.items():
         for beat_nr, beat_info in sys_info.items():
+            if isinstance(beat_nr, SpecialTags):
+                continue
             # create the staves (regular and exceptions)
             # TODO merge Beat.staves and Beat.exceptions and use pass=-1 for default stave. Similar to Beat.tempo_changes.
-            try:
-                staves = {
-                    position: [SYMBOL_TO_NOTE_LOOKUP[symbol].model_copy() for symbol in notationchars[DEFAULT]]
-                    for position, notationchars in beat_info.items()
-                    if position in InstrumentPosition
-                }
-                exceptions = {
-                    (position, pass_): [SYMBOL_TO_NOTE_LOOKUP[symbol].model_copy() for symbol in notationchars[pass_]]
-                    for position, notationchars in beat_info.items()
-                    if position in InstrumentPosition
-                    for pass_ in notationchars.keys()
-                    if pass_ > 0
-                }
-            except Exception as e:
-                raise ValueError(f"unexpected character in beat {sys_id}-{beat_nr}: {e}")
+            staves = {
+                position: staves[DEFAULT] for position, staves in beat_info.items() if position in InstrumentPosition
+            }
+            exceptions = {
+                (position, pass_): stave
+                for position, staves in beat_info.items()
+                if position in InstrumentPosition
+                for pass_, stave in staves.items()
+                if pass_ > 0
+            }
 
             # Create the beat and add it to the list of beats
             new_beat = Beat(
@@ -381,10 +352,7 @@ def create_score_object_model(run_settings: RunSettings) -> Score:
                 exceptions=exceptions,
                 bpm_start={DEFAULT: (bpm := score.gongans[-1].beats[-1].bpm_end[-1] if score.gongans else 0)},
                 bpm_end={DEFAULT: bpm},
-                duration=max(
-                    sum(note.total_duration for note in notes if note.pitch != Pitch.NONE)
-                    for notes in list(staves.values())
-                ),
+                duration=max(sum(note.total_duration for note in notes) for notes in list(staves.values())),
             )
             prev_beat = beats[-1] if beats else score.gongans[-1].beats[-1] if score.gongans else None
             # Update the `next` pointer of the previous beat.
@@ -393,36 +361,20 @@ def create_score_object_model(run_settings: RunSettings) -> Score:
                 new_beat.prev = prev_beat
             beats.append(new_beat)
 
-            # Add metadata tags to the beat
-            for meta in beat_info.get(METADATA, []):
-                # Note that `meta`` is not a valid json string.
-                # It will be converted to the required json format by the MetaData class.
-                metadata_obj = MetaData(data=meta)
-                if metadata_obj.data.range == Range.SCORE:
-                    score.global_metadata.append(metadata_obj)
-                else:
-                    metadata.append(metadata_obj)
-
-            # Add comment tags to the beat
-            for comment in beat_info.get(COMMENT, []):
-                comments.append(comment)
-
         # Create a new gongan
         if beats:
             gongan = Gongan(
                 id=int(sys_id),
                 beats=beats,
                 beat_duration=most_occurring_beat_duration(beats),
-                metadata=metadata,
-                comments=comments,
+                metadata=sys_info.get(SpecialTags.METADATA, []),
+                comments=sys_info.get(SpecialTags.COMMENT, []),
             )
             score.gongans.append(gongan)
             metadata = []
             beats = []
             comments = []
 
-    # Apply font-specific modifications
-    postprocess(score)
     # Add extension notes to pokok notation having only one note per beat
     complement_shorthand_pokok_staves(score)
     # Add blank staves for all other omitted instruments
@@ -451,23 +403,65 @@ def add_attenuation_time(tracks: list[MidiTrackX], seconds: int) -> None:
             track.extend_last_note(seconds)
 
 
-def create_midifile(score: Score) -> None:
+def create_midifile(score: Score, save: bool = True) -> int:
     """Generates the MIDI content and saves it to file.
 
     Args:
         score (Score): The object model.
         separate_files (bool, optional): If True, a separate file will be created for each instrument. Defaults to False.
+
+    Return:
+        int: Total duration in milliseconds
+
     """
-    mid = MidiFile(ticks_per_beat=96, type=1)
+    midifile = MidiFile(ticks_per_beat=score.settings.midi.PPQ, type=1)
 
     for position in sorted(score.instrument_positions, key=lambda x: x.sequence):
         track = notation_to_track(score, position)
-        mid.tracks.append(track)
-    if not score.settings.notation.loop:
-        add_attenuation_time(mid.tracks, seconds=ATTENUATION_SECONDS_AFTER_MUSIC_END)
-    outfilepath = score.settings.notation.midi_out_filepath
-    mid.save(outfilepath)
-    logger.info(f"File saved as {outfilepath}")
+        midifile.tracks.append(track)
+    if not score.settings.notation.part.loop:
+        add_attenuation_time(midifile.tracks, seconds=ATTENUATION_SECONDS_AFTER_MUSIC_END)
+    if save:
+        outfilepath = score.settings.notation.midi_out_filepath
+        midifile.save(outfilepath)
+        logger.info(f"File saved as {outfilepath}")
+    return int(midifile.length * 1000)
+
+
+def markers_millis_to_frac(markers: dict[str, int], total_duration: int) -> dict[str, float]:
+    """Converts the markers that indicate the start of parts of the composition from milliseconds to
+    percentage of the total duration (rounded off to 5%)
+
+    Args:
+        dict: a dict
+
+    Returns:
+        dict: a new markers dict
+    """
+    return {part: time / total_duration for part, time in markers.items()}
+
+
+def update_midiplayer_content(score: Score) -> None:
+    content = get_midiplayer_content()
+    # If info is already present, replace it.
+    song = next((song for song in content.songs if song.title == score.title), None)
+    if not song:
+        # TODO create components of Song
+        content.songs.append(song := Song(title=score.settings.notation.title))
+        logger.info(f"New song {song.title} created for MIDI player content")
+    part = next((part for part in song.parts if part.name == score.midiplayer_data.name))
+    if not part:
+        song.parts.append(
+            part := Part(score.midiplayer_data.name, score.midiplayer_data.file, score.midiplayer_data.loop)
+        )
+        logger.info(f"New part {part.name} created for MIDI player content")
+    else:
+        logger.info(f"Existing part {part.name} updated for MIDI player content")
+        part.file = score.midiplayer_data.file
+        part.loop = score.midiplayer_data.loop
+    part.markers = markers_millis_to_frac(score.midiplayer_data.markers, score.total_duration)
+    logger.info(f"Added time markers to part {part.name}")
+    save_midiplayer_content(content)
 
 
 def convert_notation_to_midi(run_settings: RunSettings):
@@ -475,13 +469,14 @@ def convert_notation_to_midi(run_settings: RunSettings):
     All settings are read from the (YAML) settings files.
     """
     logger.info("======== NOTATION TO MIDI CONVERSION ========")
-    logger.info(f"input file: {run_settings.notation.file}")
+    logger.info(f"input file: {run_settings.notation.part.file}")
     initialize_lookups(run_settings)
     score = create_score_object_model(run_settings)
     validate_score(score=score, settings=run_settings)
 
-    if run_settings.options.notation_to_midi.create_midifile:
-        create_midifile(score)
+    score.total_duration = create_midifile(score, run_settings.options.notation_to_midi.save_midifile)
+    if run_settings.options.notation_to_midi.update_midiplayer_content_file:
+        update_midiplayer_content(score)
     logger.info("=====================================")
 
 

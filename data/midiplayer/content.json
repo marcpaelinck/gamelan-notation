@@ -1,0 +1,908 @@
+{
+    "songs": [
+        {
+            "title": "Cendrawasih",
+            "instrumentgroup": "GONG_KEBYAR",
+            "display": true,
+            "parts": [
+                {
+                    "name": "entire piece",
+                    "file": "Cendrawasih_entire piece_GAMELAN1.mid",
+                    "loop": false,
+                    "markers": {}
+                }
+            ]
+        },
+        {
+            "title": "Rejang Dewa",
+            "instrumentgroup": "GONG_KEBYAR",
+            "display": true,
+            "parts": [
+                {
+                    "name": "entire piece",
+                    "file": "Rejang Dewa_entire piece_GAMELAN1.mid",
+                    "loop": false,
+                    "markers": {
+                        "Reyong intro": 0.0,
+                        "Pengawak": 0.06209282112809055,
+                        "Pengecet": 0.6780891742080598
+                    }
+                },
+                {
+                    "name": "intro",
+                    "file": "Rejang Dewa_intro_GAMELAN1.mid",
+                    "loop": false,
+                    "markers": {}
+                },
+                {
+                    "name": "pengawak",
+                    "file": "Rejang Dewa_pengawak_GAMELAN1.mid",
+                    "loop": true,
+                    "markers": {}
+                },
+                {
+                    "name": "pengecet",
+                    "file": "Rejang Dewa_pengecet_GAMELAN1.mid",
+                    "loop": true,
+                    "markers": {}
+                }
+            ]
+        },
+        {
+            "title": "Pendet",
+            "instrumentgroup": "GONG_KEBYAR",
+            "display": true,
+            "parts": [
+                {
+                    "name": "entire piece",
+                    "file": "Pendet_full_GAMELAN1.mid",
+                    "loop": false,
+                    "markers": {}
+                }
+            ]
+        },
+        {
+            "title": "Godek Miring",
+            "instrumentgroup": "SEMAR_PAGULINGAN",
+            "display": true,
+            "parts": [
+                {
+                    "name": "entire piece",
+                    "file": "Godek Miring_full_GAMELAN1.mid",
+                    "loop": false,
+                    "markers": {}
+                },
+                {
+                    "name": "penyalit (no angsel)",
+                    "file": "Godek Miring_penyalit_GAMELAN1.mid",
+                    "loop": true,
+                    "markers": {}
+                },
+                {
+                    "name": "penyalit (with angsel)",
+                    "file": "Godek Miring_penyalit-angsel_GAMELAN1.mid",
+                    "loop": true,
+                    "markers": {}
+                },
+                {
+                    "name": "pengawak",
+                    "file": "Godek Miring_pengawak_GAMELAN1.mid",
+                    "loop": true,
+                    "markers": {}
+                },
+                {
+                    "name": "pengecet",
+                    "file": "Godek Miring_pengecet_GAMELAN1.mid",
+                    "loop": true,
+                    "markers": {}
+                }
+            ]
+        },
+        {
+            "title": "Lengker",
+            "instrumentgroup": "SEMAR_PAGULINGAN",
+            "display": true,
+            "parts": [
+                {
+                    "name": "entire piece",
+                    "file": "Lengker Ubud_full_GAMELAN1.mid",
+                    "loop": false,
+                    "markers": {}
+                },
+                {
+                    "name": "penyalit",
+                    "file": "Lengker Ubud_penyalit_GAMELAN1.mid",
+                    "loop": true,
+                    "markers": {}
+                },
+                {
+                    "name": "pengawak",
+                    "file": "Lengker Ubud_pengawak_GAMELAN1.mid",
+                    "loop": true,
+                    "markers": {}
+                },
+                {
+                    "name": "pengecet",
+                    "file": "Lengker Ubud_pengecet_GAMELAN1.mid",
+                    "loop": true,
+                    "markers": {}
+                }
+            ]
+        },
+        {
+            "title": "Sinom Ladrang (GK)",
+            "instrumentgroup": "GONG_KEBYAR",
+            "display": false,
+            "parts": [
+                {
+                    "name": "entire piece",
+                    "file": "Sinom Ladrang_GK_ubit4_full_GAMELAN1.mid",
+                    "loop": false,
+                    "markers": {}
+                }
+            ]
+        },
+        {
+            "title": "Sinom Ladrang",
+            "instrumentgroup": "SEMAR_PAGULINGAN",
+            "display": true,
+            "parts": [
+                {
+                    "name": "entire piece",
+                    "file": "Sinom Ladrang_SP_full_GAMELAN1.mid",
+                    "loop": false,
+                    "markers": {}
+                },
+                {
+                    "name": "pengawak",
+                    "file": "Sinom Ladrang_SP_pengawak_GAMELAN1.mid",
+                    "loop": true,
+                    "markers": {}
+                },
+                {
+                    "name": "pengecet",
+                    "file": "Sinom Ladrang_SP_Pengecet_GAMELAN1.mid",
+                    "loop": true,
+                    "markers": {}
+                }
+            ]
+        }
+    ],
+    "instrumentgroups": {
+        "GONG_KEBYAR": [
+            {
+                "name": "GONGS",
+                "channels": [
+                    0
+                ],
+                "midioffset": 0,
+                "animation": "GK_GONGS"
+            },
+            {
+                "name": "KENDANG",
+                "channels": [
+                    1
+                ],
+                "midioffset": 0,
+                "animation": "GK_KENDANG"
+            },
+            {
+                "name": "JEGOGAN",
+                "channels": [
+                    2
+                ],
+                "midioffset": 0,
+                "animation": "GK_POKOK"
+            },
+            {
+                "name": "CALUNG",
+                "channels": [
+                    3
+                ],
+                "midioffset": 0,
+                "animation": "GK_POKOK"
+            },
+            {
+                "name": "PEMADE",
+                "channels": [
+                    4,
+                    5
+                ],
+                "midioffset": 0,
+                "animation": "GK_GANGSA"
+            },
+            {
+                "name": "- PEMADE_POLOS",
+                "channels": [
+                    4
+                ],
+                "midioffset": 0,
+                "animation": "GK_GANGSA"
+            },
+            {
+                "name": "- PEMADE_SANGSIH",
+                "channels": [
+                    5
+                ],
+                "midioffset": 0,
+                "animation": "GK_GANGSA"
+            },
+            {
+                "name": "KANTILAN",
+                "channels": [
+                    6,
+                    7
+                ],
+                "midioffset": 0,
+                "animation": "GK_GANGSA"
+            },
+            {
+                "name": "- KANTILAN_POLOS",
+                "channels": [
+                    6
+                ],
+                "midioffset": 0,
+                "animation": "GK_GANGSA"
+            },
+            {
+                "name": "- KANTILAN_SANGSIH",
+                "channels": [
+                    7
+                ],
+                "midioffset": 0,
+                "animation": "GK_GANGSA"
+            },
+            {
+                "name": "UGAL",
+                "channels": [
+                    8
+                ],
+                "midioffset": 0,
+                "animation": "GK_GANGSA"
+            },
+            {
+                "name": "REYONG",
+                "channels": [
+                    10,
+                    11,
+                    12,
+                    13
+                ],
+                "midioffset": 0,
+                "animation": "GK_REYONG"
+            },
+            {
+                "name": "- REYONG_1",
+                "channels": [
+                    10
+                ],
+                "midioffset": 0,
+                "animation": "GK_REYONG"
+            },
+            {
+                "name": "- REYONG_2",
+                "channels": [
+                    11
+                ],
+                "midioffset": 0,
+                "animation": "GK_REYONG"
+            },
+            {
+                "name": "- REYONG_3",
+                "channels": [
+                    12
+                ],
+                "midioffset": 0,
+                "animation": "GK_REYONG"
+            },
+            {
+                "name": "- REYONG_4",
+                "channels": [
+                    13
+                ],
+                "midioffset": 0,
+                "animation": "GK_REYONG"
+            }
+        ],
+        "SEMAR_PAGULINGAN": [
+            {
+                "name": "GONGS",
+                "channels": [
+                    0
+                ],
+                "midioffset": 50,
+                "animation": "SP_GONGS"
+            },
+            {
+                "name": "KENDANG",
+                "channels": [
+                    1
+                ],
+                "midioffset": 50,
+                "animation": "SP_KENDANG"
+            },
+            {
+                "name": "JEGOGAN",
+                "channels": [
+                    2
+                ],
+                "midioffset": 50,
+                "animation": "SP_POKOK"
+            },
+            {
+                "name": "CALUNG",
+                "channels": [
+                    3
+                ],
+                "midioffset": 50,
+                "animation": "SP_POKOK"
+            },
+            {
+                "name": "PEMADE",
+                "channels": [
+                    4,
+                    5
+                ],
+                "midioffset": 50,
+                "animation": "SP_GANGSA"
+            },
+            {
+                "name": "- PEMADE_POLOS",
+                "channels": [
+                    4
+                ],
+                "midioffset": 50,
+                "animation": "SP_GANGSA"
+            },
+            {
+                "name": "- PEMADE_SANGSIH",
+                "channels": [
+                    5
+                ],
+                "midioffset": 50,
+                "animation": "SP_GANGSA"
+            },
+            {
+                "name": "KANTILAN",
+                "channels": [
+                    6,
+                    7
+                ],
+                "midioffset": 50,
+                "animation": "SP_GANGSA"
+            },
+            {
+                "name": "- KANTILAN_POLOS",
+                "channels": [
+                    6
+                ],
+                "midioffset": 50,
+                "animation": "SP_GANGSA"
+            },
+            {
+                "name": "- KANTILAN_SANGSIH",
+                "channels": [
+                    7
+                ],
+                "midioffset": 50,
+                "animation": "SP_GANGSA"
+            },
+            {
+                "name": "TROMPONG",
+                "channels": [
+                    8
+                ],
+                "midioffset": 50,
+                "animation": "SP_TROMPONG"
+            }
+        ]
+    },
+    "animation": {
+        "highlight": {
+            "OPEN": [
+                "green",
+                "lime"
+            ],
+            "ABBREVIATED": [
+                "blue",
+                "aqua"
+            ],
+            "MUTED": [
+                "purple",
+                "fuchsia"
+            ],
+            "TICK1": [
+                "green",
+                "lime"
+            ],
+            "TICK2": [
+                "blue",
+                "aqua"
+            ],
+            "KAPAK": [
+                "green"
+            ],
+            "DETUT": [
+                "blue"
+            ],
+            "CUNGKUNG": [
+                "purple"
+            ]
+        },
+        "profiles": {
+            "SP_GANGSA": {
+                "file": "SP_GANGSA.svg",
+                "notes": {
+                    "DING1": [
+                        51,
+                        58,
+                        65
+                    ],
+                    "DONG1": [
+                        52,
+                        59,
+                        66
+                    ],
+                    "DENG1": [
+                        53,
+                        60,
+                        67
+                    ],
+                    "DEUNG1": [
+                        54,
+                        61,
+                        68
+                    ],
+                    "DUNG1": [
+                        55,
+                        62,
+                        69
+                    ],
+                    "DANG1": [
+                        56,
+                        63,
+                        70
+                    ],
+                    "DAING1": [
+                        57,
+                        64,
+                        71
+                    ]
+                },
+                "strokes": [
+                    "OPEN",
+                    "ABBREVIATED",
+                    "MUTED"
+                ]
+            },
+            "SP_POKOK": {
+                "file": "SP_POKOK.svg",
+                "notes": {
+                    "DING1": [
+                        51,
+                        58,
+                        65
+                    ],
+                    "DONG1": [
+                        52,
+                        59,
+                        66
+                    ],
+                    "DENG1": [
+                        53,
+                        60,
+                        67
+                    ],
+                    "DEUNG1": [
+                        54,
+                        61,
+                        68
+                    ],
+                    "DUNG1": [
+                        55,
+                        62,
+                        69
+                    ],
+                    "DANG1": [
+                        56,
+                        63,
+                        70
+                    ],
+                    "DAING1": [
+                        57,
+                        64,
+                        71
+                    ]
+                },
+                "strokes": [
+                    "OPEN",
+                    "ABBREVIATED",
+                    "MUTED"
+                ]
+            },
+            "SP_TROMPONG": {
+                "file": "SP_TROMPONG.svg",
+                "notes": {
+                    "DING1": [
+                        51,
+                        65,
+                        79
+                    ],
+                    "DONG1": [
+                        52,
+                        66,
+                        80
+                    ],
+                    "DENG1": [
+                        53,
+                        67,
+                        81
+                    ],
+                    "DEUNG1": [
+                        54,
+                        68,
+                        82
+                    ],
+                    "DUNG1": [
+                        55,
+                        69,
+                        83
+                    ],
+                    "DANG1": [
+                        56,
+                        70,
+                        84
+                    ],
+                    "DAING1": [
+                        57,
+                        71,
+                        85
+                    ],
+                    "DING2": [
+                        58,
+                        72,
+                        86
+                    ],
+                    "DONG2": [
+                        59,
+                        73,
+                        87
+                    ],
+                    "DENG2": [
+                        60,
+                        74,
+                        88
+                    ],
+                    "DEUNG2": [
+                        61,
+                        75,
+                        89
+                    ],
+                    "DUNG2": [
+                        62,
+                        76,
+                        90
+                    ],
+                    "DANG2": [
+                        63,
+                        77,
+                        91
+                    ],
+                    "DAING2": [
+                        64,
+                        78,
+                        92
+                    ]
+                },
+                "strokes": [
+                    "OPEN",
+                    "ABBREVIATED",
+                    "MUTED"
+                ]
+            },
+            "SP_GONGS": {
+                "file": "SP_GONGS.svg",
+                "notes": {
+                    "GIR": [
+                        52
+                    ],
+                    "TONG": [
+                        54
+                    ]
+                },
+                "strokes": [
+                    "OPEN"
+                ]
+            },
+            "SP_KENDANG": {
+                "file": "KENDANG.svg",
+                "notes": {
+                    "KA": [
+                        51,
+                        null,
+                        null
+                    ],
+                    "PAK": [
+                        52,
+                        null,
+                        null
+                    ],
+                    "DE": [
+                        null,
+                        53,
+                        null
+                    ],
+                    "TUT": [
+                        null,
+                        54,
+                        null
+                    ],
+                    "CUNG": [
+                        null,
+                        null,
+                        55
+                    ],
+                    "KUNG": [
+                        null,
+                        null,
+                        56
+                    ]
+                },
+                "strokes": [
+                    "KAPAK",
+                    "DETUT",
+                    "CUNGKUNG"
+                ]
+            },
+            "GK_GANGSA": {
+                "file": "GK_GANGSA.svg",
+                "notes": {
+                    "DONG0": [
+                        1,
+                        11,
+                        21
+                    ],
+                    "DENG0": [
+                        2,
+                        12,
+                        22
+                    ],
+                    "DUNG0": [
+                        3,
+                        13,
+                        23
+                    ],
+                    "DANG0": [
+                        4,
+                        14,
+                        24
+                    ],
+                    "DING1": [
+                        5,
+                        15,
+                        25
+                    ],
+                    "DONG1": [
+                        6,
+                        16,
+                        26
+                    ],
+                    "DENG1": [
+                        7,
+                        17,
+                        27
+                    ],
+                    "DUNG1": [
+                        8,
+                        18,
+                        28
+                    ],
+                    "DANG1": [
+                        9,
+                        19,
+                        29
+                    ],
+                    "DING2": [
+                        10,
+                        20,
+                        30
+                    ]
+                },
+                "strokes": [
+                    "OPEN",
+                    "ABBREVIATED",
+                    "MUTED"
+                ]
+            },
+            "GK_REYONG": {
+                "file": "GK_REYONG.svg",
+                "notes": {
+                    "DENG0": [
+                        1,
+                        13,
+                        25,
+                        null,
+                        null
+                    ],
+                    "DUNG0": [
+                        2,
+                        14,
+                        26,
+                        37,
+                        41
+                    ],
+                    "DANG0": [
+                        3,
+                        15,
+                        27,
+                        null,
+                        null
+                    ],
+                    "DING1": [
+                        4,
+                        16,
+                        28,
+                        null,
+                        null
+                    ],
+                    "DONG1": [
+                        5,
+                        17,
+                        29,
+                        38,
+                        42
+                    ],
+                    "DENG1": [
+                        6,
+                        18,
+                        30,
+                        null,
+                        null
+                    ],
+                    "DUNG1": [
+                        7,
+                        19,
+                        31,
+                        null,
+                        null
+                    ],
+                    "DANG1": [
+                        8,
+                        20,
+                        32,
+                        39,
+                        43
+                    ],
+                    "DING2": [
+                        9,
+                        21,
+                        33,
+                        null,
+                        null
+                    ],
+                    "DONG2": [
+                        10,
+                        22,
+                        34,
+                        null,
+                        null
+                    ],
+                    "DENG2": [
+                        11,
+                        23,
+                        35,
+                        40,
+                        44
+                    ],
+                    "DUNG2": [
+                        12,
+                        24,
+                        36,
+                        null,
+                        null
+                    ]
+                },
+                "strokes": [
+                    "OPEN",
+                    "ABBREVIATED",
+                    "MUTED",
+                    "TICK1",
+                    "TICK2"
+                ]
+            },
+            "GK_POKOK": {
+                "file": "GK_POKOK.svg",
+                "notes": {
+                    "DING1": [
+                        1,
+                        6,
+                        11
+                    ],
+                    "DONG1": [
+                        2,
+                        7,
+                        12
+                    ],
+                    "DENG1": [
+                        3,
+                        8,
+                        13
+                    ],
+                    "DUNG1": [
+                        4,
+                        9,
+                        14
+                    ],
+                    "DANG1": [
+                        5,
+                        10,
+                        15
+                    ]
+                },
+                "strokes": [
+                    "OPEN",
+                    "ABBREVIATED",
+                    "MUTED"
+                ]
+            },
+            "GK_GONGS": {
+                "file": "GK_GONGS.svg",
+                "notes": {
+                    "GIR": [
+                        2
+                    ],
+                    "PUR": [
+                        3
+                    ],
+                    "TONG": [
+                        4
+                    ]
+                },
+                "strokes": [
+                    "OPEN"
+                ]
+            },
+            "GK_KENDANG": {
+                "file": "KENDANG.svg",
+                "notes": {
+                    "KA": [
+                        1,
+                        null,
+                        null
+                    ],
+                    "PAK": [
+                        2,
+                        null,
+                        null
+                    ],
+                    "DE": [
+                        null,
+                        3,
+                        null
+                    ],
+                    "TUT": [
+                        null,
+                        4,
+                        null
+                    ],
+                    "CUNG": [
+                        null,
+                        null,
+                        5
+                    ],
+                    "KUNG": [
+                        null,
+                        null,
+                        6
+                    ]
+                },
+                "strokes": [
+                    "KAPAK",
+                    "DETUT",
+                    "CUNGKUNG"
+                ]
+            }
+        }
+    },
+    "soundfont": "GAMELAN1.sf2"
+}

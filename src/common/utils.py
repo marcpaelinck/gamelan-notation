@@ -1,4 +1,5 @@
 import csv
+from itertools import product
 from os import path
 from statistics import mode
 
@@ -13,6 +14,7 @@ from src.common.constants import (
     MIDIvalue,
     Octave,
     Pitch,
+    SpecialTags,
     Stroke,
 )
 from src.common.lookups import (
@@ -32,8 +34,6 @@ from src.common.metadata_classes import (
     SilenceMeta,
 )
 from src.settings.settings import (
-    COMMENT,
-    METADATA,
     InstrumentFields,
     InstrumentTagFields,
     MidiNotesFields,
@@ -165,9 +165,9 @@ def gongan_to_records(gongan: Gongan, skipemptylines: bool = True) -> list[dict[
             pos_tags[p_pos] = "GANGSA_" + p_pos.value.split("_")[1][0]
 
     result = (
-        [{InstrumentFields.POSITION: COMMENT, 1: comment} for comment in gongan.comments]
+        [{InstrumentFields.POSITION: SpecialTags.COMMENT, 1: comment} for comment in gongan.comments]
         + [
-            {InstrumentFields.POSITION: METADATA, 1: metadata.data.model_dump_json(exclude_defaults=True)}
+            {InstrumentFields.POSITION: SpecialTags.METADATA, 1: metadata.data.model_dump_json(exclude_defaults=True)}
             for metadata in gongan.metadata
         ]
         + [
@@ -194,7 +194,7 @@ def score_to_notation_file(score: Score) -> None:
     score_dict = sum((gongan_to_records(gongan) for gongan in score.gongans), [])
     score_df = pd.DataFrame.from_records(score_dict)
     fpath, ext = path.splitext(score.settings.notation.filepath)
-    filepath = fpath + "_CORRECTED" + "." + ext
+    filepath = fpath + "_CORRECTED" + ext
     score_df.to_csv(filepath, sep="\t", index=False, header=False, quoting=csv.QUOTE_NONE)
 
 
@@ -324,6 +324,73 @@ def create_tag_to_position_lookup(
     lookup_dict = {t.tag: t.positions for t in tags}
 
     return lookup_dict
+
+
+def get_instrument_range(position: InstrumentPosition) -> list[tuple[Note, Octave]]:
+    return [
+        (note, oct)
+        for (note, oct, stroke) in POSITION_TO_RANGE_LOOKUP[position]
+        if stroke == POSITION_TO_RANGE_LOOKUP[position][0][2]
+    ]
+
+
+def get_nearest_note(
+    pitch: Pitch,
+    stroke: Stroke,
+    duration: float = None,
+    rest_after: float = None,
+    octave: int = None,
+    note_list: list[Note] = NOTE_LIST,
+) -> Note:
+    """Searches for the note with the best match
+
+    Args:
+        pitch (Pitch): _description_
+        stroke (Stroke): _description_
+        duration (float, optional): _description_. Defaults to None.
+        rest_after (float, optional): _description_. Defaults to None.
+        octave (int, optional): _description_. Defaults to None.
+        note_list (list[Note], optional): _description_. Defaults to NOTE_LIST.
+
+    Returns:
+        Note: a note if found, otherwise None
+    """
+    stroke_alt = {stroke} | set({Stroke.OPEN} if stroke in [Stroke.ABBREVIATED, Stroke.MUTED] else {})
+    duration_alt = {duration} | set({1} if duration else {})
+    rest_after_alt = {rest_after} | set({0} if duration else {})
+    octave_alt = {octave} | set({1} if octave else {})
+    attempts = list(product(stroke_alt, duration_alt, rest_after_alt, octave_alt))
+
+    for stroke_, duration_, rest_after_, octave_ in attempts:
+        note = next(
+            (
+                note
+                for note in note_list
+                if (note.pitch == pitch)
+                and (note.stroke == stroke_)
+                and (duration_ == None or note.duration == duration_)
+                and (rest_after_ == None or note.rest_after == rest_after_)
+                and (octave_ == None or note.octave == octave_)
+            ),
+            None,
+        )
+        if note:
+            return note
+    return note
+
+
+def flatten(lst: list[list | object]):
+    """unpacks lists within a list in-place. lst can contain both lists and objects or scalars
+
+    Args:
+        lst (list[list  |  object]): list containing lists and objects
+
+    Returns:
+        list[object]: The list with unpacked list objects.
+    """
+    flattened = sum((obj if isinstance(obj, list) else [obj] for obj in lst), [])
+    lst.clear()
+    lst.extend(flattened)
 
 
 if __name__ == "__main__":

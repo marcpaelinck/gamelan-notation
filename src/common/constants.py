@@ -13,6 +13,15 @@ Pass = int
 Octave = int
 MIDIvalue = int
 MidiDict = dict[str, list[dict[str, str | int | None]]]
+NotationDict = dict[int, dict[int, dict[str, dict[tuple[int], str]]]]  # notation[sys_id][beat_id][position][passes]
+ErrorMessage = str
+
+
+class SpecialTags(StrEnum):
+    # Putting constants in a class enables them to be used in a `match`statement
+    # See e.g. https://github.com/microsoft/pylance-release/issues/4309
+    METADATA = "metadata"
+    COMMENT = "comment"
 
 
 class NotationEnum(StrEnum):
@@ -153,6 +162,9 @@ class Stroke(NotationEnum):
     ABBREVIATED = "ABBREVIATED"
     TICK1 = "TICK1"
     TICK2 = "TICK2"
+    KAPAK = "KAPAK"
+    DETUT = "DETUT"
+    CUNGKUNG = "CUNGKUNG"
     EXTENSION = "EXTENSION"
     SILENCE = "SILENCE"
     NONE = "NONE"
@@ -174,6 +186,63 @@ class Modifier(StrEnum):
     TREMOLO = "TREMOLO"
     TREMOLO_ACCELERATING = "TREMOLO_ACCELERATING"
     NOROT = "NOROT"
+
+
+class AnimationProfiles(NotationEnum):
+    GK_GONGS = "GK_GONGS"
+    GK_KENDANG = "GK_KENDANG"
+    GK_POKOK = "GK_POKOK"
+    GK_GANGSA = "GK_GANGSA"
+    GK_REYONG = "GK_REYONG"
+    SP_GONGS = "SP_GONGS"
+    SP_KENDANG = "SP_KENDANG"
+    SP_POKOK = "SP_POKOK"
+    SP_GANGSA = "SP_GANGSA"
+    SP_TROMPONG = "SP_TROMPONG"
+
+
+class NoteOct(NotationEnum):
+    DING0 = "DING0"
+    DONG0 = "DONG0"
+    DENG0 = "DENG0"
+    DEUNG0 = "DEUNG0"
+    DUNG0 = "DUNG0"
+    DANG0 = "DANG0"
+    DAING0 = "DAING0"
+    DING1 = "DING1"
+    DONG1 = "DONG1"
+    DENG1 = "DENG1"
+    DEUNG1 = "DEUNG1"
+    DUNG1 = "DUNG1"
+    DANG1 = "DANG1"
+    DAING1 = "DAING1"
+    DING2 = "DING2"
+    DONG2 = "DONG2"
+    DENG2 = "DENG2"
+    DEUNG2 = "DEUNG2"
+    DUNG2 = "DUNG2"
+    DANG2 = "DANG2"
+    DAING2 = "DAING2"
+    DENGDING = "DENGDING"
+    BYONG = "BYONG"
+    BYOT = "BYOT"
+    KA = "KA"
+    PAK = "PAK"
+    DE = "DE"
+    TUT = "TUT"
+    CUNG = "CUNG"
+    KUNG = "KUNG"
+    PLAK = "PLAK"
+    DAG = "DAG"
+    DUG = "DUG"
+    GIR = "GIR"
+    JET = "JET"
+    MUTED = "MUTED"
+    OPEN = "OPEN"
+    PEK = "PEK"
+    PUR = "PUR"
+    STRIKE = "STRIKE"
+    TONG = "TONG"
 
 
 # MIDI to Notation

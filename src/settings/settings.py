@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from enum import StrEnum
@@ -8,16 +9,13 @@ from pydantic import BaseModel
 
 from src.common.classes import RunSettings
 from src.common.logger import get_logger
+from src.common.playercontent_classes import Content
 
 logger = get_logger(__name__)
 
 BASE_NOTE_TIME = 24
 BASE_NOTES_PER_BEAT = 4
 ATTENUATION_SECONDS_AFTER_MUSIC_END = 10  # additional time in seconds to let final chord attenuate.
-
-METADATA = "metadata"
-COMMENT = "comment"
-NON_INSTRUMENT_TAGS = [METADATA, COMMENT]
 
 
 # list of column headers used in the settings files
@@ -152,71 +150,96 @@ def get_run_settings(notation: dict[str, str] = None) -> RunSettings:
     data_dict = read_settings(DATA_INFOFILE)
 
     # YAML fieldnames
+    NOTATIONS = "notations"
     NOTATION = "notation"
     DEFAULTS = "defaults"
     MIDI = "midi"
+    MIDIVERSIONS = "midiversions"
+    MIDIVERSION = "midiversion"
     SAMPLES = "samples"
     INSTRUMENTS = "instruments"
+    FONTS = "fonts"
     FONT = "font"
+    FONTVERSIONS = "fontversions"
+    FONTVERSION = "fontversion"
+    SOUNDFONTS = "soundfonts"
     SOUNDFONT = "soundfont"
     OPTIONS = "options"
-    COMPOSITION = "composition"
+    PIECE = "piece"
     FILE = "file"
     PART = "part"
-    LOOP = "loop"
-    FULL = "full"
+    INSTRUMENTGROUPS = "instrumentgroups"
     INSTRUMENTGROUP = "instrumentgroup"
-    MIDIVERSION = "midiversion"
-    FONTVERSION = "fontversion"
-
-    if notation:
-        run_settings_dict[NOTATION] = notation
+    MIDIPLAYER = "midiplayer"
 
     settings_dict = dict()
 
-    composition = data_dict[NOTATION][COMPOSITION][run_settings_dict[NOTATION][COMPOSITION]]
-    settings_dict[NOTATION] = get_settings_fields(
-        RunSettings.NotationInfo,
-        data_dict[NOTATION][COMPOSITION][DEFAULTS] | data_dict[NOTATION] | composition | run_settings_dict[NOTATION],
-    )
-    settings_dict[NOTATION][FILE] = composition[PART][run_settings_dict[NOTATION][PART]]
-    # Only 'full' composition will be extended with 'attenuation time'.
-    settings_dict[NOTATION][LOOP] = run_settings_dict[NOTATION][PART] != FULL
+    # Run Options
+    settings_dict[OPTIONS] = get_settings_fields(RunSettings.Options, run_settings_dict[OPTIONS])
 
-    midiversion = data_dict[MIDI][MIDIVERSION][run_settings_dict[MIDI][MIDIVERSION]]
+    # MIDI info
+    midiversion = data_dict[MIDI][MIDIVERSIONS][run_settings_dict[MIDI][MIDIVERSION]]
     settings_dict[MIDI] = get_settings_fields(
         RunSettings.MidiInfo, data_dict[MIDI] | run_settings_dict[MIDI] | midiversion
     )
 
-    samples = data_dict[SAMPLES][INSTRUMENTGROUP][run_settings_dict[SAMPLES][INSTRUMENTGROUP]]
+    # Sample info
+    samples = data_dict[SAMPLES][INSTRUMENTGROUPS][run_settings_dict[SAMPLES][INSTRUMENTGROUP]]
     settings_dict[SAMPLES] = get_settings_fields(
         RunSettings.SampleInfo, samples | run_settings_dict[SAMPLES] | data_dict[SAMPLES]
     )
 
-    instruments = data_dict[INSTRUMENTS][INSTRUMENTGROUP][composition[INSTRUMENTGROUP]]
+    # Soundfont info
+    settings_dict[SOUNDFONT] = get_settings_fields(
+        RunSettings.SoundfontInfo, data_dict[SOUNDFONTS] | run_settings_dict[SOUNDFONT]
+    )
+
+    settings_dict[MIDIPLAYER] = get_settings_fields(RunSettings.MidiPlayerInfo, data_dict[MIDIPLAYER])
+
+    # NOTATION INFORMATION
+
+    if notation:
+        run_settings_dict[NOTATIONS] = notation
+
+    notation = data_dict[NOTATIONS][DEFAULTS] | data_dict[NOTATIONS][run_settings_dict[NOTATION][PIECE]]
+    notation[PART] = data_dict[NOTATIONS][run_settings_dict[NOTATION][PIECE]][PART][run_settings_dict[NOTATION][PART]]
+
+    settings_dict[NOTATION] = get_settings_fields(
+        RunSettings.NotationInfo,
+        notation,
+    )
+
+    instruments = data_dict[INSTRUMENTS][INSTRUMENTGROUPS][notation[INSTRUMENTGROUP]]
     settings_dict[INSTRUMENTS] = get_settings_fields(
         RunSettings.InstrumentInfo,
-        data_dict[INSTRUMENTS]
-        | data_dict[NOTATION][COMPOSITION][run_settings_dict[NOTATION][COMPOSITION]]
-        | instruments,
+        notation | data_dict[INSTRUMENTS] | instruments,
     )
 
-    font = data_dict[FONT][FONTVERSION][composition[FONTVERSION]] | {FONTVERSION: composition[FONTVERSION]}
-    settings_dict[FONT] = get_settings_fields(RunSettings.FontInfo, data_dict[FONT] | font)
-
-    settings_dict[SOUNDFONT] = get_settings_fields(
-        RunSettings.SoundfontInfo, data_dict[SOUNDFONT] | run_settings_dict[SOUNDFONT]
-    )
-
-    settings_dict[OPTIONS] = get_settings_fields(RunSettings.Options, run_settings_dict[OPTIONS])
+    font = data_dict[FONTS][FONTVERSIONS][notation[FONTVERSION]] | {FONTVERSION: notation[FONTVERSION]}
+    settings_dict[FONT] = get_settings_fields(RunSettings.FontInfo, data_dict[FONTS] | font)
 
     settings_dict = post_process(settings_dict)
 
     return RunSettings.model_validate(settings_dict)
 
 
+def get_midiplayer_content() -> Content:
+    run_settings = get_run_settings()
+    datafolder = run_settings.midiplayer.datafolder
+    contentfile = run_settings.midiplayer.contentfile
+    with open(os.path.join(datafolder, contentfile), "r") as contentfile:
+        playercontent = contentfile.read()
+    return Content.model_validate_json(playercontent)
+
+
+def save_midiplayer_content(playercontent: Content):
+    run_settings = get_run_settings()
+    datafolder = run_settings.midiplayer.datafolder
+    contentfile = run_settings.midiplayer.contentfile
+    with open(os.path.join(datafolder, contentfile), "w") as contentfile:
+        contentfile.write(playercontent.model_dump_json(indent=4, serialize_as_any=True))
+
+
 if __name__ == "__main__":
     # For testing
-    settings = get_run_settings()
-    print(settings.soundfont)
-    print(settings.soundfont.sf_filepath_list)
+    print(get_run_settings())

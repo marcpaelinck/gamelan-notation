@@ -15,12 +15,10 @@ from src.common.logger import get_logger
 from src.common.metadata_classes import GonganType, ValidationProperty
 from src.common.utils import (
     create_rest_stave,
-    find_note,
     get_whole_rest_note,
     has_kempli_beat,
     score_to_notation_file,
 )
-from src.notation2midi.font_specific_code import create_note
 
 logger = get_logger(__name__)
 
@@ -239,7 +237,7 @@ def incorrect_kempyung(
                             ):
                                 if autocorrect and iteration == 1:
                                     correct_note, correct_octave = kempyung_dict[(polos.pitch, polos.octave)]
-                                    correct_sangsih = create_note(
+                                    correct_sangsih = score.font_parser.create_note(
                                         pitch=correct_note,
                                         octave=correct_octave,
                                         stroke=sangsih.stroke,
@@ -286,7 +284,7 @@ def create_missing_staves(
     # a kempli beat is a muted stroke
     # Note: these two line are BaliMusic5 font exclusive!
     # kempli_stroke = find_note(Pitch.STRIKE, Stroke.OPEN, 1, score.balimusic_font_dict.values())
-    kempli_stroke = create_note(pitch=Pitch.STRIKE, stroke=Stroke.OPEN, duration=1)
+    kempli_stroke = score.font_parser.create_note(pitch=Pitch.STRIKE, octave=None, stroke=Stroke.OPEN, duration=1)
     KEMPLI_BEAT = kempli_stroke.model_copy(update={"stroke": Stroke.MUTED, "symbol": kempli_stroke.symbol + "?"})
 
     if missing_positions := (all_instruments - set(beat.staves.keys())):
