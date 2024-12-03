@@ -29,7 +29,7 @@ from src.common.metadata_classes import (
     GonganType,
     GoToMeta,
     MetaData,
-    MetaDataSubType,
+    MetaDataType,
     ValidationProperty,
 )
 from src.common.playercontent_classes import Part
@@ -270,7 +270,7 @@ class Gongan:
     comments: list[str] = field(default_factory=list)
     _pass_: PASS = 0  # Counts the number of times the gongan is passed during generation of MIDI file.
 
-    def get_metadata(self, cls: MetaDataSubType):
+    def get_metadata(self, cls: MetaDataType):
         return next((meta.data for meta in self.metadata if isinstance(meta.data, cls)), None)
 
 

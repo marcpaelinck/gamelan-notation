@@ -15,7 +15,7 @@ from src.common.constants import (
     Stroke,
 )
 from src.common.lookups import MIDINOTE_LOOKUP, TAG_TO_POSITION_LOOKUP
-from src.common.metadata_classes import MetaData, MetaDataSubType
+from src.common.metadata_classes import MetaData, MetaDataType
 from src.common.utils import NOTE_LIST, flatten, get_instrument_range, get_nearest_note
 from src.settings.settings import BASE_NOTE_TIME
 
@@ -64,7 +64,7 @@ class Font5Parser(FontParser):
         return notes
 
     def note_from_chars(self, position: InstrumentPosition, note_chars: str) -> list[Note]:
-        """Translates a list of characters to a Note object (or two in case one of the characters is a grace note).
+        """Translates a list of characters to a Note object.
         The note's postprocess flags is set if not all its parameter values can be determined in this step.
 
         Args:
@@ -76,6 +76,7 @@ class Font5Parser(FontParser):
         Returns:
             Note: a list containing one or two notes.
         """
+        # Create a list containing one Note object for each symbol in note_chars.
         notes: list[Note] = [
             next((note for note in NOTE_LIST if (note.symbol == character)), None) for character in note_chars
         ]
@@ -86,13 +87,13 @@ class Font5Parser(FontParser):
         # notes list contains modifiers.
 
         note = notes.pop(0)  # The actual note. Any other 'note' is a modifier.
-        note_chars = note.symbol
+        note_symbols = note.symbol
         modifs = dict()  # Keeps track of modifications that should be applied to the note.
 
         # Check required actions
         while notes:
             modifier_note = notes.pop(0)
-            note_chars += modifier_note.symbol
+            note_symbols += modifier_note.symbol
             match modifier_note.modifier:
                 case Modifier.OCTAVE_0:
                     modifs["octave"] = 0
@@ -128,13 +129,13 @@ class Font5Parser(FontParser):
                     if notes:
                         # Expecting another tremolo definition. Store the current note and create a new note.
                         modifs["stroke"] = Modifier.TREMOLO
-                        modifs["symbol"] = note_chars
+                        modifs["symbol"] = note_symbols
                         notes.append()
                         note = notes.pop(0)
                         modifs = dict()
-                        note_chars = note.symbol
+                        note_symbols = note.symbol
 
-        modifs["symbol"] = note_chars
+        modifs["symbol"] = note_symbols
         notes.append(note.model_copy(update=modifs))
 
         # Generate tremolo. Grace note will be created in a separate postprocessing step.
@@ -212,13 +213,13 @@ class Font5Parser(FontParser):
             meta.__annotations__["metatype"].__args__[0]: {
                 attr: str(cls) for attr, cls in meta.__annotations__.items() if attr != "metatype"
             }
-            for meta in MetaDataSubType.__args__
+            for meta in MetaDataType.__args__
         }
 
         # Check the tag. Return comments without further processing.
         match tag:
             case SpecialTags.COMMENT:
-                return content, set()
+                return content
             case SpecialTags.METADATA:
                 pass
             case _:

@@ -1,5 +1,5 @@
-metadata	{"metatype":"KEMPLI","status":"off"}							
-metadata	{"metatype":"TEMPO","bpm":120}							
+metadata	{KEMPLI status=OFF}							
+metadata	{TEMPO bpm=120}							
 UGAL	oeu-a-u-eua-u---u/.u/...							
 GANGSA_P	oeu-a-u-eua-u---u/.u/...							
 GANGSA_S	ai<u-a-u-i<ua-u---u/.u/...							
@@ -14,28 +14,22 @@ KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 UGAL	u---	a---	u---	i<---	a---	e---	u---	e---
 GANGSA_P	ua.u	.au.	u.ai<	.ai<.	ai<.a	.i<a.	a.u.	i<.u.
 GANGSA_S	.oe.	eo.e	.u.e	u.eu	.eu.	ue.u	.e.a	.a.e
-REYONG_1	....	....	....	....	....	....	.xxx	xxxx
-REYONG_2	....	....	....	....	....	....	.xxx	xxxx
-REYONG_3	....	....	....	....	....	....	.xxx	xxxx
-REYONG_4	....	....	....	....	....	....	.xxx	xxxx
+REYONG	....	....	....	....	....	....	.xxx	xxxx
 CALUNG	u---	----	u---	----	a---	----	u---	----
 JEGOGAN	u---	----	----	----	a---	----	----	----
 KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
 GANGSA_P	oo-e	-oi-	a,a,-u,	-a,i-	oo-e	-oi-	a,a,-u,	-a,i-
 GANGSA_S	aa-i<	-au-	ee-o	-eu-	aa-i<	-au-	ee-o	-eu-
-REYONG_1	bb-b/	.bb/.	bb-b/	.bb/.	bb-b/	.bb/.	bb-b/	.bb/.
-REYONG_2	bb-b/	.bb/.	bb-b/	.bb/.	bb-b/	.bb/.	bb-b/	.bb/.
-REYONG_3	bb-b/	.bb/.	bb-b/	.bb/.	bb-b/	.bb/.	bb-b/	.bb/.
-REYONG_4	bb-b/	.bb/.	bb-b/	.bb/.	bb-b/	.bb/.	bb-b/	.bb/.
+REYONG	bb-b/	.bb/.	bb-b/	.bb/.	bb-b/	.bb/.	bb-b/	.bb/.
 CALUNG	o---	----	----	----	o---	----	----	----
 JEGOGAN	o---	----	----	----	----	----	----	----
 GONGS	G---	----	----	----	----	----	----	----
 KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
-comment	('system # 5', set())							
-metadata	{"metatype":"TEMPO","bpm":100,"beat_count":3}							
-metadata	{"metatype":"TEMPO","bpm":120,"first_beat":5,"beat_count":2}							
+comment	system # 5							
+metadata	{TEMPO bpm=100, beat_count=3}							
+metadata	{TEMPO bpm=120, first_beat=5, beat_count=2}							
 GANGSA_P	e,---	----	----	----	----	----	----	----
 GANGSA_S	i---	----	----	----	----	----	----	----
 REYONG_1	b--u,	a,-u,-	e,e,-u,	a,-u,-	e,-u,a,	.u,a,.	.a,i.	.io.
@@ -57,14 +51,11 @@ CALUNG	u---	----	----	----
 JEGOGAN	u---	----	----	----				
 KEMPLI	k?---	k?---	k?---	k?---				
 								
-metadata	{"metatype":"LABEL","name":"A"}							
+metadata	{LABEL name=A}							
 UGAL	o-e-	o-e-	a---	e-u-	a---	u-a-	i<-i<a	u-e-
 GANGSA_P	.ooo	o-eu	-a-u	e-u-	a-ue	-ua-	i<i<?i<a	u-e-
 GANGSA_S	.aaa	a-i<u	-a-u	i<-u-	a-ui<	-ua-	i<i<?i<a	u-i<-
-REYONG_1	.xxx	xxxx	xxx.	b-b?.	b/.bb	-b?.b/	.bbb	b-b?.
-REYONG_2	.xxx	xxxx	xxx.	b-b?.	b/.bb	-b?.b/	.bbb	b-b?.
-REYONG_3	.xxx	xxxx	xxx.	b-b?.	b/.bb	-b?.b/	.bbb	b-b?.
-REYONG_4	.xxx	xxxx	xxx.	b-b?.	b/.bb	-b?.b/	.bbb	b-b?.
+REYONG	.xxx	xxxx	xxx.	b-b?.	b/.bb	-b?.b/	.bbb	b-b?.
 CALUNG	o---	----	a---	----	a---	----	i---	----
 JEGOGAN	o---	----	----	----	a---	----	----	----
 GONGS	G---	----	----	----	----	----	----	----
@@ -73,10 +64,7 @@ KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 UGAL	o-e-	o-e-	a---	e-u-	a---	u-a-	i<-i<a	u-e-
 GANGSA_P	.ooo	o-eu	-a-u	e-u-	a-ue	-ua-	i<i<?i<a	u-e-
 GANGSA_S	.aaa	a-i<u	-a-u	i<-u-	a-ui<	-ua-	i<i<?i<a	u-i<-
-REYONG_1	.xxx	xxxx	xxx.	b-b?.	b/.bb	-b?.b/	.bbb	b-b?.
-REYONG_2	.xxx	xxxx	xxx.	b-b?.	b/.bb	-b?.b/	.bbb	b-b?.
-REYONG_3	.xxx	xxxx	xxx.	b-b?.	b/.bb	-b?.b/	.bbb	b-b?.
-REYONG_4	.xxx	xxxx	xxx.	b-b?.	b/.bb	-b?.b/	.bbb	b-b?.
+REYONG	.xxx	xxxx	xxx.	b-b?.	b/.bb	-b?.b/	.bbb	b-b?.
 CALUNG	o---	----	a---	----	a---	----	i---	----
 JEGOGAN	o---	----	----	----	a---	----	----	----
 GONGS	P---	----	----	----	----	----	----	----
@@ -84,22 +72,16 @@ KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
 GANGSA_P	oia,.	a,.a,.	a,u,.a,	u,.u,a,	i.io	.oe.	..a.	u.e.
 GANGSA_S	oi.i	.i.i	.oi.	oio.	.a,i.	io..	.u.e	.o.i
-REYONG_1	..b/.	b/.b/.	.xx.	.xxx	x.xx	.xx.	.xxx	.x.b/
-REYONG_2	..b/.	b/.b/.	.xx.	.xxx	x.xx	.xx.	.xxx	.x.b/
-REYONG_3	..b/.	b/.b/.	.xx.	.xxx	x.xx	.xx.	.xxx	.x.b/
-REYONG_4	..b/.	b/.b/.	.xx.	.xxx	x.xx	.xx.	.xxx	.x.b/
+REYONG	..b/.	b/.b/.	.xx.	.xxx	x.xx	.xx.	.xxx	.x.b/
 CALUNG	o---	----	a---	----	i---	----	e---	----
 JEGOGAN	o---	----	----	----	i---	----	----	----
 GONGS	G---	----	----	----	P---	----	----	----
 KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
-comment	('system # 10', set())							
+comment	system # 10							
 GANGSA_P	oia,.	a,.a,.	a,u,.a,	u,.u,a,	i.io	.oe.	..a.	u.e.
 GANGSA_S	oi.i	.i.i	.oi.	oio.	.a,i.	io..	.u.e	.o.i
-REYONG_1	..b/.	b/.b/.	.xx.	.xxx	x.xx	.xx.	.xxx	.x.b/
-REYONG_2	..b/.	b/.b/.	.xx.	.xxx	x.xx	.xx.	.xxx	.x.b/
-REYONG_3	..b/.	b/.b/.	.xx.	.xxx	x.xx	.xx.	.xxx	.x.b/
-REYONG_4	..b/.	b/.b/.	.xx.	.xxx	x.xx	.xx.	.xxx	.x.b/
+REYONG	..b/.	b/.b/.	.xx.	.xxx	x.xx	.xx.	.xxx	.x.b/
 CALUNG	o---	----	a---	----	i---	----	e---	----
 JEGOGAN	o---	----	----	----	i---	----	----	----
 GONGS	T---	----	----	----	P---	----	----	----
@@ -129,10 +111,7 @@ KEMPLI	k?---	k?---	k?---	k?---
 								
 GANGSA_P	..a,i	.ia,.	a,.u,a,	.u,.a,	u,.a,i	.ia,.	a,.u,a,	.u,.a,
 GANGSA_S	.o.i	oi.i	.i.a,	i.ia,	.o.i	oi.i	.i.a,	i.ia,
-REYONG_1	.xxx	xxxx	x.b/b?	.b-b?	.xxx	xxxx	x.b/b?	.b-b?
-REYONG_2	.xxx	xxxx	x.b/b?	.b-b?	.xxx	xxxx	x.b/b?	.b-b?
-REYONG_3	.xxx	xxxx	x.b/b?	.b-b?	.xxx	xxxx	x.b/b?	.b-b?
-REYONG_4	.xxx	xxxx	x.b/b?	.b-b?	.xxx	xxxx	x.b/b?	.b-b?
+REYONG	.xxx	xxxx	x.b/b?	.b-b?	.xxx	xxxx	x.b/b?	.b-b?
 CALUNG	u---	----	a---	----	u---	----	a---	----
 JEGOGAN	u---	----	----	----	u---	----	----	----
 GONGS	G---	----	P---	----	T---	----	P---	----
@@ -149,8 +128,8 @@ JEGOGAN	u---	----	----	----	u---	----	----	----
 GONGS	G---	----	----	----	P---	----	----	----
 KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
-comment	('system # 15', set())							
-metadata	{"metatype":"GOTO","label":"A","passes":[1]}							
+comment	system # 15							
+metadata	{GOTO label=A, passes=[1]}							
 UGAL	....	--i-	o-e-	u-e-	o-e-	u-a-	--e-	u-e-
 GANGSA_P	a,---	--i-	o-e-	u-e-	o-e-	u-a-	--e-	u-e-
 GANGSA_S	e---	--u-	a-i<-	u-i<-	a-i<-	u-a-	--i<-	u-i<-
@@ -163,9 +142,9 @@ JEGOGAN	a---	----	----	----	----	----	----	----
 GONGS	T---	----	----	----	P---	----	----	----
 KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
-metadata	{"metatype":"KEMPLI","status":"off"}							
-metadata	{"metatype":"TEMPO","bpm":70}							
-metadata	{"metatype":"TEMPO","bpm":50,"first_beat":2,"beat_count":3}							
+metadata	{KEMPLI status=OFF}							
+metadata	{TEMPO bpm=70}							
+metadata	{TEMPO bpm=50, first_beat=2, beat_count=3}							
 UGAL	o--eueo	--ioo_i_a,u,a,	e,u,a,ii_a_ioee_o_eua	i<aueioia,---u,?u,-a,i-o-				
 GANGSA_P	o--eueo	--ioo_i_a,u,a,	e,u,a,ii_a,_ioee_o_eua	i<aueioia,---u,?u,-a,i-o-				
 GANGSA_S	a--i<ui<a	--uaa_u_eoe	ioeuu_e_uai<i<_a_i<ua	i<aui<uaue---o?o-eu-a-				
@@ -177,8 +156,8 @@ CALUNG	o-----o	-----_-_--a	---i-_-_--e-_-_--a	---e---a---u-------
 JEGOGAN	o-----o	-----_-_--a	---i-_-_--e-_-_--a	---e---a---u-------				
 GONGS	G-----G	-----_-_--P	-----_-_--T-_-_---	-------P-----------				
 								
-metadata	{"metatype":"LABEL","name":"B"}							
-metadata	{"metatype":"TEMPO","bpm":100}							
+metadata	{LABEL name=B}							
+metadata	{TEMPO bpm=100}							
 UGAL	i-------	i---i-i?.	i-----o-E	u-a-u-e-U	a-----u-	e/...u-Ai<-	a-i-o-e-	o-Eu-e-o-
 GANGSA_P	i-------	i---i-i?.	i-----o-E	u-a-u-e-U	a-----u-	e/...u-Ai<-	a-i-o-e-	o-Eu-e-o-
 GANGSA_S	u-------	u---u-u?.	u-----a-I	u-a-u-i<-U	a-----u-	i</...u-Ai<-	a-u-a-i<-	a-Iu-i<-a-
@@ -193,10 +172,7 @@ KEMPLI	k?-------	k?-------	k?-------	k?-------	k?-------	k?-------	k?-------	k?-
 								
 GANGSA_P	ia,u,.	u,.u,.	u,ia,.	a,.a,.	a,eo.	o.o.	oe-o	i-a,-
 GANGSA_S	.a,u,a,	.a,.a,	.ia,i	.i.i	.eoe	.e.e	.i-a	u-e-
-REYONG_1	.xxx	xxxx	x.b/.	b/.b/.	b.xx	xxxx	.b-b?	b-b?.
-REYONG_2	.xxx	xxxx	x.b/.	b/.b/.	b.xx	xxxx	.b-b?	b-b?.
-REYONG_3	.xxx	xxxx	x.b/.	b/.b/.	b.xx	xxxx	.b-b?	b-b?.
-REYONG_4	.xxx	xxxx	x.b/.	b/.b/.	b.xx	xxxx	.b-b?	b-b?.
+REYONG	.xxx	xxxx	x.b/.	b/.b/.	b.xx	xxxx	.b-b?	b-b?.
 CALUNG	i---	----	u---	----	a---	----	e---	----
 JEGOGAN	i---	----	----	----	----	----	a---	----
 GONGS	G---	----	P---	----	T---	----	P---	----
@@ -204,22 +180,16 @@ KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
 GANGSA_P	u,-u-	u/.u-	-a-u	e-i-	o---	--e-	uuua	i<-a-
 GANGSA_S	o-u-	u/.u-	-a-u	i<-u-	a---	--i<-	uuua	i<-a-
-REYONG_1	b?.b-	b/.b-	....	....	-b-b?	b.b/.	b/...	....
-REYONG_2	b?.b-	b/.b-	....	....	-b-b?	b.b/.	b/...	....
-REYONG_3	b?.b-	b/.b-	....	....	-b-b?	b.b/.	b/...	....
-REYONG_4	b?.b-	b/.b-	....	....	-b-b?	b.b/.	b/...	....
+REYONG	b?.b-	b/.b-	....	....	-b-b?	b.b/.	b/...	....
 CALUNG	u---	----	a---	----	o---	----	u---	----
 JEGOGAN	u---	----	----	----	o---	----	----	----
 GONGS	G---	----	P---	----	T---	----	P---	----
 KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
-comment	('system # 20', set())							
+comment	system # 20							
 GANGSA_P	.uuu	uuuu	uuuu	uuuu	u/...	..Ai<-	a-u-	e-o-
 GANGSA_S	.uuu	uuuu	uuuu	uuuu	u...	..Ai<-	a-u-	i<-a-
-REYONG_1	.xxx	xxxx	xxxx	xxxx	x...	....	....	....
-REYONG_2	.xxx	xxxx	xxxx	xxxx	x...	....	....	....
-REYONG_3	.xxx	xxxx	xxxx	xxxx	x...	....	....	....
-REYONG_4	.xxx	xxxx	xxxx	xxxx	x...	....	....	....
+REYONG	.xxx	xxxx	xxxx	xxxx	x...	....	....	....
 CALUNG	u---	----	----	----	u---	----	----	----
 JEGOGAN	u---	----	----	----	----	----	----	----
 GONGS	G---	----	P---	----	T---	----	P---	----
@@ -227,10 +197,7 @@ KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
 GANGSA_P	.eee	eeoi	a,a,a,a,	a,a,io	eeee	eeoi	a,a,a,a,	a,ioe
 GANGSA_S	.i<i<i<	i<i<au	eeee	eeua	i<i<i<i<	i<i<au	eeee	euai<
-REYONG_1	.xxx	xxxx	xxxx	xxxx	xxxx	xxxx	xxxx	xxxx
-REYONG_2	.xxx	xxxx	xxxx	xxxx	xxxx	xxxx	xxxx	xxxx
-REYONG_3	.xxx	xxxx	xxxx	xxxx	xxxx	xxxx	xxxx	xxxx
-REYONG_4	.xxx	xxxx	xxxx	xxxx	xxxx	xxxx	xxxx	xxxx
+REYONG	.xxx	xxxx	xxxx	xxxx	xxxx	xxxx	xxxx	xxxx
 CALUNG	e---	----	a---	----	e---	----	a---	----
 JEGOGAN	e---	----	----	----	----	----	e---	----
 GONGS	G---	----	P---	----	T---	----	P---	----
@@ -238,17 +205,14 @@ KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
 GANGSA_P	uu-a	.ua.	uu-a	.ua.	uu-a	.ua.	.uue	o-i-
 GANGSA_S	uu-a	i<.ai<	uu-a	i<.ai<	uu-a	i<.ai<	.uui<	a-u-
-REYONG_1	bb-b?	.bb?.	bb-b?	.bb?.	bb-b?	.bb?.	.bbb?	b-b?.
-REYONG_2	bb-b?	.bb?.	bb-b?	.bb?.	bb-b?	.bb?.	.bbb?	b-b?.
-REYONG_3	bb-b?	.bb?.	bb-b?	.bb?.	bb-b?	.bb?.	.bbb?	b-b?.
-REYONG_4	bb-b?	.bb?.	bb-b?	.bb?.	bb-b?	.bb?.	.bbb?	b-b?.
+REYONG	bb-b?	.bb?.	bb-b?	.bb?.	bb-b?	.bb?.	.bbb?	b-b?.
 CALUNG	u---	----	u---	----	u---	----	u---	----
 JEGOGAN	u---	----	----	----	u---	----	----	----
 GONGS	G---	----	P---	----	T---	----	P---	----
 KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
-metadata	{"metatype":"TEMPO","bpm":80,"first_beat":2,"beat_count":2,"passes":[1]}							
-metadata	{"metatype":"GOTO","label":"B","passes":[1]}							
+metadata	{TEMPO bpm=80, first_beat=2, beat_count=2, passes=[1]}							
+metadata	{GOTO label=B, passes=[1]}							
 GANGSA_P	o.a,---i-	o.a,---i-	o.a,---i-	.u,-a,i-o-				
 GANGSA_S	a.e---u-	a.e---u-	a.e---u-	.o-eu-a-				
 REYONG_1	b/.b---b?.	b/.b---b?.	b/.b---b?.	.u,-a,u,-a,-				
@@ -271,7 +235,7 @@ JEGOGAN	i---	----	----	----	u---	----	----	----
 GONGS	G---	----	----	----	P---	----	----	----
 KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
-comment	('system # 25', set())							
+comment	system # 25							
 GANGSA_P	i.oe	u.eu	.eu.	eu.e	u.ue	o.eo	.eo.	eo.e
 GANGSA_S	.ioe	.oe.	oe.o	e.oe	.au.	au.a	u.au	.au.
 REYONG_1	u,u,a,.	u,a,.u,	a,.u,a,	.u,a,.	.bb?.	bb?.b	b?.bb?	.bb?.
@@ -294,7 +258,7 @@ JEGOGAN	----	----	----	----	o---	----	----	----
 GONGS	G---	----	----	----	P---	----	----	----
 KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
-metadata	{"metatype":"LABEL","name":"C"}							
+metadata	{LABEL name=C}							
 GANGSA_P	-uuu?	uu?uu?	uu?uu?	uu?uu?	u.oe	u-e-	u-o/.	....
 GANGSA_S	-uua	a?aa?a	a?aa?a	a?aa?a	a/.ai<	u-i<-	u-a/.	....
 REYONG_1	-u,u,a,	u,a,u,a,	u,a,u,a,	u,a,u,a,	u,/.a,e,	u,-e,-	u,-a,/.	....
@@ -328,13 +292,10 @@ JEGOGAN	o---	----	----	----	u---	----	----	----
 GONGS	T---	----	----	----	P---	----	----	----
 KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
-comment	('system # 30', set())							
+comment	system # 30							
 GANGSA_P	--io	.oi.	oe.e	o.u,a,	.a,u,.	a,i.i	a,.io	.oi.
 GANGSA_S	-e.o	eo.u	.eue	.i.a,	ia,.o	.ioi	.e.o	eo.u
-REYONG_1	..b/.	b/...	b/.b/.	..b/.	b/...	b/.b/.	..b/.	b/...
-REYONG_2	..b/.	b/...	b/.b/.	..b/.	b/...	b/.b/.	..b/.	b/...
-REYONG_3	..b/.	b/...	b/.b/.	..b/.	b/...	b/.b/.	..b/.	b/...
-REYONG_4	..b/.	b/...	b/.b/.	..b/.	b/...	b/.b/.	..b/.	b/...
+REYONG	..b/.	b/...	b/.b/.	..b/.	b/...	b/.b/.	..b/.	b/...
 CALUNG	a---	o-i-	--e-	o---	a-u-	--i-	a---	o-i-
 JEGOGAN	a---	--i-	----	o---	--u-	----	a---	--i-
 GONGS	G---	----	----	P---	----	----	T---	----
@@ -353,10 +314,7 @@ KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
 GANGSA_P	i-o-	i-a,-	-io-	e-o-	i-o-	i-a,-	-io-	i-a,-
 GANGSA_S	u-a-	u-e-	-ua-	i<-a-	u-a-	u-e-	-ua-	u-e-
-REYONG_1	.xxx	xxxx	.bb.	b-b.	.xxx	xxxx	.bb.	b-b.
-REYONG_2	.xxx	xxxx	.bb.	b-b.	.xxx	xxxx	.bb.	b-b.
-REYONG_3	.xxx	xxxx	.bb.	b-b.	.xxx	xxxx	.bb.	b-b.
-REYONG_4	.xxx	xxxx	.bb.	b-b.	.xxx	xxxx	.bb.	b-b.
+REYONG	.xxx	xxxx	.bb.	b-b.	.xxx	xxxx	.bb.	b-b.
 CALUNG	i---	----	a---	----	i---	----	a---	----
 JEGOGAN	i---	----	----	----	i---	----	----	----
 GONGS	P---	----	----	----	T---	----	P---	----
@@ -364,16 +322,13 @@ KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
 GANGSA_P	u,-o-	i-a,-	-io-	e-o-	i-o-	i-a,-	-io-	i-a,-
 GANGSA_S	o-a-	u-e-	-ua-	i<-a-	u-a-	u-e-	-ua-	u-e-
-REYONG_1	.xxx	xxxx	.bb.	b-b.	.xxx	xxxx	.bb.	b-b.
-REYONG_2	.xxx	xxxx	.bb.	b-b.	.xxx	xxxx	.bb.	b-b.
-REYONG_3	.xxx	xxxx	.bb.	b-b.	.xxx	xxxx	.bb.	b-b.
-REYONG_4	.xxx	xxxx	.bb.	b-b.	.xxx	xxxx	.bb.	b-b.
+REYONG	.xxx	xxxx	.bb.	b-b.	.xxx	xxxx	.bb.	b-b.
 CALUNG	u---	----	a---	----	i---	----	a---	----
 JEGOGAN	u---	----	----	----	i---	----	----	----
 GONGS	G---	----	P---	----	T---	----	P---	----
 KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
-metadata	{"metatype":"GOTO","label":"C","passes":[1,2]}							
+metadata	{GOTO label=C, passes=[1, 2]}							
 GANGSA_P	u,u,.a,	.a,ii	.a,.a,	ia,.a,	i-oe	u-e-	u-o/.	....
 GANGSA_S	oo.e	.euu	.e.e	ue.e	u-ai<	u-i<-	u-a/.	....
 REYONG_1	u,u,.a,	.a,u,u,	.a,.a,	u,a,.a,	u,-a,.	u,-..	u,-a,/.	....
@@ -385,9 +340,9 @@ JEGOGAN	u---	----	----	----	i---	----	----	----
 GONGS	G---	----	----	----	P---	----	----	----
 KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
-comment	('system # 35', set())							
-metadata	{"metatype":"KEMPLI","status":"off"}							
-metadata	{"metatype":"TEMPO","bpm":80}							
+comment	system # 35							
+metadata	{KEMPLI status=OFF}							
+metadata	{TEMPO bpm=80}							
 GANGSA_P	u--au_aueo_ei-oeueoia,-eee/.							
 GANGSA_S	u--au_aui<a_i<u-ai<ui<aue-i<i<i</.							
 REYONG_1	b--a,u,_a,u,e,a,_e,u,-a,e,u,e,a,u,a,-xxx/.							
@@ -398,8 +353,8 @@ CALUNG	u----_-u--_-i-------------
 JEGOGAN	u----_----_---------------							
 GONGS	G----_----_---------G-----							
 								
-metadata	{"metatype":"LABEL","name":"D"}							
-metadata	{"metatype":"GOTO","label":"D","passes":[1,2,3,4]}							
+metadata	{LABEL name=D}							
+metadata	{GOTO label=D, passes=[1, 2, 3, 4]}							
 UGAL	a,-	i-	a,-	o-	a,-	i-	a,-	o-
 GANGSA_P	a,i	a,i	a,i	oi	a,i	a,i	a,i	o-
 GANGSA_S	eu	eu	eu	au	eu	eu	eu	a-
@@ -412,7 +367,7 @@ JEGOGAN	a-	--	--	--	a-	--	--	--
 GONGS	G-	--	P-	--	T-	--	P-	--
 KEMPLI	k?-	k?-	k?-	k?-	k?-	k?-	k?-	k?-
 								
-metadata	{"metatype":"TEMPO","bpm":40,"beat_count":8}							
+metadata	{TEMPO bpm=40, beat_count=8}							
 UGAL	a-	i-	a-	o-	a-	i-	a-	o-
 GANGSA_P	a,i	a,i	a,i	oi	a,i	a,i	a,i	oi
 GANGSA_S	eu	eu	eu	au	eu	eu	eu	au
@@ -425,7 +380,7 @@ JEGOGAN	a-	--	--	--	a-	--	--	--
 GONGS	G-	--	P-	--	T-	--	P-	--
 KEMPLI	k?-	k?-	k?-	k?-	k?-	k?-	k?-	k?-
 								
-metadata	{"metatype":"TEMPO","bpm":80}							
+metadata	{TEMPO bpm=80}							
 GANGSA_P	a,a,-u,	-u,a,i	oo-a,	-a,-i	a,a,-u,	-u,a,i	oo-e	-e-u
 GANGSA_S	ee-o	-oeu	aa-e	-e-u	ee-o	-oeu	aa-i<	-i<-u
 REYONG_1	a,a,-u,	-u,a,.	a,a,-a,	-a,-u,	a,a,-u,	-u,a,.	a,a,-a,	-a,-u,
@@ -444,8 +399,7 @@ REYONG_4	e<---	----	----	----	..o<e<	u<e<u<e<	u<e<u<e<	u<e<u<e<
 GONGS	T---	----	----	----	P---	----	----	----
 KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
-GANGSA_P	u---							
-GANGSA_S	u---							
+GANGSA	u---							
 REYONG_1	u,---							
 REYONG_3	u---							
 REYONG_4	u<---							

@@ -325,8 +325,6 @@ def create_score_object_model(run_settings: RunSettings) -> Score:
         ),
     )
     beats: list[Beat] = []
-    metadata: list[MetaData] = []
-    comments: list[str] = []
     for sys_id, sys_info in notation_dict.items():
         for beat_nr, beat_info in sys_info.items():
             if isinstance(beat_nr, SpecialTags):

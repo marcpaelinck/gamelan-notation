@@ -12,6 +12,7 @@ from src.common.constants import (
     InstrumentPosition,
     InstrumentType,
     MIDIvalue,
+    NotationFont,
     Octave,
     Pitch,
     SpecialTags,
@@ -137,7 +138,10 @@ def create_rest_stave(resttype: Stroke, duration: float) -> list[Note]:
     return notes
 
 
-def gongan_to_records(gongan: Gongan, skipemptylines: bool = True) -> list[dict[InstrumentPosition | int, list[str]]]:
+def gongan_to_records(
+    gongan: Gongan, skipemptylines: bool = True, fontversion: NotationFont = None
+) -> list[dict[InstrumentPosition | int, list[str]]]:
+    # TODO grace notes that occur at the end of a beat should be moved to the start of the next beat.
     """Converts a gongan to a dict containing the notation for the individual beats.
 
     Args:
@@ -148,33 +152,54 @@ def gongan_to_records(gongan: Gongan, skipemptylines: bool = True) -> list[dict[
         list[dict[InstrumentPosition | int, list[str]]]: _description_
     """
 
-    skip = []
-    # Label to use for each position in the notation
-    pos_tags = {position: position.shortcode for position in InstrumentPosition}
-    # If pemade and kantilan staves are identical, replace both positions with a single "GANGSA" position.
-    for p_pos, k_pos in [
-        (InstrumentPosition.PEMADE_POLOS, InstrumentPosition.KANTILAN_POLOS),
-        (InstrumentPosition.PEMADE_SANGSIH, InstrumentPosition.KANTILAN_SANGSIH),
-    ]:
-        if (
-            p_pos in gongan.beats[0].staves
-            and k_pos in gongan.beats[0].staves
-            and all(beat.staves[p_pos] == beat.staves[k_pos] for beat in gongan.beats)
-        ):
-            skip.append(k_pos)
-            pos_tags[p_pos] = "GANGSA_" + p_pos.value.split("_")[1][0]
+    # pos_tags maps positions to tag values. It contains only the positions that occur in the gongan.
+    pos_tags = {position: position.shortcode for position in gongan.beats[0].staves.keys()}
+
+    def try_to_aggregate(positions: list[InstrumentPosition], aggregate_tag: str):
+        """Determines if the notation is identical for all of the given positions.
+        In that case, updates the pos_tags dict.
+        """
+        all_positions_occur_in_gongan = all(pos in gongan.beats[0].staves for pos in positions)
+        all_positions_have_same_notation = all(
+            all(beat.staves[pos] == beat.staves[positions[0]] for beat in gongan.beats) for pos in positions
+        )
+        if all_positions_occur_in_gongan and all_positions_have_same_notation:
+            # Set the tag of the first position as the aggregate tag.
+            pos_tags[positions[0]] = aggregate_tag
+            # Delete all other positions in the pos_tags dict.
+            for pos in set(positions[1:]).intersection(pos_tags.keys()):
+                del pos_tags[pos]
+            return True
+        return False
+
+    # Try to aggregate positions that have the same notation.
+    GANGSA_P = [InstrumentPosition.PEMADE_POLOS, InstrumentPosition.KANTILAN_POLOS]
+    GANGSA_S = [InstrumentPosition.PEMADE_SANGSIH, InstrumentPosition.KANTILAN_SANGSIH]
+    GANGSA = GANGSA_P + GANGSA_S
+    REYONG_13 = [InstrumentPosition.REYONG_1, InstrumentPosition.REYONG_3]
+    REYONG_24 = [InstrumentPosition.REYONG_2, InstrumentPosition.REYONG_4]
+    REYONG = REYONG_13 + REYONG_24
+    if not try_to_aggregate(GANGSA, "GANGSA"):
+        try_to_aggregate(GANGSA_P, "GANGSA_P")
+        try_to_aggregate(GANGSA_S, "GANGSA_S")
+    if not try_to_aggregate(REYONG, "REYONG"):
+        try_to_aggregate(REYONG_13, "REYONG_13")
+        try_to_aggregate(REYONG_24, "REYONG_24")
+
+    # if fontversion is NotationFont.BALIMUSIC5:
+    #     move_grace_notes_at_end_of_beat()
 
     result = (
         [{InstrumentFields.POSITION: SpecialTags.COMMENT, 1: comment} for comment in gongan.comments]
         + [
-            {InstrumentFields.POSITION: SpecialTags.METADATA, 1: metadata.data.model_dump_json(exclude_defaults=True)}
+            {InstrumentFields.POSITION: SpecialTags.METADATA, 1: metadata.data.model_dump_notation()}
             for metadata in gongan.metadata
         ]
         + [
             {InstrumentFields.POSITION: pos_tags.get(position, position)}
             | {beat.id: stave_to_string(beat.staves[position]) for beat in gongan.beats}
             for position in InstrumentPosition
-            if position not in skip
+            if position in pos_tags.keys()
             if any(position in beat.staves for beat in gongan.beats)
             and not (is_silent(gongan, position) and skipemptylines)
         ]
@@ -191,7 +216,7 @@ def score_to_notation_file(score: Score) -> None:
     Args:
         score (Score): The score
     """
-    score_dict = sum((gongan_to_records(gongan) for gongan in score.gongans), [])
+    score_dict = sum((gongan_to_records(gongan, score.settings.font.fontversion) for gongan in score.gongans), [])
     score_df = pd.DataFrame.from_records(score_dict)
     fpath, ext = path.splitext(score.settings.notation.filepath)
     filepath = fpath + "_CORRECTED" + ext

@@ -37,18 +37,23 @@ class Range(NotationEnum):
     SCORE = "SCORE"
 
 
-class MetaDataSubType(BaseModel):
+class MetaDataBaseType(BaseModel):
     metatype: Literal[""]
     range: Optional[Range] = Range.GONGAN
     _processingorder_ = 99
 
+    def model_dump_notation(self):
+        json = self.model_dump(exclude_defaults=True)
+        del json["metatype"]
+        return f"{{{self.metatype} {', '.join([f'{key}={val}' for key, val in json.items()])}}}"
 
-class GonganMeta(MetaDataSubType):
+
+class GonganMeta(MetaDataBaseType):
     metatype: Literal["GONGAN"]
     type: GonganType
 
 
-class GoToMeta(MetaDataSubType):
+class GoToMeta(MetaDataBaseType):
     metatype: Literal["GOTO"]
     label: str
     from_beat: Optional[int] | None = None  # Beat number from which to goto. Default is last beat of the gongan.
@@ -60,13 +65,13 @@ class GoToMeta(MetaDataSubType):
         return self.from_beat - 1 if self.from_beat else -1
 
 
-class KempliMeta(MetaDataSubType):
+class KempliMeta(MetaDataBaseType):
     metatype: Literal["KEMPLI"]
     status: MetaDataSwitch
     beats: list[int] = field(default_factory=list)
 
 
-class LabelMeta(MetaDataSubType):
+class LabelMeta(MetaDataBaseType):
     metatype: Literal["LABEL"]
     name: str
     beat: Optional[int] = 1
@@ -79,23 +84,23 @@ class LabelMeta(MetaDataSubType):
         return self.beat - 1
 
 
-class OctavateMeta(MetaDataSubType):
+class OctavateMeta(MetaDataBaseType):
     metatype: Literal["OCTAVATE"]
     instrument: InstrumentType
     octaves: int
 
 
-class PartMeta(MetaDataSubType):
+class PartMeta(MetaDataBaseType):
     metatype: Literal["PART"]
     name: str
 
 
-class RepeatMeta(MetaDataSubType):
+class RepeatMeta(MetaDataBaseType):
     metatype: Literal["REPEAT"]
     count: int = 1
 
 
-class SilenceMeta(MetaDataSubType):
+class SilenceMeta(MetaDataBaseType):
     # Pointer to cls.common.lookup.TAG_TO_POSITION_LOOKUP
     # TODO temporary solution in order to avoid circular imports. Should look for more elegant solution.
     # There is no guarantee that the attribute will be assigned a value before it is referred to.
@@ -113,7 +118,7 @@ class SilenceMeta(MetaDataSubType):
         return sum((cls.TAG_TO_POSITION_LOOKUP[pos] for pos in data), [])
 
 
-class TempoMeta(MetaDataSubType):
+class TempoMeta(MetaDataBaseType):
     metatype: Literal["TEMPO"]
     bpm: int
     first_beat: Optional[int] = 1
@@ -128,13 +133,13 @@ class TempoMeta(MetaDataSubType):
         return self.first_beat - 1
 
 
-class ValidationMeta(MetaDataSubType):
+class ValidationMeta(MetaDataBaseType):
     metatype: Literal["VALIDATION"]
     beats: Optional[list[int]] = field(default_factory=list)
     ignore: list[ValidationProperty]
 
 
-MetaDataSubType = Union[
+MetaDataType = Union[
     TempoMeta,
     LabelMeta,
     GoToMeta,
@@ -149,11 +154,11 @@ MetaDataSubType = Union[
 
 
 class MetaData(BaseModel):
-    data: MetaDataSubType = Field(..., discriminator="metatype")
+    data: MetaDataType = Field(..., discriminator="metatype")
 
     @classmethod
     def __get_all_subtype_fieldnames__(cls):
-        membertypes = list(MetaDataSubType.__dict__.values())[4]
+        membertypes = list(MetaDataType.__dict__.values())[4]
         return {fieldname for member in membertypes for fieldname in member.model_fields.keys()}
 
     @classmethod
