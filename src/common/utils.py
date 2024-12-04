@@ -31,6 +31,7 @@ from src.common.lookups import (
 from src.common.metadata_classes import (
     GonganType,
     KempliMeta,
+    MetaDataBaseType,
     MetaDataSwitch,
     SilenceMeta,
 )
@@ -69,7 +70,8 @@ def initialize_lookups(run_settings: RunSettings) -> None:
     POSITION_TO_RANGE_LOOKUP.update(create_position_range_lookup(midinotes_list))
     TAG_TO_POSITION_LOOKUP.update(create_tag_to_position_lookup(run_settings.instruments))
     # TODO temporary solution in order to avoid circular imports. Should look for more elegant solution.
-    SilenceMeta.TAG_TO_POSITION_LOOKUP = TAG_TO_POSITION_LOOKUP
+    # SilenceMeta.TAG_TO_POSITION_LOOKUP = TAG_TO_POSITION_LOOKUP
+    MetaDataBaseType.TAG_TO_POSITION_LOOKUP = TAG_TO_POSITION_LOOKUP
 
 
 def has_kempli_beat(gongan: Gongan):
@@ -159,11 +161,13 @@ def gongan_to_records(
         """Determines if the notation is identical for all of the given positions.
         In that case, updates the pos_tags dict.
         """
-        all_positions_occur_in_gongan = all(pos in gongan.beats[0].staves for pos in positions)
+        # Check if all positions occur in the gongan
+        if not all(pos in gongan.beats[0].staves for pos in positions):
+            return False
         all_positions_have_same_notation = all(
             all(beat.staves[pos] == beat.staves[positions[0]] for beat in gongan.beats) for pos in positions
         )
-        if all_positions_occur_in_gongan and all_positions_have_same_notation:
+        if all_positions_have_same_notation:
             # Set the tag of the first position as the aggregate tag.
             pos_tags[positions[0]] = aggregate_tag
             # Delete all other positions in the pos_tags dict.

@@ -32,15 +32,19 @@ class ValidationProperty(NotationEnum):
     KEMPYUNG = "kempyung"
 
 
-class Range(NotationEnum):
+class Scope(NotationEnum):
     GONGAN = "GONGAN"
     SCORE = "SCORE"
 
 
 class MetaDataBaseType(BaseModel):
     metatype: Literal[""]
-    range: Optional[Range] = Range.GONGAN
+    scope: Optional[Scope] = Scope.GONGAN
     _processingorder_ = 99
+    # Pointer to cls.common.lookup.TAG_TO_POSITION_LOOKUP
+    # TODO temporary solution in order to avoid circular imports. Should look for more elegant solution.
+    # There is no guarantee that the attribute will be assigned a value before it is referred to.
+    TAG_TO_POSITION_LOOKUP: ClassVar[list] = None
 
     def model_dump_notation(self):
         json = self.model_dump(exclude_defaults=True)
@@ -89,6 +93,12 @@ class OctavateMeta(MetaDataBaseType):
     instrument: InstrumentType
     octaves: int
 
+    @field_validator("instrument", mode="before")
+    @classmethod
+    # Converts 'free format' position tags to InstrumentPosition values.
+    def normalize_positions(cls, data: str) -> InstrumentPosition:
+        return cls.TAG_TO_POSITION_LOOKUP[data][0]
+
 
 class PartMeta(MetaDataBaseType):
     metatype: Literal["PART"]
@@ -101,11 +111,6 @@ class RepeatMeta(MetaDataBaseType):
 
 
 class SilenceMeta(MetaDataBaseType):
-    # Pointer to cls.common.lookup.TAG_TO_POSITION_LOOKUP
-    # TODO temporary solution in order to avoid circular imports. Should look for more elegant solution.
-    # There is no guarantee that the attribute will be assigned a value before it is referred to.
-    TAG_TO_POSITION_LOOKUP: ClassVar[list] = None
-
     metatype: Literal["SILENCE"]
     positions: list[InstrumentPosition] = field(default_factory=list)
     passes: Optional[list[int]] = field(default_factory=list)

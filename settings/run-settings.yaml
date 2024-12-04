@@ -8,8 +8,8 @@ midi:
 samples:
   instrumentgroup: GAMELAN
 notation:
-  piece: test
-  part: cendrawasih
+  piece: sekarginotan
+  part: full
 soundfont:
   definition_file_out: viena_definitions_${midi.midiversion}.txt
   soundfont_file_out: ${midi.midiversion}.sf2

@@ -14,8 +14,12 @@ from src.common.constants import (
     SpecialTags,
     Stroke,
 )
-from src.common.lookups import MIDINOTE_LOOKUP, TAG_TO_POSITION_LOOKUP
-from src.common.metadata_classes import MetaData, MetaDataType
+from src.common.lookups import (
+    MIDINOTE_LOOKUP,
+    POSITION_TO_RANGE_LOOKUP,
+    TAG_TO_POSITION_LOOKUP,
+)
+from src.common.metadata_classes import MetaData, MetaDataType, Scope
 from src.common.utils import NOTE_LIST, flatten, get_instrument_range, get_nearest_note
 from src.settings.settings import BASE_NOTE_TIME
 
@@ -92,6 +96,11 @@ class Font5Parser(FontParser):
 
         # Check required actions
         while notes:
+            if (note.pitch, note.octave, note.stroke) not in POSITION_TO_RANGE_LOOKUP[position]:
+                self.log_error(
+                    f"Combination {note.pitch.value} OCTAVE{note.octave} {note.stroke} not in range of {position}."
+                )
+                continue
             modifier_note = notes.pop(0)
             note_symbols += modifier_note.symbol
             match modifier_note.modifier:
@@ -266,6 +275,7 @@ class Font5Parser(FontParser):
             NotationDict: A dict notation[gongan_id][beat_id][position][passes] that can be processed into a Score object.
         """
         notation_dict = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
+        notation_dict[DEFAULT][SpecialTags.METADATA] = list()  # Will contain score-wide metadata
         new_system = True
         self.curr_gongan_id = 0
         all_positions = set()
@@ -295,7 +305,11 @@ class Font5Parser(FontParser):
             match tag:
                 case SpecialTags.METADATA | SpecialTags.COMMENT:
                     parsed = self.parse_special_tag(tag, content=line[1])
-                    notation_dict[self.curr_gongan_id][tag].append(parsed)
+                    if isinstance(parsed, MetaData) and parsed.data.scope == Scope.SCORE:
+                        notation_dict[DEFAULT][SpecialTags.METADATA].append(parsed)
+                    else:
+                        notation_dict[self.curr_gongan_id][tag].append(parsed)
+
                     continue
                 case _:
                     # Process notation data

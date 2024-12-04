@@ -165,6 +165,17 @@ notations:
                 name: pengawak
                 file: Godek Miring font5_pengawak.tsv
                 loop: true
+    sekarginotan:
+        title: Sekar Ginotan
+        subfolder: sekar ginotan
+        instrumentgroup: SEMAR_PAGULINGAN
+        beat_at_end: false
+        autocorrect_kempyung : true
+        part:
+            full:
+                name: entire piece
+                file: Sekar Ginotan font5.tsv
+                loop: false
     cendrawasih:
         title: Cendrawasih
         subfolder: cendrawasih

@@ -296,7 +296,6 @@ class Score:
     midi_notes_dict: dict[tuple[InstrumentPosition, Pitch, Octave, Stroke], MidiNote] = None
     position_range_lookup: dict[InstrumentPosition, tuple[Pitch, Octave, Stroke]] = None
     flowinfo: FlowInfo = field(default_factory=FlowInfo)
-    global_metadata: list[MetaData] = field(default_factory=list)
     total_duration: float | None = None
     midiplayer_data: Part = None
 

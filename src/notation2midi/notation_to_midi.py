@@ -22,8 +22,8 @@ from src.common.metadata_classes import (
     MetaDataSwitch,
     OctavateMeta,
     PartMeta,
-    Range,
     RepeatMeta,
+    Scope,
     SilenceMeta,
     TempoMeta,
     ValidationMeta,
@@ -324,8 +324,14 @@ def create_score_object_model(run_settings: RunSettings) -> Score:
             loop=run_settings.notation.part.loop,
         ),
     )
+    # Remove the dummy gongan than was created to hold the global (score-wide) metadata items.
+    # del notation_dict[-1]
+
     beats: list[Beat] = []
     for sys_id, sys_info in notation_dict.items():
+        if sys_id < 0:
+            # Skip the gongan holding the global (score-wide) metadata items
+            continue
         for beat_nr, beat_info in sys_info.items():
             if isinstance(beat_nr, SpecialTags):
                 continue
@@ -365,13 +371,11 @@ def create_score_object_model(run_settings: RunSettings) -> Score:
                 id=int(sys_id),
                 beats=beats,
                 beat_duration=most_occurring_beat_duration(beats),
-                metadata=sys_info.get(SpecialTags.METADATA, []),
+                metadata=sys_info.get(SpecialTags.METADATA, []) + notation_dict[DEFAULT][SpecialTags.METADATA],
                 comments=sys_info.get(SpecialTags.COMMENT, []),
             )
             score.gongans.append(gongan)
-            metadata = []
             beats = []
-            comments = []
 
     # Add extension notes to pokok notation having only one note per beat
     complement_shorthand_pokok_staves(score)
