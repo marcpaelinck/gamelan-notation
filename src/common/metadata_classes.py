@@ -42,8 +42,8 @@ class MetaDataBaseType(BaseModel):
     scope: Optional[Scope] = Scope.GONGAN
     _processingorder_ = 99
     # Pointer to cls.common.lookup.TAG_TO_POSITION_LOOKUP
+    # This variable is set by the __init__ method of the Lookup class.
     # TODO temporary solution in order to avoid circular imports. Should look for more elegant solution.
-    # There is no guarantee that the attribute will be assigned a value before it is referred to.
     TAG_TO_POSITION_LOOKUP: ClassVar[list] = None
 
     def model_dump_notation(self):

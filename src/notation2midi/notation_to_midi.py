@@ -10,9 +10,9 @@ import re
 from mido import MidiFile
 
 from src.common.classes import Beat, Gongan, RunSettings, Score
-from src.common.constants import DEFAULT, InstrumentPosition, Pitch, SpecialTags, Stroke
+from src.common.constants import DEFAULT, InstrumentPosition, SpecialTags, Stroke
 from src.common.logger import get_logger
-from src.common.lookups import PRESET_LOOKUP
+from src.common.lookups import LOOKUP
 from src.common.metadata_classes import (
     GonganMeta,
     GoToMeta,
@@ -23,20 +23,15 @@ from src.common.metadata_classes import (
     OctavateMeta,
     PartMeta,
     RepeatMeta,
-    Scope,
     SilenceMeta,
     TempoMeta,
     ValidationMeta,
 )
 from src.common.playercontent_classes import Part, Song
 from src.common.utils import (
-    POSITION_TO_RANGE_LOOKUP,
-    SYMBOL_TO_NOTE_LOOKUP,
-    SYMBOLVALUE_TO_MIDINOTE_LOOKUP,
     create_rest_stave,
     get_whole_rest_note,
     has_kempli_beat,
-    initialize_lookups,
     most_occurring_beat_duration,
     most_occurring_stave_duration,
 )
@@ -83,7 +78,7 @@ def notation_to_track(score: Score, position: InstrumentPosition) -> MidiTrackX:
                 return
             score.midiplayer_data.markers[partinfo.name] = int(curr_time)
 
-    track = MidiTrackX(position, PRESET_LOOKUP[position], score.settings.midi.PPQ)
+    track = MidiTrackX(position, LOOKUP.INSTRUMENT_TO_PRESET[position], score.settings.midi.PPQ)
 
     reset_pass_counters()
     beat = score.gongans[0].beats[0]
@@ -315,9 +310,9 @@ def create_score_object_model(run_settings: RunSettings) -> Score:
         font_parser=parser,
         settings=run_settings,
         instrument_positions=set(all_positions),
-        balimusic_font_dict=SYMBOL_TO_NOTE_LOOKUP,
-        midi_notes_dict=SYMBOLVALUE_TO_MIDINOTE_LOOKUP,
-        position_range_lookup=POSITION_TO_RANGE_LOOKUP,
+        balimusic_font_dict=LOOKUP.SYMBOL_TO_NOTE,
+        midi_notes_dict=LOOKUP.SYMBOLVALUE_TO_MIDINOTE,
+        position_range_lookup=LOOKUP.POSITION_TO_RANGE,
         midiplayer_data=Part(
             name=run_settings.notation.part.name,
             file=run_settings.notation.midi_out_file,
@@ -472,7 +467,6 @@ def convert_notation_to_midi(run_settings: RunSettings):
     """
     logger.info("======== NOTATION TO MIDI CONVERSION ========")
     logger.info(f"input file: {run_settings.notation.part.file}")
-    initialize_lookups(run_settings)
     score = create_score_object_model(run_settings)
     validate_score(score=score, settings=run_settings)
 

@@ -4,7 +4,7 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any, Optional
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 

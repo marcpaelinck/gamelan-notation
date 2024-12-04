@@ -3,7 +3,7 @@ from mido import Message, MetaMessage, MidiTrack, bpm2tempo, tempo2bpm
 from src.common.classes import Note, Preset
 from src.common.constants import InstrumentPosition, InstrumentType, Pitch, Stroke
 from src.common.logger import get_logger
-from src.common.utils import SYMBOLVALUE_TO_MIDINOTE_LOOKUP
+from src.common.lookups import LOOKUP
 from src.settings.settings import BASE_NOTE_TIME, BASE_NOTES_PER_BEAT
 
 logger = get_logger(__name__)
@@ -93,7 +93,7 @@ class MidiTrackX(MidiTrack):
             ValueError: _description_
         """
         if not character.pitch == Pitch.NONE:
-            midinote = SYMBOLVALUE_TO_MIDINOTE_LOOKUP[position, character.pitch, character.octave, character.stroke]
+            midinote = LOOKUP.SYMBOLVALUE_TO_MIDINOTE[position, character.pitch, character.octave, character.stroke]
             # Set ON and OFF messages for actual note
             # In case of multiple midi notes, all notes should start and stop at the same time.
             for count, midivalue in enumerate(midinote.midinote):

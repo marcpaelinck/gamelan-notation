@@ -1,7 +1,6 @@
 from src.common.classes import MidiNote
 from src.common.constants import InstrumentType, Stroke
-from src.common.lookups import MIDINOTE_LOOKUP
-from src.common.utils import initialize_lookups
+from src.common.lookups import LOOKUP
 from src.settings.settings import get_run_settings
 
 
@@ -57,7 +56,6 @@ def sample_name_lookup(midi_dict: dict[InstrumentType, MidiNote]) -> dict[MidiNo
 
 if __name__ == "__main__":
     run_settings = get_run_settings()
-    initialize_lookups(run_settings)
-    lookup = sample_name_lookup(MIDINOTE_LOOKUP)
+    lookup = sample_name_lookup(LOOKUP.INSTRUMENT_TO_MIDINOTE)
     for filename, samplename in lookup.items():
         print(f"{filename} - {samplename}")

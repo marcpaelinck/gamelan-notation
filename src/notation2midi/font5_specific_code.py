@@ -14,13 +14,9 @@ from src.common.constants import (
     SpecialTags,
     Stroke,
 )
-from src.common.lookups import (
-    MIDINOTE_LOOKUP,
-    POSITION_TO_RANGE_LOOKUP,
-    TAG_TO_POSITION_LOOKUP,
-)
+from src.common.lookups import LOOKUP
 from src.common.metadata_classes import MetaData, MetaDataType, Scope
-from src.common.utils import NOTE_LIST, flatten, get_instrument_range, get_nearest_note
+from src.common.utils import flatten, get_instrument_range, get_nearest_note
 from src.settings.settings import BASE_NOTE_TIME
 
 # ==================== BALI MUSIC 5 FONT =====================================
@@ -82,7 +78,7 @@ class Font5Parser(FontParser):
         """
         # Create a list containing one Note object for each symbol in note_chars.
         notes: list[Note] = [
-            next((note for note in NOTE_LIST if (note.symbol == character)), None) for character in note_chars
+            next((note for note in LOOKUP.NOTE_LIST if (note.symbol == character)), None) for character in note_chars
         ]
 
         if len(notes) == 1:
@@ -96,7 +92,7 @@ class Font5Parser(FontParser):
 
         # Check required actions
         while notes:
-            if (note.pitch, note.octave, note.stroke) not in POSITION_TO_RANGE_LOOKUP[position]:
+            if (note.pitch, note.octave, note.stroke) not in LOOKUP.POSITION_TO_RANGE[position]:
                 self.log_error(
                     f"Combination {note.pitch.value} OCTAVE{note.octave} {note.stroke} not in range of {position}."
                 )
@@ -109,7 +105,7 @@ class Font5Parser(FontParser):
                 case Modifier.OCTAVE_2:
                     modifs["octave"] = 2
                 case Modifier.MUTE | Modifier.ABBREVIATE:
-                    if (position, note.pitch, 1, note.stroke) in MIDINOTE_LOOKUP:
+                    if (position, note.pitch, 1, note.stroke) in LOOKUP.INSTRUMENT_TO_MIDINOTE:
                         # Midi entry found: keep previous note durations and change its stroke type
                         modifs["stroke"] = modifier_note.stroke
                     else:
@@ -314,10 +310,10 @@ class Font5Parser(FontParser):
                 case _:
                     # Process notation data
                     if len(line) > 1:
-                        if not TAG_TO_POSITION_LOOKUP.get(tag, None):
+                        if not LOOKUP.TAG_TO_POSITION.get(tag, None):
                             self.log_error(f"unrecognized instrument tag {tag}.")
                             continue
-                        positions = [InstrumentPosition[tag] for tag in TAG_TO_POSITION_LOOKUP.get(tag, [])]
+                        positions = [InstrumentPosition[tag] for tag in LOOKUP.TAG_TO_POSITION.get(tag, [])]
                         all_positions = all_positions | set(positions)
                         for self.curr_beat_id in range(1, len(line)):
                             for self.curr_position in positions:
@@ -474,7 +470,7 @@ class Font5Parser(FontParser):
         Returns:
             Note: a copy of a Note from the note list if a match is found, otherwise an newly created Note object.
         """
-        note = get_nearest_note(pitch, stroke, duration, rest_after, octave, NOTE_LIST)
+        note = get_nearest_note(pitch, stroke, duration, rest_after, octave, LOOKUP.NOTE_LIST)
         # TODO error handling if note == None
         note_symbol = note.symbol
 
