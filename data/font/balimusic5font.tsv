@@ -9,8 +9,8 @@ symbol	unicode	symbol_description	balifont_symbol_description	pitch	octave	strok
 0	0x0030	digit 0	serifless n	CUNG		OPEN	1.0	0.0	NONE	kendang cung (wadon)
 8	0x0038	digit 8	k	KA		OPEN	1.0	0.0	NONE	kendang ka (wadon)
 9	0x0039	digit 9	d	DE		OPEN	1.0	0.0	NONE	kendang dé (wadon)
-:	0x003A	colon	three vertical lines above char (combining)	NONE		NONE	0	0	TREMOLO_ACCELERATING	"repeated, rapid beats on preceding note "
-;	0x003B	semicolon	three vertical lines of increasing length above char (combining)	NONE		NONE	0	0	TREMOLO	repeated beats on preceding note, starting slowly and accelerating
+:	0x003A	colon	three vertical lines above char (combining)	NONE		TREMOLO_ACCELERATING	0	0	NONE	"repeated, rapid beats on preceding note "
+;	0x003B	semicolon	three vertical lines of increasing length above char (combining)	NONE		TREMOLO	0	0	NONE	repeated beats on preceding note, starting slowly and accelerating
 A	0x0041	uppercase A	superscript a in front of next note	DANG	1	OPEN	0.5	0	GRACE_NOTE	grace note dang, subtracts own duration from preceding note
 B	0x0041	uppercase B	superscript b in front of next note	BYONG		OPEN	0.5	0	GRACE_NOTE	grace note byong, subtracts own duration from preceding note
 E	0x0045	uppercase E	superscript e in front of next note	DENG	1	OPEN	0.5	0	GRACE_NOTE	grace note deng, subtracts own duration from preceding note

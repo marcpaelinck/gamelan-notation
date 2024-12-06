@@ -1,4 +1,6 @@
+import inspect
 import json
+import logging
 import os
 import re
 from collections import defaultdict
@@ -6,7 +8,13 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, computed_field, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 
 from src.common.constants import (
     BPM,
@@ -18,7 +26,6 @@ from src.common.constants import (
     InstrumentType,
     Modifier,
     NotationFont,
-    NoteSource,
     Octave,
     Pass,
     Pitch,
@@ -51,36 +58,43 @@ class TimingData:
     beats_per_gongan: int
 
 
-class FontParser:
+class ParserModel:
+    run_settings = None
     curr_gongan_id: int = None
     curr_beat_id: int = None
     curr_position: InstrumentPosition = None
-    notation_lines: list[str]
-    _has_errors = False
-    logger = logger = get_logger(__name__)
+    errors = []
+    logger = None
 
-    def __init__(self, filepath: str):
-        with open(filepath, "r") as input:
-            self.notation_lines = [line.rstrip() for line in input]
+    def __init__(self, run_settings: "RunSettings"):
+        self.logger = get_logger(self.__class__.__name__)
+        self.run_settings = run_settings
 
-    def log_error(self, err_msg: str) -> str:
+    def log(self, err_msg: str, level: logging = logging.ERROR) -> str:
         prefix = (
             f"{self.curr_gongan_id:02d}-{self.curr_beat_id:02d} | "
             if self.curr_beat_id
             else f"{self.curr_gongan_id:02d}    | "
         )
-        if not self._has_errors:
+        if not self.errors:
             self.logger.error("Errors encountered in the notation:")
-            self._has_errors = True
-        self.logger.error("     " + prefix + err_msg)
+        msg = "     " + prefix + err_msg
+        self.logger.log(level, msg)
+        if level > logging.INFO:
+            self.errors.append(msg)
 
+    @property
     def has_errors(self):
-        return self._has_errors
+        return len(self.errors) > 0
 
 
 # Settings
 class NotationModel(BaseModel):
     @classmethod
+    # Pointer to cls.common.lookup.TAG_TO_POSITION_LOOKUP
+    # This variable is set by the __init__ method of the Lookup class.
+    # TODO temporary solution in order to avoid circular imports. Should look for more elegant solution.
+
     def to_list(cls, value, el_type: type):
         # This method tries to to parse a string or a list of strings
         # into a list of `el_type` values.
@@ -102,13 +116,10 @@ class NotationModel(BaseModel):
 
 
 class Note(NotationModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="ignore", frozen=True)
 
-    source: NoteSource = NoteSource.SCORE
+    position: InstrumentPosition
     symbol: str
-    unicode: str
-    symbol_description: str
-    balifont_symbol_description: str
     # symbolvalue: SymbolValue  # Phase out
     pitch: Pitch
     octave: Optional[int]
@@ -117,11 +128,23 @@ class Note(NotationModel):
     rest_after: Optional[float]
     velocity: Optional[int] = 127
     modifier: Modifier
-    description: str
+    midinote: list[int] = 127  # 0..128, used when generating MIDI output.
+    rootnote: Optional[str] = ""
+    sample: str = ""  # file name of the (mp3) sample.
+    _errormsg: str = None
+    _validate_range: bool = True
 
     @property
     def total_duration(self):
         return self.duration + self.rest_after
+
+    @property
+    def has_error(self):
+        return self._errormsg != None
+
+    @property
+    def error_message(self):
+        return self._errormsg
 
     @field_validator("octave", mode="before")
     @classmethod
@@ -129,6 +152,22 @@ class Note(NotationModel):
         if isinstance(value, str) and value.upper() == "NONE":
             return None
         return value
+
+    @classmethod
+    @model_validator(mode="after")
+    def validate_note(self):
+        if not self._validate_range:
+            return self
+        # Delay import of the lookup to avoid circular reference.
+        from src.common.lookups import LOOKUP
+
+        if self.position not in LOOKUP.POSITION_P_O_S_TO_NOTE.keys():
+            self._errormsg = f"No range information for {self.position}"
+            return None
+        if (self.pitch, self.octave, self.stroke) not in LOOKUP.POSITION_P_O_S_TO_NOTE[self.position]:
+            self._errormsg = f"{self.pitch} OCT{self.octave} {self.stroke} not in range of {self.position}"
+            return None
+        return self
 
     def matches(self, pitch: Pitch, octave: Octave, stroke: Stroke, duration: Duration, rest_after: Duration) -> bool:
         return (
@@ -288,11 +327,10 @@ class FlowInfo:
 class Score:
 
     title: str
-    font_parser: FontParser
+    font_parser: ParserModel
     settings: "RunSettings"
     instrument_positions: set[InstrumentPosition] = None
     gongans: list[Gongan] = field(default_factory=list)
-    balimusic_font_dict: dict[str, Note] = None
     midi_notes_dict: dict[tuple[InstrumentPosition, Pitch, Octave, Stroke], MidiNote] = None
     position_range_lookup: dict[InstrumentPosition, tuple[Pitch, Octave, Stroke]] = None
     flowinfo: FlowInfo = field(default_factory=FlowInfo)

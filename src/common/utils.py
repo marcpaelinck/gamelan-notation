@@ -56,11 +56,13 @@ def find_note(pitch: Pitch, stroke: Stroke, duration: float, note_list: list[Not
     )
 
 
-def get_whole_rest_note(resttype: Stroke):
-    return next((note for note in LOOKUP.NOTE_LIST if note.stroke == resttype and note.total_duration == 1), None)
+def get_whole_rest_note(position: InstrumentPosition, resttype: Stroke):
+    return LOOKUP.POSITION_P_O_S_TO_NOTE[position][Pitch.NONE, None, resttype].get(
+        (1, 0), LOOKUP.POSITION_P_O_S_TO_NOTE[position][Pitch.NONE, None, resttype].get((0, 1), None)
+    )
 
 
-def create_rest_stave(resttype: Stroke, duration: float) -> list[Note]:
+def create_rest_stave(position: InstrumentPosition, resttype: Stroke, duration: float) -> list[Note]:
     """Creates a stave with rests of the given type for the given duration.
     If the duration is non-integer, the stave will also contain half and/or quarter rests.
 
@@ -73,7 +75,7 @@ def create_rest_stave(resttype: Stroke, duration: float) -> list[Note]:
     """
     # TODO exception handling
     notes = []
-    whole_rest: Note = get_whole_rest_note(resttype)
+    whole_rest: Note = get_whole_rest_note(position, resttype)
     for i in range(int(duration)):
         notes.append(whole_rest.model_copy())
 
@@ -177,56 +179,7 @@ def score_to_notation_file(score: Score) -> None:
 
 
 def get_instrument_range(position: InstrumentPosition) -> list[tuple[Note, Octave]]:
-    return [
-        (note, oct)
-        for (note, oct, stroke) in LOOKUP.POSITION_TO_RANGE[position]
-        if stroke == LOOKUP.POSITION_TO_RANGE[position][0][2]
-    ]
-
-
-def get_nearest_note(
-    pitch: Pitch,
-    stroke: Stroke,
-    duration: float = None,
-    rest_after: float = None,
-    octave: int = None,
-    note_list: list[Note] = LOOKUP.NOTE_LIST,
-) -> Note:
-    """Searches for the note with the best match
-
-    Args:
-        pitch (Pitch): _description_
-        stroke (Stroke): _description_
-        duration (float, optional): _description_. Defaults to None.
-        rest_after (float, optional): _description_. Defaults to None.
-        octave (int, optional): _description_. Defaults to None.
-        note_list (list[Note], optional): _description_. Defaults to NOTE_LIST.
-
-    Returns:
-        Note: a note if found, otherwise None
-    """
-    stroke_alt = {stroke} | set({Stroke.OPEN} if stroke in [Stroke.ABBREVIATED, Stroke.MUTED] else {})
-    duration_alt = {duration} | set({1} if duration else {})
-    rest_after_alt = {rest_after} | set({0} if duration else {})
-    octave_alt = {octave} | set({1} if octave else {})
-    attempts = list(product(stroke_alt, duration_alt, rest_after_alt, octave_alt))
-
-    for stroke_, duration_, rest_after_, octave_ in attempts:
-        note = next(
-            (
-                note
-                for note in note_list
-                if (note.pitch == pitch)
-                and (note.stroke == stroke_)
-                and (duration_ == None or note.duration == duration_)
-                and (rest_after_ == None or note.rest_after == rest_after_)
-                and (octave_ == None or note.octave == octave_)
-            ),
-            None,
-        )
-        if note:
-            return note
-    return note
+    return {(note, oct) for (note, oct, stroke) in LOOKUP.POSITION_P_O_S_TO_NOTE[position].keys() if note and oct}
 
 
 def flatten(lst: list[list | object]):

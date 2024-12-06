@@ -3,7 +3,7 @@ The settings in the /settings/run-settings.yaml file determine which application
 """
 
 from src.common.classes import RunSettings
-from src.notation2midi.notation_to_midi import convert_notation_to_midi
+from src.notation2midi.notation_to_midi import Notation2MidiParser
 from src.settings.settings import get_run_settings
 from src.settings.settings_validation import validate_input_data
 from src.soundfont.soundfont_generator import create_soundfont_files
@@ -18,7 +18,8 @@ def import_run_settings(notation: dict[str, str] = None) -> RunSettings:
 
 def do_run(run_settings: RunSettings):
     if run_settings.options.notation_to_midi:
-        convert_notation_to_midi(run_settings)
+        parser = Notation2MidiParser(run_settings)
+        parser.convert_notation_to_midi()
 
     if run_settings.options.soundfont.run:
         create_soundfont_files(run_settings)
@@ -32,7 +33,8 @@ def multiple_notations_to_midi(notations: list[str, str]):
     """
     for notation in notations:
         run_settings = import_run_settings(notation)
-        convert_notation_to_midi(run_settings)
+        parser = Notation2MidiParser(run_settings)
+        parser.convert_notation_to_midi()
 
 
 def single_run():

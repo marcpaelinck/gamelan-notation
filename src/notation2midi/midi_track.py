@@ -93,10 +93,9 @@ class MidiTrackX(MidiTrack):
             ValueError: _description_
         """
         if not character.pitch == Pitch.NONE:
-            midinote = LOOKUP.SYMBOLVALUE_TO_MIDINOTE[position, character.pitch, character.octave, character.stroke]
             # Set ON and OFF messages for actual note
             # In case of multiple midi notes, all notes should start and stop at the same time.
-            for count, midivalue in enumerate(midinote.midinote):
+            for count, midivalue in enumerate(character.midinote):
                 self.append(
                     Message(
                         type="note_on",
@@ -106,7 +105,7 @@ class MidiTrackX(MidiTrack):
                         channel=self.channel,
                     )
                 )
-            for count, midivalue in enumerate(midinote.midinote):
+            for count, midivalue in enumerate(character.midinote):
                 self.append(
                     off_msg := Message(
                         type="note_off",

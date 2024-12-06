@@ -36,6 +36,7 @@ class FontFields(SStrEnum):
     PITCH = "pitch"
     OCTAVE = "octave"
     STROKE = "stroke"
+    MODIFIER = "modifier"
     DURATION = "duration"
     REST_AFTER = "rest_after"
     DESCRIPTION = "description"

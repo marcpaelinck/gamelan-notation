@@ -1,9 +1,9 @@
 import json
 import re
 from dataclasses import field
-from typing import Any, ClassVar, Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
 from src.common.constants import (
     DEFAULT,
@@ -41,10 +41,6 @@ class MetaDataBaseType(BaseModel):
     metatype: Literal[""]
     scope: Optional[Scope] = Scope.GONGAN
     _processingorder_ = 99
-    # Pointer to cls.common.lookup.TAG_TO_POSITION_LOOKUP
-    # This variable is set by the __init__ method of the Lookup class.
-    # TODO temporary solution in order to avoid circular imports. Should look for more elegant solution.
-    TAG_TO_POSITION_LOOKUP: ClassVar[list] = None
 
     def model_dump_notation(self):
         json = self.model_dump(exclude_defaults=True)
@@ -73,6 +69,7 @@ class KempliMeta(MetaDataBaseType):
     metatype: Literal["KEMPLI"]
     status: MetaDataSwitch
     beats: list[int] = field(default_factory=list)
+    scope: Optional[Scope] = Scope.GONGAN
 
 
 class LabelMeta(MetaDataBaseType):
@@ -92,12 +89,16 @@ class OctavateMeta(MetaDataBaseType):
     metatype: Literal["OCTAVATE"]
     instrument: InstrumentType
     octaves: int
+    scope: Optional[Scope] = Scope.GONGAN
 
     @field_validator("instrument", mode="before")
     @classmethod
     # Converts 'free format' position tags to InstrumentPosition values.
     def normalize_positions(cls, data: str) -> InstrumentPosition:
-        return cls.TAG_TO_POSITION_LOOKUP[data][0]
+        # Delay import to avoid circular reference.
+        from src.common.lookups import LOOKUP
+
+        return LOOKUP.TAG_TO_POSITION[data][0]
 
 
 class PartMeta(MetaDataBaseType):
@@ -120,7 +121,10 @@ class SilenceMeta(MetaDataBaseType):
     @classmethod
     # Converts 'free format' position tags to InstrumentPosition values.
     def normalize_positions(cls, data: list[str]) -> list[InstrumentPosition]:
-        return sum((cls.TAG_TO_POSITION_LOOKUP[pos] for pos in data), [])
+        # Delay import to avoid circular reference.
+        from src.common.lookups import LOOKUP
+
+        return sum((LOOKUP.TAG_TO_POSITION[pos] for pos in data), [])
 
 
 class TempoMeta(MetaDataBaseType):
@@ -142,6 +146,7 @@ class ValidationMeta(MetaDataBaseType):
     metatype: Literal["VALIDATION"]
     beats: Optional[list[int]] = field(default_factory=list)
     ignore: list[ValidationProperty]
+    scope: Optional[Scope] = Scope.GONGAN
 
 
 MetaDataType = Union[

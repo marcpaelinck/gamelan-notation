@@ -1,4 +1,5 @@
 from enum import StrEnum
+from typing import Any
 
 from src.common.logger import get_logger
 
@@ -14,6 +15,7 @@ Octave = int
 MIDIvalue = int
 MidiDict = dict[str, list[dict[str, str | int | None]]]
 NotationDict = dict[int, dict[int, dict[str, dict[tuple[int], str]]]]  # notation[sys_id][beat_id][position][passes]
+NoteRecord = dict[str, Any]
 ErrorMessage = str
 
 
@@ -51,15 +53,6 @@ class NotationEnum(StrEnum):
 class NotationFont(NotationEnum):
     BALIMUSIC4 = "BaliMusic4"
     BALIMUSIC5 = "BaliMusic5"
-
-
-class NoteSource(NotationEnum):
-    # indicates whether the character occurs in the score
-    # or was added by this application.
-    # SCORE is also applicable for Pitch Characters that have been
-    # changed by applying one or more Modifier Characters.
-    SCORE = "SCORE"
-    VALIDATOR = "VALIDATOR"
 
 
 class InstrumentGroup(NotationEnum):
@@ -165,6 +158,8 @@ class Stroke(NotationEnum):
     KAPAK = "KAPAK"
     DETUT = "DETUT"
     CUNGKUNG = "CUNGKUNG"
+    TREMOLO = "TREMOLO"
+    TREMOLO_ACCELERATING = "TREMOLO_ACCELERATING"
     EXTENSION = "EXTENSION"
     SILENCE = "SILENCE"
     NONE = "NONE"
@@ -183,8 +178,6 @@ class Modifier(StrEnum):
     ABBREVIATE = "ABBREVIATE"
     HALF_NOTE = "HALF_NOTE"
     QUARTER_NOTE = "QUARTER_NOTE"
-    TREMOLO = "TREMOLO"
-    TREMOLO_ACCELERATING = "TREMOLO_ACCELERATING"
     NOROT = "NOROT"
 
 
