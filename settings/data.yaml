@@ -207,10 +207,11 @@ notations:
                 name: entire piece
                 file: pendet_font5_beat_at_end.tsv
                 loop: false
-    test:
-        title: Test
+    test-gk:
+        title: Test Gong Kebyar
         subfolder: test
         beat_at_end: false            
+        instrumentgroup: GONG_KEBYAR
         part:
             gendinganak2:
                 name: gending anak-anak
@@ -219,4 +220,14 @@ notations:
             cendrawasih:
                 name: Cendrawasih
                 file: Cendrawasih_font5.tsv
+                loop: false
+    test-sp:
+        title: Test Semar Pagulingan
+        subfolder: test
+        beat_at_end: false            
+        instrumentgroup: SEMAR_PAGULINGAN
+        part:
+            sinomladrang:
+                name: Sinom Ladrang
+                file: Sinom Ladrang_SP_font5.tsv
                 loop: false

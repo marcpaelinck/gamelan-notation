@@ -177,7 +177,7 @@ def get_kempyung_dict(instrumentrange: dict[tuple[Pitch, Octave], tuple[Pitch, O
         dict[tuple[Pitch, Octave], tuple[Pitch, Octave]]: the kempyung dict
     """
     ordered = sorted(
-        list({(note, octave) for note, octave, _ in instrumentrange}),
+        list({(note, octave) for note, octave, _ in instrumentrange if octave}),
         key=lambda item: item[0].sequence + 100 * item[1],
     )
     kempyung = zip(ordered, ordered[3:] + ordered[-3:])
@@ -192,6 +192,7 @@ def incorrect_kempyung(
     ranges: dict[InstrumentPosition, list[tuple[Pitch, Octave, Stroke]]],
     autocorrect: bool,
 ) -> list[tuple[BeatId, tuple[InstrumentPosition, InstrumentPosition]]]:
+
     def note_pairs(beat: Beat, pair: list[InstrumentType]):
         return list(zip([n for n in beat.staves[pair[0]]], [n for n in beat.staves[pair[1]]]))
 
@@ -224,26 +225,27 @@ def incorrect_kempyung(
                     iterations = [1, 2] if autocorrect else [1]
                     for iteration in iterations:
                         notepairs = note_pairs(beat, (polos, sangsih))
-                        for seq, (polos, sangsih) in enumerate(notepairs):
+                        for seq, (polosnote, sangsihnote) in enumerate(notepairs):
                             # Check kempyung.
                             if (
-                                polos.pitch is not Pitch.NONE
-                                and sangsih.pitch is not Pitch.NONE
-                                and not (sangsih.pitch, sangsih.octave) == kempyung_dict[(polos.pitch, polos.octave)]
+                                polosnote.pitch is not Pitch.NONE
+                                and sangsihnote.pitch is not Pitch.NONE
+                                and not (sangsihnote.pitch, sangsihnote.octave)
+                                == kempyung_dict[(polosnote.pitch, polosnote.octave)]
                             ):
                                 if autocorrect and iteration == 1:
-                                    correct_note, correct_octave = kempyung_dict[(polos.pitch, polos.octave)]
+                                    correct_note, correct_octave = kempyung_dict[(polosnote.pitch, polosnote.octave)]
                                     correct_sangsih = score.font_parser.get_note(
                                         position=sangsih,
                                         pitch=correct_note,
                                         octave=correct_octave,
-                                        stroke=sangsih.stroke,
-                                        duration=sangsih.duration,
-                                        rest_after=sangsih.rest_after,
+                                        stroke=sangsihnote.stroke,
+                                        duration=sangsihnote.duration,
+                                        rest_after=sangsihnote.rest_after,
                                     ).model_copy()
                                     if not (correct_sangsih):
                                         logger.error(
-                                            f"Trying to create an incorrect combination {sangsih} {correct_note} OCT{correct_octave} {sangsih.stroke} duration={sangsih.duration} rest_after{sangsih.rest_after} while correcting kempyung."
+                                            f"Trying to create an incorrect combination {sangsih} {correct_note} OCT{correct_octave} {sangsihnote.stroke} duration={sangsihnote.duration} rest_after{sangsihnote.rest_after} while correcting kempyung."
                                         )
                                     beat.staves[sangsih][seq] = correct_sangsih
                                     autocorrected = True
@@ -428,36 +430,6 @@ def validate_score(
     log_results(
         "INCORRECT KEMPYUNG", corrected_invalid_kempyung, ignored_invalid_kempyung, remaining_incorrect_kempyung
     )
-    # logger.info(
-    #     f"INCORRECT BEAT LENGTHS (corrected {len(corrected_beat_lengths)}, ignored {len(ignored_beat_lengths)} beats)"
-    # )
-    # if detailed_logging and corrected_beat_lengths:
-    #     logger.info("corrected:")
-    #     logger.info(corrected_beat_lengths)
-    # if ignored_beat_lengths:
-    #     logger.warning("ignored:")
-    #     logger.warning(incorrect_beat_lengths)
-    # logger.info(
-    #     f"UNEQUAL STAVE LENGTHS WITHIN BEAT (corrected {count_corrected_stave_lengths}, ignored {count_ignored_stave_lengths} beats)"
-    # )
-    # if detailed_logging:
-    #     logger.info("corrected:")
-    #     pprint(corrected_stave_lengths)
-    # logger.warning("remaining invalids:")
-    # pprint(beats_with_unequal_stave_lengths)
-    # logger.info(
-    #     f"NOTES NOT IN INSTRUMENT RANGE (corrected {count_corrected_notes_out_of_range}, ignored {count_ignored_notes_out_of_range} beats)"
-    # )
-    # pprint(beats_with_note_out_of_instrument_range)
-    # logger.info(
-    #     f"INCORRECT KEMPYUNG (corrected {count_corrected_invalid_kempyung}, ignored {count_ignored_invalid_kempyung} beats)"
-    # )
-    # if detailed_logging:
-    #     logger.info("corrected:")
-    #     pprint(corrected_invalid_kempyung)
-    # logger.warning("remaining invalids:")
-    # pprint(beats_with_incorrect_kempyung)
-    # logger.info("---------------------")
 
     if save_corrected:
         score_to_notation_file(score)

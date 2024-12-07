@@ -1,3 +1,6 @@
+import csv
+
+import pandas as pd
 import pytest
 
 from src.common.classes import Beat, Gongan, Note
@@ -9,6 +12,14 @@ from src.common.utils import (
 )
 from src.notation2midi.notation_to_midi import passes_str_to_tuple
 from src.settings.settings import InstrumentFields
+
+
+def create_symbol_to_note_lookup(self, fromfile: str) -> dict[str, Note]:
+    balifont_df = pd.read_csv(fromfile, sep="\t", quoting=csv.QUOTE_NONE)
+    balifont_obj = balifont_df.where(pd.notnull(balifont_df), "NONE").to_dict(orient="records")
+    balifont = [Note.model_validate(note_def | {"_validate_range": False}) for note_def in balifont_obj]
+    return {note.symbol: note for note in balifont}
+
 
 BALIFONT5_TO_CHARACTER_DICT = create_symbol_to_note_lookup(fromfile="tests/data/balimusic5font.tsv")
 

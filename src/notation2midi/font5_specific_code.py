@@ -162,7 +162,11 @@ class Font5Parser(ParserModel):
                 self.log(f" {position.value} `{stave}` has invalid `{note_chars[0]}`")
                 note_chars = note_chars[1:]
             else:
-                note = self._note_from_chars(position=position, note_chars=match.groups() or (match.group(0),))
+                note = self._note_from_chars(
+                    position=position,
+                    # If the pattern has capturing groups,
+                    note_chars=[group for group in match.groups() if group] or [match.group(0)],
+                )
                 notes.extend(note)
                 note_chars = note_chars[match.end() :]
 
@@ -282,13 +286,13 @@ class Font5Parser(ParserModel):
         """
         tremolo_notes = []
 
-        if notes[0].modifier is Modifier.TREMOLO:
+        if notes[0].stroke is Stroke.TREMOLO:
             note = notes[0]
             nr_of_notes = round(note.duration * self.TREMOLO_NR_OF_NOTES_PER_QUARTERNOTE)
             duration = note.duration / nr_of_notes
             for _ in range(nr_of_notes):
                 tremolo_notes.append(note.model_copy(update={"duration": duration, "_validate_range": False}))
-        elif notes[0].modifier is Modifier.TREMOLO_ACCELERATING:
+        elif notes[0].stroke is Stroke.TREMOLO_ACCELERATING:
             durations = [i / BASE_NOTE_TIME for i in self.TREMOLO_ACCELERATING_PATTERN]
             note_idx = 0
             for duration, velocity in zip(durations, self.TREMOLO_ACCELERATING_VELOCITY):
@@ -299,7 +303,7 @@ class Font5Parser(ParserModel):
                 )
                 note_idx = (note_idx + 1) % len(notes)
         else:
-            self.log(f"Unexpected tremolo type {notes[0].modifier}.")
+            self.log(f"Unexpected tremolo type {notes[0].stroke}.")
 
         return tremolo_notes
 
@@ -456,6 +460,6 @@ def get_parser(run_settings: RunSettings):
 
 if __name__ == "__main__":
     run_settings = get_run_settings()
-    parser = Font5Parser(run_settings.font.filepath)
-    line = "trompong\to-\tEu-\te-\tu-\tUu/u\t-Ua\t--".split("\t")
-    print(f"{line} ==> {parser._replace_grace_notes(line)}")
+    parser = Font5Parser(run_settings)
+    line = r"u_,"
+    print(f"{line} ==> {parser._sort_modifiers(line)}")

@@ -134,10 +134,10 @@ class Notation2MidiParser(ParserModel):
                         beat.staves[instrument] = []
                     beat.staves[instrument][0:0] = notes_to_move  # insert at beginning
             # update beat and gongan duration values
-            beat.duration = most_occurring_stave_duration(beat.staves)
+            # beat.duration = most_occurring_stave_duration(beat.staves)
             # beat.duration = max(sum(note.total_duration for note in notes) for notes in list(beat.staves.values()))
-            gongan = score.gongans[beat.sys_seq]
-            gongan.beat_duration = most_occurring_beat_duration(gongan.beats)
+            # gongan = score.gongans[beat.sys_seq]
+            # gongan.beat_duration = most_occurring_beat_duration(gongan.beats)
             beat = beat.prev
 
         # Add a rest at the beginning of the first beat
@@ -385,6 +385,7 @@ class Notation2MidiParser(ParserModel):
             # This simplifies the addition of missing staves and correct processing of metadata
             self.move_beat_to_start(score)
         for gongan in score.gongans:
+            gongan.beat_duration = most_occurring_beat_duration(gongan.beats)
             self.apply_metadata(gongan.metadata, gongan, score)
         # Add kempli beats
         add_missing_staves(score=score, add_kempli=True)

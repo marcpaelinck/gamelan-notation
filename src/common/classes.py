@@ -91,10 +91,6 @@ class ParserModel:
 # Settings
 class NotationModel(BaseModel):
     @classmethod
-    # Pointer to cls.common.lookup.TAG_TO_POSITION_LOOKUP
-    # This variable is set by the __init__ method of the Lookup class.
-    # TODO temporary solution in order to avoid circular imports. Should look for more elegant solution.
-
     def to_list(cls, value, el_type: type):
         # This method tries to to parse a string or a list of strings
         # into a list of `el_type` values.
