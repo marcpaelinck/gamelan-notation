@@ -127,20 +127,11 @@ class Note(NotationModel):
     midinote: list[int] = 127  # 0..128, used when generating MIDI output.
     rootnote: Optional[str] = ""
     sample: str = ""  # file name of the (mp3) sample.
-    _errormsg: str = None
     _validate_range: bool = True
 
     @property
     def total_duration(self):
         return self.duration + self.rest_after
-
-    @property
-    def has_error(self):
-        return self._errormsg != None
-
-    @property
-    def error_message(self):
-        return self._errormsg
 
     @field_validator("octave", mode="before")
     @classmethod
@@ -226,12 +217,6 @@ class InstrumentTag(NotationModel):
 #
 # Flow
 #
-
-
-@dataclass(frozen=True)
-class Instrument:
-    tag: str
-    instrumenttype: InstrumentType
 
 
 @dataclass

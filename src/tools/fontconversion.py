@@ -24,37 +24,6 @@ Path = str
 WorksheetName = str
 
 
-def get_files_with_symbols_old(folderpath: str, symbollist: list[str]) -> dict[Path, list[Symbol]]:
-    """Prints the names of Excel notation files containing one or more of the symbols
-       in the symbol list.
-
-    Args:
-        folderpath (str): path to the folder containing the files to search in.
-        symbollist (list[str]): list of characters to search for.
-    """
-    infiles = defaultdict(set)
-    files = glob(path.join(folderpath, "*.xlsx"))
-    for file in files:
-        wb = load_workbook(file)
-        sheets = set(wb.sheetnames) - {"formules"}
-        wb.close()
-        for sheet in sheets:
-            logger.info(path.basename(file) + " " + sheet)
-            df = pd.read_excel(file, sheet_name=sheet).iloc[:, 1:]
-            uniques = set().union(
-                *[
-                    set(df[col][df[col].apply(lambda x: isinstance(x, str))].sum())
-                    for col in df.columns
-                    if set(df[col][df[col].apply(lambda x: isinstance(x, str))])
-                ]
-            )
-            for sym in symbollist:
-                if sym in uniques:
-                    infiles[path.basename(file)].add(sym)
-
-    return infiles
-
-
 def get_files_with_symbols(folderpath: str, symbollist: list[str]) -> dict[Path, list[Symbol]]:
     """Prints the names of Excel notation files containing one or more of the symbols
        in the symbol list.

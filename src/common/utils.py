@@ -43,19 +43,6 @@ def stave_to_string(stave: list[Note]) -> str:
     return "".join((n.symbol for n in stave))
 
 
-def find_note(pitch: Pitch, stroke: Stroke, duration: float, note_list: list[Note]) -> Note:
-    return next(
-        (
-            note
-            for note in note_list
-            if (not pitch or note.pitch == pitch)
-            and (not stroke or note.stroke == stroke)
-            and (not duration or note.duration == duration)
-        ),
-        None,
-    )
-
-
 def get_whole_rest_note(position: InstrumentPosition, resttype: Stroke):
     return LOOKUP.POSITION_P_O_S_TO_NOTE[position][Pitch.NONE, None, resttype].get(
         (1, 0), LOOKUP.POSITION_P_O_S_TO_NOTE[position][Pitch.NONE, None, resttype].get((0, 1), None)

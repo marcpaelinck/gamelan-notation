@@ -284,7 +284,6 @@ def create_missing_staves(
     )
     # a kempli beat is a muted stroke
     # Note: these two line are BaliMusic5 font exclusive!
-    # kempli_stroke = find_note(Pitch.STRIKE, Stroke.OPEN, 1, score.balimusic_font_dict.values())
     KEMPLI_BEAT = score.font_parser.get_note(
         InstrumentPosition.KEMPLI, pitch=Pitch.STRIKE, octave=None, stroke=Stroke.MUTED, duration=1, rest_after=0
     )

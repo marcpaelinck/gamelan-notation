@@ -22,7 +22,6 @@ from src.common.constants import (
     InstrumentGroup,
     InstrumentPosition,
     InstrumentType,
-    MIDIvalue,
     Modifier,
     NoteRecord,
     Octave,
@@ -43,14 +42,14 @@ logger = logger = get_logger(__name__)
 
 class Lookup:
     INSTRUMENT_TO_PRESET: dict[InstrumentType, Preset] = dict()  # KEEP
+    TAG_TO_POSITION: dict[InstrumentTag, list[InstrumentPosition]] = dict()  # KEEP
+    INSTRUMENT_TO_MIDINOTE: dict[InstrumentType, list[MidiNote]] = dict()  # DELETE
+    # P_O_S stands for Pitch, Octave, Stroke
     POSITION_P_O_S_TO_NOTE: dict[
         InstrumentPosition, dict[tuple[Pitch, Octave, Stroke], dict[tuple[Duration, Duration], Note]]
     ] = dict()
-    TAG_TO_POSITION: dict[InstrumentTag, list[InstrumentPosition]] = dict()  # KEEP
+    POSITION_CHARS_TO_NOTELIST: dict[(InstrumentPosition, str), Note]
 
-    INSTRUMENT_TO_MIDINOTE: dict[InstrumentType, list[MidiNote]] = dict()  # DELETE
-
-    # combine with POSITION_TO_NOTERANGE
     def __init__(self, run_settings: RunSettings) -> None:
         """Initializes lookup dicts and lists from settings files
 
@@ -67,21 +66,18 @@ class Lookup:
                 run_settings.instruments.instrumentgroup, run_settings.midi.presets_filepath
             )
         )
+        self.TAG_TO_POSITION.update(self.create_tag_to_position_lookup(run_settings.instruments))
         self.INSTRUMENT_TO_MIDINOTE.update(
             self.create_instrumentposition_to_midinote_lookup(
                 run_settings.instruments.instrumentgroup, fromfile=run_settings.midi.notes_filepath
             )
         )
-        self.TAG_TO_POSITION.update(self.create_tag_to_position_lookup(run_settings.instruments))
         self.POSITION_P_O_S_TO_NOTE = self.create_position_p_o_s_to_note_lookup(run_settings)
         self.POSITION_CHARS_TO_NOTELIST = {
             (position, note.symbol): note
             for position, P_O_S in self.POSITION_P_O_S_TO_NOTE.items()
             for props in P_O_S.values()
             for note in props.values()
-        }
-        self.POSITION_TO_NOTERANGE = {
-            position: [props for props in propdict] for position, propdict in self.POSITION_P_O_S_TO_NOTE.items()
         }
 
     def create_instrumentposition_to_midinote_lookup(
@@ -178,42 +174,6 @@ class Lookup:
         lookup_dict = {t.tag: t.positions for t in tags}
 
         return lookup_dict
-
-    def create_instrumentposition_to_midinote_lookup_test(
-        self, instrumentgroup: InstrumentGroup, fromfile: str
-    ) -> tuple[dict[InstrumentType, MidiNote], list[MidiNote]]:
-
-        midinotes_df = pd.read_csv(fromfile, sep="\t", comment="#")
-        # Convert pre-filled positions to a list of InstrumentPosition values.
-        # Fill in empty position fields with all positions for the instrument type.
-        mask = midinotes_df[MidiNotesFields.POSITIONS].isnull()
-        midinotes_df.loc[mask, MidiNotesFields.POSITIONS] = midinotes_df.loc[
-            mask, MidiNotesFields.INSTRUMENTTYPE
-        ].apply(lambda x: [p for p in InstrumentPosition if p.instrumenttype == x])
-        # midinote field can be either int or list[int]. Convert all int values in list[int].
-        midinotes_df[MidiNotesFields.MIDINOTE] = midinotes_df[MidiNotesFields.MIDINOTE].apply(
-            lambda x: eval(x) if x.startswith("[") else [int(x)]
-        )
-
-        # Treat missing values
-        midinotes_df[MidiNotesFields.OCTAVE] = midinotes_df[MidiNotesFields.OCTAVE].replace(np.nan, value="NONE")
-        midinotes_df[MidiNotesFields.REMARK] = midinotes_df[MidiNotesFields.REMARK].replace(np.nan, value="")
-        midinotes_df[MidiNotesFields.SAMPLE] = midinotes_df[MidiNotesFields.SAMPLE].replace(np.nan, value="")
-        midinotes_df[MidiNotesFields.ROOTNOTE] = midinotes_df[MidiNotesFields.ROOTNOTE].replace(np.nan, value=None)
-
-        # Drop unrequired instrument groups and convert to dict
-        midinotes_dict = (
-            midinotes_df[midinotes_df[MidiNotesFields.INSTRUMENTGROUP] == instrumentgroup.value]
-            .drop(MidiNotesFields.INSTRUMENTGROUP, axis="columns")
-            .to_dict(orient="records")
-        )
-        # Convert to MidiNote objects
-        midinotes = [MidiNote.model_validate(midinote) for midinote in midinotes_dict]
-        instumenttypes = {midinote.instrumenttype for midinote in midinotes}
-        return {
-            instrumenttype: [midinote for midinote in midinotes if midinote.instrumenttype == instrumenttype]
-            for instrumenttype in instumenttypes
-        }
 
     def create_position_p_o_s_to_note_lookup(
         self, run_settings: RunSettings

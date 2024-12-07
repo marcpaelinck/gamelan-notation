@@ -5,14 +5,12 @@
 """
 
 import json
-import logging
 import re
 
 from mido import MidiFile
 
 from src.common.classes import Beat, Gongan, ParserModel, Score
 from src.common.constants import DEFAULT, InstrumentPosition, SpecialTags, Stroke
-from src.common.logger import get_logger
 from src.common.lookups import LOOKUP
 from src.common.metadata_classes import (
     GonganMeta,
@@ -34,7 +32,6 @@ from src.common.utils import (
     get_whole_rest_note,
     has_kempli_beat,
     most_occurring_beat_duration,
-    most_occurring_stave_duration,
 )
 from src.notation2midi.font5_specific_code import get_parser
 from src.notation2midi.midi_track import MidiTrackX
