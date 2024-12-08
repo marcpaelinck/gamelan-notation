@@ -226,7 +226,7 @@ def get_run_settings(notation: dict[str, str] = None) -> RunSettings:
 
 def get_midiplayer_content() -> Content:
     run_settings = get_run_settings()
-    datafolder = run_settings.midiplayer.datafolder
+    datafolder = run_settings.midiplayer.folder
     contentfile = run_settings.midiplayer.contentfile
     with open(os.path.join(datafolder, contentfile), "r") as contentfile:
         playercontent = contentfile.read()
@@ -235,7 +235,7 @@ def get_midiplayer_content() -> Content:
 
 def save_midiplayer_content(playercontent: Content):
     run_settings = get_run_settings()
-    datafolder = run_settings.midiplayer.datafolder
+    datafolder = run_settings.midiplayer.folder
     contentfile = run_settings.midiplayer.contentfile
     with open(os.path.join(datafolder, contentfile), "w") as contentfile:
         contentfile.write(playercontent.model_dump_json(indent=4, serialize_as_any=True))

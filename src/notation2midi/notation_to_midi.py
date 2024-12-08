@@ -14,6 +14,7 @@ from src.common.constants import DEFAULT, InstrumentPosition, SpecialTags, Strok
 from src.common.lookups import LOOKUP
 from src.common.metadata_classes import (
     GonganMeta,
+    GonganType,
     GoToMeta,
     KempliMeta,
     LabelMeta,
@@ -23,6 +24,7 @@ from src.common.metadata_classes import (
     PartMeta,
     RepeatMeta,
     SilenceMeta,
+    SuppressMeta,
     TempoMeta,
     ValidationMeta,
 )
@@ -207,19 +209,18 @@ class Notation2MidiParser(ParserModel):
                     # Suppress kempli.
                     # TODO status=ON will never be used because it is the default. So attribute status can be discarded.
                     # Unless a future version enables to switch kempli off until a Kempli ON tag is encountered.
-                    gongan.gongantype = meta.data.status
                     if meta.data.status is MetaDataSwitch.OFF:
                         for beat in gongan.beats:
                             # Default is all beats
                             if beat.id in meta.data.beats or not meta.data.beats:
-                                if InstrumentPosition.KEMPLI in beat.staves:
-                                    beat.staves[InstrumentPosition.KEMPLI] = create_rest_stave(
-                                        InstrumentPosition.KEMPLI, Stroke.SILENCE, beat.duration
-                                    )
+                                beat.has_kempli_beat = False
                 case GonganMeta():
                     # TODO: how to safely synchronize all instruments starting from next regular gongan?
                     gongan.gongantype = meta.data.type
-                case SilenceMeta():
+                    if gongan.gongantype in [GonganType.GINEMAN, GonganType.KEBYAR]:
+                        for beat in gongan.beats:
+                            beat.has_kempli_beat = False
+                case SuppressMeta():
                     # Add a separate silence stave to the gongan beats for each instrument position and pass mentioned.
                     for beat in gongan.beats:
                         # Default is all beats
@@ -231,6 +232,8 @@ class Notation2MidiParser(ParserModel):
                                         for pass_ in meta.data.passes
                                     }
                                 )
+                case SilenceMeta():
+                    pass
                 case ValidationMeta():
                     for beat in [b for b in gongan.beats if b.id in meta.data.beats] or gongan.beats:
                         beat.validation_ignore.extend(meta.data.ignore)
@@ -262,7 +265,7 @@ class Notation2MidiParser(ParserModel):
                     beat.tempo_changes.update(beat.prev.tempo_changes)
             return
 
-    def passes_str_to_tuple(self, rangestr: str) -> list[int]:
+    def passes_str_to_list(self, rangestr: str) -> list[int]:
         """Converts a pass indicator following a position tag to a list of passes.
             A colon (:) separates the position tag and the pass indicator.
             The indicator has one of the following formats:
@@ -286,7 +289,7 @@ class Notation2MidiParser(ParserModel):
         if re.match(r"^\d-\d$", rangestr):
             return list(range(int(rangestr[0]), int(rangestr[2]) + 1))
         else:
-            return tuple(json.loads(f"[{rangestr}]"))
+            return list(json.loads(f"[{rangestr}]"))
 
     def create_score_object_model(self) -> Score:
         """Creates an object model of the notation. The method aggregates each note and the corresponding diacritics
@@ -401,7 +404,7 @@ class Notation2MidiParser(ParserModel):
             if track.total_tick_time() == max_ticks:
                 track.extend_last_note(seconds)
 
-    def create_midifile(self, score: Score, save: bool = True) -> int:
+    def create_midifile(self, score: Score) -> int:
         """Generates the MIDI content and saves it to file.
 
         Args:
@@ -419,8 +422,11 @@ class Notation2MidiParser(ParserModel):
             midifile.tracks.append(track)
         if not self.run_settings.notation.part.loop:
             self.add_attenuation_time(midifile.tracks, seconds=ATTENUATION_SECONDS_AFTER_MUSIC_END)
-        if save:
-            outfilepath = self.run_settings.notation.midi_out_filepath
+        if self.run_settings.options.notation_to_midi.save_midifile:
+            if self.run_settings.options.notation_to_midi.update_midiplayer_content:
+                outfilepath = self.run_settings.notation.midi_out_filepath_midiplayer
+            else:
+                outfilepath = self.run_settings.notation.midi_out_filepath
             midifile.save(outfilepath)
             self.logger.info(f"File saved as {outfilepath}")
         return int(midifile.length * 1000)
@@ -472,8 +478,8 @@ class Notation2MidiParser(ParserModel):
 
         validate_score(score=score, settings=self.run_settings)
 
-        score.total_duration = self.create_midifile(score, self.run_settings.options.notation_to_midi.save_midifile)
-        if self.run_settings.options.notation_to_midi.update_midiplayer_content_file:
+        score.total_duration = self.create_midifile(score)
+        if self.run_settings.options.notation_to_midi.update_midiplayer_content:
             self.update_midiplayer_content(score)
         self.logger.info("=====================================")
 

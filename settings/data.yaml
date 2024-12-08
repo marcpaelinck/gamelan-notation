@@ -50,7 +50,7 @@ soundfonts:
     folder: ./data/soundfont
     path_to_viena_app: C:/Program Files/Viena/Viena64.exe
 midiplayer:
-    datafolder: ./data/midiplayer
+    folder: ./data/midiplayer
     contentfile: content.json
 notations:
     # `beat_at_end` indicates whether the notation has the gir at the end of each gongan (Balinese concept) or at the beginning.
@@ -61,6 +61,7 @@ notations:
     # Otherwise the midi file will end abruptly to allow looping.
     defaults:
         folder: ./data/notation
+        midiplayer_folder: ${midiplayer.folder}
         beat_at_end: false
         autocorrect_kempyung : true
         fontversion: BaliMusic5
@@ -165,16 +166,16 @@ notations:
                 name: pengawak
                 file: Godek Miring font5_pengawak.tsv
                 loop: true
-    sekarginotan:
-        title: Sekar Ginotan
-        subfolder: sekar ginotan
+    sekargendot:
+        title: Sekar Gendot
+        subfolder: sekar gendot
         instrumentgroup: SEMAR_PAGULINGAN
         beat_at_end: false
         autocorrect_kempyung : true
         part:
             full:
                 name: entire piece
-                file: Sekar Ginotan font5.tsv
+                file: Sekar Gendot font5.tsv
                 loop: false
     cendrawasih:
         title: Cendrawasih

@@ -7,6 +7,7 @@ import pandas as pd
 
 from src.common.classes import Beat, Gongan, Note, Score
 from src.common.constants import (
+    Duration,
     InstrumentPosition,
     NotationFont,
     Octave,
@@ -72,6 +73,19 @@ def create_rest_stave(position: InstrumentPosition, resttype: Stroke, duration: 
         notes.append(whole_rest.model_copy(update={attribute: frac_duration}))
 
     return notes
+
+
+def create_rest_staves(
+    prev_beat: Beat, positions: list[InstrumentPosition], duration: Duration, force_silence: bool = False
+):
+    silence = Stroke.SILENCE
+    extension = Stroke.EXTENSION
+    prevstrokes = {pos: (prev_beat.staves[pos][-1].stroke if prev_beat else silence) for pos in positions}
+    resttypes = {
+        pos: silence if prevstroke is silence or pos in force_silence else extension
+        for pos, prevstroke in prevstrokes.items()
+    }
+    return {position: create_rest_stave(position, resttypes[position], duration) for position in positions}
 
 
 def gongan_to_records(

@@ -68,7 +68,7 @@ class GoToMeta(MetaDataBaseType):
 class KempliMeta(MetaDataBaseType):
     metatype: Literal["KEMPLI"]
     status: MetaDataSwitch
-    beats: list[int] = field(default_factory=list)
+    beats: Optional[list[int]] = field(default_factory=list)
     scope: Optional[Scope] = Scope.GONGAN
 
 
@@ -111,8 +111,8 @@ class RepeatMeta(MetaDataBaseType):
     count: int = 1
 
 
-class SilenceMeta(MetaDataBaseType):
-    metatype: Literal["SILENCE"]
+class SuppressMeta(MetaDataBaseType):
+    metatype: Literal["SUPPRESS"]
     positions: list[InstrumentPosition] = field(default_factory=list)
     passes: Optional[list[int]] = field(default_factory=list)
     beats: list[int] = field(default_factory=list)
@@ -125,6 +125,12 @@ class SilenceMeta(MetaDataBaseType):
         from src.common.lookups import LOOKUP
 
         return sum((LOOKUP.TAG_TO_POSITION[pos] for pos in data), [])
+
+
+class SilenceMeta(MetaDataBaseType):
+    metatype: Literal["SILENCE"]
+    duration: int
+    after: bool = True
 
 
 class TempoMeta(MetaDataBaseType):
@@ -157,7 +163,7 @@ MetaDataType = Union[
     KempliMeta,
     GonganMeta,
     ValidationMeta,
-    SilenceMeta,
+    SuppressMeta,
     OctavateMeta,
     PartMeta,
 ]

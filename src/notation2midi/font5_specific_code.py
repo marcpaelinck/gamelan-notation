@@ -80,7 +80,6 @@ class Font5Parser(ParserModel):
 
     def _note_from_chars(self, position: InstrumentPosition, note_chars: tuple[str]) -> list[Note]:
         """Translates a list of characters to a Note object.
-        The note's postprocess flags is set if not all its parameter values can be determined in this step.
 
         Args:
             position (InstrumentPosition): _description_
@@ -104,39 +103,6 @@ class Font5Parser(ParserModel):
             notes = self._generate_tremolo(notes)
 
         return notes
-
-    def _postprocess_note(
-        self, current: Note, previous: Note, next_: Note, instrument_range: list[tuple[Pitch, Octave]]
-    ) -> tuple[list[Note]]:
-        """Performs modifications that need information about surrounding notes (currently only needed for grace notes)
-
-        Args:
-            current (Note): the note that should be treated
-            previous (Note | None): predecessor of the note
-            next_ (Note | None): the successor of the note
-            instrument_range (list[tuple[Pitch, Octave]]): _description_
-
-        Returns:
-            tuple[Note]: _description_
-        """
-        if current.modifier is not Modifier.GRACE_NOTE:
-            return [], []
-        # A grace note is both a note and a modifyer.
-        # 1. Subtract its length from the preceding note.
-        # 2. Determine its octave (grace notes can't be combined with an octave indicator).
-        if next_ and current.octave:
-            octave = self._get_nearest_octave(current, next_, instrument_range)
-        else:
-            octave = current.octave
-
-        # Subtract the duration of the grace note from its predecessor
-        new_rest_after = max(0, previous.rest_after - current.duration)
-        new_duration = max(0, previous.duration - (current.duration - new_rest_after))
-        new_prev = previous.model_copy(update={"duration": new_duration, "rest_after": new_rest_after})
-        # Add the grace note with the correct octave
-        new_curr = current.model_copy(update={"octave": octave})
-
-        return [new_prev, new_curr], []
 
     def _parse_stave(self, stave: str, position: InstrumentPosition) -> list[Note]:
         """Validates the notation
@@ -372,39 +338,13 @@ class Font5Parser(ParserModel):
                         all_positions = all_positions | set(positions)
                         for self.curr_beat_id in range(1, len(line)):
                             for self.curr_position in positions:
-                                instrument_range = get_instrument_range(self.curr_position)
                                 if line[self.curr_beat_id]:
-                                    curr_stave = self._parse_stave(
+                                    new_stave = self._parse_stave(
                                         stave=line[self.curr_beat_id], position=self.curr_position
                                     )
-                                    # Postprocess notes. This performs operations where information about surrounding notes is needed.
-                                    if len(curr_stave) > 0:
-                                        prev_stave = prev_staves[self.curr_position]  # stave containing the 'prev' note
-                                        # Create an extended range containing surrounding notes for each note of the stave
-                                        curr_stave_ext = (
-                                            [([None] + prev_staves[self.curr_position])[-1]] + curr_stave + [None]
-                                        )
-                                        for i in range(0, len(curr_stave)):
-                                            # Be aware that prev and curr are lists of Note objects.
-                                            prev, curr = self._postprocess_note(
-                                                previous=curr_stave_ext[i],
-                                                current=curr_stave_ext[i + 1],
-                                                next_=curr_stave_ext[i + 2],
-                                                instrument_range=instrument_range,
-                                            )
-                                            # We store prev and curr as list objects to keep the number of objects in curr_stave constant.
-                                            # After the loop is finished, we will unpack any list that was added to the staves.
-                                            if prev or curr:
-                                                prev_stave[i - 1] = prev
-                                                curr_stave[i] = curr
-                                            prev_stave = curr_stave  # the 'prev' note will occur in the current stave for the next iterations
-                                        # Now unpack the lists of notes in the staves
-                                        flatten(prev_staves[self.curr_position])
-                                        flatten(curr_stave)
-
                                     notation_dict[self.curr_gongan_id][self.curr_beat_id][self.curr_position][
                                         pass_
-                                    ] = curr_stave
+                                    ] = new_stave
                                     if pass_ == DEFAULT:
                                         prev_staves[self.curr_position] = notation_dict[self.curr_gongan_id][
                                             self.curr_beat_id
@@ -455,7 +395,7 @@ def get_parser(run_settings: RunSettings):
     if run_settings.font.fontversion is NotationFont.BALIMUSIC5:
         return Font5Parser(run_settings)
     else:
-        raise NotImplementedError(f"No parser available for font {font.value}.")
+        raise NotImplementedError(f"No parser available for font {run_settings.font.fontversion}.")
 
 
 if __name__ == "__main__":

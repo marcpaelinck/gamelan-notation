@@ -15,6 +15,7 @@ from src.common.logger import get_logger
 from src.common.metadata_classes import GonganType, ValidationProperty
 from src.common.utils import (
     create_rest_stave,
+    create_rest_staves,
     get_whole_rest_note,
     has_kempli_beat,
     score_to_notation_file,
@@ -289,22 +290,18 @@ def create_missing_staves(
     )
 
     if missing_positions := (all_instruments - set(beat.staves.keys())):
-        silence = Stroke.SILENCE
-        extension = Stroke.EXTENSION
-        prevstrokes = {pos: (prevbeat.staves[pos][-1].stroke if prevbeat else silence) for pos in missing_positions}
-        resttypes = {
-            pos: silence if prevstroke is silence or pos in force_silence else extension
-            for pos, prevstroke in prevstrokes.items()
-        }
-        staves = {
-            position: create_rest_stave(position, resttypes[position], beat.duration) for position in missing_positions
-        }
-        gongan = score.gongans[beat.sys_seq]
+        staves = create_rest_staves(
+            prev_beat=prevbeat, positions=missing_positions, duration=beat.duration, force_silence=force_silence
+        )
 
         # Add a kempli beat, except if a metadata label indicates otherwise or if the kempli part was already given in the original score
-        if InstrumentPosition.KEMPLI in staves.keys() and has_kempli_beat(gongan):
-            rests = create_rest_stave(InstrumentPosition.KEMPLI, Stroke.EXTENSION, beat.duration - 1)
-            staves[InstrumentPosition.KEMPLI] = [KEMPLI_BEAT] + rests
+        if InstrumentPosition.KEMPLI in staves.keys():  # and has_kempli_beat(gongan):
+            if beat.has_kempli_beat:
+                rests = create_rest_stave(InstrumentPosition.KEMPLI, Stroke.EXTENSION, beat.duration - 1)
+                staves[InstrumentPosition.KEMPLI] = [KEMPLI_BEAT] + rests
+            else:
+                all_rests = create_rest_stave(InstrumentPosition.KEMPLI, Stroke.EXTENSION, beat.duration)
+                staves[InstrumentPosition.KEMPLI] = all_rests
 
         return staves
     else:

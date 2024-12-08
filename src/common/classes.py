@@ -241,6 +241,7 @@ class Beat:
     goto: dict[PASS, "Beat"] = field(
         default_factory=dict
     )  # next beat to be played according to the flow (GOTO metadata)
+    has_kempli_beat: bool = True
     validation_ignore: list[ValidationProperty] = field(default_factory=list)
     _pass_: PASS = 0  # Counts the number of times the beat is passed during generation of MIDI file.
 
@@ -335,6 +336,7 @@ class RunSettings(BaseModel):
         instrumentgroup: InstrumentGroup
         folder: str
         subfolder: str
+        midiplayer_folder: str
         part: Part
         midi_out_file: str
         beat_at_end: bool
@@ -351,6 +353,10 @@ class RunSettings(BaseModel):
         @property
         def midi_out_filepath(self):
             return os.path.join(self.folder, self.subfolder, self.midi_out_file)
+
+        @property
+        def midi_out_filepath_midiplayer(self):
+            return os.path.join(self.midiplayer_folder, self.midi_out_file)
 
     class MidiInfo(BaseModel):
         midiversion: str
@@ -415,7 +421,7 @@ class RunSettings(BaseModel):
             ]
 
     class MidiPlayerInfo(BaseModel):
-        datafolder: str
+        folder: str
         contentfile: str
 
     class Options(BaseModel):
@@ -425,7 +431,7 @@ class RunSettings(BaseModel):
             autocorrect: bool
             save_corrected_to_file: bool
             save_midifile: bool
-            update_midiplayer_content_file: bool
+            update_midiplayer_content: bool
 
         class SoundfontOptions(BaseModel):
             run: bool
