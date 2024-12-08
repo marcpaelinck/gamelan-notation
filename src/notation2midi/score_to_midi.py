@@ -35,7 +35,6 @@ from src.common.utils import (
     has_kempli_beat,
     most_occurring_beat_duration,
 )
-from src.notation2midi.font5_specific_code import get_parser
 from src.notation2midi.midi_track import MidiTrackX
 from src.notation2midi.score_validation import (
     add_missing_staves,
@@ -49,9 +48,15 @@ from src.settings.settings import (
 )
 
 
-class Notation2MidiParser(ParserModel):
+class Score2MidiConverter(ParserModel):
 
-    def notation_to_track(self, score: Score, position: InstrumentPosition) -> MidiTrackX:
+    score: Score = None
+
+    def __init__(self, score: Score):
+        super().__init__(score.settings)
+        self.score = score
+
+    def notation_to_track(self, position: InstrumentPosition) -> MidiTrackX:
         """Generates the MIDI content for a single instrument position.
 
         Args:
@@ -63,28 +68,28 @@ class Notation2MidiParser(ParserModel):
         """
 
         def reset_pass_counters():
-            for gongan in score.gongans:
+            for gongan in self.score.gongans:
                 for beat in gongan.beats:
                     beat._pass_ = 0
 
-        def store_part_info(beat: Beat, score: Score):
-            gongan = score.gongans[beat.sys_seq]
+        def store_part_info(beat: Beat):
+            gongan = self.score.gongans[beat.sys_seq]
             if partinfo := gongan.get_metadata(PartMeta):
                 curr_time = track.current_time_in_millis()
                 # check if part was already set by another trach
-                time = score.midiplayer_data.markers.get(partinfo.name)
+                time = self.score.midiplayer_data.markers.get(partinfo.name)
                 if time and time < curr_time:
                     # keep the earliest time
                     return
-                score.midiplayer_data.markers[partinfo.name] = int(curr_time)
+                self.score.midiplayer_data.markers[partinfo.name] = int(curr_time)
 
         track = MidiTrackX(position, LOOKUP.INSTRUMENT_TO_PRESET[position], self.run_settings.midi.PPQ)
 
         reset_pass_counters()
-        beat = score.gongans[0].beats[0]
+        beat = self.score.gongans[0].beats[0]
         while beat:
             # If a new part is encountered, store timestamp and name in the midiplayer_data section of the score
-            store_part_info(beat, score)
+            store_part_info(beat)
             beat._pass_ += 1
             if self.run_settings.options.debug_logging:
                 track.comment(f"beat {beat.full_id} pass{beat._pass_}")
@@ -99,12 +104,12 @@ class Notation2MidiParser(ParserModel):
 
         return track
 
-    def move_beat_to_start(self, score: Score) -> None:
+    def move_beat_to_start(self) -> None:
         # If the last gongan is regular (has a kempli beat), create an additional gongan with an empty beat
-        last_gongan = score.gongans[-1]
+        last_gongan = self.score.gongans[-1]
         if has_kempli_beat(last_gongan):
             new_gongan = Gongan(id=last_gongan.id + 1, beats=[], beat_duration=0)
-            score.gongans.append(new_gongan)
+            self.score.gongans.append(new_gongan)
             last_beat = last_gongan.beats[-1]
             new_beat = Beat(
                 id=1,
@@ -121,7 +126,7 @@ class Notation2MidiParser(ParserModel):
 
         # Iterate through the beats starting from the end.
         # Move the end note of each instrument in the previous beat to the start of the current beat.
-        beat = score.gongans[-1].beats[-1]
+        beat = self.score.gongans[-1].beats[-1]
         while beat.prev:
             for instrument, notes in beat.prev.staves.items():
                 if notes:
@@ -135,27 +140,26 @@ class Notation2MidiParser(ParserModel):
             # update beat and gongan duration values
             # beat.duration = most_occurring_stave_duration(beat.staves)
             # beat.duration = max(sum(note.total_duration for note in notes) for notes in list(beat.staves.values()))
-            # gongan = score.gongans[beat.sys_seq]
+            # gongan = self.score.gongans[beat.sys_seq]
             # gongan.beat_duration = most_occurring_beat_duration(gongan.beats)
             beat = beat.prev
 
         # Add a rest at the beginning of the first beat
-        for instrument, notes in score.gongans[0].beats[0].staves.items():
+        for instrument, notes in self.score.gongans[0].beats[0].staves.items():
             notes.insert(0, get_whole_rest_note(Stroke.SILENCE))
 
-    def apply_metadata(self, metadata: list[MetaData], gongan: Gongan, score: Score) -> None:
+    def apply_metadata(self, metadata: list[MetaData], gongan: Gongan) -> None:
         """Processes the metadata of a gongan into the object model.
 
         Args:
             metadata (list[MetaData]): The metadata to process.
             gongan (Gongan): The gongan to which the metadata applies.
-            score (score): The score
         """
 
         def process_goto(gongan: Gongan, goto: MetaData) -> None:
             for rep in goto.data.passes or [p + 1 for p in range(10)]:
                 # Assuming 10 is larger than the max. number of passes.
-                gongan.beats[goto.data.beat_seq].goto[rep] = score.flowinfo.labels[goto.data.label]
+                gongan.beats[goto.data.beat_seq].goto[rep] = self.score.flowinfo.labels[goto.data.label]
 
         haslabel = False  # Will be set to true if the gongan has a metadata Label tag.
         for meta in sorted(metadata, key=lambda x: x.data._processingorder_):
@@ -189,18 +193,18 @@ class Notation2MidiParser(ParserModel):
                 case LabelMeta():
                     # Add the label to flowinfo
                     haslabel = True
-                    score.flowinfo.labels[meta.data.name] = gongan.beats[meta.data.beat_seq]
+                    self.score.flowinfo.labels[meta.data.name] = gongan.beats[meta.data.beat_seq]
                     # Process any GoTo pointing to this label
                     goto: MetaData
-                    for sys, goto in score.flowinfo.gotos[meta.data.name]:
+                    for sys, goto in self.score.flowinfo.gotos[meta.data.name]:
                         process_goto(sys, goto)
                 case GoToMeta():
                     # Add goto info to the beat
-                    if score.flowinfo.labels.get(meta.data.label, None):
+                    if self.score.flowinfo.labels.get(meta.data.label, None):
                         process_goto(gongan, meta)
                     else:
                         # Label not yet encountered: store GoTo obect in flowinfo
-                        score.flowinfo.gotos[meta.data.label].append((gongan, meta))
+                        self.score.flowinfo.gotos[meta.data.label].append((gongan, meta))
                 case RepeatMeta():
                     # Special case of goto: from last back to first beat of the gongan.
                     for counter in range(meta.data.count):
@@ -244,7 +248,8 @@ class Notation2MidiParser(ParserModel):
                                 note = stave[idx]
                                 if note.octave != None:
                                     # stave[idx] = note.model_copy(update={"octave": note.octave + meta.data.octaves})
-                                    stave[idx] = score.font_parser.get_note(
+                                    # TODO temporary solution to use Font5Parser
+                                    stave[idx] = LOOKUP.get_note(
                                         note.position,
                                         note.pitch,
                                         note.octave + meta.data.octaves,
@@ -291,7 +296,7 @@ class Notation2MidiParser(ParserModel):
         else:
             return list(json.loads(f"[{rangestr}]"))
 
-    def create_score_object_model(self) -> Score:
+    def create_score_object_model(self):
         """Creates an object model of the notation. The method aggregates each note and the corresponding diacritics
         into a single note object, which will simplify the generation of the MIDI file content.
 
@@ -299,34 +304,9 @@ class Notation2MidiParser(ParserModel):
             datapath (str): path to the data folder
             infilename (str): name of the csv input file
             title (str): Title for the notation
-
-        Returns:
-            Score: Object model containing the notation information.
         """
-        parser = get_parser(self.run_settings)
-        notation_dict, all_positions = parser.parse_notation()
-
-        if parser.has_errors:
-            self.logger.error("Program halted.")
-            exit()
-
-        score = Score(
-            title=self.run_settings.notation.title,
-            font_parser=parser,
-            settings=self.run_settings,
-            instrument_positions=set(all_positions),
-            position_range_lookup=LOOKUP.POSITION_P_O_S_TO_NOTE,  # replace with LOOKUP
-            midiplayer_data=Part(
-                name=self.run_settings.notation.part.name,
-                file=self.run_settings.notation.midi_out_file,
-                loop=self.run_settings.notation.part.loop,
-            ),
-        )
-        # Remove the dummy gongan than was created to hold the global (score-wide) metadata items.
-        # del notation_dict[-1]
-
         beats: list[Beat] = []
-        for self.curr_gongan_id, sys_info in notation_dict.items():
+        for self.curr_gongan_id, sys_info in self.score.notation_dict.items():
             if self.curr_gongan_id < 0:
                 # Skip the gongan holding the global (score-wide) metadata items
                 continue
@@ -354,11 +334,13 @@ class Notation2MidiParser(ParserModel):
                     sys_id=self.curr_gongan_id,
                     staves=staves,
                     exceptions=exceptions,
-                    bpm_start={DEFAULT: (bpm := score.gongans[-1].beats[-1].bpm_end[-1] if score.gongans else 0)},
+                    bpm_start={
+                        DEFAULT: (bpm := self.score.gongans[-1].beats[-1].bpm_end[-1] if self.score.gongans else 0)
+                    },
                     bpm_end={DEFAULT: bpm},
                     duration=max(sum(note.total_duration for note in notes) for notes in list(staves.values())),
                 )
-                prev_beat = beats[-1] if beats else score.gongans[-1].beats[-1] if score.gongans else None
+                prev_beat = beats[-1] if beats else self.score.gongans[-1].beats[-1] if self.score.gongans else None
                 # Update the `next` pointer of the previous beat.
                 if prev_beat:
                     prev_beat.next = new_beat
@@ -371,26 +353,25 @@ class Notation2MidiParser(ParserModel):
                     id=int(self.curr_gongan_id),
                     beats=beats,
                     beat_duration=most_occurring_beat_duration(beats),
-                    metadata=sys_info.get(SpecialTags.METADATA, []) + notation_dict[DEFAULT][SpecialTags.METADATA],
+                    metadata=sys_info.get(SpecialTags.METADATA, [])
+                    + self.score.notation_dict[DEFAULT][SpecialTags.METADATA],
                     comments=sys_info.get(SpecialTags.COMMENT, []),
                 )
-                score.gongans.append(gongan)
+                self.score.gongans.append(gongan)
                 beats = []
 
         # Add extension notes to pokok notation having only one note per beat
-        complement_shorthand_pokok_staves(score)
+        complement_shorthand_pokok_staves(self.score)
         # Add blank staves for all other omitted instruments
-        add_missing_staves(score=score, add_kempli=False)
+        add_missing_staves(score=self.score, add_kempli=False)
         if self.run_settings.notation.beat_at_end:
             # This simplifies the addition of missing staves and correct processing of metadata
-            self.move_beat_to_start(score)
-        for gongan in score.gongans:
+            self.move_beat_to_start()
+        for gongan in self.score.gongans:
             gongan.beat_duration = most_occurring_beat_duration(gongan.beats)
-            self.apply_metadata(gongan.metadata, gongan, score)
+            self.apply_metadata(gongan.metadata, gongan)
         # Add kempli beats
-        add_missing_staves(score=score, add_kempli=True)
-
-        return score
+        add_missing_staves(score=self.score, add_kempli=True)
 
     def add_attenuation_time(self, tracks: list[MidiTrackX], seconds: int) -> None:
         """Extends the duration of the final note in each channel to avoid an abrupt ending of the audio.
@@ -404,12 +385,8 @@ class Notation2MidiParser(ParserModel):
             if track.total_tick_time() == max_ticks:
                 track.extend_last_note(seconds)
 
-    def create_midifile(self, score: Score) -> int:
+    def create_midifile(self) -> int:
         """Generates the MIDI content and saves it to file.
-
-        Args:
-            score (Score): The object model.
-            separate_files (bool, optional): If True, a separate file will be created for each instrument. Defaults to False.
 
         Return:
             int: Total duration in milliseconds
@@ -417,8 +394,8 @@ class Notation2MidiParser(ParserModel):
         """
         midifile = MidiFile(ticks_per_beat=self.run_settings.midi.PPQ, type=1)
 
-        for position in sorted(score.instrument_positions, key=lambda x: x.sequence):
-            track = self.notation_to_track(score, position)
+        for position in sorted(self.score.instrument_positions, key=lambda x: x.sequence):
+            track = self.notation_to_track(position)
             midifile.tracks.append(track)
         if not self.run_settings.notation.part.loop:
             self.add_attenuation_time(midifile.tracks, seconds=ATTENUATION_SECONDS_AFTER_MUSIC_END)
@@ -443,25 +420,27 @@ class Notation2MidiParser(ParserModel):
         """
         return {part: time / total_duration for part, time in markers.items()}
 
-    def update_midiplayer_content(self, score: Score) -> None:
+    def update_midiplayer_content(self) -> None:
         content = get_midiplayer_content()
         # If info is already present, replace it.
-        song = next((song for song in content.songs if song.title == score.title), None)
+        song = next((song for song in content.songs if song.title == self.score.title), None)
         if not song:
             # TODO create components of Song
             content.songs.append(song := Song(title=self.run_settings.notation.title))
             self.logger.info(f"New song {song.title} created for MIDI player content")
-        part = next((part for part in song.parts if part.name == score.midiplayer_data.name))
+        part = next((part for part in song.parts if part.name == self.score.midiplayer_data.name))
         if not part:
             song.parts.append(
-                part := Part(score.midiplayer_data.name, score.midiplayer_data.file, score.midiplayer_data.loop)
+                part := Part(
+                    self.score.midiplayer_data.name, self.score.midiplayer_data.file, self.score.midiplayer_data.loop
+                )
             )
             self.logger.info(f"New part {part.name} created for MIDI player content")
         else:
             self.logger.info(f"Existing part {part.name} updated for MIDI player content")
-            part.file = score.midiplayer_data.file
-            part.loop = score.midiplayer_data.loop
-        part.markers = self.markers_millis_to_frac(score.midiplayer_data.markers, score.total_duration)
+            part.file = self.score.midiplayer_data.file
+            part.loop = self.score.midiplayer_data.loop
+        part.markers = self.markers_millis_to_frac(self.score.midiplayer_data.markers, self.score.total_duration)
         self.logger.info(f"Added time markers to part {part.name}")
         save_midiplayer_content(content)
 
@@ -471,16 +450,16 @@ class Notation2MidiParser(ParserModel):
         """
         self.logger.info("======== NOTATION TO MIDI CONVERSION ========")
         self.logger.info(f"input file: {self.run_settings.notation.part.file}")
-        score = self.create_score_object_model()
+        self.create_score_object_model()
         if self.has_errors:
             self.logger.info("Program halted.")
             exit()
 
-        validate_score(score=score, settings=self.run_settings)
+        validate_score(score=self.score, settings=self.run_settings)
 
-        score.total_duration = self.create_midifile(score)
+        self.score.total_duration = self.create_midifile()
         if self.run_settings.options.notation_to_midi.update_midiplayer_content:
-            self.update_midiplayer_content(score)
+            self.update_midiplayer_content()
         self.logger.info("=====================================")
 
 

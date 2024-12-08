@@ -3,9 +3,7 @@ import re
 from collections import defaultdict
 from itertools import product
 
-import pandas as pd
-
-from src.common.classes import Note, ParserModel, RunSettings
+from src.common.classes import Note, ParserModel, RunSettings, Score
 from src.common.constants import (
     DEFAULT,
     Duration,
@@ -20,6 +18,7 @@ from src.common.constants import (
 )
 from src.common.lookups import LOOKUP
 from src.common.metadata_classes import MetaData, MetaDataType, Scope
+from src.common.playercontent_classes import Part
 from src.common.utils import flatten, get_instrument_range
 from src.settings.settings import BASE_NOTE_TIME, get_run_settings
 
@@ -359,33 +358,23 @@ class Font5Parser(ParserModel):
         all_positions = sorted(list(all_positions), key=lambda p: p.sequence)
 
         if self.has_errors:
-            notation_dict = None
+            self.logger.error("Program halted.")
+            exit()
 
-        return notation_dict, all_positions
-
-    def get_note(
-        self,
-        position: InstrumentPosition,
-        pitch: Pitch,
-        octave: Octave,
-        stroke: Stroke,
-        duration: Duration,
-        rest_after: Duration,
-    ) -> Note:
-        note = (
-            LOOKUP.POSITION_P_O_S_TO_NOTE.get(position, {})
-            .get((pitch, octave, stroke), {})
-            .get((duration, rest_after), None)
+        score = Score(
+            title=self.run_settings.notation.title,
+            notation_dict=notation_dict,
+            settings=self.run_settings,
+            instrument_positions=set(all_positions),
+            position_range_lookup=LOOKUP.POSITION_P_O_S_TO_NOTE,  # replace with LOOKUP
+            midiplayer_data=Part(
+                name=self.run_settings.notation.part.name,
+                file=self.run_settings.notation.midi_out_file,
+                loop=self.run_settings.notation.part.loop,
+            ),
         )
-        if not note:
-            if not any(
-                (p, o) for p, o, _ in LOOKUP.POSITION_P_O_S_TO_NOTE[position].keys() if p == pitch and o == octave
-            ):
-                msg = f"{pitch} octave={octave} is not in the range of {position} "
-            else:
-                msg = f"{pitch} octave={octave}, {stroke} duration={duration} rest-after={rest_after} not in range of {position}"
-            self.log(msg)
-        return note
+
+        return score
 
 
 # ==================== GENERAL CODE =====================================

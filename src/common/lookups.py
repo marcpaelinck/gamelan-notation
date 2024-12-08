@@ -62,17 +62,17 @@ class Lookup:
         #     run_settings.instruments.instrumentgroup, fromfile=run_settings.midi.notes_filepath
         # )
         self.INSTRUMENT_TO_PRESET.update(
-            self.create_instrumentposition_to_preset_lookup(
+            self._create_instrumentposition_to_preset_lookup(
                 run_settings.instruments.instrumentgroup, run_settings.midi.presets_filepath
             )
         )
-        self.TAG_TO_POSITION.update(self.create_tag_to_position_lookup(run_settings.instruments))
+        self.TAG_TO_POSITION.update(self._create_tag_to_position_lookup(run_settings.instruments))
         self.INSTRUMENT_TO_MIDINOTE.update(
-            self.create_instrumentposition_to_midinote_lookup(
+            self._create_instrumentposition_to_midinote_lookup(
                 run_settings.instruments.instrumentgroup, fromfile=run_settings.midi.notes_filepath
             )
         )
-        self.POSITION_P_O_S_TO_NOTE = self.create_position_p_o_s_to_note_lookup(run_settings)
+        self.POSITION_P_O_S_TO_NOTE = self._create_position_p_o_s_to_note_lookup(run_settings)
         self.POSITION_CHARS_TO_NOTELIST = {
             (position, note.symbol): note
             for position, P_O_S in self.POSITION_P_O_S_TO_NOTE.items()
@@ -80,7 +80,7 @@ class Lookup:
             for note in props.values()
         }
 
-    def create_instrumentposition_to_midinote_lookup(
+    def _create_instrumentposition_to_midinote_lookup(
         self, instrumentgroup: InstrumentGroup, fromfile: str
     ) -> tuple[dict[InstrumentType, MidiNote], list[MidiNote]]:
         midinotes_df = pd.read_csv(fromfile, sep="\t", comment="#")
@@ -115,7 +115,7 @@ class Lookup:
             for instrumenttype in instumenttypes
         }
 
-    def create_instrumentposition_to_preset_lookup(
+    def _create_instrumentposition_to_preset_lookup(
         self, instrumentgroup: InstrumentGroup, fromfile: str
     ) -> dict[InstrumentType, Preset]:
         presets_df = pd.read_csv(fromfile, sep="\t", quoting=csv.QUOTE_NONE)
@@ -136,7 +136,7 @@ class Lookup:
         presets = [Preset.model_validate(preset) for preset in presets_obj]
         return {preset.position: preset for preset in presets}
 
-    def create_tag_to_position_lookup(
+    def _create_tag_to_position_lookup(
         self,
         instruments: RunSettings.InstrumentInfo,
     ) -> dict[InstrumentTag, list[InstrumentPosition]]:
@@ -175,7 +175,7 @@ class Lookup:
 
         return lookup_dict
 
-    def create_position_p_o_s_to_note_lookup(
+    def _create_position_p_o_s_to_note_lookup(
         self, run_settings: RunSettings
     ) -> dict[InstrumentPosition, dict[tuple[Pitch, Octave, Stroke], Note]]:
         """Creates the POSITION_P_O_S_TO_NOTE dict. This dict contains all possible Notes and should be used to validate/create
@@ -451,6 +451,30 @@ class Lookup:
         add_modified_notes(MODIFIERS, note_filter=note_filter, stroke_updater=stroke_updater)
 
         return pos_char_dict
+
+    def get_note(
+        self,
+        position: InstrumentPosition,
+        pitch: Pitch,
+        octave: Octave,
+        stroke: Stroke,
+        duration: Duration,
+        rest_after: Duration,
+    ) -> Note:
+        note = (
+            self.POSITION_P_O_S_TO_NOTE.get(position, {})
+            .get((pitch, octave, stroke), {})
+            .get((duration, rest_after), None)
+        )
+        if not note:
+            if not any(
+                (p, o) for p, o, _ in self.POSITION_P_O_S_TO_NOTE[position].keys() if p == pitch and o == octave
+            ):
+                msg = f"{pitch} octave={octave} is not in the range of {position} "
+            else:
+                msg = f"{pitch} octave={octave}, {stroke} duration={duration} rest-after={rest_after} not in range of {position}"
+            self.log(msg)
+        return note
 
 
 run_settings = get_run_settings()

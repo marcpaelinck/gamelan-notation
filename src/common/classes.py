@@ -1,4 +1,3 @@
-import inspect
 import json
 import logging
 import os
@@ -25,6 +24,7 @@ from src.common.constants import (
     InstrumentPosition,
     InstrumentType,
     Modifier,
+    NotationDict,
     NotationFont,
     Octave,
     Pass,
@@ -309,7 +309,7 @@ class FlowInfo:
 class Score:
 
     title: str
-    font_parser: ParserModel
+    notation_dict: NotationDict
     settings: "RunSettings"
     instrument_positions: set[InstrumentPosition] = None
     gongans: list[Gongan] = field(default_factory=list)

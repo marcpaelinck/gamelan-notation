@@ -12,6 +12,7 @@ from src.common.constants import (
     Stroke,
 )
 from src.common.logger import get_logger
+from src.common.lookups import LOOKUP
 from src.common.metadata_classes import GonganType, ValidationProperty
 from src.common.utils import (
     create_rest_stave,
@@ -236,7 +237,7 @@ def incorrect_kempyung(
                             ):
                                 if autocorrect and iteration == 1:
                                     correct_note, correct_octave = kempyung_dict[(polosnote.pitch, polosnote.octave)]
-                                    correct_sangsih = score.font_parser.get_note(
+                                    correct_sangsih = LOOKUP.get_note(
                                         position=sangsih,
                                         pitch=correct_note,
                                         octave=correct_octave,
@@ -285,7 +286,7 @@ def create_missing_staves(
     )
     # a kempli beat is a muted stroke
     # Note: these two line are BaliMusic5 font exclusive!
-    KEMPLI_BEAT = score.font_parser.get_note(
+    KEMPLI_BEAT = LOOKUP.get_note(
         InstrumentPosition.KEMPLI, pitch=Pitch.STRIKE, octave=None, stroke=Stroke.MUTED, duration=1, rest_after=0
     )
 
