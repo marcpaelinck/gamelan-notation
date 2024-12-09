@@ -27,10 +27,12 @@ from src.common.metadata_classes import (
     SuppressMeta,
     TempoMeta,
     ValidationMeta,
+    ValidationProperty,
 )
 from src.common.playercontent_classes import Part, Song
 from src.common.utils import (
     create_rest_stave,
+    create_rest_staves,
     get_whole_rest_note,
     has_kempli_beat,
     most_occurring_beat_duration,
@@ -71,6 +73,8 @@ class Score2MidiConverter(ParserModel):
             for gongan in self.score.gongans:
                 for beat in gongan.beats:
                     beat._pass_ = 0
+                    if beat.repeat:
+                        beat.repeat.reset()
 
         def store_part_info(beat: Beat):
             gongan = self.score.gongans[beat.sys_seq]
@@ -100,7 +104,13 @@ class Score2MidiConverter(ParserModel):
             # Process individual notes. Check if there is an alternative stave for the current pass
             for note in beat.exceptions.get((position, beat._pass_), beat.staves.get(position, [])):
                 track.add_note(position, note)
-            beat = beat.goto.get(beat._pass_, beat.next)
+            if beat.repeat and beat.repeat._countdown > 0:
+                beat.repeat._countdown -= 1
+                beat = beat.repeat.goto
+            else:
+                if beat.repeat:
+                    beat.repeat.reset()
+                beat = beat.goto.get(beat._pass_, beat.next)
 
         return track
 
@@ -207,8 +217,9 @@ class Score2MidiConverter(ParserModel):
                         self.score.flowinfo.gotos[meta.data.label].append((gongan, meta))
                 case RepeatMeta():
                     # Special case of goto: from last back to first beat of the gongan.
-                    for counter in range(meta.data.count):
-                        gongan.beats[-1].goto[counter + 1] = gongan.beats[0]
+                    # for counter in range(meta.data.count):
+                    #     gongan.beats[-1].goto[counter + 1] = gongan.beats[0]
+                    gongan.beats[-1].repeat = Beat.Repeat(goto=gongan.beats[0], iterations=meta.data.count)
                 case KempliMeta():
                     # Suppress kempli.
                     # TODO status=ON will never be used because it is the default. So attribute status can be discarded.
@@ -225,7 +236,8 @@ class Score2MidiConverter(ParserModel):
                         for beat in gongan.beats:
                             beat.has_kempli_beat = False
                 case SuppressMeta():
-                    # Add a separate silence stave to the gongan beats for each instrument position and pass mentioned.
+                    # Silences the given positions for the given beats and passes.
+                    # This is done by adding "silence" staves to the `exception` list of the beat.
                     for beat in gongan.beats:
                         # Default is all beats
                         if beat.id in meta.data.beats or not meta.data.beats:
@@ -237,7 +249,26 @@ class Score2MidiConverter(ParserModel):
                                     }
                                 )
                 case SilenceMeta():
-                    pass
+                    # Add a beat with silences at the end of the gongan. The beat's bpm is set to 60 for easy calculation.
+                    lastbeat = gongan.beats[-1]
+                    duration = round(4 * meta.data.seconds)  # 4 notes per bpm unit and bpm=60 => 4 notes per second.
+                    newbeat = Beat(
+                        id=lastbeat.id + 1,
+                        sys_id=gongan.id,
+                        bpm_start={-1: 60},
+                        bpm_end=lastbeat.bpm_end,
+                        duration=duration,
+                        prev=lastbeat,
+                        next=lastbeat.next,
+                        has_kempli_beat=False,
+                        validation_ignore=[ValidationProperty.BEAT_DURATION],
+                    )
+                    lastbeat.next.prev = newbeat
+                    lastbeat.next = newbeat
+                    newbeat.staves = create_rest_staves(
+                        prev_beat=lastbeat, positions=lastbeat.staves.keys(), duration=duration
+                    )
+                    gongan.beats.append(newbeat)
                 case ValidationMeta():
                     for beat in [b for b in gongan.beats if b.id in meta.data.beats] or gongan.beats:
                         beat.validation_ignore.extend(meta.data.ignore)
@@ -247,8 +278,6 @@ class Score2MidiConverter(ParserModel):
                             for idx in range(len(stave := beat.staves[meta.data.instrument])):
                                 note = stave[idx]
                                 if note.octave != None:
-                                    # stave[idx] = note.model_copy(update={"octave": note.octave + meta.data.octaves})
-                                    # TODO temporary solution to use Font5Parser
                                     stave[idx] = LOOKUP.get_note(
                                         note.position,
                                         note.pitch,

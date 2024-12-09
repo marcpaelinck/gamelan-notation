@@ -1,4 +1,5 @@
 import csv
+import logging
 import re
 from collections import defaultdict
 from itertools import product
@@ -6,9 +7,7 @@ from itertools import product
 from src.common.classes import Note, ParserModel, RunSettings, Score
 from src.common.constants import (
     DEFAULT,
-    Duration,
     InstrumentPosition,
-    Modifier,
     NotationDict,
     NotationFont,
     Octave,
@@ -19,7 +18,6 @@ from src.common.constants import (
 from src.common.lookups import LOOKUP
 from src.common.metadata_classes import MetaData, MetaDataType, Scope
 from src.common.playercontent_classes import Part
-from src.common.utils import flatten, get_instrument_range
 from src.settings.settings import BASE_NOTE_TIME, get_run_settings
 
 # ==================== BALI MUSIC 5 FONT =====================================
@@ -96,9 +94,9 @@ class Font5Parser(ParserModel):
             if note := LOOKUP.POSITION_CHARS_TO_NOTELIST.get((position, chars), None):
                 notes.append(note)
             else:
-                self.logger.error(f"Unrecognized character or character combination {note_chars}")
+                self.log(f"Illegal character(s) {chars} for {position}", logging.ERROR)
 
-        if all(note.stroke in (Stroke.TREMOLO, Stroke.TREMOLO_ACCELERATING) for note in notes):
+        if notes and all(note.stroke in (Stroke.TREMOLO, Stroke.TREMOLO_ACCELERATING) for note in notes):
             notes = self._generate_tremolo(notes)
 
         return notes
@@ -124,7 +122,7 @@ class Font5Parser(ParserModel):
                 if match:
                     break
             if not match:
-                self.log(f" {position.value} `{stave}` has invalid `{note_chars[0]}`")
+                self.log(f" {position.value} {stave} has invalid {note_chars[0]}")
                 note_chars = note_chars[1:]
             else:
                 note = self._note_from_chars(
@@ -138,13 +136,6 @@ class Font5Parser(ParserModel):
         return notes
 
     def _parse_special_tag(self, tag: SpecialTags, content: str) -> list[str | MetaData]:
-        # Create a dict {KEYWORD: {parameter: typing | class}} that contains valid MetaData tag content
-        METADATA_TYPE_DICT = {
-            meta.__annotations__["metatype"].__args__[0]: {
-                attr: str(cls) for attr, cls in meta.__annotations__.items() if attr != "metatype"
-            }
-            for meta in MetaDataType.__args__
-        }
 
         # Check the tag. Return comments without further processing.
         match tag:
@@ -153,33 +144,15 @@ class Font5Parser(ParserModel):
             case SpecialTags.METADATA:
                 pass
             case _:
-                return {"Unrecognized tag {tag}"}
-
-        # Check metadata values
-        metadata = None
-
-        # Validate the general format of the metadata content (value between braces, starting with keyword)
-        match = re.match(r"\{(?P<keyword>[A-Z]+) +(.*)}$", content.strip())
-        if not match:
-            self.log(
-                f"metadata {content} is not formatted correctly. "
-                "Check that the value starts with a keyword in capitals and is enclosed in braces."
-            )
-            return None
-
-        # Check if the metadata keyword is valid
-        keyword = match["keyword"]
-        if keyword not in METADATA_TYPE_DICT.keys():
-            possibe_keywords = list(METADATA_TYPE_DICT.keys())
-            self.log(f"incorrect metadata keyword `{keyword}`. Possible values are {possibe_keywords}")
-            return None
+                self.log("Unrecognized tag {tag}")
+                return None
 
         # Try to parse the string value
         try:
             metadata = MetaData(data=content)
-        except:
-            possibe_parameters = list(METADATA_TYPE_DICT[keyword].keys())
-            self.log(f"invalid metadata format {content}. Check the syntax. Possible parameters: {possibe_parameters}.")
+        except Exception as err:
+            # The validation and generation of meaningful error messages is performed in the MetaData class.
+            self.log(str(err))
             return None
 
         return metadata

@@ -3,6 +3,7 @@ import re
 from dataclasses import field
 from typing import Any, Literal, Optional, Union
 
+import regex
 from pydantic import BaseModel, Field, field_validator
 
 from src.common.constants import (
@@ -129,7 +130,7 @@ class SuppressMeta(MetaDataBaseType):
 
 class SilenceMeta(MetaDataBaseType):
     metatype: Literal["SILENCE"]
-    duration: int
+    seconds: int = None
     after: bool = True
 
 
@@ -166,6 +167,7 @@ MetaDataType = Union[
     SuppressMeta,
     OctavateMeta,
     PartMeta,
+    SilenceMeta,
 ]
 
 
@@ -192,39 +194,74 @@ class MetaData(BaseModel):
         Returns:
             _type_: _description_
         """
-        # Switch metadata keyword to lowercase and add 'metatype: ' in front.
-        fieldnames = cls.__get_all_subtype_fieldnames__()
-        value = data
-        match = r"\{(\w+)"
-        p = re.compile(match)
-        keyword_uc = p.findall(value)[0]
-        value = value.replace(keyword_uc, "metatype: " + keyword_uc + ", ")
-        # Replace equal signs with colon.
-        value = value.replace("=", ": ")
-        # Split value into (fieldname, fieldvalue) pairs.
-        # Field value should be either a single string:
-        #   [^\[\]]*?
-        # or a list of strings starting with '[' and ending with ']':
-        #   \[[^\[\]]*?\]
-        # Field/value pairs should be separated by a comma or (in case of the last pair) a brace:
-        #   [,}]
-        match = "(" + "|".join(fieldnames) + r"): *([^\[\]]*?|\[[^\[\]]*?\])[,}]"
-        p = re.compile(match)
-        field_list = p.findall(value)
-        # The following code put quotes around the keywords and string values.
-        # `match` matches quoted and unquoted strings and omits strings representing number values.
-        # The first component "([^"]+)" will be tried first, which prioritizes matching quoted strings.
-        # Note that the capturing brackets are placed within the quotes, so the captured values will be unquoted.
-        # If no quoted string can be matched, the second component (\w*[A-Za-z_]\w*\b) will capture single, unquoted
-        # non-numeric values.
-        match = r'"([^"]+)"|(\w*[A-Za-z_ ]\w*\b)'
-        pv = re.compile(match)
-        # In the substitution, \1\2 stand for the captured quoted and unquoted strings (only one of these placeholders
-        # will contain a non-empty value).
-        # Because quoted strings are captured without quotes, quoting either of these values yields
-        # the required result.
-        quoted_fields = [": ".join((f'"{field}"', pv.sub(r'"\1\2"', value))) for field, value in field_list]
-        value = "{" + ", ".join(quoted_fields) + "}"
-        # unquote already quoted strings (which are now double quoted)
-        value = value.replace('""', "")
-        return json.loads(value)
+        meta = data.strip()
+        membertypes = MetaDataType.__dict__["__args__"]
+        # create a dict containing the valid parameters for each metadata keyword.
+        # Format: {<meta-keyword>: [<parameter1>, <parameter2>, ...]}
+        field_dict = {
+            member.model_fields["metatype"].annotation.__args__[0]: [
+                param for param in list(member.model_fields.keys()) if param not in "metatype"
+            ]
+            for member in membertypes
+        }
+        # Try to retrieve the keyword
+        keyword_pattern = r"{ *([A-Z]+)"
+        match = regex.match(keyword_pattern, meta)
+        if not match:
+            raise Exception(f"Bad metadata format {data}: could not determine metadata type.")
+        meta_keyword = match.group(1)
+        if not meta_keyword in field_dict.keys():
+            raise Exception(f"Metadata {data} has an invalid keyword {meta_keyword}.")
+
+        # Retrieve the corresponding parameter names
+        param_names = field_dict[meta_keyword]
+
+        # Create a match pattern for the parameter values
+        value_pattern_list = [
+            r"(?P<value>[^,\"'\[\]]+)",  # simple unquoted value
+            r"'(?P<value>[^']+)'",  # quoted value (single quotes)
+            r"\"(?P<value>[^\"]+)\"",  # quoted value (double quotes)
+            r"(?P<value>\[[^\[\]]+\])",  # list
+        ]
+        value_pattern = "(?:" + "|".join(value_pattern_list) + ")"
+
+        # Create a pattern to validate the general format of the string, without validating the parameter names.
+        # This test is performed separately in order to have a more specific error handling.
+        single_param_pattern = r"(?: *(?P<parameter>[\w]+) *= *" + value_pattern + " *)"
+        multiple_params_pattern = "(?:" + single_param_pattern + ", *)*" + single_param_pattern
+        full_metadata_pattern = r"^\{ *" + meta_keyword + " +" + multiple_params_pattern + r"\}"
+        # Validate the general structure.
+        match = regex.fullmatch(full_metadata_pattern, meta)
+        if not match:
+            raise Exception(
+                f"Bad metadata format {data}, please check the format. Are the parameters separated by commas?"
+            )
+
+        # Create a pattern requiring valid parameter nammes exclusively.
+        single_param_pattern = f"(?: *(?P<parameter>{'|'.join(param_names)})" + r" *= *" + value_pattern + " *)"
+        multiple_params_pattern = "(?:" + single_param_pattern + ", *)*" + single_param_pattern
+        full_metadata_pattern = r"^\{ *" + meta_keyword + " +" + multiple_params_pattern + r"\}"
+        # Validate the parameter names.
+        match = regex.fullmatch(full_metadata_pattern, meta)
+        if not match:
+            raise Exception(
+                f"Metadata {data} contains invalid parameter(s). Valid values are: {', '.join(field_dict[meta_keyword])}."
+            )
+
+        # Capture the (parametername, value) pairs
+        groups = [match.captures(i) for i, reg in enumerate(match.regs) if i > 0 and reg != (-1, -1)]
+
+        # Quote non-numeric values
+        nonnumeric = r'"([^"]+)"|(\w*[A-Za-z_ ]\w*\b)'
+        pv = regex.compile(nonnumeric)
+
+        # create a json string
+        parameters = [f'"{p}": {pv.sub(r'"\1\2"', v)}' for p, v in zip(*groups)]
+        json_str = f'{{"metatype": "{meta_keyword}", {" ,".join(parameters)}}}'
+
+        try:
+            json_result = json.loads(json_str)
+        except:
+            raise Exception(f"Bad metadata format {data}. Could not parse the value, please check the format.")
+
+        return json_result

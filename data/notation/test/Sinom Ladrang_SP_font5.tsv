@@ -66,7 +66,7 @@ comment	pengecet
 metadata	{TEMPO bpm=90}
 metadata	{TEMPO bpm=95, passes=[3]}
 metadata	{LABEL name=PENGECET}
-metadata	{SILENCE passes=[1], positions=["gangsa p", "gangsa s"], beats=[2,3,4,5,6,7,8]}
+metadata	{SUPPRESS passes=[1], positions=["gangsa p", "gangsa s"], beats=[2,3,4,5,6,7,8]}
 trompong	u---	--a-	u-e-	u-a-	--u-	--a-	u-e-	u-a-
 gangsa p:1	u---
 gangsa s:1	u---
@@ -78,7 +78,7 @@ kendang	-8*8	**8*	8**8	*9(-	-8*9	(9((	9--9	-(-(
 gong	G							
 
 comment	GONGAN 10
-metadata	{SILENCE passes=[1], positions=["gangsa p", "gangsa s"]}
+metadata	{SUPPRESS passes=[1], positions=["gangsa p", "gangsa s"]}
 trompong	--u-	--a-	u-e-	u-a-	u-e-	o---	i-o-	a,-i-
 gangsa p	.oe.	eo.e	.oe.	eo.e	.o.e	oo.o	.eoo	.o.e
 gangsa s	ua.u	.au.	ua.u	.au.	uau.	aa.a	u.aa	.au.
@@ -87,7 +87,7 @@ jegog
 kendang	-9(9	(-9-	(--9	-(-(	-99(	98*8	*-00	-9--
 gong								
 
-metadata	{SILENCE passes=[1], positions=["gangsa p", "gangsa s"]}
+metadata	{SUPPRESS passes=[1], positions=["gangsa p", "gangsa s"]}
 trompong	o--o	o-o-	o-e-	o-i-	o-i-	a,---	i-o-	e-u-
 gangsa p	o.oe	.o.e	o.oe	.o.e	o.oe	.o.e	.o.i	o.io
 gangsa s	aua.	uau.	aua.	uau.	aua.	uau.	a.eu	.eu.
@@ -96,7 +96,7 @@ jegog	o
 kendang	-8*8	**8*	8**8	*9(-	-8*9	(9((	9--9	-(-(
 gong	T							
 								
-metadata	{SILENCE passes=[1], positions=["gangsa p", "gangsa s"]}
+metadata	{SUPPRESS passes=[1], positions=["gangsa p", "gangsa s"]}
 trompong	e---	u-e-	u---	a---	u-e-	o---	i-o-	a,-i-
 gangsa p	.i.o	i.io	.e.o	e.oe	.o.e	oo.o	.eoo	.o.e
 gangsa s	eue.	ueu.	e.ua	.ua.	uau.	aa.a	u.aa	.au.

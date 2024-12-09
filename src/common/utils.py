@@ -76,7 +76,10 @@ def create_rest_stave(position: InstrumentPosition, resttype: Stroke, duration: 
 
 
 def create_rest_staves(
-    prev_beat: Beat, positions: list[InstrumentPosition], duration: Duration, force_silence: bool = False
+    prev_beat: Beat,
+    positions: list[InstrumentPosition],
+    duration: Duration,
+    force_silence: list[InstrumentPosition] = [],
 ):
     silence = Stroke.SILENCE
     extension = Stroke.EXTENSION

@@ -6,7 +6,7 @@ import pytest
 from src.common.classes import Beat, Gongan, Note
 from src.common.constants import InstrumentPosition
 from src.common.utils import gongan_to_records, stave_to_string
-from src.notation2midi.notation_to_midi import Score2MidiConverter
+from src.notation2midi.score_to_midi import Score2MidiConverter
 from src.settings.settings import InstrumentFields, get_run_settings
 
 

@@ -3,8 +3,8 @@ The settings in the /settings/run-settings.yaml file determine which application
 """
 
 from src.common.classes import RunSettings
-from src.notation2midi.font5_specific_code import Font5Parser
-from src.notation2midi.notation_to_midi import Score2MidiConverter
+from src.notation2midi.font5_parser import Font5Parser
+from src.notation2midi.score_to_midi import Score2MidiConverter
 from src.settings.settings import get_run_settings
 from src.settings.settings_validation import validate_input_data
 from src.soundfont.soundfont_generator import create_soundfont_files

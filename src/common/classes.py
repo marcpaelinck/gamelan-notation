@@ -4,7 +4,7 @@ import os
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
-from enum import StrEnum
+from enum import StrEnum, auto
 from typing import Optional
 
 from pydantic import (
@@ -227,6 +227,20 @@ class Beat:
         steps: int = 0
         incremental: bool = False
 
+    @dataclass
+    class Repeat:
+        class RepeatType(StrEnum):
+            GONGAN = auto()
+            BEAT = auto()
+
+        goto: "Beat"
+        iterations: int
+        kind: RepeatType = RepeatType.GONGAN
+        _countdown: int = 0
+
+        def reset(self):
+            self._countdown = self.iterations
+
     id: int
     sys_id: int
     bpm_start: dict[PASS, BPM]  # tempo at beginning of beat (can vary per pass)
@@ -242,6 +256,7 @@ class Beat:
         default_factory=dict
     )  # next beat to be played according to the flow (GOTO metadata)
     has_kempli_beat: bool = True
+    repeat: Repeat = None
     validation_ignore: list[ValidationProperty] = field(default_factory=list)
     _pass_: PASS = 0  # Counts the number of times the beat is passed during generation of MIDI file.
 

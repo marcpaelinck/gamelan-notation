@@ -1,11 +1,11 @@
 import json
 import os
-from collections import defaultdict
 from glob import glob
 from os import path
 from pprint import pprint
 
 import pandas as pd
+import regex
 from scipy.io import wavfile
 
 from src.common.constants import (
@@ -15,8 +15,7 @@ from src.common.constants import (
     Stroke,
 )
 from src.common.logger import get_logger
-from src.common.lookups import InstrumentTag
-from src.common.utils import create_position_range_lookup
+from src.common.lookups import LOOKUP, InstrumentTag
 
 logger = get_logger(__name__)
 
@@ -197,7 +196,7 @@ def rename_notes_in_filenames(folderpath: str, group: InstrumentGroup, print_onl
         "Ugal": InstrumentType.UGAL,
     }
     filenotes = sum([[f"Ding {i}", f"Dong {i}", f"Deng {i}", f"Dung {i}", f"Dang {i}"] for i in range(1, 4)], [])
-    lookup = create_position_range_lookup(group)
+    lookup = LOOKUP.POSITION_P_O_S_TO_NOTE
     lookup = {
         instrtype: [pitch for (pitch, octave, stroke) in notes if octave and stroke == Stroke.OPEN]
         for instrtype, notes in lookup.items()
@@ -220,10 +219,75 @@ def convert_to_wav_pcm(filepath_in: str, filepath_out: str):
     wavfile.write(filepath_out, rate, data)
 
 
+def parse_metadata(meta: str):
+    from src.common.metadata_classes import MetaDataType
+
+    meta = meta.strip()
+    membertypes = MetaDataType.__dict__["__args__"]
+    # create a dict containing the valid parameters for each metadata keyword.
+    # Format: {<meta-keyword>: [<parameter1>, <parameter2>, ...]}
+    field_dict = {
+        member.model_fields["metatype"].annotation.__args__[0]: [
+            param for param in list(member.model_fields.keys()) if param not in "metatype"
+        ]
+        for member in membertypes
+    }
+    # Try to retrieve the keyword
+    keyword_pattern = r"{ *([A-Z]+)"
+    match = regex.match(keyword_pattern, meta)
+    if not match:
+        raise Exception("Could not determine metadata type.")
+    meta_keyword = match.group(1)
+    # Try to retrieve the corresponding fields
+    fields = field_dict.get(meta_keyword, None)
+    if not fields:
+        raise Exception(f"Invalid keyword {meta_keyword}.")
+
+    # Create a match pattern for the parameter values
+    value_pattern_list = [
+        r"(?P<value>[^,\"'\[\]]+)",  # simple unquoted value
+        r"'(?P<value>[^']+)'",  # quoted value (single quotes)
+        r"\"(?P<value>[^\"]+)\"",  # quoted value (double quotes)
+        r"(?P<value>\[[^\[\]]+\])",  # list
+    ]
+    value_pattern = "(?:" + "|".join(value_pattern_list) + ")"
+
+    # Create a pattern to validate the general format of the string, without validating the parameter nammes.
+    # This test is performed separately in order to have a more specific error handling.
+    single_param_pattern = r"(?: *(?P<parameter>[\w]+) *= *" + value_pattern + " *)"
+    multiple_params_pattern = "(?:" + single_param_pattern + ", *)*" + single_param_pattern
+    full_metadata_pattern = r"^\{ *" + meta_keyword + " +" + multiple_params_pattern + r"\}"
+    # Validate the general structure (accept any parameter name)
+    match = regex.fullmatch(full_metadata_pattern, meta)
+    if not match:
+        raise Exception("Invalid metadata format. Are the parameters separated by commas?")
+
+    # Create a pattern requiring valid parameter nammes exclusively.
+    single_param_pattern = f"(?: *(?P<parameter>{'|'.join(fields)})" + r" *= *" + value_pattern + " *)"
+    multiple_params_pattern = "(?:" + single_param_pattern + ", *)*" + single_param_pattern
+    full_metadata_pattern = r"^\{ *" + meta_keyword + " +" + multiple_params_pattern + r"\}"
+    # Validate the parameter names.
+    match = regex.fullmatch(full_metadata_pattern, meta)
+    if not match:
+        raise Exception(
+            f"The metadata contains illegal patterns for {meta_keyword}. Valid values are {', '.join(field_dict[fields])}."
+        )
+
+    # Capture the fieldname, value pairs
+    groups = [match.captures(i) for i, reg in enumerate(match.regs) if i > 0 and reg != (-1, -1)]
+
+    # Quote non=numeric values
+    nonnumeric = r'"([^"]+)"|(\w*[A-Za-z_ ]\w*\b)'
+    pv = regex.compile(nonnumeric)
+
+    # create a json string
+    parameters = [f'"{p}": {pv.sub(r'"\1\2"', v)}' for p, v in zip(*groups)]
+    str = f'{{"metatype": "{meta_keyword}", {" ,".join(parameters)}}}'
+
+    return json.loads(str)
+
+
 if __name__ == "__main__":
-    pass
-    # replace_cell_content()
-    # foldername = "G:/Marc/documents-backup-2jun24-08h00/Documents/administratie/_VRIJETIJD_REIZEN/Gamelangroepen/Studiemateriaal/audio-samples/GONG KEBYAR"
-    # foldername_out = "G:/Marc/documents-backup-2jun24-08h00/Documents/administratie/_VRIJETIJD_REIZEN/Gamelangroepen/Studiemateriaal/audio-samples/GONG KEBYAR WAV"
-    # filename = "02 Kantil Ombak DONG0.wav"
-    # convert_to_wav_pcm(os.path.join(foldername, filename), os.path.join(foldername_out, filename))
+    meta = "{TEMPO bpm=60, beat_count=8, passes=[4,5,6]}"
+    # meta = "{LABEL name='This', scope=0}"
+    parse_metadata(meta)

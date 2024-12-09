@@ -76,7 +76,7 @@ comment	pengecet
 metadata	{TEMPO bpm=90}							
 metadata	{TEMPO bpm=95, passes=[3]}							
 metadata	{LABEL name=PENGECET}							
-metadata	{SILENCE positions=[PEMADE_POLOS, KANTILAN_POLOS, PEMADE_SANGSIH, KANTILAN_SANGSIH], passes=[1], beats=[2, 3, 4, 5, 6, 7, 8]}							
+metadata	{SUPPRESS positions=[PEMADE_POLOS, KANTILAN_POLOS, PEMADE_SANGSIH, KANTILAN_SANGSIH], passes=[1], beats=[2, 3, 4, 5, 6, 7, 8]}							
 TROMPONG	u---	--a-	u-e-	u-a-	--u-	--a-	u-e-	u-a-
 PEMADE_P	.oe.	eo.e	.oe.	eo.e	.oe.	eo.e	.oe.	eo.e
 PEMADE_S	ua.u	.au.	ua.u	.au.	ua.u	.au.	ua.u	.au.
@@ -89,7 +89,7 @@ GONGS	G---	----	----	----	----	----	----	----
 KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
 comment	GONGAN 10							
-metadata	{SILENCE positions=[PEMADE_POLOS, KANTILAN_POLOS, PEMADE_SANGSIH, KANTILAN_SANGSIH], passes=[1]}							
+metadata	{SUPPRESS positions=[PEMADE_POLOS, KANTILAN_POLOS, PEMADE_SANGSIH, KANTILAN_SANGSIH], passes=[1]}							
 TROMPONG	--u-	--a-	u-e-	u-a-	u-e-	o---	i-o-	a,-i-
 PEMADE_P	.oe.	eo.e	.oe.	eo.e	.o.e	oo.o	.eoo	.o.e
 PEMADE_S	ua.u	.au.	ua.u	.au.	uau.	uu.u	u.aa	.au.
@@ -99,7 +99,7 @@ CALUNG	--u-	--a-	u-e-	u-a-	u-e-	o---	o---	----
 KENDANG	-9(9	(-9-	(--9	-(-(	-99(	98*8	*-00	-9--
 KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
-metadata	{SILENCE positions=[PEMADE_POLOS, KANTILAN_POLOS, PEMADE_SANGSIH, KANTILAN_SANGSIH], passes=[1]}							
+metadata	{SUPPRESS positions=[PEMADE_POLOS, KANTILAN_POLOS, PEMADE_SANGSIH, KANTILAN_SANGSIH], passes=[1]}							
 TROMPONG	o--o	o-o-	o-e-	o-i-	o-i-	a,---	i-o-	e-u-
 PEMADE_P	o.oe	.o.e	o.oe	.o.e	o.oe	.o.e	.o.i	o.io
 PEMADE_S	aua.	uau.	aua.	uau.	aua.	uau.	a.eu	.eu.
@@ -111,7 +111,7 @@ KENDANG	-8*8	**8*	8**8	*9(-	-8*9	(9((	9--9	-(-(
 GONGS	T---	----	----	----	----	----	----	----
 KEMPLI	k?---	k?---	k?---	k?---	k?---	k?---	k?---	k?---
 								
-metadata	{SILENCE positions=[PEMADE_POLOS, KANTILAN_POLOS, PEMADE_SANGSIH, KANTILAN_SANGSIH], passes=[1]}							
+metadata	{SUPPRESS positions=[PEMADE_POLOS, KANTILAN_POLOS, PEMADE_SANGSIH, KANTILAN_SANGSIH], passes=[1]}							
 TROMPONG	e---	u-e-	u---	a---	u-e-	o---	i-o-	a,-i-
 PEMADE_P	.i.o	i.io	.e.o	e.oe	.o.e	oo.o	.eoo	.o.e
 PEMADE_S	eue.	ueu.	e.ua	.ua.	uau.	uu.u	u.aa	.au.
