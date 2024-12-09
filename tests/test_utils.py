@@ -3,7 +3,7 @@ import csv
 import pandas as pd
 import pytest
 
-from src.common.classes import Beat, Gongan, Note
+from src.common.classes import Beat, Gongan, Note, Score
 from src.common.constants import InstrumentPosition
 from src.common.utils import gongan_to_records, stave_to_string
 from src.notation2midi.score_to_midi import Score2MidiConverter
@@ -111,7 +111,7 @@ bad_ranges = ["1,2,", "realbad", "1-", "-1", "-", ",", "1-4-"]
 # Tests the conversion of optional range indicators following the position name in the score
 def test_range_str_to_list(rangestr, expected):
     run_settings = get_run_settings()
-    parser = Score2MidiConverter(run_settings)
+    parser = Score2MidiConverter(Score(title="", notation_dict=None, settings=run_settings))
     assert parser.passes_str_to_list(rangestr) == expected
 
 
@@ -120,5 +120,5 @@ def test_range_str_to_list(rangestr, expected):
 def test_range_str_to_list_exception(rangestr):
     with pytest.raises(ValueError):
         run_settings = get_run_settings()
-        parser = Score2MidiConverter(run_settings)
+        parser = Score2MidiConverter(Score(title="", notation_dict=None, settings=run_settings))
         parser.passes_str_to_list(rangestr)
