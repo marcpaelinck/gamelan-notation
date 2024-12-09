@@ -208,7 +208,7 @@ class MetaData(BaseModel):
             for member in membertypes
         }
         # Try to retrieve the keyword
-        keyword_pattern = r"{ *([A-Z]+) +"
+        keyword_pattern = r"\{ *([A-Z]+) +"
         match = regex.match(keyword_pattern, meta)
         if not match:
             # NOTE All exceptions in this method are unit tested by checking the error number
@@ -223,10 +223,10 @@ class MetaData(BaseModel):
 
         # Create a match pattern for the parameter values
         value_pattern_list = [
-            r"(?P<value>[^,\"'\[\]]+)",  # simple unquoted value
-            r"'(?P<value>[^']+)'",  # quoted value (single quotes)
-            r"\"(?P<value>[^\"]+)\"",  # quoted value (double quotes)
+            r"(?P<value>'[^']+')",  # quoted value (single quotes)
+            r"(?P<value>\"[^\"]+\")",  # quoted value (double quotes)
             r"(?P<value>\[[^\[\]]+\])",  # list
+            r"(?P<value>[^,\"'\[\]]+)",  # simple unquoted value
         ]
         value_pattern = "(?:" + "|".join(value_pattern_list) + ")"
 
@@ -257,11 +257,12 @@ class MetaData(BaseModel):
         groups = [match.captures(i) for i, reg in enumerate(match.regs) if i > 0 and reg != (-1, -1)]
 
         # Quote non-numeric values, either quoted or non-quoted
-        nonnumeric = r'"([^"]+)"|(?: *(\w*[A-Za-z_]\w*\b) *)'
+        nonnumeric = r'(?: *\'([^"]+)\')|(?: *"([^"]+)")|(?: *(\w*[A-Za-z_]\w*\b) *)'
+        # nonnumeric = r"(?: *(\w*[A-Za-z_ ]+\w*) *) *"
         pv = regex.compile(nonnumeric)
 
         # create a json string
-        parameters = [f'"{p}": {pv.sub(r'"\1\2"', v)}' for p, v in zip(*groups)]
+        parameters = [f'"{p}": {pv.sub(r'"\1\2\3"', v)}' for p, v in zip(*groups)]
         json_str = f'{{"metatype": "{meta_keyword}", {" ,".join(parameters)}}}'
 
         try:

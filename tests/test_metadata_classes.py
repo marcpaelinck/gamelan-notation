@@ -26,6 +26,11 @@ metadata = [
         {"metatype": "PART", "name": "Pengawit"},
     ),
     (
+        "str param w spaces",
+        "{PART name='Pengawit number 1'}",
+        {"metatype": "PART", "name": "Pengawit number 1"},
+    ),
+    (
         "int param",
         "{TEMPO bpm=70}",
         {"metatype": "TEMPO", "bpm": 70},
