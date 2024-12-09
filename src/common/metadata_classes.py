@@ -130,7 +130,7 @@ class SuppressMeta(MetaDataBaseType):
 
 class SilenceMeta(MetaDataBaseType):
     metatype: Literal["SILENCE"]
-    seconds: int = None
+    seconds: float = None
     after: bool = True
 
 
@@ -194,6 +194,9 @@ class MetaData(BaseModel):
         Returns:
             _type_: _description_
         """
+        if not isinstance(data, str):
+            return data
+
         meta = data.strip()
         membertypes = MetaDataType.__dict__["__args__"]
         # create a dict containing the valid parameters for each metadata keyword.
@@ -205,13 +208,15 @@ class MetaData(BaseModel):
             for member in membertypes
         }
         # Try to retrieve the keyword
-        keyword_pattern = r"{ *([A-Z]+)"
+        keyword_pattern = r"{ *([A-Z]+) +"
         match = regex.match(keyword_pattern, meta)
         if not match:
-            raise Exception(f"Bad metadata format {data}: could not determine metadata type.")
+            # NOTE All exceptions in this method are unit tested by checking the error number
+            # a the beginning of the error message.
+            raise Exception(f"Err1 - Bad metadata format {data}: could not determine metadata type.")
         meta_keyword = match.group(1)
         if not meta_keyword in field_dict.keys():
-            raise Exception(f"Metadata {data} has an invalid keyword {meta_keyword}.")
+            raise Exception(f"Err2 - Metadata {data} has an invalid keyword {meta_keyword}.")
 
         # Retrieve the corresponding parameter names
         param_names = field_dict[meta_keyword]
@@ -234,7 +239,7 @@ class MetaData(BaseModel):
         match = regex.fullmatch(full_metadata_pattern, meta)
         if not match:
             raise Exception(
-                f"Bad metadata format {data}, please check the format. Are the parameters separated by commas?"
+                f"Err3 - Bad metadata format {data}, please check the format. Are the parameters separated by commas?"
             )
 
         # Create a pattern requiring valid parameter nammes exclusively.
@@ -245,14 +250,14 @@ class MetaData(BaseModel):
         match = regex.fullmatch(full_metadata_pattern, meta)
         if not match:
             raise Exception(
-                f"Metadata {data} contains invalid parameter(s). Valid values are: {', '.join(field_dict[meta_keyword])}."
+                f"Err4 - Metadata {data} contains invalid parameter(s). Valid values are: {', '.join(field_dict[meta_keyword])}."
             )
 
         # Capture the (parametername, value) pairs
         groups = [match.captures(i) for i, reg in enumerate(match.regs) if i > 0 and reg != (-1, -1)]
 
-        # Quote non-numeric values
-        nonnumeric = r'"([^"]+)"|(\w*[A-Za-z_ ]\w*\b)'
+        # Quote non-numeric values, either quoted or non-quoted
+        nonnumeric = r'"([^"]+)"|(?: *(\w*[A-Za-z_]\w*\b) *)'
         pv = regex.compile(nonnumeric)
 
         # create a json string
@@ -262,6 +267,6 @@ class MetaData(BaseModel):
         try:
             json_result = json.loads(json_str)
         except:
-            raise Exception(f"Bad metadata format {data}. Could not parse the value, please check the format.")
+            raise Exception(f"Err5 - Bad metadata format {data}. Could not parse the value, please check the format.")
 
         return json_result

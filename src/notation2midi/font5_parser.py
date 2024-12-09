@@ -152,7 +152,7 @@ class Font5Parser(ParserModel):
             metadata = MetaData(data=content)
         except Exception as err:
             # The validation and generation of meaningful error messages is performed in the MetaData class.
-            self.log(str(err))
+            self.log(str(err).replace("\n", "."))
             return None
 
         return metadata
