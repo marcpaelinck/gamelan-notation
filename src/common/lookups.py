@@ -312,8 +312,12 @@ class Lookup:
             if record[SYMBOL] or (record[PITCH] == Pitch.NONE and record[MODIFIER] == Modifier.NONE):
                 match = record
             else:
-                match = getmatch(record, [POSITION, PITCH], notes, False)
+                match = getmatch(record, [INSTRUMENTTYPE, PITCH], notes, False)
             modifier = None
+            if match:
+                # We matched on instrumenttype because position might not have all OPEN note pitches (e.g. reyong position).
+                # So we must now update the actual position.
+                match[POSITION] = record[POSITION]
             # Try to add an octave modifier
             if match and match[OCTAVE] != record[OCTAVE]:
                 modifier = getmatch(record, [OCTAVE], modifiers, True)

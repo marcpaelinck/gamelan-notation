@@ -13,10 +13,10 @@ from src.common.metadata_classes import (
     OctavateMeta,
     PartMeta,
     RepeatMeta,
-    SilenceMeta,
     SuppressMeta,
     TempoMeta,
     ValidationMeta,
+    WaitMeta,
 )
 
 metadata = [
@@ -42,8 +42,8 @@ metadata = [
     ),
     (
         "float param",
-        "{SILENCE seconds=2.25}",
-        {"metatype": "SILENCE", "seconds": 2.25},
+        "{WAIT seconds=2.25}",
+        {"metatype": "WAIT", "seconds": 2.25},
     ),
     (
         "single unquoted str list param",
@@ -100,9 +100,9 @@ metadata_valid = [
         MetaData(data=TempoMeta(metatype="TEMPO", bpm=70, passes=[1, 3, 5])),
     ),
     (
-        "SILENCE",
-        "{SILENCE seconds=2.75, after=false}",
-        MetaData(data=SilenceMeta(metatype="SILENCE", seconds=2.75, after=False)),
+        "WAIT",
+        "{WAIT seconds=2.75, after=false}",
+        MetaData(data=WaitMeta(metatype="WAIT", seconds=2.75, after=False)),
     ),
     (
         "KEMPLI",
@@ -148,7 +148,7 @@ metadata_invalid = [
 
 
 @pytest.mark.parametrize("testname, data, match", metadata_invalid)
-# Test that invalid values cause a ValueError to be raised
+# Test that invalid values cause an exception with a specific error message
 def test_metatdata_parser_invalids(testname, data, match):
     with pytest.raises(Exception, match=match):
         MetaData(data=data)

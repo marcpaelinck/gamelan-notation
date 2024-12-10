@@ -23,9 +23,9 @@
                     "file": "Rejang Dewa_entire piece_GAMELAN1.mid",
                     "loop": false,
                     "markers": {
-                        "Reyong intro": 0.0,
-                        "Pengawak": 0.06209282112809055,
-                        "Pengecet": 0.6780891742080598
+                        "reyong intro": 0.0,
+                        "pengawak": 0.06209282112809055,
+                        "pengecet": 0.6780891742080598
                     }
                 },
                 {
@@ -164,6 +164,26 @@
                     "file": "Sinom Ladrang_SP_Pengecet_GAMELAN1.mid",
                     "loop": true,
                     "markers": {}
+                }
+            ]
+        },
+        {
+            "title": "Sekar Gendot",
+            "instrumentgroup": "SEMAR_PAGULINGAN",
+            "display": true,
+            "parts": [
+                {
+                    "name": "entire piece",
+                    "file": "Sekar Gendot_entire piece_GAMELAN1.mid",
+                    "loop": false,
+                    "markers": {
+                        "Pengawit": 0.03615304065887514,
+                        "Pengawak": 0.12632658038889186,
+                        "Pengecet": 0.5267516729538065,
+                        "Batel 1": 0.6770048395999949,
+                        "Pengecet part 2": 0.7519920483116417,
+                        "Batel 2": 0.9060376714903731
+                    }
                 }
             ]
         }

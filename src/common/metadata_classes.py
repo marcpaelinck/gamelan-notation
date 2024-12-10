@@ -128,8 +128,8 @@ class SuppressMeta(MetaDataBaseType):
         return sum((LOOKUP.TAG_TO_POSITION[pos] for pos in data), [])
 
 
-class SilenceMeta(MetaDataBaseType):
-    metatype: Literal["SILENCE"]
+class WaitMeta(MetaDataBaseType):
+    metatype: Literal["WAIT"]
     seconds: float = None
     after: bool = True
 
@@ -167,7 +167,7 @@ MetaDataType = Union[
     SuppressMeta,
     OctavateMeta,
     PartMeta,
-    SilenceMeta,
+    WaitMeta,
 ]
 
 
@@ -203,7 +203,7 @@ class MetaData(BaseModel):
         # Format: {<meta-keyword>: [<parameter1>, <parameter2>, ...]}
         field_dict = {
             member.model_fields["metatype"].annotation.__args__[0]: [
-                param for param in list(member.model_fields.keys()) if param not in "metatype"
+                param for param in list(member.model_fields.keys()) if param != "metatype"
             ]
             for member in membertypes
         }

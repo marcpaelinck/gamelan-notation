@@ -1,5 +1,5 @@
 import math
-from typing import Any
+from typing import Any, Generator
 
 from src.common.classes import Beat, Gongan, Note, RunSettings, Score
 from src.common.constants import (
@@ -60,14 +60,15 @@ def invalid_beat_lengths(gongan: Gongan, autocorrect: bool) -> tuple[list[tuple[
     return invalids, corrected, ignored
 
 
-def complement_shorthand_pokok_staves(score: Score):
+def complement_shorthand_pokok_staves(gongan_iterator: Generator, beat_at_end: bool = False):
     """Adds EXTENSION notes to pokok staves that only contain one note (shorthand notation)
 
     Args:
-        score (Score):
+        gongan_iterator (Generator): iterates through all gongans
     """
-    for gongan in score.gongans:
-        unequal_stave_lengths(gongan=gongan, beat_at_end=score.settings.notation.beat_at_end, autocorrect=True)
+
+    for gongan in gongan_iterator:
+        unequal_stave_lengths(gongan=gongan, beat_at_end=beat_at_end, autocorrect=True)
 
 
 def unequal_stave_lengths(gongan: Gongan, beat_at_end: bool, autocorrect: bool) -> tuple[list[tuple[BeatId, Duration]]]:

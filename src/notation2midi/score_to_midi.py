@@ -23,11 +23,11 @@ from src.common.metadata_classes import (
     OctavateMeta,
     PartMeta,
     RepeatMeta,
-    SilenceMeta,
     SuppressMeta,
     TempoMeta,
     ValidationMeta,
     ValidationProperty,
+    WaitMeta,
 )
 from src.common.playercontent_classes import Part, Song
 from src.common.utils import (
@@ -57,6 +57,20 @@ class Score2MidiConverter(ParserModel):
     def __init__(self, score: Score):
         super().__init__(score.settings)
         self.score = score
+
+    def _gongan_iterator(self):
+        for gongan in self.score.gongans:
+            self.curr_gongan_id = gongan.id
+            self.curr_beat_id = None
+            self.curr_position = None
+            yield gongan
+
+    def _beat_iterator(self, gongan: Gongan):
+        for beat in gongan.beats:
+            self.curr_beat_id = beat.id
+            self.curr_position = None
+            yield beat
+            beat = next(gongan.beats, None)
 
     def notation_to_track(self, position: InstrumentPosition) -> MidiTrackX:
         """Generates the MIDI content for a single instrument position.
@@ -175,6 +189,12 @@ class Score2MidiConverter(ParserModel):
         for meta in sorted(metadata, key=lambda x: x.data._processingorder_):
             match meta.data:
                 case TempoMeta():
+                    if (
+                        first_too_large := meta.data.first_beat > len(gongan.beats)
+                    ) or meta.data.first_beat + meta.data.beat_count - 1 > len(gongan.beats):
+                        value = "first_beat" + (" + beat_count" if not first_too_large else "")
+                        self.log(f"{meta.data.metatype} metadata: {value} is larger than the number of beats")
+                        continue
                     if meta.data.beat_count == 0:
                         # immediate tempo change.
                         gongan.beats[meta.data.first_beat_seq].tempo_changes.update(
@@ -248,7 +268,7 @@ class Score2MidiConverter(ParserModel):
                                         for pass_ in meta.data.passes
                                     }
                                 )
-                case SilenceMeta():
+                case WaitMeta():
                     # Add a beat with silences at the end of the gongan. The beat's bpm is set to 60 for easy calculation.
                     lastbeat = gongan.beats[-1]
                     duration = round(4 * meta.data.seconds)  # 4 notes per bpm unit and bpm=60 => 4 notes per second.
@@ -390,13 +410,21 @@ class Score2MidiConverter(ParserModel):
                 beats = []
 
         # Add extension notes to pokok notation having only one note per beat
-        complement_shorthand_pokok_staves(self.score)
+        gongan_iterator = self._gongan_iterator()
+        try:
+            complement_shorthand_pokok_staves(gongan_iterator, self.score.settings.notation.beat_at_end)
+        except Exception as error:
+            self.log(str(error))
+
         # Add blank staves for all other omitted instruments
         add_missing_staves(score=self.score, add_kempli=False)
         if self.run_settings.notation.beat_at_end:
             # This simplifies the addition of missing staves and correct processing of metadata
             self.move_beat_to_start()
-        for gongan in self.score.gongans:
+        gongan_iterator = self._gongan_iterator()
+        for gongan in gongan_iterator:
+            # TODO temporary fix. Create generators to iterate through gongans, beats and positions
+            # These should update the curr counters.
             gongan.beat_duration = most_occurring_beat_duration(gongan.beats)
             self.apply_metadata(gongan.metadata, gongan)
         # Add kempli beats
@@ -455,13 +483,21 @@ class Score2MidiConverter(ParserModel):
         song = next((song for song in content.songs if song.title == self.score.title), None)
         if not song:
             # TODO create components of Song
-            content.songs.append(song := Song(title=self.run_settings.notation.title))
+            content.songs.append(
+                song := Song(
+                    title=self.run_settings.notation.title,
+                    display=True,
+                    instrumentgroup=self.run_settings.instruments.instrumentgroup,
+                )
+            )
             self.logger.info(f"New song {song.title} created for MIDI player content")
-        part = next((part for part in song.parts if part.name == self.score.midiplayer_data.name))
+        part = next((part for part in song.parts if part.name == self.score.midiplayer_data.name), None)
         if not part:
             song.parts.append(
                 part := Part(
-                    self.score.midiplayer_data.name, self.score.midiplayer_data.file, self.score.midiplayer_data.loop
+                    name=self.score.midiplayer_data.name,
+                    file=self.score.midiplayer_data.file,
+                    loop=self.score.midiplayer_data.loop,
                 )
             )
             self.logger.info(f"New part {part.name} created for MIDI player content")

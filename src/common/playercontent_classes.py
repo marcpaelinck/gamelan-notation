@@ -34,7 +34,7 @@ class Song(BaseModel):
     title: str
     instrumentgroup: InstrumentGroup
     display: bool
-    parts: list[Part]
+    parts: list[Part] = Field(default_factory=list)
 
 
 class Content(BaseModel):
