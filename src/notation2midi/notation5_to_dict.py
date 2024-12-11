@@ -276,7 +276,8 @@ class Font5Parser(ParserModel):
         """Parses a notation file into a dict.
 
         Returns:
-            NotationDict: A dict notation[gongan_id][beat_id][position][passes] that can be processed into a Score object.
+            NotationDict: A dict notation[gongan_id][beat_id][position][passes] that has been validated on notation syntaxis.
+            The dict can be further processed into a Score object model.
         """
         notation_dict = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
         notation_dict[DEFAULT][SpecialTags.METADATA] = list()  # Will contain metadata having scope==Scope.SCORE

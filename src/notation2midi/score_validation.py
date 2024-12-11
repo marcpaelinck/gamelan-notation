@@ -34,7 +34,7 @@ class ScoreValidator(ParserModel):
         super().__init__(self.ParserType.VALIDATOR, score.settings)
         self.score = score
 
-    def invalid_beat_lengths(self, gongan: Gongan, autocorrect: bool) -> tuple[list[tuple[BeatId, Duration]]]:
+    def _invalid_beat_lengths(self, gongan: Gongan, autocorrect: bool) -> tuple[list[tuple[BeatId, Duration]]]:
         """Checks the length of beats in "regular" gongans. The length should be a power of 2.
 
         Args:
@@ -56,7 +56,7 @@ class ScoreValidator(ParserModel):
                 invalids.append((beat.full_id, beat.duration))
         return invalids, corrected, ignored
 
-    def unequal_stave_lengths(
+    def _unequal_stave_lengths(
         self, gongan: Gongan, beat_at_end: bool, autocorrect: bool
     ) -> tuple[list[tuple[BeatId, Duration]]]:
         """Checks that the stave lengths of the individual instrument in each beat of the given gongan are all equal.
@@ -124,7 +124,7 @@ class ScoreValidator(ParserModel):
                     )
         return invalids, corrected, ignored
 
-    def out_of_range(
+    def _out_of_range(
         self, gongan: Gongan, ranges: dict[InstrumentPosition, list[(Pitch, Octave, Stroke)]], autocorrect: bool
     ) -> tuple[list[str, list[Note]]]:
         """Checks that the notes of each instrument matches the instrument's range.
@@ -155,7 +155,7 @@ class ScoreValidator(ParserModel):
                     invalids.append({f"BEAT {beat.full_id} {position}": badnotes})
         return invalids, corrected, ignored
 
-    def get_kempyung_dict(self, instrumentrange: dict[tuple[Pitch, Octave], tuple[Pitch, Octave]]):
+    def _get_kempyung_dict(self, instrumentrange: dict[tuple[Pitch, Octave], tuple[Pitch, Octave]]):
         """returns a dict mapping the kempyung note to each base note in the instrument's range.
 
         Args:
@@ -173,7 +173,7 @@ class ScoreValidator(ParserModel):
         # raises error if not found (should not happen)
         return kempyung_dict
 
-    def incorrect_kempyung(
+    def _incorrect_kempyung(
         self,
         gongan: Gongan,
         ranges: dict[InstrumentPosition, list[tuple[Pitch, Octave, Stroke]]],
@@ -192,7 +192,7 @@ class ScoreValidator(ParserModel):
                 continue
             for polos, sangsih in self.POSITIONS_VALIDATE_AND_CORRECT_KEMPYUNG:
                 instrumentrange = ranges[polos]
-                kempyung_dict = self.get_kempyung_dict(instrumentrange)
+                kempyung_dict = self._get_kempyung_dict(instrumentrange)
                 # check if both instruments occur in the beat
                 if all(instrument in beat.staves.keys() for instrument in (polos, sangsih)):
                     # check each kempyung note
@@ -295,12 +295,12 @@ class ScoreValidator(ParserModel):
 
         for gongan in self.gongan_iterator(self.score):
             # Determine if the beat duration is a power of 2 (ignore kebyar)
-            invalids, corrected, ignored = self.invalid_beat_lengths(gongan, autocorrect)
+            invalids, corrected, ignored = self._invalid_beat_lengths(gongan, autocorrect)
             remaining_bad_beat_lengths.extend(invalids)
             corrected_beat_lengths.extend(corrected)
             ignored_beat_lengths.extend(ignored)
 
-            invalids, corrected, ignored = self.unequal_stave_lengths(
+            invalids, corrected, ignored = self._unequal_stave_lengths(
                 gongan,
                 beat_at_end=self.score.settings.notation.beat_at_end,
                 autocorrect=autocorrect,
@@ -309,7 +309,7 @@ class ScoreValidator(ParserModel):
             corrected_stave_lengths.extend(corrected)
             ignored_stave_lengths.extend(ignored)
 
-            invalids, corrected, ignored = self.out_of_range(
+            invalids, corrected, ignored = self._out_of_range(
                 gongan, ranges=self.score.position_range_lookup, autocorrect=autocorrect
             )
             remaining_note_out_of_range.extend(invalids)
@@ -317,7 +317,7 @@ class ScoreValidator(ParserModel):
             ignored_note_out_of_range.extend(corrected)
 
             if self.score.settings.notation.autocorrect_kempyung:
-                invalids, corrected, ignored = self.incorrect_kempyung(
+                invalids, corrected, ignored = self._incorrect_kempyung(
                     gongan, ranges=self.score.position_range_lookup, autocorrect=autocorrect
                 )
                 remaining_incorrect_kempyung.extend(invalids)

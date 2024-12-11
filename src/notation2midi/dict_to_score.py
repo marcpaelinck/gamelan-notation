@@ -75,7 +75,7 @@ class DictToScoreConverter(ParserModel):
         ]
         return set(all_instruments)
 
-    def move_beat_to_start(self) -> None:
+    def _move_beat_to_start(self) -> None:
         # If the last gongan is regular (has a kempli beat), create an additional gongan with an empty beat
         last_gongan = self.score.gongans[-1]
         if has_kempli_beat(last_gongan):
@@ -119,7 +119,7 @@ class DictToScoreConverter(ParserModel):
         for instrument, notes in self.score.gongans[0].beats[0].staves.items():
             notes.insert(0, get_whole_rest_note(Stroke.SILENCE))
 
-    def apply_metadata(self, metadata: list[MetaData], gongan: Gongan) -> None:
+    def _apply_metadata(self, metadata: list[MetaData], gongan: Gongan) -> None:
         """Processes the metadata of a gongan into the object model.
 
         Args:
@@ -266,7 +266,7 @@ class DictToScoreConverter(ParserModel):
                     beat.tempo_changes.update(beat.prev.tempo_changes)
             return
 
-    def create_missing_staves(
+    def _create_missing_staves(
         self, beat: Beat, prevbeat: Beat, add_kempli: bool = True, force_silence=[]
     ) -> dict[InstrumentPosition, list[Note]]:
         """Returns staves for missing positions, containing rests (silence) for the duration of the given beat.
@@ -309,7 +309,7 @@ class DictToScoreConverter(ParserModel):
         else:
             return dict()
 
-    def add_missing_staves(self, add_kempli: bool = True):
+    def _add_missing_staves(self, add_kempli: bool = True):
         prev_beat = None
         for gongan in self.gongan_iterator(self.score):
             gongan_missing_instr = [
@@ -322,13 +322,13 @@ class DictToScoreConverter(ParserModel):
                 # of silences (.) rather than note extensions (-). This avoids unexpected results when the next beat
                 # is repeated and the kempli beat is at the end of the beat.
                 force_silence = gongan_missing_instr if beat == gongan.beats[-1] else []
-                missing_staves = self.create_missing_staves(beat, prev_beat, add_kempli, force_silence=force_silence)
+                missing_staves = self._create_missing_staves(beat, prev_beat, add_kempli, force_silence=force_silence)
                 beat.staves.update(missing_staves)
                 # Update all positions of the score
                 self.score.instrument_positions.update({pos for pos in missing_staves})
                 prev_beat = beat
 
-    def extend_stave(self, position: InstrumentPosition, notes: list[Note], duration: float):
+    def _extend_stave(self, position: InstrumentPosition, notes: list[Note], duration: float):
         """Extend a stave with EXTENSION notes so that its length matches the required duration.
 
         Args:
@@ -353,7 +353,7 @@ class DictToScoreConverter(ParserModel):
             attr = "duration" if filler.stroke == Stroke.EXTENSION else "rest_after"
             notes.append(filler.model_copy(update={attr: duration - stave_duration}))
 
-    def complement_shorthand_pokok_staves(self):
+    def _complement_shorthand_pokok_staves(self):
         """Adds EXTENSION notes to pokok staves that only contain one note (shorthand notation)
 
         Args:
@@ -367,9 +367,9 @@ class DictToScoreConverter(ParserModel):
                         position in self.POSITIONS_EXPAND_STAVES
                         and sum(note.total_duration for note in notes) != beat.duration
                     ):
-                        self.extend_stave(position=position, notes=notes, duration=beat.duration)
+                        self._extend_stave(position=position, notes=notes, duration=beat.duration)
 
-    def create_score_object_model(self):
+    def _create_score_object_model(self) -> Score:
         """Creates an object model of the notation. The method aggregates each note and the corresponding diacritics
         into a single note object, which will simplify the generation of the MIDI file content.
 
@@ -377,6 +377,9 @@ class DictToScoreConverter(ParserModel):
             datapath (str): path to the data folder
             infilename (str): name of the csv input file
             title (str): Title for the notation
+
+        Returns:
+            Score: A Score object model, not yet validated for inconsistencies.
         """
         beats: list[Beat] = []
         for self.curr_gongan_id, sys_info in self.notation.notation_dict.items():
@@ -436,22 +439,22 @@ class DictToScoreConverter(ParserModel):
         # Add extension notes to pokok notation having only one note per beat
         gongan_iterator = self.gongan_iterator(self.score)
         try:
-            self.complement_shorthand_pokok_staves()
+            self._complement_shorthand_pokok_staves()
         except Exception as error:
             self.logerror(str(error))
 
         # Add blank staves for all other omitted instruments
-        self.add_missing_staves(add_kempli=False)
+        self._add_missing_staves(add_kempli=False)
         if self.run_settings.notation.beat_at_end:
             # This simplifies the addition of missing staves and correct processing of metadata
-            self.move_beat_to_start()
+            self._move_beat_to_start()
         for gongan in self.gongan_iterator(self.score):
             # TODO temporary fix. Create generators to iterate through gongans, beats and positions
             # These should update the curr counters.
             gongan.beat_duration = most_occurring_beat_duration(gongan.beats)
-            self.apply_metadata(gongan.metadata, gongan)
+            self._apply_metadata(gongan.metadata, gongan)
         # Add kempli beats
-        self.add_missing_staves(add_kempli=True)
+        self._add_missing_staves(add_kempli=True)
 
     def convert_notation_to_midi(self):
         """This method does all the work.
@@ -459,7 +462,7 @@ class DictToScoreConverter(ParserModel):
         """
         self.logger.info("======== NOTATION TO MIDI CONVERSION ========")
         self.logger.info(f"input file: {self.run_settings.notation.part.file}")
-        self.create_score_object_model()
+        self._create_score_object_model()
         if self.has_errors:
             self.logger.info("Program halted.")
             exit()
