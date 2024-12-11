@@ -355,10 +355,15 @@ class FlowInfo:
 
 
 @dataclass
+class Notation:
+    notation_dict: NotationDict
+    settings: "RunSettings"
+
+
+@dataclass
 class Score:
 
     title: str
-    notation_dict: NotationDict
     settings: "RunSettings"
     instrument_positions: set[InstrumentPosition] = None
     gongans: list[Gongan] = field(default_factory=list)
@@ -367,7 +372,6 @@ class Score:
     flowinfo: FlowInfo = field(default_factory=FlowInfo)
     total_duration: float | None = None
     midifile_length: int = None
-    midiplayer_data: Part = None
 
 
 #

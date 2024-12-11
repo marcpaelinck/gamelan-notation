@@ -15,15 +15,21 @@ from src.common.constants import (
 
 
 # MetaData related constants
-class MetaDataSwitch(NotationEnum):
-    OFF = "off"
-    ON = "on"
+class DynamicLevel(NotationEnum):
+    PIANO = "p"
+    MEZZOFORTE = "mf"
+    FORTE = "f"
 
 
 class GonganType(NotationEnum):
     REGULAR = "regular"
     KEBYAR = "kebyar"
     GINEMAN = "gineman"
+
+
+class MetaDataSwitch(NotationEnum):
+    OFF = "off"
+    ON = "on"
 
 
 class ValidationProperty(NotationEnum):
@@ -47,6 +53,16 @@ class MetaDataBaseType(BaseModel):
         json = self.model_dump(exclude_defaults=True)
         del json["metatype"]
         return f"{{{self.metatype} {', '.join([f'{key}={val}' for key, val in json.items()])}}}"
+
+
+class DynamicsMeta(BaseModel):
+    metatype: Literal["DYNAMICS"]
+    level: DynamicLevel
+    first_beat: Optional[int] = 1
+    beat_count: Optional[int] = 0
+    passes: Optional[list[int]] = field(
+        default_factory=lambda: list([DEFAULT])
+    )  # On which pass(es) should goto be performed?
 
 
 class GonganMeta(MetaDataBaseType):
@@ -128,12 +144,6 @@ class SuppressMeta(MetaDataBaseType):
         return sum((LOOKUP.TAG_TO_POSITION[pos] for pos in data), [])
 
 
-class WaitMeta(MetaDataBaseType):
-    metatype: Literal["WAIT"]
-    seconds: float = None
-    after: bool = True
-
-
 class TempoMeta(MetaDataBaseType):
     metatype: Literal["TEMPO"]
     bpm: int
@@ -156,17 +166,23 @@ class ValidationMeta(MetaDataBaseType):
     scope: Optional[Scope] = Scope.GONGAN
 
 
+class WaitMeta(MetaDataBaseType):
+    metatype: Literal["WAIT"]
+    seconds: float = None
+    after: bool = True
+
+
 MetaDataType = Union[
-    TempoMeta,
-    LabelMeta,
-    GoToMeta,
-    RepeatMeta,
-    KempliMeta,
     GonganMeta,
-    ValidationMeta,
-    SuppressMeta,
+    GoToMeta,
+    KempliMeta,
+    LabelMeta,
     OctavateMeta,
     PartMeta,
+    RepeatMeta,
+    SuppressMeta,
+    TempoMeta,
+    ValidationMeta,
     WaitMeta,
 ]
 

@@ -15,9 +15,16 @@ from src.settings.settings import (
 
 class MidiGenerator(ParserModel):
 
+    player_data: Part = None
+
     def __init__(self, score: Score):
         super().__init__(self.ParserType.MIDIGENERATOR, score.settings)
         self.score = score
+        self.player_data = Part(
+            name=self.run_settings.notation.part.name,
+            file=self.run_settings.notation.midi_out_file,
+            loop=self.run_settings.notation.part.loop,
+        )
 
     def _add_attenuation_time(self, tracks: list[MidiTrackX], seconds: int) -> None:
         """Extends the duration of the final note in each channel to avoid an abrupt ending of the audio.
@@ -54,11 +61,11 @@ class MidiGenerator(ParserModel):
             if partinfo := gongan.get_metadata(PartMeta):
                 curr_time = track.current_time_in_millis()
                 # check if part was already set by another trach
-                time = self.score.midiplayer_data.markers.get(partinfo.name)
+                time = self.player_data.markers.get(partinfo.name)
                 if time and time < curr_time:
                     # keep the earliest time
                     return
-                self.score.midiplayer_data.markers[partinfo.name] = int(curr_time)
+                self.player_data.markers[partinfo.name] = int(curr_time)
 
         track = MidiTrackX(position, LOOKUP.INSTRUMENT_TO_PRESET[position], self.run_settings.midi.PPQ)
 
@@ -113,21 +120,21 @@ class MidiGenerator(ParserModel):
                 )
             )
             self.loginfo(f"New song {song.title} created for MIDI player content")
-        part = next((part for part in song.parts if part.name == self.score.midiplayer_data.name), None)
+        part = next((part for part in song.parts if part.name == self.player_data.name), None)
         if not part:
             song.parts.append(
                 part := Part(
-                    name=self.score.midiplayer_data.name,
-                    file=self.score.midiplayer_data.file,
-                    loop=self.score.midiplayer_data.loop,
+                    name=self.player_data.name,
+                    file=self.player_data.file,
+                    loop=self.player_data.loop,
                 )
             )
             self.loginfo(f"New part {part.name} created for MIDI player content")
         else:
             self.loginfo(f"Existing part {part.name} updated for MIDI player content")
-            part.file = self.score.midiplayer_data.file
-            part.loop = self.score.midiplayer_data.loop
-        part.markers = self.markers_millis_to_frac(self.score.midiplayer_data.markers, self.score.total_duration)
+            part.file = self.player_data.file
+            part.loop = self.player_data.loop
+        part.markers = self.markers_millis_to_frac(self.player_data.markers, self.score.total_duration)
         self.loginfo(f"Added time markers to part {part.name}")
         save_midiplayer_content(content)
 

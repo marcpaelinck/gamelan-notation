@@ -20,14 +20,14 @@ def import_run_settings(notation: dict[str, str] = None) -> RunSettings:
     return run_settings
 
 
-def do_run(run_settings: RunSettings):
+def notation_to_midi(run_settings: RunSettings):
     if run_settings.options.notation_to_midi:
         if run_settings.font.fontversion is NotationFont.BALIMUSIC5:
             font_parser = Font5Parser(run_settings)
         else:
             raise Exception(f"Cannot parse font {run_settings.font.fontversion}.")
-        score = font_parser.parse_notation()
-        score = DictToScoreConverter(score).convert_notation_to_midi()
+        notation = font_parser.parse_notation()
+        score = DictToScoreConverter(notation).convert_notation_to_midi()
         score = ScoreValidator(score).validate_score()
         MidiGenerator(score).create_midifile()
 
@@ -43,12 +43,12 @@ def multiple_notations_to_midi(notations: list[str, str]):
     """
     for notation in notations:
         run_settings = import_run_settings(notation)
-        do_run(run_settings)
+        notation_to_midi(run_settings)
 
 
 def single_run():
     run_settings = import_run_settings()
-    do_run(run_settings)
+    notation_to_midi(run_settings)
 
 
 notations = [

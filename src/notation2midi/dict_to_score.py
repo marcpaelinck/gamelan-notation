@@ -4,11 +4,16 @@
     Main method: convert_notation_to_midi()
 """
 
-import json
-import re
-
-from src.common.classes import Beat, Gongan, Note, ParserModel, Score
-from src.common.constants import DEFAULT, InstrumentPosition, Pitch, SpecialTags, Stroke
+from common.playercontent_classes import Part
+from src.common.classes import Beat, Gongan, Notation, Note, ParserModel, Score
+from src.common.constants import (
+    DEFAULT,
+    InstrumentPosition,
+    NotationDict,
+    Pitch,
+    SpecialTags,
+    Stroke,
+)
 from src.common.lookups import LOOKUP
 from src.common.metadata_classes import (
     GonganMeta,
@@ -38,6 +43,7 @@ from src.common.utils import (
 
 class DictToScoreConverter(ParserModel):
 
+    notation: Notation = None
     score: Score = None
 
     POSITIONS_EXPAND_STAVES = [
@@ -48,9 +54,26 @@ class DictToScoreConverter(ParserModel):
         InstrumentPosition.KEMPLI,
     ]
 
-    def __init__(self, score: Score):
-        super().__init__(self.ParserType.SCOREGENERATOR, score.settings)
-        self.score = score
+    def __init__(self, notation: Notation):
+        super().__init__(self.ParserType.SCOREGENERATOR, notation.settings)
+        self.notation = notation
+        self.score = Score(
+            title=self.run_settings.notation.title,
+            settings=notation.settings,
+            instrument_positions=self._get_all_positions(notation.notation_dict),
+            position_range_lookup=LOOKUP.POSITION_P_O_S_TO_NOTE,  # replace with LOOKUP
+        )
+
+    def _get_all_positions(self, notation_dict: NotationDict) -> set[InstrumentPosition]:
+        all_instruments = [
+            p
+            for gongan_id, gongan in notation_dict.items()
+            if gongan_id > 0
+            for stave_id, staves in gongan.items()
+            if isinstance(stave_id, int) and stave_id > 0
+            for p in staves.keys()
+        ]
+        return set(all_instruments)
 
     def move_beat_to_start(self) -> None:
         # If the last gongan is regular (has a kempli beat), create an additional gongan with an empty beat
@@ -243,32 +266,6 @@ class DictToScoreConverter(ParserModel):
                     beat.tempo_changes.update(beat.prev.tempo_changes)
             return
 
-    def passes_str_to_list(self, rangestr: str) -> list[int]:
-        """Converts a pass indicator following a position tag to a list of passes.
-            A colon (:) separates the position tag and the pass indicator.
-            The indicator has one of the following formats:
-            <pass>[,<pass>...]
-            <firstpass>-<lastpass>
-            where <pass>, <firstpass> and <lastpass> are single digits.
-            e.g.:
-            gangsa p:2,3
-
-        Args:
-            rangestr (str): the pass range indicator, in the prescribed format.
-
-        Raises:
-            ValueError: string does not have the expected format.
-
-        Returns:
-            list[int]: a list of passes (passes are numbered from 1)
-        """
-        if not re.match(r"^(\d-\d|(\d,)*\d)$", rangestr):
-            raise ValueError(f"Invalid value for passes: {rangestr}")
-        if re.match(r"^\d-\d$", rangestr):
-            return list(range(int(rangestr[0]), int(rangestr[2]) + 1))
-        else:
-            return list(json.loads(f"[{rangestr}]"))
-
     def create_missing_staves(
         self, beat: Beat, prevbeat: Beat, add_kempli: bool = True, force_silence=[]
     ) -> dict[InstrumentPosition, list[Note]]:
@@ -382,7 +379,7 @@ class DictToScoreConverter(ParserModel):
             title (str): Title for the notation
         """
         beats: list[Beat] = []
-        for self.curr_gongan_id, sys_info in self.score.notation_dict.items():
+        for self.curr_gongan_id, sys_info in self.notation.notation_dict.items():
             if self.curr_gongan_id < 0:
                 # Skip the gongan holding the global (score-wide) metadata items
                 continue
@@ -430,7 +427,7 @@ class DictToScoreConverter(ParserModel):
                     beats=beats,
                     beat_duration=most_occurring_beat_duration(beats),
                     metadata=sys_info.get(SpecialTags.METADATA, [])
-                    + self.score.notation_dict[DEFAULT][SpecialTags.METADATA],
+                    + self.notation.notation_dict[DEFAULT][SpecialTags.METADATA],
                     comments=sys_info.get(SpecialTags.COMMENT, []),
                 )
                 self.score.gongans.append(gongan)

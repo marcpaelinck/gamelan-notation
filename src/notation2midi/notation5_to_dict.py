@@ -1,7 +1,8 @@
+import json
 import re
 from collections import defaultdict
 
-from src.common.classes import Note, ParserModel, RunSettings, Score
+from src.common.classes import Notation, Note, ParserModel, RunSettings, Score
 from src.common.constants import (
     DEFAULT,
     InstrumentPosition,
@@ -100,6 +101,32 @@ class Font5Parser(ParserModel):
             notes = self._generate_tremolo(notes)
 
         return notes
+
+    def _passes_str_to_list(self, rangestr: str) -> list[int]:
+        """Converts a pass indicator following a position tag to a list of passes.
+            A colon (:) separates the position tag and the pass indicator.
+            The indicator has one of the following formats:
+            <pass>[,<pass>...]
+            <firstpass>-<lastpass>
+            where <pass>, <firstpass> and <lastpass> are single digits.
+            e.g.:
+            gangsa p:2,3
+
+        Args:
+            rangestr (str): the pass range indicator, in the prescribed format.
+
+        Raises:
+            ValueError: string does not have the expected format.
+
+        Returns:
+            list[int]: a list of passes (passes are numbered from 1)
+        """
+        if not re.match(r"^(\d-\d|(\d,)*\d)$", rangestr):
+            raise ValueError(f"Invalid value for passes: {rangestr}")
+        if re.match(r"^\d-\d$", rangestr):
+            return list(range(int(rangestr[0]), int(rangestr[2]) + 1))
+        else:
+            return list(json.loads(f"[{rangestr}]"))
 
     def _parse_stave(self, stave: str, position: InstrumentPosition) -> list[Note]:
         """Validates the notation
@@ -255,7 +282,6 @@ class Font5Parser(ParserModel):
         notation_dict[DEFAULT][SpecialTags.METADATA] = list()  # Will contain metadata having scope==Scope.SCORE
         new_system = True
         self.curr_gongan_id = 0
-        all_positions = set()
         prev_staves = defaultdict(list)
 
         for line_nr, line in enumerate(self.notation_lines):
@@ -307,7 +333,6 @@ class Font5Parser(ParserModel):
                         # Grace note is an inaccurate shorthand notation: replace with exact notation.
                         line = self._replace_grace_notes(line)
                         positions = [InstrumentPosition[tag] for tag in LOOKUP.TAG_TO_POSITION.get(pos, [])]
-                        all_positions = all_positions | set(positions)
                         for self.curr_beat_id in range(1, len(line)):
                             for self.curr_position in positions:
                                 if line[self.curr_beat_id]:
@@ -328,26 +353,13 @@ class Font5Parser(ParserModel):
                                     # (notation_dict is a defaultdict)
                                     notation_dict[self.curr_gongan_id][self.curr_beat_id]
 
-        all_positions = sorted(list(all_positions), key=lambda p: p.sequence)
-
         if self.has_errors:
             self.logger.error("Program halted.")
             exit()
 
-        score = Score(
-            title=self.run_settings.notation.title,
-            notation_dict=notation_dict,
-            settings=self.run_settings,
-            instrument_positions=set(all_positions),
-            position_range_lookup=LOOKUP.POSITION_P_O_S_TO_NOTE,  # replace with LOOKUP
-            midiplayer_data=Part(
-                name=self.run_settings.notation.part.name,
-                file=self.run_settings.notation.midi_out_file,
-                loop=self.run_settings.notation.part.loop,
-            ),
-        )
+        notation = Notation(notation_dict=notation_dict, settings=self.run_settings)
 
-        return score
+        return notation
 
 
 # ==================== GENERAL CODE =====================================

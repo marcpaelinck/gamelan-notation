@@ -3,10 +3,10 @@ import csv
 import pandas as pd
 import pytest
 
-from src.common.classes import Beat, Gongan, Note, ParserModel, Score
+from src.common.classes import Beat, Gongan, Note, Score
 from src.common.constants import InstrumentPosition
 from src.common.utils import gongan_to_records, stave_to_string
-from src.notation2midi.dict_to_score import DictToScoreConverter
+from src.notation2midi.notation5_to_dict import Font5Parser
 from src.settings.settings import InstrumentFields, get_run_settings
 
 
@@ -111,8 +111,8 @@ bad_ranges = ["1,2,", "realbad", "1-", "-1", "-", ",", "1-4-"]
 # Tests the conversion of optional range indicators following the position name in the score
 def test_range_str_to_list(rangestr, expected):
     run_settings = get_run_settings()
-    parser = DictToScoreConverter(Score(title="", notation_dict=None, settings=run_settings))
-    assert parser.passes_str_to_list(rangestr) == expected
+    parser = Font5Parser(run_settings=run_settings)
+    assert parser._passes_str_to_list(rangestr) == expected
 
 
 @pytest.mark.parametrize("rangestr", bad_ranges)
@@ -120,5 +120,5 @@ def test_range_str_to_list(rangestr, expected):
 def test_range_str_to_list_exception(rangestr):
     with pytest.raises(ValueError):
         run_settings = get_run_settings()
-        parser = DictToScoreConverter(Score(title="", notation_dict=None, settings=run_settings))
-        parser.passes_str_to_list(rangestr)
+        parser = Font5Parser(run_settings=run_settings)
+        parser._passes_str_to_list(rangestr)
