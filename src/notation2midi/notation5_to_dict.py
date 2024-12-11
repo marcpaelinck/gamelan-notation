@@ -1,8 +1,5 @@
-import csv
-import logging
 import re
 from collections import defaultdict
-from itertools import product
 
 from src.common.classes import Note, ParserModel, RunSettings, Score
 from src.common.constants import (
@@ -16,7 +13,7 @@ from src.common.constants import (
     Stroke,
 )
 from src.common.lookups import LOOKUP
-from src.common.metadata_classes import MetaData, MetaDataType, Scope
+from src.common.metadata_classes import MetaData, Scope
 from src.common.playercontent_classes import Part
 from src.settings.settings import BASE_NOTE_TIME, get_run_settings
 
@@ -24,7 +21,9 @@ from src.settings.settings import BASE_NOTE_TIME, get_run_settings
 
 
 class Font5Parser(ParserModel):
+    run_settings: RunSettings
     notation_lines: list[str]
+    curr_position: int
 
     TREMOLO_NR_OF_NOTES_PER_QUARTERNOTE: int = 3  # should be a divisor of BASE_NOTE_TIME
     # Next values are in 1/BASE_NOTE_TIME. E.g. if BASE_NOTE_TIME=24, then 24 is a standard note duration.
@@ -51,7 +50,8 @@ class Font5Parser(ParserModel):
     MODIFIERS_PATTERN = "[,<:;_=/?]+[AEIOU]{0,1}"
 
     def __init__(self, run_settings: RunSettings):
-        super().__init__(run_settings)
+        super().__init__(self.ParserType.NOTATIONPARSER, run_settings)
+        self.run_settings = run_settings
         with open(run_settings.notation.filepath, "r") as input:
             self.notation_lines = [line.rstrip() for line in input]
 
@@ -94,7 +94,7 @@ class Font5Parser(ParserModel):
             if note := LOOKUP.POSITION_CHARS_TO_NOTELIST.get((position, chars), None):
                 notes.append(note)
             else:
-                self.log(f"Illegal character(s) {chars} for {position}", logging.ERROR)
+                self.logerror(f"Illegal character(s) {chars} for {position}")
 
         if notes and all(note.stroke in (Stroke.TREMOLO, Stroke.TREMOLO_ACCELERATING) for note in notes):
             notes = self._generate_tremolo(notes)
@@ -122,7 +122,7 @@ class Font5Parser(ParserModel):
                 if match:
                     break
             if not match:
-                self.log(f" {position.value} {stave} has invalid {note_chars[0]}")
+                self.logerror(f" {position.value} {stave} has invalid {note_chars[0]}")
                 note_chars = note_chars[1:]
             else:
                 note = self._note_from_chars(
@@ -144,7 +144,7 @@ class Font5Parser(ParserModel):
             case SpecialTags.METADATA:
                 pass
             case _:
-                self.log("Unrecognized tag {tag}")
+                self.logerror("Unrecognized tag {tag}")
                 return None
 
         # Try to parse the string value
@@ -152,7 +152,7 @@ class Font5Parser(ParserModel):
             metadata = MetaData(data=content)
         except Exception as err:
             # The validation and generation of meaningful error messages is performed in the MetaData class.
-            self.log(str(err).replace("\n", "."))
+            self.logerror(str(err).replace("\n", "."))
             return None
 
         return metadata
@@ -241,7 +241,7 @@ class Font5Parser(ParserModel):
                 )
                 note_idx = (note_idx + 1) % len(notes)
         else:
-            self.log(f"Unexpected tremolo type {notes[0].stroke}.")
+            self.logerror(f"Unexpected tremolo type {notes[0].stroke}.")
 
         return tremolo_notes
 
@@ -267,7 +267,7 @@ class Font5Parser(ParserModel):
             match tag:
                 case "":
                     if len(line) > 1:
-                        self.log(f"line {line_nr} has content but has no label in the first position.")
+                        self.logerror(f"line {line_nr} has content but has no label in the first position.")
                     new_system = True
                     continue
                 case _:
@@ -294,7 +294,7 @@ class Font5Parser(ParserModel):
                     if len(tag.split(":")) == 2:
                         pos, pass_ = tag.split(":")
                         if not pass_.isnumeric():
-                            self.log(f"invalid pass number after colon in {tag}.")
+                            self.logerror(f"invalid pass number after colon in {tag}.")
                             continue
                         pass_ = int(pass_)
                     else:
@@ -302,7 +302,7 @@ class Font5Parser(ParserModel):
 
                     if len(line) > 1:
                         if not LOOKUP.TAG_TO_POSITION.get(pos, None):
-                            self.log(f"unrecognized instrument tag {pos}.")
+                            self.logerror(f"unrecognized instrument tag {pos}.")
                             continue
                         # Grace note is an inaccurate shorthand notation: replace with exact notation.
                         line = self._replace_grace_notes(line)

@@ -5,7 +5,7 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
-from typing import Optional
+from typing import Generator, Optional
 
 from pydantic import (
     BaseModel,
@@ -59,6 +59,13 @@ class TimingData:
 
 
 class ParserModel:
+    class ParserType(StrEnum):
+        NOTATIONPARSER = "parsing the notation"
+        SCOREGENERATOR = "generating the score"
+        VALIDATOR = "validating the score"
+        MIDIGENERATOR = "generating the midi file"
+
+    parser_type: ParserType
     run_settings = None
     curr_gongan_id: int = None
     curr_beat_id: int = None
@@ -66,9 +73,10 @@ class ParserModel:
     errors = []
     logger = None
 
-    def __init__(self, run_settings: "RunSettings"):
-        self.logger = get_logger(self.__class__.__name__)
+    def __init__(self, parser_type: ParserType, run_settings: "RunSettings"):
+        self.parser_type = parser_type
         self.run_settings = run_settings
+        self.logger = get_logger(self.__class__.__name__)
 
     def log(self, err_msg: str, level: logging = logging.ERROR) -> str:
         prefix = (
@@ -76,12 +84,38 @@ class ParserModel:
             if self.curr_beat_id
             else f"{self.curr_gongan_id:02d}    | "
         )
-        if not self.errors:
-            self.logger.error("Errors encountered in the notation:")
-        msg = "     " + prefix + err_msg
-        self.logger.log(level, msg)
         if level > logging.INFO:
-            self.errors.append(msg)
+            if not self.errors:
+                self.logger.error(f"Errors encountered while {self.parser_type.value}:")
+            msg = "     " + prefix + err_msg
+            self.logger.log(level, msg)
+            if level > logging.INFO:
+                self.errors.append(msg)
+
+    def logerror(self, msg: str) -> str:
+        self.log(msg, level=logging.ERROR)
+
+    def logwarning(self, msg: str) -> str:
+        self.log(msg, level=logging.WARNING)
+
+    def loginfo(self, msg: str) -> str:
+        self.log(msg, level=logging.INFO)
+
+    """Use the following generators to iterate through gongans and beats if you 
+    want to use the logging methods of this class. This will ensure that the the 
+    logging is prefixed with the correct gongan and beat ids.
+    """
+
+    def gongan_iterator(self, score: "Score"):
+        for gongan in score.gongans:
+            self.curr_gongan_id = gongan.id
+            self.curr_beat_id = None
+            yield gongan
+
+    def beat_iterator(self, gongan: "Gongan"):
+        for beat in gongan.beats:
+            self.curr_beat_id = beat.id
+            yield beat
 
     @property
     def has_errors(self):
@@ -332,6 +366,7 @@ class Score:
     position_range_lookup: dict[InstrumentPosition, tuple[Pitch, Octave, Stroke]] = None
     flowinfo: FlowInfo = field(default_factory=FlowInfo)
     total_duration: float | None = None
+    midifile_length: int = None
     midiplayer_data: Part = None
 
 

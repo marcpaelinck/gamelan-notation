@@ -57,7 +57,7 @@ notations:
     # the entries under the 'files' label will be referred to as 'part'.
     # ${midi.midiversion} will resolve to the value that is set in run-settings.yaml
     # ${notation.part} will resolve to the label of the selected part.
-    # If `part`==full, the last note of each instrument will be extended for a natural fade out.
+    # If `loop`==false, the last note of each instrument will be extended for a natural fade out.
     # Otherwise the midi file will end abruptly to allow looping.
     defaults:
         folder: ./data/notation

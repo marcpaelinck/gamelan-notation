@@ -3,8 +3,11 @@ The settings in the /settings/run-settings.yaml file determine which application
 """
 
 from src.common.classes import RunSettings
-from src.notation2midi.font5_parser import Font5Parser
-from src.notation2midi.score_to_midi import Score2MidiConverter
+from src.common.constants import NotationFont
+from src.notation2midi.dict_to_score import DictToScoreConverter
+from src.notation2midi.notation5_to_dict import Font5Parser
+from src.notation2midi.score_to_midi import MidiGenerator
+from src.notation2midi.score_validation import ScoreValidator
 from src.settings.settings import get_run_settings
 from src.settings.settings_validation import validate_input_data
 from src.soundfont.soundfont_generator import create_soundfont_files
@@ -19,10 +22,14 @@ def import_run_settings(notation: dict[str, str] = None) -> RunSettings:
 
 def do_run(run_settings: RunSettings):
     if run_settings.options.notation_to_midi:
-        fontparser = Font5Parser(run_settings)
-        score = fontparser.parse_notation()
-        score2midiconverter = Score2MidiConverter(score)
-        score2midiconverter.convert_notation_to_midi()
+        if run_settings.font.fontversion is NotationFont.BALIMUSIC5:
+            font_parser = Font5Parser(run_settings)
+        else:
+            raise Exception(f"Cannot parse font {run_settings.font.fontversion}.")
+        score = font_parser.parse_notation()
+        score = DictToScoreConverter(score).convert_notation_to_midi()
+        score = ScoreValidator(score).validate_score()
+        MidiGenerator(score).create_midifile()
 
     if run_settings.options.soundfont.run:
         create_soundfont_files(run_settings)
