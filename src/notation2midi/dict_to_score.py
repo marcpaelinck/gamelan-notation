@@ -16,6 +16,7 @@ from src.common.constants import (
 )
 from src.common.lookups import LOOKUP
 from src.common.metadata_classes import (
+    DynamicsMeta,
     GonganMeta,
     GonganType,
     GoToMeta,
@@ -135,46 +136,12 @@ class DictToScoreConverter(ParserModel):
         haslabel = False  # Will be set to true if the gongan has a metadata Label tag.
         for meta in sorted(metadata, key=lambda x: x.data._processingorder_):
             match meta.data:
-                case TempoMeta():
-                    if (
-                        first_too_large := meta.data.first_beat > len(gongan.beats)
-                    ) or meta.data.first_beat + meta.data.beat_count - 1 > len(gongan.beats):
-                        value = "first_beat" + (" + beat_count" if not first_too_large else "")
-                        self.logerror(f"{meta.data.metatype} metadata: {value} is larger than the number of beats")
-                        continue
-                    if meta.data.beat_count == 0:
-                        # immediate tempo change.
-                        gongan.beats[meta.data.first_beat_seq].tempo_changes.update(
-                            {
-                                pass_: Beat.TempoChange(new_tempo=meta.data.bpm, incremental=False)
-                                for pass_ in meta.data.passes
-                            }
-                        )
-                    else:
-                        # Stepwise tempo change over meta.data.beats beats. The first tempo change is after first beat.
-                        # This emulates a gradual tempo change.
-                        beat = gongan.beats[meta.data.first_beat_seq]
-                        steps = meta.data.beat_count
-                        for _ in range(meta.data.beat_count):
-                            beat = beat.next
-                            if not beat:  # End of score. This should not happen unless notation error.
-                                break
-                            beat.tempo_changes.update(
-                                {
-                                    pass_: Beat.TempoChange(new_tempo=meta.data.bpm, steps=steps, incremental=True)
-                                    for pass_ in meta.data.passes
-                                }
-                            )
-                            steps -= 1
-
-                case LabelMeta():
-                    # Add the label to flowinfo
-                    haslabel = True
-                    self.score.flowinfo.labels[meta.data.name] = gongan.beats[meta.data.beat_seq]
-                    # Process any GoTo pointing to this label
-                    goto: MetaData
-                    for sys, goto in self.score.flowinfo.gotos[meta.data.name]:
-                        process_goto(sys, goto)
+                case GonganMeta():
+                    # TODO: how to safely synchronize all instruments starting from next regular gongan?
+                    gongan.gongantype = meta.data.type
+                    if gongan.gongantype in [GonganType.GINEMAN, GonganType.KEBYAR]:
+                        for beat in gongan.beats:
+                            beat.has_kempli_beat = False
                 case GoToMeta():
                     # Add goto info to the beat
                     if self.score.flowinfo.labels.get(meta.data.label, None):
@@ -182,11 +149,6 @@ class DictToScoreConverter(ParserModel):
                     else:
                         # Label not yet encountered: store GoTo obect in flowinfo
                         self.score.flowinfo.gotos[meta.data.label].append((gongan, meta))
-                case RepeatMeta():
-                    # Special case of goto: from last back to first beat of the gongan.
-                    # for counter in range(meta.data.count):
-                    #     gongan.beats[-1].goto[counter + 1] = gongan.beats[0]
-                    gongan.beats[-1].repeat = Beat.Repeat(goto=gongan.beats[0], iterations=meta.data.count)
                 case KempliMeta():
                     # Suppress kempli.
                     # TODO status=ON will never be used because it is the default. So attribute status can be discarded.
@@ -196,12 +158,35 @@ class DictToScoreConverter(ParserModel):
                             # Default is all beats
                             if beat.id in meta.data.beats or not meta.data.beats:
                                 beat.has_kempli_beat = False
-                case GonganMeta():
-                    # TODO: how to safely synchronize all instruments starting from next regular gongan?
-                    gongan.gongantype = meta.data.type
-                    if gongan.gongantype in [GonganType.GINEMAN, GonganType.KEBYAR]:
-                        for beat in gongan.beats:
-                            beat.has_kempli_beat = False
+                case LabelMeta():
+                    # Add the label to flowinfo
+                    haslabel = True
+                    self.score.flowinfo.labels[meta.data.name] = gongan.beats[meta.data.beat_seq]
+                    # Process any GoTo pointing to this label
+                    goto: MetaData
+                    for sys, goto in self.score.flowinfo.gotos[meta.data.name]:
+                        process_goto(sys, goto)
+                case OctavateMeta():
+                    for beat in gongan.beats:
+                        if meta.data.instrument in beat.staves:
+                            for idx in range(len(stave := beat.staves[meta.data.instrument])):
+                                note = stave[idx]
+                                if note.octave != None:
+                                    stave[idx] = LOOKUP.get_note(
+                                        note.position,
+                                        note.pitch,
+                                        note.octave + meta.data.octaves,
+                                        note.stroke,
+                                        note.duration,
+                                        note.rest_after,
+                                    )
+                case PartMeta():
+                    pass
+                case RepeatMeta():
+                    # Special case of goto: from last back to first beat of the gongan.
+                    # for counter in range(meta.data.count):
+                    #     gongan.beats[-1].goto[counter + 1] = gongan.beats[0]
+                    gongan.beats[-1].repeat = Beat.Repeat(goto=gongan.beats[0], iterations=meta.data.count)
                 case SuppressMeta():
                     # Silences the given positions for the given beats and passes.
                     # This is done by adding "silence" staves to the `exception` list of the beat.
@@ -215,6 +200,44 @@ class DictToScoreConverter(ParserModel):
                                         for pass_ in meta.data.passes
                                     }
                                 )
+                case TempoMeta() | DynamicsMeta():
+                    changetype = (
+                        Beat.Change.Type.TEMPO if isinstance(meta.data, TempoMeta) else Beat.Change.Type.DYNAMICS
+                    )
+                    if (
+                        first_too_large := meta.data.first_beat > len(gongan.beats)
+                    ) or meta.data.first_beat + meta.data.beat_count - 1 > len(gongan.beats):
+                        value = "first_beat" + (" + beat_count" if not first_too_large else "")
+                        self.logerror(f"{meta.data.metatype} metadata: {value} is larger than the number of beats")
+                        continue
+                    if meta.data.beat_count == 0:
+                        # immediate tempo change.
+                        beat = gongan.beats[meta.data.first_beat_seq]
+                        beat.changes[changetype].update(
+                            {
+                                pass_: Beat.Change(new_value=meta.data.value, incremental=False)
+                                for pass_ in meta.data.passes
+                            }
+                        )
+                    else:
+                        # Stepwise change over meta.data.beats beats. The first change is after first beat.
+                        # This emulates a gradual tempo change.
+                        beat = gongan.beats[meta.data.first_beat_seq]
+                        steps = meta.data.beat_count
+                        for _ in range(meta.data.beat_count):
+                            beat = beat.next
+                            if not beat:  # End of score. This should not happen unless notation error.
+                                break
+                            beat.changes[changetype].update(
+                                {
+                                    pass_: Beat.Change(new_value=meta.data.value, steps=steps, incremental=True)
+                                    for pass_ in meta.data.passes
+                                }
+                            )
+                            steps -= 1
+                case ValidationMeta():
+                    for beat in [b for b in gongan.beats if b.id in meta.data.beats] or gongan.beats:
+                        beat.validation_ignore.extend(meta.data.ignore)
                 case WaitMeta():
                     # Add a beat with silences at the end of the gongan. The beat's bpm is set to 60 for easy calculation.
                     lastbeat = gongan.beats[-1]
@@ -236,25 +259,6 @@ class DictToScoreConverter(ParserModel):
                         prev_beat=lastbeat, positions=lastbeat.staves.keys(), duration=duration
                     )
                     gongan.beats.append(newbeat)
-                case ValidationMeta():
-                    for beat in [b for b in gongan.beats if b.id in meta.data.beats] or gongan.beats:
-                        beat.validation_ignore.extend(meta.data.ignore)
-                case OctavateMeta():
-                    for beat in gongan.beats:
-                        if meta.data.instrument in beat.staves:
-                            for idx in range(len(stave := beat.staves[meta.data.instrument])):
-                                note = stave[idx]
-                                if note.octave != None:
-                                    stave[idx] = LOOKUP.get_note(
-                                        note.position,
-                                        note.pitch,
-                                        note.octave + meta.data.octaves,
-                                        note.stroke,
-                                        note.duration,
-                                        note.rest_after,
-                                    )
-                case PartMeta():
-                    pass
                 case _:
                     raise ValueError(f"Metadata value {meta.data.metatype} is not supported.")
 
@@ -262,8 +266,8 @@ class DictToScoreConverter(ParserModel):
             # Gongan has one or more Label metadata items: explicitly set the current tempo for each beat by copying it
             # from its predecessor. This will ensure that a goto to any of these beats will pick up the correct tempo.
             for beat in gongan.beats:
-                if not beat.tempo_changes and beat.prev:
-                    beat.tempo_changes.update(beat.prev.tempo_changes)
+                if not beat.changes and beat.prev:
+                    beat.changes.update(beat.prev.changes)
             return
 
     def _create_missing_staves(

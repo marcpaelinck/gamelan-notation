@@ -5,7 +5,7 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
-from typing import Generator, Optional
+from typing import Optional
 
 from pydantic import (
     BaseModel,
@@ -30,6 +30,7 @@ from src.common.constants import (
     Pass,
     Pitch,
     Stroke,
+    Velocity,
 )
 from src.common.logger import get_logger
 from src.common.metadata_classes import (
@@ -256,10 +257,16 @@ class InstrumentTag(NotationModel):
 @dataclass
 class Beat:
     @dataclass
-    class TempoChange:
-        new_tempo: BPM
+    class Change:
+        class Type(StrEnum):
+            TEMPO = auto()
+            DYNAMICS = auto()
+
+        # A change in tempo or velocity.
+        new_value: int
         steps: int = 0
         incremental: bool = False
+        positions: list[InstrumentPosition]
 
     @dataclass
     class Repeat:
@@ -280,7 +287,7 @@ class Beat:
     bpm_start: dict[PASS, BPM]  # tempo at beginning of beat (can vary per pass)
     bpm_end: dict[PASS, BPM]  # tempo at end of beat (can vary per pass)
     duration: float
-    tempo_changes: dict[PASS, TempoChange] = field(default_factory=dict)
+    changes: dict[Change.Type, dict[PASS, Change]] = field(default_factory=lambda: defaultdict(dict))
     staves: dict[InstrumentPosition, list[Note]] = field(default_factory=dict)
     # Exceptions contains alternative staves for specific passes.
     exceptions: dict[(InstrumentPosition, Pass), list[Note]] = field(default_factory=dict)
@@ -317,13 +324,17 @@ class Beat:
     def get_bpm_end_last_pass(self):
         return self.bpm_end.get(self._pass_, self.bpm_end.get(DEFAULT, None))
 
-    def get_changed_tempo(self, current_tempo: BPM) -> BPM | None:
-        tempo_change = self.tempo_changes.get(self._pass_, self.tempo_changes.get(DEFAULT, None))
-        if tempo_change and tempo_change.new_tempo != current_tempo:
-            if tempo_change.incremental:
-                return current_tempo + int((tempo_change.new_tempo - current_tempo) / tempo_change.steps)
+    def get_changed_value(self, current_value: BPM | Velocity, changetype: Change.Type) -> BPM | Velocity | None:
+        # Generic function, returns either a BPM or a Velocity value for the current beat.
+        # Returns None if the value for the current beat is the same as that of the previous beat.
+        # In case of a gradual change over several measures, calculates the value for the current beat.
+        change_list = self.changes[changetype]
+        change = change_list.get(self._pass_, change_list.get(DEFAULT, None))
+        if change and change.new_value != current_value:
+            if change.incremental:
+                return current_value + int((change.new_value - current_value) / change.steps)
             else:
-                return tempo_change.new_tempo
+                return change.new_value
         return None
 
 

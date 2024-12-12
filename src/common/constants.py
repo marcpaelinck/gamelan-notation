@@ -6,6 +6,7 @@ from src.common.logger import get_logger
 logger = get_logger(__name__)
 
 BPM = int
+Velocity = int
 PASS = int
 DEFAULT = -1
 Duration = int
@@ -239,6 +240,12 @@ class NoteOct(NotationEnum):
     PUR = "PUR"
     STRIKE = "STRIKE"
     TONG = "TONG"
+
+
+class DynamicLevel(NotationEnum):
+    PIANO = "p"
+    MEZZOFORTE = "mf"
+    FORTE = "f"
 
 
 # MIDI to Notation

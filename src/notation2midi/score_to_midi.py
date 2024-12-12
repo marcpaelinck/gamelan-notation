@@ -78,7 +78,7 @@ class MidiGenerator(ParserModel):
             if self.run_settings.options.debug_logging:
                 track.comment(f"beat {beat.full_id} pass{beat._pass_}")
             # Set new tempo
-            if new_bpm := beat.get_changed_tempo(track.current_bpm):
+            if new_bpm := beat.get_changed_value(track.current_bpm, Beat.Change.Type.TEMPO):
                 track.update_tempo(new_bpm or beat.get_bpm_start())
 
             # Process individual notes. Check if there is an alternative stave for the current pass

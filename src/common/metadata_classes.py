@@ -4,23 +4,20 @@ from dataclasses import field
 from typing import Any, Literal, Optional, Union
 
 import regex
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from src.common.constants import (
+    BPM,
     DEFAULT,
+    DynamicLevel,
     InstrumentPosition,
     InstrumentType,
     NotationEnum,
+    Velocity,
 )
 
 
 # MetaData related constants
-class DynamicLevel(NotationEnum):
-    PIANO = "p"
-    MEZZOFORTE = "mf"
-    FORTE = "f"
-
-
 class GonganType(NotationEnum):
     REGULAR = "regular"
     KEBYAR = "kebyar"
@@ -55,14 +52,32 @@ class MetaDataBaseType(BaseModel):
         return f"{{{self.metatype} {', '.join([f'{key}={val}' for key, val in json.items()])}}}"
 
 
-class DynamicsMeta(BaseModel):
+class DynamicsMeta(MetaDataBaseType):
     metatype: Literal["DYNAMICS"]
     level: DynamicLevel
+    value: Velocity = None
     first_beat: Optional[int] = 1
     beat_count: Optional[int] = 0
     passes: Optional[list[int]] = field(
         default_factory=lambda: list([DEFAULT])
     )  # On which pass(es) should goto be performed?
+
+    @property
+    def first_beat_seq(self) -> int:
+        # Returns the pythonic sequence id (numbered from 0)
+        return self.first_beat - 1
+
+    @model_validator(mode="after")
+    def set_value(self):
+        value = {DynamicLevel.PIANO.value: 75, DynamicLevel.MEZZOFORTE.value: 100, DynamicLevel.FORTE.value: 127}.get(
+            self.level, None
+        )
+        if value:
+            self.value = value
+        else:
+            # Should not occur because the validator is called after resolving the other fields
+            raise Exception(f"illegal value for dynamics")
+        return self
 
 
 class GonganMeta(MetaDataBaseType):
@@ -146,7 +161,7 @@ class SuppressMeta(MetaDataBaseType):
 
 class TempoMeta(MetaDataBaseType):
     metatype: Literal["TEMPO"]
-    bpm: int
+    value: BPM
     first_beat: Optional[int] = 1
     beat_count: Optional[int] = 0
     passes: Optional[list[int]] = field(
@@ -173,6 +188,7 @@ class WaitMeta(MetaDataBaseType):
 
 
 MetaDataType = Union[
+    DynamicsMeta,
     GonganMeta,
     GoToMeta,
     KempliMeta,

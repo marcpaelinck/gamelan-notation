@@ -133,7 +133,7 @@ Terminology:
 |         | passes     | list of integer values             |[1]      | all passes | The passes for which this meta item should be applied. |
 |         | beats      | list of integer values             |[5, 6]   | all beats | The beats that should be silenced. |
 | TEMPO   ||||| Can be used to set a tempo or a gradual increase/decrease in tempo. |
-|         | bpm        | integer value                      | 120     |           | Beats per minute for 4 full-length notes. |
+|         | value      | integer value                      | 120     |           | Beats per minute for 4 full-length notes. |
 |         | first_beat | integer value                      | 3       | 1         | The beat of the gongan where the new tempo should be applied or where the gradual tempo change should start |
 |         | beat_count | integer value                      | 6       | 0         | If 0, the tempo is effective from the given beat. If greater than 0, the tempo will gradually increase over the number of beats, starting with first_beat |
 |         | passes     | list of integer values             |[1]      | all passes| The passes for which the tempo change applies. |
