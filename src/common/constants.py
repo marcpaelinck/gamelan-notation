@@ -15,7 +15,7 @@ Pass = int
 Octave = int
 MIDIvalue = int
 MidiDict = dict[str, list[dict[str, str | int | None]]]
-NotationDict = dict[int, dict[int, dict[str, dict[tuple[int], str]]]]  # notation[sys_id][beat_id][position][passes]
+NotationDict = dict[int, dict[int, dict[str, dict[tuple[int], str]]]]  # notation[gongan_id][beat_id][position][passes]
 NoteRecord = dict[str, Any]
 ErrorMessage = str
 
@@ -82,7 +82,7 @@ class InstrumentType(NotationEnum):
     SULING = "SULING"
 
 
-class InstrumentPosition(NotationEnum):
+class Position(NotationEnum):
     # TODO replace with settings file
     # The sorting order affects the layout of the
     # corrected score (see common.utils.gongan_to_records)

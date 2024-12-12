@@ -8,10 +8,10 @@ import pandas as pd
 from src.common.classes import Beat, Gongan, Note, Score
 from src.common.constants import (
     Duration,
-    InstrumentPosition,
     NotationFont,
     Octave,
     Pitch,
+    Position,
     SpecialTags,
     Stroke,
 )
@@ -30,11 +30,11 @@ def most_occurring_beat_duration(beats: list[Beat]):
     return mode(beat.duration for beat in beats)
 
 
-def most_occurring_stave_duration(staves: dict[InstrumentPosition, list[Note]]):
+def most_occurring_stave_duration(staves: dict[Position, list[Note]]):
     return mode(sum(note.total_duration for note in notes) for notes in list(staves.values()))
 
 
-def is_silent(gongan: Gongan, position: InstrumentPosition):
+def is_silent(gongan: Gongan, position: Position):
     no_occurrence = sum((beat.staves.get(position, []) for beat in gongan.beats), []) == []
     all_rests = all(note.pitch == Pitch.NONE for beat in gongan.beats for note in beat.staves.get(position, []))
     return no_occurrence or all_rests
@@ -44,13 +44,13 @@ def stave_to_string(stave: list[Note]) -> str:
     return "".join((n.symbol for n in stave))
 
 
-def get_whole_rest_note(position: InstrumentPosition, resttype: Stroke):
+def get_whole_rest_note(position: Position, resttype: Stroke):
     return LOOKUP.POSITION_P_O_S_TO_NOTE[position][Pitch.NONE, None, resttype].get(
         (1, 0), LOOKUP.POSITION_P_O_S_TO_NOTE[position][Pitch.NONE, None, resttype].get((0, 1), None)
     )
 
 
-def create_rest_stave(position: InstrumentPosition, resttype: Stroke, duration: float) -> list[Note]:
+def create_rest_stave(position: Position, resttype: Stroke, duration: float) -> list[Note]:
     """Creates a stave with rests of the given type for the given duration.
     If the duration is non-integer, the stave will also contain half and/or quarter rests.
 
@@ -77,9 +77,9 @@ def create_rest_stave(position: InstrumentPosition, resttype: Stroke, duration: 
 
 def create_rest_staves(
     prev_beat: Beat,
-    positions: list[InstrumentPosition],
+    positions: list[Position],
     duration: Duration,
-    force_silence: list[InstrumentPosition] = [],
+    force_silence: list[Position] = [],
 ):
     silence = Stroke.SILENCE
     extension = Stroke.EXTENSION
@@ -93,7 +93,7 @@ def create_rest_staves(
 
 def gongan_to_records(
     gongan: Gongan, skipemptylines: bool = True, fontversion: NotationFont = None
-) -> list[dict[InstrumentPosition | int, list[str]]]:
+) -> list[dict[Position | int, list[str]]]:
     # TODO grace notes that occur at the end of a beat should be moved to the start of the next beat.
     """Converts a gongan to a dict containing the notation for the individual beats.
 
@@ -102,13 +102,13 @@ def gongan_to_records(
         skipemptylines (bool, optional): if true, positions without content (only rests) are skipped. Defaults to True.
 
     Returns:
-        list[dict[InstrumentPosition | int, list[str]]]: _description_
+        list[dict[Position | int, list[str]]]: _description_
     """
 
     # pos_tags maps positions to tag values. It contains only the positions that occur in the gongan.
     pos_tags = {position: position.shortcode for position in gongan.beats[0].staves.keys()}
 
-    def try_to_aggregate(positions: list[InstrumentPosition], aggregate_tag: str):
+    def try_to_aggregate(positions: list[Position], aggregate_tag: str):
         """Determines if the notation is identical for all of the given positions.
         In that case, updates the pos_tags dict.
         """
@@ -128,11 +128,11 @@ def gongan_to_records(
         return False
 
     # Try to aggregate positions that have the same notation.
-    GANGSA_P = [InstrumentPosition.PEMADE_POLOS, InstrumentPosition.KANTILAN_POLOS]
-    GANGSA_S = [InstrumentPosition.PEMADE_SANGSIH, InstrumentPosition.KANTILAN_SANGSIH]
+    GANGSA_P = [Position.PEMADE_POLOS, Position.KANTILAN_POLOS]
+    GANGSA_S = [Position.PEMADE_SANGSIH, Position.KANTILAN_SANGSIH]
     GANGSA = GANGSA_P + GANGSA_S
-    REYONG_13 = [InstrumentPosition.REYONG_1, InstrumentPosition.REYONG_3]
-    REYONG_24 = [InstrumentPosition.REYONG_2, InstrumentPosition.REYONG_4]
+    REYONG_13 = [Position.REYONG_1, Position.REYONG_3]
+    REYONG_24 = [Position.REYONG_2, Position.REYONG_4]
     REYONG = REYONG_13 + REYONG_24
     if not try_to_aggregate(GANGSA, "GANGSA"):
         try_to_aggregate(GANGSA_P, "GANGSA_P")
@@ -153,7 +153,7 @@ def gongan_to_records(
         + [
             {InstrumentFields.POSITION: pos_tags.get(position, position)}
             | {beat.id: stave_to_string(beat.staves[position]) for beat in gongan.beats}
-            for position in InstrumentPosition
+            for position in Position
             if position in pos_tags.keys()
             if any(position in beat.staves for beat in gongan.beats)
             and not (is_silent(gongan, position) and skipemptylines)
@@ -182,7 +182,7 @@ def score_to_notation_file(score: Score) -> None:
 #
 
 
-def get_instrument_range(position: InstrumentPosition) -> list[tuple[Note, Octave]]:
+def get_instrument_range(position: Position) -> list[tuple[Note, Octave]]:
     return {(note, oct) for (note, oct, stroke) in LOOKUP.POSITION_P_O_S_TO_NOTE[position].keys() if note and oct}
 
 

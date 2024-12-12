@@ -20,12 +20,12 @@ from src.common.classes import (
 from src.common.constants import (
     Duration,
     InstrumentGroup,
-    InstrumentPosition,
     InstrumentType,
     Modifier,
     NoteRecord,
     Octave,
     Pitch,
+    Position,
     Stroke,
 )
 from src.common.logger import get_logger
@@ -42,13 +42,13 @@ logger = logger = get_logger(__name__)
 
 class Lookup:
     INSTRUMENT_TO_PRESET: dict[InstrumentType, Preset] = dict()  # KEEP
-    TAG_TO_POSITION: dict[InstrumentTag, list[InstrumentPosition]] = dict()  # KEEP
+    TAG_TO_POSITION: dict[InstrumentTag, list[Position]] = dict()  # KEEP
     INSTRUMENT_TO_MIDINOTE: dict[InstrumentType, list[MidiNote]] = dict()  # DELETE
     # P_O_S stands for Pitch, Octave, Stroke
     POSITION_P_O_S_TO_NOTE: dict[
-        InstrumentPosition, dict[tuple[Pitch, Octave, Stroke], dict[tuple[Duration, Duration], Note]]
+        Position, dict[tuple[Pitch, Octave, Stroke], dict[tuple[Duration, Duration], Note]]
     ] = dict()
-    POSITION_CHARS_TO_NOTELIST: dict[(InstrumentPosition, str), Note]
+    POSITION_CHARS_TO_NOTELIST: dict[(Position, str), Note]
 
     def __init__(self, run_settings: RunSettings) -> None:
         """Initializes lookup dicts and lists from settings files
@@ -84,12 +84,12 @@ class Lookup:
         self, instrumentgroup: InstrumentGroup, fromfile: str
     ) -> tuple[dict[InstrumentType, MidiNote], list[MidiNote]]:
         midinotes_df = pd.read_csv(fromfile, sep="\t", comment="#")
-        # Convert pre-filled positions to a list of InstrumentPosition values.
+        # Convert pre-filled positions to a list of Position values.
         # Fill in empty position fields with all positions for the instrument type.
         mask = midinotes_df[MidiNotesFields.POSITIONS].isnull()
         midinotes_df.loc[mask, MidiNotesFields.POSITIONS] = midinotes_df.loc[
             mask, MidiNotesFields.INSTRUMENTTYPE
-        ].apply(lambda x: [p for p in InstrumentPosition if p.instrumenttype == x])
+        ].apply(lambda x: [p for p in Position if p.instrumenttype == x])
         # midinote field can be either int or list[int]. Convert all int values in list[int].
         midinotes_df[MidiNotesFields.MIDINOTE] = midinotes_df[MidiNotesFields.MIDINOTE].apply(
             lambda x: eval(x) if x.startswith("[") else [int(x)]
@@ -124,7 +124,7 @@ class Lookup:
         # TODO not yet working!!!!
         mask = presets_df[PresetsFields.POSITION].isnull()
         presets_df.loc[mask, PresetsFields.POSITION] = presets_df.loc[mask, PresetsFields.INSTRUMENTTYPE].apply(
-            lambda x: [p for p in InstrumentPosition if p.instrumenttype == x]
+            lambda x: [p for p in Position if p.instrumenttype == x]
         )
         presets_df = presets_df.explode(column=PresetsFields.POSITION, ignore_index=True)
         # self.create a dict and cast items to Preset objects.
@@ -139,7 +139,7 @@ class Lookup:
     def _create_tag_to_position_lookup(
         self,
         instruments: RunSettings.InstrumentInfo,
-    ) -> dict[InstrumentTag, list[InstrumentPosition]]:
+    ) -> dict[InstrumentTag, list[Position]]:
         """self.creates a dict that maps "free style" position tags to a list of InstumentPosition values
 
         Args:
@@ -163,11 +163,11 @@ class Lookup:
             + [
                 {
                     InstrumentTagFields.TAG: instr,
-                    InstrumentTagFields.POSITIONS: [pos for pos in InstrumentPosition if pos.instrumenttype == instr],
+                    InstrumentTagFields.POSITIONS: [pos for pos in Position if pos.instrumenttype == instr],
                 }
                 for instr in InstrumentType
             ]
-            + [{InstrumentTagFields.TAG: pos, InstrumentTagFields.POSITIONS: [pos]} for pos in InstrumentPosition]
+            + [{InstrumentTagFields.TAG: pos, InstrumentTagFields.POSITIONS: [pos]} for pos in Position]
         )
         tags = [InstrumentTag.model_validate(record) for record in tags_dict]
 
@@ -177,7 +177,7 @@ class Lookup:
 
     def _create_position_p_o_s_to_note_lookup(
         self, run_settings: RunSettings
-    ) -> dict[InstrumentPosition, dict[tuple[Pitch, Octave, Stroke], Note]]:
+    ) -> dict[Position, dict[tuple[Pitch, Octave, Stroke], Note]]:
         """Creates the POSITION_P_O_S_TO_NOTE dict. This dict contains all possible Notes and should be used to validate/create
            new Note instances. The dict is created by combining the MIDI definitions and the font definitions files
            and will be the base for other lookups, such as the charater-to-note lookup.
@@ -261,15 +261,15 @@ class Lookup:
         midinotes_df = midinotes_df[
             midinotes_df[INSTRUMENTGROUP] == run_settings.instruments.instrumentgroup.value
         ].drop(MidiNotesFields.INSTRUMENTGROUP, axis="columns")
-        # Convert pre-filled instrument positions to a list of InstrumentPosition values with the NotationModel.to_list method.
+        # Convert pre-filled instrument positions to a list of Position values with the NotationModel.to_list method.
         # Fill in empty position fields with all positions for the instrument type.
         # Then 'explode' the DF: repeat each row for each position in the list.
         mask = midinotes_df[POSITIONS].isnull()
         midinotes_df.loc[~mask, POSITIONS] = midinotes_df.loc[~mask, POSITIONS].apply(
-            lambda x: NotationModel.to_list(x, InstrumentPosition)
+            lambda x: NotationModel.to_list(x, Position)
         )
         midinotes_df.loc[mask, POSITIONS] = midinotes_df.loc[mask, MidiNotesFields.INSTRUMENTTYPE].apply(
-            lambda x: [p for p in InstrumentPosition if p.instrumenttype == x]
+            lambda x: [p for p in Position if p.instrumenttype == x]
         )
         midinotes_df = midinotes_df.explode(column=[POSITIONS]).rename(columns={POSITIONS: POSITION})
 
@@ -439,7 +439,7 @@ class Lookup:
         melodics = [Pitch.DING, Pitch.DONG, Pitch.DENG, Pitch.DEUNG, Pitch.DUNG, Pitch.DANG, Pitch.DAING]
         positions = [
             pos
-            for pos in InstrumentPosition
+            for pos in Position
             if pos.instrumenttype
             in [
                 InstrumentType.GENDERRAMBAT,
@@ -458,7 +458,7 @@ class Lookup:
 
     def get_note(
         self,
-        position: InstrumentPosition,
+        position: Position,
         pitch: Pitch,
         octave: Octave,
         stroke: Stroke,

@@ -5,10 +5,10 @@ from src.common.classes import Beat, Gongan, Note, ParserModel, Score
 from src.common.constants import (
     BeatId,
     Duration,
-    InstrumentPosition,
     InstrumentType,
     Octave,
     Pitch,
+    Position,
     Stroke,
 )
 from src.common.lookups import LOOKUP
@@ -19,15 +19,15 @@ from src.common.utils import get_whole_rest_note, score_to_notation_file
 class ScoreValidator(ParserModel):
 
     POSITIONS_AUTOCORRECT_UNEQUAL_STAVES = [
-        InstrumentPosition.UGAL,
-        InstrumentPosition.CALUNG,
-        InstrumentPosition.JEGOGAN,
-        InstrumentPosition.GONGS,
-        InstrumentPosition.KEMPLI,
+        Position.UGAL,
+        Position.CALUNG,
+        Position.JEGOGAN,
+        Position.GONGS,
+        Position.KEMPLI,
     ]
     POSITIONS_VALIDATE_AND_CORRECT_KEMPYUNG = [
-        (InstrumentPosition.PEMADE_POLOS, InstrumentPosition.PEMADE_SANGSIH),
-        (InstrumentPosition.KANTILAN_POLOS, InstrumentPosition.KANTILAN_SANGSIH),
+        (Position.PEMADE_POLOS, Position.PEMADE_SANGSIH),
+        (Position.KANTILAN_POLOS, Position.KANTILAN_SANGSIH),
     ]
 
     def __init__(self, score: Score):
@@ -125,13 +125,13 @@ class ScoreValidator(ParserModel):
         return invalids, corrected, ignored
 
     def _out_of_range(
-        self, gongan: Gongan, ranges: dict[InstrumentPosition, list[(Pitch, Octave, Stroke)]], autocorrect: bool
+        self, gongan: Gongan, ranges: dict[Position, list[(Pitch, Octave, Stroke)]], autocorrect: bool
     ) -> tuple[list[str, list[Note]]]:
         """Checks that the notes of each instrument matches the instrument's range.
 
         Args:
             gongan (Gongan): the gongan to check
-            ranges(dict[InstrumentPosition, list[(Pitch, Octave, Stroke)]]): list of notes for each instrument
+            ranges(dict[Position, list[(Pitch, Octave, Stroke)]]): list of notes for each instrument
             autocorrect (bool): if True, an attempt will be made to correct notes that are out of range (currently not effective)
 
         Returns:
@@ -176,9 +176,9 @@ class ScoreValidator(ParserModel):
     def _incorrect_kempyung(
         self,
         gongan: Gongan,
-        ranges: dict[InstrumentPosition, list[tuple[Pitch, Octave, Stroke]]],
+        ranges: dict[Position, list[tuple[Pitch, Octave, Stroke]]],
         autocorrect: bool,
-    ) -> list[tuple[BeatId, tuple[InstrumentPosition, InstrumentPosition]]]:
+    ) -> list[tuple[BeatId, tuple[Position, Position]]]:
 
         def note_pairs(beat: Beat, pair: list[InstrumentType]):
             return list(zip([n for n in beat.staves[pair[0]]], [n for n in beat.staves[pair[1]]]))

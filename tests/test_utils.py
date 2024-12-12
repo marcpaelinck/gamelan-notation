@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from src.common.classes import Beat, Gongan, Note, Score
-from src.common.constants import InstrumentPosition
+from src.common.constants import Position
 from src.common.utils import gongan_to_records, stave_to_string
 from src.notation2midi.notation5_to_dict import Font5Parser
 from src.settings.settings import InstrumentFields, get_run_settings
@@ -14,7 +14,7 @@ def create_symbol_to_note_lookup(fromfile: str) -> dict[str, Note]:
     balifont_df = pd.read_csv(fromfile, sep="\t", quoting=csv.QUOTE_NONE)
     balifont_obj = balifont_df.where(pd.notnull(balifont_df), "NONE").to_dict(orient="records")
     balifont = [
-        Note.model_validate(note_def | {"position": InstrumentPosition.GENDERRAMBAT, "_validate_range": False})
+        Note.model_validate(note_def | {"position": Position.GENDERRAMBAT, "_validate_range": False})
         for note_def in balifont_obj
     ]
     return {note.symbol: note for note in balifont}
@@ -46,15 +46,15 @@ data2 = [
             beats=[
                 Beat(
                     id=idx + 1,
-                    sys_id=1,
+                    gongan_id=1,
                     bpm_start={},
                     bpm_end={},
                     duration=2,
                     staves={
                         instr: [getchar(c) for c in staves[idx]]
                         for instr, staves in {
-                            InstrumentPosition.PEMADE_POLOS: ["a,a,", "oo", "ii", "ee", "oo", "ee", "ii", "oo"],
-                            InstrumentPosition.PEMADE_SANGSIH: ["ee", "aa", "uu", "i<i<", "aa", "i<i<", "uu", "aa"],
+                            Position.PEMADE_POLOS: ["a,a,", "oo", "ii", "ee", "oo", "ee", "ii", "oo"],
+                            Position.PEMADE_SANGSIH: ["ee", "aa", "uu", "i<i<", "aa", "i<i<", "uu", "aa"],
                         }.items()
                     },
                 )

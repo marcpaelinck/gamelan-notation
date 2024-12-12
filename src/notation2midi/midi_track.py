@@ -1,7 +1,7 @@
 from mido import Message, MetaMessage, MidiTrack, bpm2tempo, tempo2bpm
 
 from src.common.classes import Note, Preset
-from src.common.constants import InstrumentPosition, InstrumentType, Pitch, Stroke
+from src.common.constants import InstrumentType, Pitch, Position, Stroke
 from src.common.logger import get_logger
 from src.common.lookups import LOOKUP
 from src.settings.settings import BASE_NOTE_TIME, BASE_NOTES_PER_BEAT
@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 
 class MidiTrackX(MidiTrack):
     name: str
-    position: InstrumentPosition
+    position: Position
     instrumenttype: InstrumentType
     channel: int
     port: int
@@ -37,7 +37,7 @@ class MidiTrackX(MidiTrack):
         #     Message(type="control_change", control=7, value=127 if self.channel > 4 else 127, channel=self.channel)
         # )
 
-    def __init__(self, position: InstrumentPosition, preset: Preset, ppq: int):
+    def __init__(self, position: Position, preset: Preset, ppq: int):
         super(MidiTrackX, self).__init__()
         self.name = position.value
         self.position = position
@@ -82,11 +82,11 @@ class MidiTrackX(MidiTrack):
     def marker(self, message: str) -> None:
         self.append(MetaMessage("marker", text=message))
 
-    def add_note(self, position: InstrumentPosition, character: Note):
+    def add_note(self, position: Position, character: Note):
         """Converts a note into a midi event
 
         Args:
-            position (InstrumentPosition): The instrument position playing the note.
+            position (Position): The instrument position playing the note.
             note (Character): Note to be processed.
 
         Raises:

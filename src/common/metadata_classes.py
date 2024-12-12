@@ -10,9 +10,9 @@ from src.common.constants import (
     BPM,
     DEFAULT,
     DynamicLevel,
-    InstrumentPosition,
     InstrumentType,
     NotationEnum,
+    Position,
     Velocity,
 )
 
@@ -125,8 +125,8 @@ class OctavateMeta(MetaDataBaseType):
 
     @field_validator("instrument", mode="before")
     @classmethod
-    # Converts 'free format' position tags to InstrumentPosition values.
-    def normalize_positions(cls, data: str) -> InstrumentPosition:
+    # Converts 'free format' position tags to Position values.
+    def normalize_positions(cls, data: str) -> Position:
         # Delay import to avoid circular reference.
         from src.common.lookups import LOOKUP
 
@@ -145,14 +145,14 @@ class RepeatMeta(MetaDataBaseType):
 
 class SuppressMeta(MetaDataBaseType):
     metatype: Literal["SUPPRESS"]
-    positions: list[InstrumentPosition] = field(default_factory=list)
+    positions: list[Position] = field(default_factory=list)
     passes: Optional[list[int]] = field(default_factory=list)
     beats: list[int] = field(default_factory=list)
 
     @field_validator("positions", mode="before")
     @classmethod
-    # Converts 'free format' position tags to InstrumentPosition values.
-    def normalize_positions(cls, data: list[str]) -> list[InstrumentPosition]:
+    # Converts 'free format' position tags to Position values.
+    def normalize_positions(cls, data: list[str]) -> list[Position]:
         # Delay import to avoid circular reference.
         from src.common.lookups import LOOKUP
 

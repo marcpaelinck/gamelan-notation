@@ -8,9 +8,9 @@ from common.playercontent_classes import Part
 from src.common.classes import Beat, Gongan, Notation, Note, ParserModel, Score
 from src.common.constants import (
     DEFAULT,
-    InstrumentPosition,
     NotationDict,
     Pitch,
+    Position,
     SpecialTags,
     Stroke,
 )
@@ -48,11 +48,11 @@ class DictToScoreConverter(ParserModel):
     score: Score = None
 
     POSITIONS_EXPAND_STAVES = [
-        InstrumentPosition.UGAL,
-        InstrumentPosition.CALUNG,
-        InstrumentPosition.JEGOGAN,
-        InstrumentPosition.GONGS,
-        InstrumentPosition.KEMPLI,
+        Position.UGAL,
+        Position.CALUNG,
+        Position.JEGOGAN,
+        Position.GONGS,
+        Position.KEMPLI,
     ]
 
     def __init__(self, notation: Notation):
@@ -65,7 +65,7 @@ class DictToScoreConverter(ParserModel):
             position_range_lookup=LOOKUP.POSITION_P_O_S_TO_NOTE,  # replace with LOOKUP
         )
 
-    def _get_all_positions(self, notation_dict: NotationDict) -> set[InstrumentPosition]:
+    def _get_all_positions(self, notation_dict: NotationDict) -> set[Position]:
         all_instruments = [
             p
             for gongan_id, gongan in notation_dict.items()
@@ -85,7 +85,7 @@ class DictToScoreConverter(ParserModel):
             last_beat = last_gongan.beats[-1]
             new_beat = Beat(
                 id=1,
-                sys_id=last_gongan.id + 1,
+                gongan_id=last_gongan.id + 1,
                 bpm_start={-1, last_beat.bpm_end[-1]},
                 bpm_end={-1, last_beat.bpm_end[-1]},
                 duration=0,
@@ -112,7 +112,7 @@ class DictToScoreConverter(ParserModel):
             # update beat and gongan duration values
             # beat.duration = most_occurring_stave_duration(beat.staves)
             # beat.duration = max(sum(note.total_duration for note in notes) for notes in list(beat.staves.values()))
-            # gongan = self.score.gongans[beat.sys_seq]
+            # gongan = self.score.gongans[beat.gongan_seq]
             # gongan.beat_duration = most_occurring_beat_duration(gongan.beats)
             beat = beat.prev
 
@@ -164,8 +164,8 @@ class DictToScoreConverter(ParserModel):
                     self.score.flowinfo.labels[meta.data.name] = gongan.beats[meta.data.beat_seq]
                     # Process any GoTo pointing to this label
                     goto: MetaData
-                    for sys, goto in self.score.flowinfo.gotos[meta.data.name]:
-                        process_goto(sys, goto)
+                    for gongan, goto in self.score.flowinfo.gotos[meta.data.name]:
+                        process_goto(gongan, goto)
                 case OctavateMeta():
                     for beat in gongan.beats:
                         if meta.data.instrument in beat.staves:
@@ -244,7 +244,7 @@ class DictToScoreConverter(ParserModel):
                     duration = round(4 * meta.data.seconds)  # 4 notes per bpm unit and bpm=60 => 4 notes per second.
                     newbeat = Beat(
                         id=lastbeat.id + 1,
-                        sys_id=gongan.id,
+                        gongan_id=gongan.id,
                         bpm_start={-1: 60},
                         bpm_end=lastbeat.bpm_end,
                         duration=duration,
@@ -272,27 +272,25 @@ class DictToScoreConverter(ParserModel):
 
     def _create_missing_staves(
         self, beat: Beat, prevbeat: Beat, add_kempli: bool = True, force_silence=[]
-    ) -> dict[InstrumentPosition, list[Note]]:
+    ) -> dict[Position, list[Note]]:
         """Returns staves for missing positions, containing rests (silence) for the duration of the given beat.
         This ensures that positions that do not occur in all the gongans will remain in sync.
 
         Args:
             beat (Beat): The beat that should be complemented.
-            all_positions (set[InstrumentPosition]): List of all the positions that occur in the notation.
+            all_positions (set[Position]): List of all the positions that occur in the notation.
 
         Returns:
-            dict[InstrumentPosition, list[Note]]: A dict with the generated staves.
+            dict[Position, list[Note]]: A dict with the generated staves.
         """
 
         all_instruments = (
-            self.score.instrument_positions | {InstrumentPosition.KEMPLI}
-            if add_kempli
-            else self.score.instrument_positions
+            self.score.instrument_positions | {Position.KEMPLI} if add_kempli else self.score.instrument_positions
         )
         # a kempli beat is a muted stroke
         # Note: these two line are BaliMusic5 font exclusive!
         KEMPLI_BEAT = LOOKUP.get_note(
-            InstrumentPosition.KEMPLI, pitch=Pitch.STRIKE, octave=None, stroke=Stroke.MUTED, duration=1, rest_after=0
+            Position.KEMPLI, pitch=Pitch.STRIKE, octave=None, stroke=Stroke.MUTED, duration=1, rest_after=0
         )
 
         if missing_positions := (all_instruments - set(beat.staves.keys())):
@@ -301,13 +299,13 @@ class DictToScoreConverter(ParserModel):
             )
 
             # Add a kempli beat, except if a metadata label indicates otherwise or if the kempli part was already given in the original score
-            if InstrumentPosition.KEMPLI in staves.keys():  # and has_kempli_beat(gongan):
+            if Position.KEMPLI in staves.keys():  # and has_kempli_beat(gongan):
                 if beat.has_kempli_beat:
-                    rests = create_rest_stave(InstrumentPosition.KEMPLI, Stroke.EXTENSION, beat.duration - 1)
-                    staves[InstrumentPosition.KEMPLI] = [KEMPLI_BEAT] + rests
+                    rests = create_rest_stave(Position.KEMPLI, Stroke.EXTENSION, beat.duration - 1)
+                    staves[Position.KEMPLI] = [KEMPLI_BEAT] + rests
                 else:
-                    all_rests = create_rest_stave(InstrumentPosition.KEMPLI, Stroke.EXTENSION, beat.duration)
-                    staves[InstrumentPosition.KEMPLI] = all_rests
+                    all_rests = create_rest_stave(Position.KEMPLI, Stroke.EXTENSION, beat.duration)
+                    staves[Position.KEMPLI] = all_rests
 
             return staves
         else:
@@ -316,9 +314,7 @@ class DictToScoreConverter(ParserModel):
     def _add_missing_staves(self, add_kempli: bool = True):
         prev_beat = None
         for gongan in self.gongan_iterator(self.score):
-            gongan_missing_instr = [
-                pos for pos in InstrumentPosition if all(pos not in beat.staves for beat in gongan.beats)
-            ]
+            gongan_missing_instr = [pos for pos in Position if all(pos not in beat.staves for beat in gongan.beats)]
             for beat in self.beat_iterator(gongan):
                 # Not all positions occur in each gongan.
                 # Therefore we need to add blank staves (all rests) for missing positions.
@@ -332,11 +328,11 @@ class DictToScoreConverter(ParserModel):
                 self.score.instrument_positions.update({pos for pos in missing_staves})
                 prev_beat = beat
 
-    def _extend_stave(self, position: InstrumentPosition, notes: list[Note], duration: float):
+    def _extend_stave(self, position: Position, notes: list[Note], duration: float):
         """Extend a stave with EXTENSION notes so that its length matches the required duration.
 
         Args:
-            position (InstrumentPosition): instrument position of the stave
+            position (Position): instrument position of the stave
             notes (list[Note]): the stave content
             duration (float): target duration
         """
@@ -386,24 +382,20 @@ class DictToScoreConverter(ParserModel):
             Score: A Score object model, not yet validated for inconsistencies.
         """
         beats: list[Beat] = []
-        for self.curr_gongan_id, sys_info in self.notation.notation_dict.items():
+        for self.curr_gongan_id, gongan_info in self.notation.notation_dict.items():
             if self.curr_gongan_id < 0:
                 # Skip the gongan holding the global (score-wide) metadata items
                 continue
-            for self.curr_beat_id, beat_info in sys_info.items():
+            for self.curr_beat_id, beat_info in gongan_info.items():
                 if isinstance(self.curr_beat_id, SpecialTags):
                     continue
                 # create the staves (regular and exceptions)
                 # TODO merge Beat.staves and Beat.exceptions and use pass=-1 for default stave. Similar to Beat.tempo_changes.
-                staves = {
-                    position: staves[DEFAULT]
-                    for position, staves in beat_info.items()
-                    if position in InstrumentPosition
-                }
+                staves = {position: staves[DEFAULT] for position, staves in beat_info.items() if position in Position}
                 exceptions = {
                     (position, pass_): stave
                     for position, staves in beat_info.items()
-                    if position in InstrumentPosition
+                    if position in Position
                     for pass_, stave in staves.items()
                     if pass_ > 0
                 }
@@ -411,7 +403,7 @@ class DictToScoreConverter(ParserModel):
                 # Create the beat and add it to the list of beats
                 new_beat = Beat(
                     id=self.curr_beat_id,
-                    sys_id=self.curr_gongan_id,
+                    gongan_id=self.curr_gongan_id,
                     staves=staves,
                     exceptions=exceptions,
                     bpm_start={
@@ -433,9 +425,9 @@ class DictToScoreConverter(ParserModel):
                     id=int(self.curr_gongan_id),
                     beats=beats,
                     beat_duration=most_occurring_beat_duration(beats),
-                    metadata=sys_info.get(SpecialTags.METADATA, [])
+                    metadata=gongan_info.get(SpecialTags.METADATA, [])
                     + self.notation.notation_dict[DEFAULT][SpecialTags.METADATA],
-                    comments=sys_info.get(SpecialTags.COMMENT, []),
+                    comments=gongan_info.get(SpecialTags.COMMENT, []),
                 )
                 self.score.gongans.append(gongan)
                 beats = []

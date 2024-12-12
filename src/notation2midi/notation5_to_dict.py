@@ -5,11 +5,11 @@ from collections import defaultdict
 from src.common.classes import Notation, Note, ParserModel, RunSettings, Score
 from src.common.constants import (
     DEFAULT,
-    InstrumentPosition,
     NotationDict,
     NotationFont,
     Octave,
     Pitch,
+    Position,
     SpecialTags,
     Stroke,
 )
@@ -76,11 +76,11 @@ class Font5Parser(ParserModel):
             offset = matchend + 1
         return notes
 
-    def _note_from_chars(self, position: InstrumentPosition, note_chars: tuple[str]) -> list[Note]:
+    def _note_from_chars(self, position: Position, note_chars: tuple[str]) -> list[Note]:
         """Translates a list of characters to a Note object.
 
         Args:
-            position (InstrumentPosition): _description_
+            position (Position): _description_
             note_chars (str): A set of characters consisting of a note followed by modifier characters.
             prev_note (Note): preceding note, which has already been parsed (the note might occur in another beat).
             next_note_chars (str): following note, not yet parsed. Is needed to process some modifiers.
@@ -128,12 +128,12 @@ class Font5Parser(ParserModel):
         else:
             return list(json.loads(f"[{rangestr}]"))
 
-    def _parse_stave(self, stave: str, position: InstrumentPosition) -> list[Note]:
+    def _parse_stave(self, stave: str, position: Position) -> list[Note]:
         """Validates the notation
 
         Args:
             stave (str): one stave of notation
-            position (InstrumentPosition):
+            position (Position):
 
         Returns: str | None: _description_
         """
@@ -272,7 +272,7 @@ class Font5Parser(ParserModel):
 
         return tremolo_notes
 
-    def parse_notation(self) -> tuple[NotationDict, list[InstrumentPosition]]:
+    def parse_notation(self) -> tuple[NotationDict, list[Position]]:
         """Parses a notation file into a dict.
 
         Returns:
@@ -281,7 +281,7 @@ class Font5Parser(ParserModel):
         """
         notation_dict = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
         notation_dict[DEFAULT][SpecialTags.METADATA] = list()  # Will contain metadata having scope==Scope.SCORE
-        new_system = True
+        new_gongan = True
         self.curr_gongan_id = 0
         prev_staves = defaultdict(list)
 
@@ -295,15 +295,15 @@ class Font5Parser(ParserModel):
                 case "":
                     if len(line) > 1:
                         self.logerror(f"line {line_nr} has content but has no label in the first position.")
-                    new_system = True
+                    new_gongan = True
                     continue
                 case _:
-                    if new_system:
+                    if new_gongan:
                         self.curr_gongan_id += 1
                         # Metadata and comments are stored on gongan level
                         notation_dict[self.curr_gongan_id][SpecialTags.METADATA] = []
                         notation_dict[self.curr_gongan_id][SpecialTags.COMMENT] = []
-                        new_system = False
+                        new_gongan = False
 
             # Process metadata and notation
             match tag:
@@ -333,7 +333,7 @@ class Font5Parser(ParserModel):
                             continue
                         # Grace note is an inaccurate shorthand notation: replace with exact notation.
                         line = self._replace_grace_notes(line)
-                        positions = [InstrumentPosition[tag] for tag in LOOKUP.TAG_TO_POSITION.get(pos, [])]
+                        positions = [Position[tag] for tag in LOOKUP.TAG_TO_POSITION.get(pos, [])]
                         for self.curr_beat_id in range(1, len(line)):
                             for self.curr_position in positions:
                                 if line[self.curr_beat_id]:

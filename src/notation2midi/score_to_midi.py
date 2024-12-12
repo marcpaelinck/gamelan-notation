@@ -1,7 +1,7 @@
 from mido import MidiFile
 
 from src.common.classes import Beat, ParserModel, Score
-from src.common.constants import InstrumentPosition
+from src.common.constants import Position
 from src.common.lookups import LOOKUP
 from src.common.metadata_classes import PartMeta
 from src.common.playercontent_classes import Part, Song
@@ -38,12 +38,12 @@ class MidiGenerator(ParserModel):
             if track.total_tick_time() == max_ticks:
                 track.extend_last_note(seconds)
 
-    def _notation_to_track(self, position: InstrumentPosition) -> MidiTrackX:
+    def _notation_to_track(self, position: Position) -> MidiTrackX:
         """Generates the MIDI content for a single instrument position.
 
         Args:
             score (Score): The object model containing the notation.
-            position (InstrumentPosition): the instrument position
+            position (Position): the instrument position
 
         Returns:
             MidiTrack: MIDI track for the instrument.
@@ -57,7 +57,7 @@ class MidiGenerator(ParserModel):
                         beat.repeat.reset()
 
         def store_part_info(beat: Beat):
-            gongan = self.score.gongans[beat.sys_seq]
+            gongan = self.score.gongans[beat.gongan_seq]
             if partinfo := gongan.get_metadata(PartMeta):
                 curr_time = track.current_time_in_millis()
                 # check if part was already set by another trach

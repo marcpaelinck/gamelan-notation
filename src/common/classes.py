@@ -21,7 +21,6 @@ from src.common.constants import (
     PASS,
     Duration,
     InstrumentGroup,
-    InstrumentPosition,
     InstrumentType,
     Modifier,
     NotationDict,
@@ -29,6 +28,7 @@ from src.common.constants import (
     Octave,
     Pass,
     Pitch,
+    Position,
     Stroke,
     Velocity,
 )
@@ -70,7 +70,7 @@ class ParserModel:
     run_settings = None
     curr_gongan_id: int = None
     curr_beat_id: int = None
-    curr_position: InstrumentPosition = None
+    curr_position: Position = None
     errors = []
     logger = None
 
@@ -149,7 +149,7 @@ class NotationModel(BaseModel):
 class Note(NotationModel):
     model_config = ConfigDict(extra="ignore", frozen=True)
 
-    position: InstrumentPosition
+    position: Position
     symbol: str
     # symbolvalue: SymbolValue  # Phase out
     pitch: Pitch
@@ -205,7 +205,7 @@ class Preset(NotationModel):
     # See http://www.synthfont.com/The_Definitions_File.pdf
     # For port, see https://github.com/spessasus/SpessaSynth/wiki/About-Multi-Port
     instrumenttype: InstrumentType
-    position: InstrumentPosition
+    position: Position
     bank: int  # 0..127, where 127 is reserved for percussion instruments.
     preset: int  # 0..127
     channel: int  # 0..15
@@ -215,7 +215,7 @@ class Preset(NotationModel):
 
 class MidiNote(NotationModel):
     instrumenttype: InstrumentType
-    positions: list[InstrumentPosition]
+    positions: list[Position]
     pitch: Pitch
     octave: Optional[int]
     stroke: Stroke
@@ -228,7 +228,7 @@ class MidiNote(NotationModel):
     @field_validator("positions", mode="before")
     @classmethod
     def validate_pos(cls, value):
-        return cls.to_list(value, InstrumentPosition)
+        return cls.to_list(value, Position)
 
     @field_validator("octave", mode="before")
     @classmethod
@@ -240,13 +240,13 @@ class MidiNote(NotationModel):
 
 class InstrumentTag(NotationModel):
     tag: str
-    positions: list[InstrumentPosition]
+    positions: list[Position]
     infile: str = ""
 
     @field_validator("positions", mode="before")
     @classmethod
     def validate_pos(cls, value):
-        return cls.to_list(value, InstrumentPosition)
+        return cls.to_list(value, Position)
 
 
 #
@@ -266,7 +266,7 @@ class Beat:
         new_value: int
         steps: int = 0
         incremental: bool = False
-        positions: list[InstrumentPosition]
+        positions: list[Position] = None
 
     @dataclass
     class Repeat:
@@ -283,14 +283,14 @@ class Beat:
             self._countdown = self.iterations
 
     id: int
-    sys_id: int
+    gongan_id: int
     bpm_start: dict[PASS, BPM]  # tempo at beginning of beat (can vary per pass)
     bpm_end: dict[PASS, BPM]  # tempo at end of beat (can vary per pass)
     duration: float
     changes: dict[Change.Type, dict[PASS, Change]] = field(default_factory=lambda: defaultdict(dict))
-    staves: dict[InstrumentPosition, list[Note]] = field(default_factory=dict)
+    staves: dict[Position, list[Note]] = field(default_factory=dict)
     # Exceptions contains alternative staves for specific passes.
-    exceptions: dict[(InstrumentPosition, Pass), list[Note]] = field(default_factory=dict)
+    exceptions: dict[(Position, Pass), list[Note]] = field(default_factory=dict)
     prev: "Beat" = field(default=None, repr=False)  # previous beat in the score
     next: "Beat" = field(default=None, repr=False)  # next beat in the score
     goto: dict[PASS, "Beat"] = field(
@@ -304,13 +304,13 @@ class Beat:
     @computed_field
     @property
     def full_id(self) -> str:
-        return f"{int(self.sys_id)}-{self.id}"
+        return f"{int(self.gongan_id)}-{self.id}"
 
     @computed_field
     @property
-    def sys_seq(self) -> int:
+    def gongan_seq(self) -> int:
         # Returns the pythonic sequence id (numbered from 0)
-        return self.sys_id - 1
+        return self.gongan_id - 1
 
     def next_beat_in_flow(self, pass_=None):
         return self.goto.get(pass_ or self._pass_, self.next)
@@ -376,10 +376,10 @@ class Score:
 
     title: str
     settings: "RunSettings"
-    instrument_positions: set[InstrumentPosition] = None
+    instrument_positions: set[Position] = None
     gongans: list[Gongan] = field(default_factory=list)
-    midi_notes_dict: dict[tuple[InstrumentPosition, Pitch, Octave, Stroke], MidiNote] = None
-    position_range_lookup: dict[InstrumentPosition, tuple[Pitch, Octave, Stroke]] = None
+    midi_notes_dict: dict[tuple[Position, Pitch, Octave, Stroke], MidiNote] = None
+    position_range_lookup: dict[Position, tuple[Pitch, Octave, Stroke]] = None
     flowinfo: FlowInfo = field(default_factory=FlowInfo)
     total_duration: float | None = None
     midifile_length: int = None

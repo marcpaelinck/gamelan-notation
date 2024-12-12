@@ -8,12 +8,7 @@ import pandas as pd
 import regex
 from scipy.io import wavfile
 
-from src.common.constants import (
-    InstrumentGroup,
-    InstrumentPosition,
-    InstrumentType,
-    Stroke,
-)
+from src.common.constants import InstrumentGroup, InstrumentType, Position, Stroke
 from src.common.logger import get_logger
 from src.common.lookups import LOOKUP, InstrumentTag
 
@@ -38,36 +33,36 @@ def map_positions():
     mapping_r = [
         (
             ["reyong13", "reyong1+3", "reyong 1/3", "reyong p"],
-            [InstrumentPosition.REYONG_1, InstrumentPosition.REYONG_3],
+            [Position.REYONG_1, Position.REYONG_3],
         ),
         (
             ["reyong24", "reyong2+4", "reyong 2.4", "reyong s", "reyong 2/4"],
-            [InstrumentPosition.REYONG_2, InstrumentPosition.REYONG_4],
+            [Position.REYONG_2, Position.REYONG_4],
         ),
-        (["reyong12", "reyong1+2"], [InstrumentPosition.REYONG_1, InstrumentPosition.REYONG_2]),
-        (["reyong34", "reyong3+4"], [InstrumentPosition.REYONG_3, InstrumentPosition.REYONG_4]),
-        (["reyong1-3"], [InstrumentPosition.REYONG_1, InstrumentPosition.REYONG_3]),
-        (["reyong2-4"], [InstrumentPosition.REYONG_2, InstrumentPosition.REYONG_4]),
+        (["reyong12", "reyong1+2"], [Position.REYONG_1, Position.REYONG_2]),
+        (["reyong34", "reyong3+4"], [Position.REYONG_3, Position.REYONG_4]),
+        (["reyong1-3"], [Position.REYONG_1, Position.REYONG_3]),
+        (["reyong2-4"], [Position.REYONG_2, Position.REYONG_4]),
         (
             ["reyong1-4"],
             [
-                InstrumentPosition.REYONG_1,
-                InstrumentPosition.REYONG_2,
-                InstrumentPosition.REYONG_3,
-                InstrumentPosition.REYONG_4,
+                Position.REYONG_1,
+                Position.REYONG_2,
+                Position.REYONG_3,
+                Position.REYONG_4,
             ],
         ),
-        (["reyong1", "reyong(1)", "reyong 1"], [InstrumentPosition.REYONG_1]),
-        (["reyong2", "reyong(2)", "reyong 2"], [InstrumentPosition.REYONG_2]),
-        (["reyong3", "reyong(3)", "reyong 3"], [InstrumentPosition.REYONG_3]),
-        (["reyong4", "reyong(4)", "reyong 4"], [InstrumentPosition.REYONG_4]),
+        (["reyong1", "reyong(1)", "reyong 1"], [Position.REYONG_1]),
+        (["reyong2", "reyong(2)", "reyong 2"], [Position.REYONG_2]),
+        (["reyong3", "reyong(3)", "reyong 3"], [Position.REYONG_3]),
+        (["reyong4", "reyong(4)", "reyong 4"], [Position.REYONG_4]),
         (
             ["Reyong", "reyong", "rey/", "/rey", "+rey"],
             [
-                InstrumentPosition.REYONG_1,
-                InstrumentPosition.REYONG_2,
-                InstrumentPosition.REYONG_3,
-                InstrumentPosition.REYONG_4,
+                Position.REYONG_1,
+                Position.REYONG_2,
+                Position.REYONG_3,
+                Position.REYONG_4,
             ],
         ),
     ]
@@ -75,34 +70,32 @@ def map_positions():
         (
             ["gangsa p/s"],
             [
-                InstrumentPosition.PEMADE_POLOS,
-                InstrumentPosition.PEMADE_SANGSIH,
-                InstrumentPosition.KANTILAN_POLOS,
-                InstrumentPosition.KANTILAN_SANGSIH,
+                Position.PEMADE_POLOS,
+                Position.PEMADE_SANGSIH,
+                Position.KANTILAN_POLOS,
+                Position.KANTILAN_SANGSIH,
             ],
         ),
-        (["gangsa p", "gang p", "ga p", "/ga.p"], [InstrumentPosition.PEMADE_POLOS, InstrumentPosition.KANTILAN_POLOS]),
-        (["gangsa s", "ga s"], [InstrumentPosition.PEMADE_SANGSIH, InstrumentPosition.KANTILAN_SANGSIH]),
-        (["pemade p"], [InstrumentPosition.PEMADE_POLOS]),
-        (["pemade s"], [InstrumentPosition.PEMADE_SANGSIH]),
-        (["kantilan p"], [InstrumentPosition.KANTILAN_POLOS]),
-        (["kantilan s"], [InstrumentPosition.KANTILAN_SANGSIH]),
-        (["pemade"], [InstrumentPosition.PEMADE_POLOS, InstrumentPosition.PEMADE_SANGSIH]),
-        (["kantilan"], [InstrumentPosition.KANTILAN_POLOS, InstrumentPosition.KANTILAN_SANGSIH]),
+        (["gangsa p", "gang p", "ga p", "/ga.p"], [Position.PEMADE_POLOS, Position.KANTILAN_POLOS]),
+        (["gangsa s", "ga s"], [Position.PEMADE_SANGSIH, Position.KANTILAN_SANGSIH]),
+        (["pemade p"], [Position.PEMADE_POLOS]),
+        (["pemade s"], [Position.PEMADE_SANGSIH]),
+        (["kantilan p"], [Position.KANTILAN_POLOS]),
+        (["kantilan s"], [Position.KANTILAN_SANGSIH]),
+        (["pemade"], [Position.PEMADE_POLOS, Position.PEMADE_SANGSIH]),
+        (["kantilan"], [Position.KANTILAN_POLOS, Position.KANTILAN_SANGSIH]),
         (
             ["ga ", "ga+", "ga/", "/ga", "/gang", "gang.", "ga4", "gangs4", "gangsa", "(ga)", "/ ga"],
             [
-                InstrumentPosition.PEMADE_POLOS,
-                InstrumentPosition.PEMADE_SANGSIH,
-                InstrumentPosition.KANTILAN_POLOS,
-                InstrumentPosition.KANTILAN_SANGSIH,
+                Position.PEMADE_POLOS,
+                Position.PEMADE_SANGSIH,
+                Position.KANTILAN_POLOS,
+                Position.KANTILAN_SANGSIH,
             ],
         ),
     ]
     for mytag in tags:
-        mytag.positions = [
-            InstrumentPosition[instr.value] for instr in mytag.instruments if instr.value in InstrumentPosition
-        ]
+        mytag.positions = [Position[instr.value] for instr in mytag.instruments if instr.value in Position]
         for values, positions in mapping_r:
             if any(val in mytag.tag for val in values):
                 mytag.positions.extend(positions)
@@ -147,8 +140,8 @@ def merge_parts(datapath: str, basefile: str, mergefile: str, resultfile: str):
     base_df.dropna(how="all", axis="columns", inplace=True)
     merge_df.dropna(how="all", axis="columns", inplace=True)
     # Number the gongans: blank lines denote start of new gongan. Then delete blank lines.
-    base_df["sysnr"] = base_df["tag"].isna().cumsum()[~base_df["tag"].isna()] + 1
-    merge_df["sysnr"] = merge_df["tag"].isna().cumsum()[~merge_df["tag"].isna()] + 1
+    base_df["gongannr"] = base_df["tag"].isna().cumsum()[~base_df["tag"].isna()] + 1
+    merge_df["gongannr"] = merge_df["tag"].isna().cumsum()[~merge_df["tag"].isna()] + 1
     merge_df = merge_df[~merge_df["tag"].isin(["gangsa p", "gangsa s"])]
     # Drop all empty rows
     base_df.dropna(how="all", axis="rows", inplace=True)
@@ -157,13 +150,13 @@ def merge_parts(datapath: str, basefile: str, mergefile: str, resultfile: str):
     new_df = pd.concat([base_df, merge_df], ignore_index=True)
     # Sort the new table
     new_df["tagid"] = new_df["tag"].apply(lambda tag: sortingorder.index(tag))
-    new_df.sort_values(by=["sysnr", "tagid"], inplace=True, ignore_index=True)
+    new_df.sort_values(by=["gongannr", "tagid"], inplace=True, ignore_index=True)
     # Add empty lines between gongans
-    mask = new_df["sysnr"].ne(new_df["sysnr"].shift(-1))
+    mask = new_df["gongannr"].ne(new_df["gongannr"].shift(-1))
     empties = pd.DataFrame("", index=mask.index[mask] + 0.5, columns=new_df.columns)
     new_df = pd.concat([new_df, empties]).sort_index().reset_index(drop=True).iloc[:-1]
-    # Drop sysnr and tagid columns
-    new_df.drop(["sysnr", "tagid"], axis="columns", inplace=True)
+    # Drop gongannr and tagid columns
+    new_df.drop(["gongannr", "tagid"], axis="columns", inplace=True)
     new_df.to_csv(path.join(datapath, resultfile), sep="\t", index=False, header=False)
 
 

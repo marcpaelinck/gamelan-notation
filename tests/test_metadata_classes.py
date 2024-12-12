@@ -2,7 +2,7 @@ from typing import Literal
 
 import pytest
 
-from src.common.constants import InstrumentPosition
+from src.common.constants import Position
 from src.common.metadata_classes import (
     GonganMeta,
     GoToMeta,
@@ -116,11 +116,11 @@ metadata_valid = [
             data=SuppressMeta(
                 metatype="SUPPRESS",
                 positions=[
-                    InstrumentPosition.PEMADE_POLOS,
-                    InstrumentPosition.PEMADE_SANGSIH,
-                    InstrumentPosition.KANTILAN_POLOS,
-                    InstrumentPosition.KANTILAN_SANGSIH,
-                    InstrumentPosition.REYONG_1,
+                    Position.PEMADE_POLOS,
+                    Position.PEMADE_SANGSIH,
+                    Position.KANTILAN_POLOS,
+                    Position.KANTILAN_SANGSIH,
+                    Position.REYONG_1,
                 ],
                 passes=[1],
                 beats=[1, 2],
