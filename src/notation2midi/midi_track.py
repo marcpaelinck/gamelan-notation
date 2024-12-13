@@ -23,6 +23,7 @@ class MidiTrackX(MidiTrack):
     last_noteoff_msg = None
     time_since_last_note_end: int = 0
     current_bpm: int = 0
+    current_velocity: int = LOOKUP.DYNAMICS_TO_VELOCITY[LOOKUP.DEFAULT_DYNAMICS]
     current_signature: int = 0
 
     def set_channel_bank_and_preset(self):
@@ -71,6 +72,9 @@ class MidiTrackX(MidiTrack):
             self.time_since_last_note_end = 0
             self.current_bpm = new_bpm
 
+    def update_dynamics(self, new_velocity):
+        self.current_velocity = new_velocity
+
     def extend_last_note(self, seconds: int) -> None:
         if self.last_noteoff_msg:
             beats = round(self.current_bpm * seconds / 60)
@@ -82,7 +86,7 @@ class MidiTrackX(MidiTrack):
     def marker(self, message: str) -> None:
         self.append(MetaMessage("marker", text=message))
 
-    def add_note(self, position: Position, character: Note):
+    def add_note(self, character: Note):
         """Converts a note into a midi event
 
         Args:
@@ -100,7 +104,7 @@ class MidiTrackX(MidiTrack):
                     Message(
                         type="note_on",
                         note=midivalue,
-                        velocity=character.velocity,
+                        velocity=self.current_velocity,
                         time=self.time_since_last_note_end if count == 0 else 0,  # all notes start together
                         channel=self.channel,
                     )
@@ -110,7 +114,7 @@ class MidiTrackX(MidiTrack):
                     off_msg := Message(
                         type="note_off",
                         note=midivalue,
-                        velocity=70,
+                        # velocity=self.current_velocity,
                         time=round(character.duration * BASE_NOTE_TIME) if count == 0 else 0,  # all notes end together
                         channel=self.channel,
                     )

@@ -1,5 +1,4 @@
 import csv
-from itertools import product
 from os import path
 from statistics import mode
 

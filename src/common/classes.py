@@ -20,6 +20,7 @@ from src.common.constants import (
     DEFAULT,
     PASS,
     Duration,
+    DynamicLevel,
     InstrumentGroup,
     InstrumentType,
     Modifier,
@@ -59,71 +60,6 @@ class TimingData:
     beats_per_gongan: int
 
 
-class ParserModel:
-    class ParserType(StrEnum):
-        NOTATIONPARSER = "parsing the notation"
-        SCOREGENERATOR = "generating the score"
-        VALIDATOR = "validating the score"
-        MIDIGENERATOR = "generating the midi file"
-
-    parser_type: ParserType
-    run_settings = None
-    curr_gongan_id: int = None
-    curr_beat_id: int = None
-    curr_position: Position = None
-    errors = []
-    logger = None
-
-    def __init__(self, parser_type: ParserType, run_settings: "RunSettings"):
-        self.parser_type = parser_type
-        self.run_settings = run_settings
-        self.logger = get_logger(self.__class__.__name__)
-
-    def log(self, err_msg: str, level: logging = logging.ERROR) -> str:
-        prefix = (
-            f"{self.curr_gongan_id:02d}-{self.curr_beat_id:02d} | "
-            if self.curr_beat_id
-            else f"{self.curr_gongan_id:02d}    | "
-        )
-        if level > logging.INFO:
-            if not self.errors:
-                self.logger.error(f"Errors encountered while {self.parser_type.value}:")
-            msg = "     " + prefix + err_msg
-            self.logger.log(level, msg)
-            if level > logging.INFO:
-                self.errors.append(msg)
-
-    def logerror(self, msg: str) -> str:
-        self.log(msg, level=logging.ERROR)
-
-    def logwarning(self, msg: str) -> str:
-        self.log(msg, level=logging.WARNING)
-
-    def loginfo(self, msg: str) -> str:
-        self.log(msg, level=logging.INFO)
-
-    """Use the following generators to iterate through gongans and beats if you 
-    want to use the logging methods of this class. This will ensure that the the 
-    logging is prefixed with the correct gongan and beat ids.
-    """
-
-    def gongan_iterator(self, score: "Score"):
-        for gongan in score.gongans:
-            self.curr_gongan_id = gongan.id
-            self.curr_beat_id = None
-            yield gongan
-
-    def beat_iterator(self, gongan: "Gongan"):
-        for beat in gongan.beats:
-            self.curr_beat_id = beat.id
-            yield beat
-
-    @property
-    def has_errors(self):
-        return len(self.errors) > 0
-
-
-# Settings
 class NotationModel(BaseModel):
     @classmethod
     def to_list(cls, value, el_type: type):
@@ -254,10 +190,14 @@ class InstrumentTag(NotationModel):
 #
 
 
+# Note: Beat is intentionally not a Pydantic subclass because
+# it points to itself through the `next`, `prev` and `goto` fields,
+# which would otherwise cause an "Infinite recursion" error.
 @dataclass
 class Beat:
-    @dataclass
-    class Change:
+
+    class Change(NotationModel):
+        # NotationModel contains a method to translate a list-like string to an actual list.
         class Type(StrEnum):
             TEMPO = auto()
             DYNAMICS = auto()
@@ -266,7 +206,7 @@ class Beat:
         new_value: int
         steps: int = 0
         incremental: bool = False
-        positions: list[Position] = None
+        positions: list[Position] = field(default_factory=list)
 
     @dataclass
     class Repeat:
@@ -286,6 +226,8 @@ class Beat:
     gongan_id: int
     bpm_start: dict[PASS, BPM]  # tempo at beginning of beat (can vary per pass)
     bpm_end: dict[PASS, BPM]  # tempo at end of beat (can vary per pass)
+    velocities_start: dict[PASS, dict[Position, Velocity]]  # Same for velocity, specified per position
+    velocities_end: dict[PASS, dict[Position, Velocity]]
     duration: float
     changes: dict[Change.Type, dict[PASS, Change]] = field(default_factory=lambda: defaultdict(dict))
     staves: dict[Position, list[Note]] = field(default_factory=dict)
@@ -318,24 +260,34 @@ class Beat:
     def get_bpm_start(self):
         return self.bpm_start.get(self._pass_, self.bpm_start.get(DEFAULT, None))
 
-    def get_bpm_end(self):
-        return self.bpm_end.get(self._pass_, self.bpm_end.get(DEFAULT, None))
+    def get_velocity_start(self, position):
+        velocities_start = self.velocities_start.get(self._pass_, self.velocities_start.get(DEFAULT, None))
+        # NOTE intentionally causing Exception if position not in velocities_start
+        return velocities_start[position]
 
-    def get_bpm_end_last_pass(self):
-        return self.bpm_end.get(self._pass_, self.bpm_end.get(DEFAULT, None))
-
-    def get_changed_value(self, current_value: BPM | Velocity, changetype: Change.Type) -> BPM | Velocity | None:
+    def get_changed_value(
+        self, current_value: BPM | Velocity, position: Position, changetype: Change.Type
+    ) -> BPM | Velocity | None:
         # Generic function, returns either a BPM or a Velocity value for the current beat.
         # Returns None if the value for the current beat is the same as that of the previous beat.
         # In case of a gradual change over several measures, calculates the value for the current beat.
         change_list = self.changes[changetype]
         change = change_list.get(self._pass_, change_list.get(DEFAULT, None))
+        if change and changetype is Beat.Change.Type.DYNAMICS and position not in change.positions:
+            change = None
         if change and change.new_value != current_value:
             if change.incremental:
                 return current_value + int((change.new_value - current_value) / change.steps)
             else:
                 return change.new_value
         return None
+
+    @classmethod
+    def get_default_velocities(cls) -> dict[Position, Velocity]:
+        from src.common.lookups import LOOKUP
+
+        default_velocity = LOOKUP.DYNAMICS_TO_VELOCITY[LOOKUP.DEFAULT_DYNAMICS]
+        return {pos: default_velocity for pos in Position}
 
 
 @dataclass
@@ -429,6 +381,8 @@ class RunSettings(BaseModel):
         midi_definition_file: str
         presets_file: str
         PPQ: int  # pulses per quarternote
+        dynamics: dict[DynamicLevel, int] = field(default_factory=dict)
+        default_dynamics: DynamicLevel
 
         @property
         def notes_filepath(self):
@@ -516,3 +470,70 @@ class RunSettings(BaseModel):
     notation: Optional[NotationInfo] = None
     instruments: Optional[InstrumentInfo] = None
     font: Optional[FontInfo] = None
+
+
+# BASE CLASS FOR THE CLASSES THAT PERFORM THE NOTATION -> MIDI CONVERSION
+
+
+class ParserModel:
+    class ParserType(StrEnum):
+        NOTATIONPARSER = "parsing the notation"
+        SCOREGENERATOR = "generating the score"
+        VALIDATOR = "validating the score"
+        MIDIGENERATOR = "generating the midi file"
+
+    parser_type: ParserType
+    run_settings = None
+    curr_gongan_id: int = None
+    curr_beat_id: int = None
+    curr_position: Position = None
+    errors = []
+    logger = None
+
+    def __init__(self, parser_type: ParserType, run_settings: RunSettings):
+        self.parser_type = parser_type
+        self.run_settings = run_settings
+        self.logger = get_logger(self.__class__.__name__)
+
+    def log(self, err_msg: str, level: logging = logging.ERROR) -> str:
+        prefix = (
+            f"{self.curr_gongan_id:02d}-{self.curr_beat_id:02d} | "
+            if self.curr_beat_id
+            else f"{self.curr_gongan_id:02d}    | "
+        )
+        if level > logging.INFO:
+            if not self.errors:
+                self.logger.error(f"Errors encountered while {self.parser_type.value}:")
+            msg = "     " + prefix + err_msg
+            self.logger.log(level, msg)
+            if level > logging.INFO:
+                self.errors.append(msg)
+
+    def logerror(self, msg: str) -> str:
+        self.log(msg, level=logging.ERROR)
+
+    def logwarning(self, msg: str) -> str:
+        self.log(msg, level=logging.WARNING)
+
+    def loginfo(self, msg: str) -> str:
+        self.log(msg, level=logging.INFO)
+
+    """Use the following generators to iterate through gongans and beats if you 
+    want to use the logging methods of this class. This will ensure that the the 
+    logging is prefixed with the correct gongan and beat ids.
+    """
+
+    def gongan_iterator(self, score: Score):
+        for gongan in score.gongans:
+            self.curr_gongan_id = gongan.id
+            self.curr_beat_id = None
+            yield gongan
+
+    def beat_iterator(self, gongan: Gongan):
+        for beat in gongan.beats:
+            self.curr_beat_id = beat.id
+            yield beat
+
+    @property
+    def has_errors(self):
+        return len(self.errors) > 0

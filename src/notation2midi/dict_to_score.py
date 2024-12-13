@@ -86,8 +86,11 @@ class DictToScoreConverter(ParserModel):
             new_beat = Beat(
                 id=1,
                 gongan_id=last_gongan.id + 1,
-                bpm_start={-1, last_beat.bpm_end[-1]},
-                bpm_end={-1, last_beat.bpm_end[-1]},
+                bpm_start={DEFAULT, last_beat.bpm_end[-1]},
+                bpm_end={DEFAULT, last_beat.bpm_end[-1]},
+                # velocity_start and velocity_end are dict[pass, dict[Position, Velocity]]
+                velocities_start={DEFAULT, last_beat.velocities_end[DEFAULT].copy()},
+                velocities_end={DEFAULT, last_beat.velocities_end[DEFAULT].copy()},
                 duration=0,
                 prev=last_beat,
             )
@@ -164,8 +167,8 @@ class DictToScoreConverter(ParserModel):
                     self.score.flowinfo.labels[meta.data.name] = gongan.beats[meta.data.beat_seq]
                     # Process any GoTo pointing to this label
                     goto: MetaData
-                    for gongan, goto in self.score.flowinfo.gotos[meta.data.name]:
-                        process_goto(gongan, goto)
+                    for gongan_, goto in self.score.flowinfo.gotos[meta.data.name]:
+                        process_goto(gongan_, goto)
                 case OctavateMeta():
                     for beat in gongan.beats:
                         if meta.data.instrument in beat.staves:
@@ -211,11 +214,15 @@ class DictToScoreConverter(ParserModel):
                         self.logerror(f"{meta.data.metatype} metadata: {value} is larger than the number of beats")
                         continue
                     if meta.data.beat_count == 0:
-                        # immediate tempo change.
+                        # immediate change.
                         beat = gongan.beats[meta.data.first_beat_seq]
                         beat.changes[changetype].update(
                             {
-                                pass_: Beat.Change(new_value=meta.data.value, incremental=False)
+                                pass_: Beat.Change(
+                                    new_value=meta.data.value,
+                                    positions=meta.data.positions if changetype == Beat.Change.Type.DYNAMICS else [],
+                                    incremental=False,
+                                )
                                 for pass_ in meta.data.passes
                             }
                         )
@@ -230,7 +237,14 @@ class DictToScoreConverter(ParserModel):
                                 break
                             beat.changes[changetype].update(
                                 {
-                                    pass_: Beat.Change(new_value=meta.data.value, steps=steps, incremental=True)
+                                    pass_: Beat.Change(
+                                        new_value=meta.data.value,
+                                        steps=steps,
+                                        positions=(
+                                            meta.data.positions if changetype == Beat.Change.Type.DYNAMICS else []
+                                        ),
+                                        incremental=True,
+                                    )
                                     for pass_ in meta.data.passes
                                 }
                             )
@@ -247,6 +261,8 @@ class DictToScoreConverter(ParserModel):
                         gongan_id=gongan.id,
                         bpm_start={-1: 60},
                         bpm_end=lastbeat.bpm_end,
+                        velocities_start=lastbeat.velocities_start.copy(),
+                        velocities_end=lastbeat.velocities_end.copy(),
                         duration=duration,
                         prev=lastbeat,
                         next=lastbeat.next,
@@ -410,6 +426,17 @@ class DictToScoreConverter(ParserModel):
                         DEFAULT: (bpm := self.score.gongans[-1].beats[-1].bpm_end[-1] if self.score.gongans else 0)
                     },
                     bpm_end={DEFAULT: bpm},
+                    velocities_start={
+                        DEFAULT: (
+                            # velocity_start and velocity_end are dict[pass, dict[Position, Velocity]]
+                            vel := (
+                                self.score.gongans[-1].beats[-1].velocities_end[-1].copy()
+                                if self.score.gongans
+                                else Beat.get_default_velocities()
+                            )
+                        )
+                    },
+                    velocities_end={DEFAULT: vel.copy()},
                     duration=max(sum(note.total_duration for note in notes) for notes in list(staves.values())),
                 )
                 prev_beat = beats[-1] if beats else self.score.gongans[-1].beats[-1] if self.score.gongans else None
@@ -452,7 +479,7 @@ class DictToScoreConverter(ParserModel):
         # Add kempli beats
         self._add_missing_staves(add_kempli=True)
 
-    def convert_notation_to_midi(self):
+    def create_score(self):
         """This method does all the work.
         All settings are read from the (YAML) settings files.
         """

@@ -179,7 +179,13 @@ class Font5Parser(ParserModel):
             metadata = MetaData(data=content)
         except Exception as err:
             # The validation and generation of meaningful error messages is performed in the MetaData class.
-            self.logerror(str(err).replace("\n", "."))
+            msg = (
+                ". ".join(arg for arg in err.args if arg)
+                if err.args
+                else str(err.errors()[0]["msg"]).replace("\n", ".")
+            )
+            self.logerror(f"{content} - {msg}")
+
             return None
 
         return metadata
@@ -188,7 +194,9 @@ class Font5Parser(ParserModel):
         """Replaces the inaccurate grace note notation with an accurate equivalent.
         A grace note represents a short off-beat note before the next note. The interpretation is that
         a grace note combines with the previous note or rest by replacing part of the duration
-        of that previous note or rest. W
+        of that previous note or rest.
+        This method will not replace grace notes at the beginning of a line (=gongan). Because of the complexity
+        these will be handled during the conversion to MIDI.
 
         Grace cause two complications:
         1. A grace note is both a note and a modifier: it affects the duration of the preceding note.
@@ -332,6 +340,8 @@ class Font5Parser(ParserModel):
                             self.logerror(f"unrecognized instrument tag {pos}.")
                             continue
                         # Grace note is an inaccurate shorthand notation: replace with exact notation.
+                        # TODO This should be performed after the object model has been created so that we can
+                        # process grace notes at the beginning of a gongan, which affect the previous gongan.
                         line = self._replace_grace_notes(line)
                         positions = [Position[tag] for tag in LOOKUP.TAG_TO_POSITION.get(pos, [])]
                         for self.curr_beat_id in range(1, len(line)):

@@ -3,7 +3,6 @@ f"""Separate location for lookup tables, which are populated with methods in uti
 """
 
 import csv
-import json
 from collections import defaultdict
 
 import numpy as np
@@ -19,6 +18,7 @@ from src.common.classes import (
 )
 from src.common.constants import (
     Duration,
+    DynamicLevel,
     InstrumentGroup,
     InstrumentType,
     Modifier,
@@ -27,6 +27,7 @@ from src.common.constants import (
     Pitch,
     Position,
     Stroke,
+    Velocity,
 )
 from src.common.logger import get_logger
 from src.settings.settings import (
@@ -49,6 +50,8 @@ class Lookup:
         Position, dict[tuple[Pitch, Octave, Stroke], dict[tuple[Duration, Duration], Note]]
     ] = dict()
     POSITION_CHARS_TO_NOTELIST: dict[(Position, str), Note]
+    DYNAMICS_TO_VELOCITY: dict[DynamicLevel, Velocity]
+    DEFAULT_DYNAMICS: DynamicLevel
 
     def __init__(self, run_settings: RunSettings) -> None:
         """Initializes lookup dicts and lists from settings files
@@ -79,6 +82,8 @@ class Lookup:
             for props in P_O_S.values()
             for note in props.values()
         }
+        self.DYNAMICS_TO_VELOCITY = run_settings.midi.dynamics
+        self.DEFAULT_DYNAMICS = run_settings.midi.default_dynamics
 
     def _create_instrumentposition_to_midinote_lookup(
         self, instrumentgroup: InstrumentGroup, fromfile: str

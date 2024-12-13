@@ -11,6 +11,14 @@ instruments:
 midi:
     folder: ./data/midi
     PPQ: 96
+    dynamics:
+        ff: 127
+        f: 105
+        mf: 85
+        mp: 65
+        p: 45
+        pp: 30
+    default_dynamics: mf
     midiversions:
         GONG_KEBYAR1:
             comment: two presets (melodic and percussion)

@@ -243,9 +243,12 @@ class NoteOct(NotationEnum):
 
 
 class DynamicLevel(NotationEnum):
+    PIANISSIMO = "pp"
     PIANO = "p"
+    MEZZOPIANO = "mp"
     MEZZOFORTE = "mf"
     FORTE = "f"
+    FORTISSIMO = "ff"
 
 
 # MIDI to Notation

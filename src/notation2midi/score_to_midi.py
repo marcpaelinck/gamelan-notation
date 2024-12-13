@@ -78,12 +78,15 @@ class MidiGenerator(ParserModel):
             if self.run_settings.options.debug_logging:
                 track.comment(f"beat {beat.full_id} pass{beat._pass_}")
             # Set new tempo
-            if new_bpm := beat.get_changed_value(track.current_bpm, Beat.Change.Type.TEMPO):
+            if new_bpm := beat.get_changed_value(track.current_bpm, position, Beat.Change.Type.TEMPO):
                 track.update_tempo(new_bpm or beat.get_bpm_start())
+            # Set new dynamics
+            if new_velocity := beat.get_changed_value(track.current_velocity, position, Beat.Change.Type.DYNAMICS):
+                track.update_dynamics(new_velocity or beat.get_velocity_start(position))
 
             # Process individual notes. Check if there is an alternative stave for the current pass
             for note in beat.exceptions.get((position, beat._pass_), beat.staves.get(position, [])):
-                track.add_note(position, note)
+                track.add_note(note)
             if beat.repeat and beat.repeat._countdown > 0:
                 beat.repeat._countdown -= 1
                 beat = beat.repeat.goto

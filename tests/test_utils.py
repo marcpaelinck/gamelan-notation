@@ -49,6 +49,8 @@ data2 = [
                     gongan_id=1,
                     bpm_start={},
                     bpm_end={},
+                    velocities_start={},
+                    velocities_end={},
                     duration=2,
                     staves={
                         instr: [getchar(c) for c in staves[idx]]

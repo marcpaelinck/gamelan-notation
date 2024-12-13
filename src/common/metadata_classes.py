@@ -1,19 +1,18 @@
 import json
 import re
 from dataclasses import field
+from enum import StrEnum
 from typing import Any, Literal, Optional, Union
 
 import regex
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from src.common.constants import (
-    BPM,
     DEFAULT,
     DynamicLevel,
     InstrumentType,
     NotationEnum,
     Position,
-    Velocity,
 )
 
 
@@ -41,10 +40,45 @@ class Scope(NotationEnum):
     SCORE = "SCORE"
 
 
-class MetaDataBaseType(BaseModel):
+class MetaDataBaseModel(BaseModel):
     metatype: Literal[""]
     scope: Optional[Scope] = Scope.GONGAN
     _processingorder_ = 99
+
+    @classmethod
+    def string_to_list(cls, value: str, el_type: type):
+        """Tries to to parse a string or a list of strings. If el_type is None, returns a list of strings.
+        If el_type is given, the function tries to parse the list elements into `el_type` values.
+        `el_type` should either be `float` or a subclass of `StrEnum`.
+        Args:
+            value (str): a json-interpretable string.
+            el_type (type): type to which to convert the list elements. Should either be a subtype of StrEnum
+                            or a type that can be cast from string by applying el_type(value).
+        Returns:
+            list[el_type]:
+        """
+        if isinstance(value, str):
+            # Single string representing a list of strings: parse into a list of strings
+            # First add double quotes around each list element.
+            val = re.sub(r"([A-Za-z_][\w]*)", r'"\1"', value)
+            try:
+                value = json.loads(val)
+            except Exception:
+                raise ValueError(
+                    f"{value} is not a valid list. Elements should be comma separated and enclosed between square brackets []."
+                )
+        if isinstance(value, list):
+            # List of strings: convert strings to enumtype objects.
+            if all(isinstance(el, str) for el in value):
+                try:
+                    return [el_type[el] if issubclass(el_type, StrEnum) else el_type(el) for el in value]
+                except Exception:
+                    ValueError(f"Could not convert the elements of {value} to {el_type} types.")
+            elif all(isinstance(el, el_type) for el in value):
+                # List of el_type: return as-is
+                return value
+        else:
+            raise ValueError(f"Could not convert {value} into a list of {el_type}.")
 
     def model_dump_notation(self):
         json = self.model_dump(exclude_defaults=True)
@@ -52,10 +86,10 @@ class MetaDataBaseType(BaseModel):
         return f"{{{self.metatype} {', '.join([f'{key}={val}' for key, val in json.items()])}}}"
 
 
-class DynamicsMeta(MetaDataBaseType):
-    metatype: Literal["DYNAMICS"]
-    level: DynamicLevel
-    value: Velocity = None
+class GradualChangeMetadata(MetaDataBaseModel):
+    # Generic class that represent a value that can gradually
+    # change over a number of beats, such as tempo or dynamics.
+    value: int | DynamicLevel = None
     first_beat: Optional[int] = 1
     beat_count: Optional[int] = 0
     passes: Optional[list[int]] = field(
@@ -67,25 +101,46 @@ class DynamicsMeta(MetaDataBaseType):
         # Returns the pythonic sequence id (numbered from 0)
         return self.first_beat - 1
 
-    @model_validator(mode="after")
-    def set_value(self):
-        value = {DynamicLevel.PIANO.value: 75, DynamicLevel.MEZZOFORTE.value: 100, DynamicLevel.FORTE.value: 127}.get(
-            self.level, None
-        )
-        if value:
-            self.value = value
-        else:
+
+# THE METADATA CLASSES
+
+
+class DynamicsMeta(GradualChangeMetadata):
+    metatype: Literal["DYNAMICS"]
+    # Currently, an empty list stands for all positions.
+    positions: list[Position] = field(default_factory=list)
+
+    @field_validator("positions", mode="before")
+    @classmethod
+    # Converts 'free format' position tags to Position values.
+    def normalize_positions(cls, data: list[str]) -> list[Position]:
+        # Delay import to avoid circular reference.
+        from src.common.lookups import LOOKUP
+
+        try:
+            return sum((LOOKUP.TAG_TO_POSITION[pos] for pos in data), [])
+        except:
+            raise ValueError(f"Unrecognized instrument position in {data}.")
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def set_value(cls, value: DynamicLevel):
+        from src.common.lookups import LOOKUP
+
+        try:
+            value = LOOKUP.DYNAMICS_TO_VELOCITY[value]
+        except:
             # Should not occur because the validator is called after resolving the other fields
-            raise Exception(f"illegal value for dynamics")
-        return self
+            raise Exception(f"illegal value for dynamics: {value}")
+        return value
 
 
-class GonganMeta(MetaDataBaseType):
+class GonganMeta(MetaDataBaseModel):
     metatype: Literal["GONGAN"]
     type: GonganType
 
 
-class GoToMeta(MetaDataBaseType):
+class GoToMeta(MetaDataBaseModel):
     metatype: Literal["GOTO"]
     label: str
     from_beat: Optional[int] | None = None  # Beat number from which to goto. Default is last beat of the gongan.
@@ -97,14 +152,14 @@ class GoToMeta(MetaDataBaseType):
         return self.from_beat - 1 if self.from_beat else -1
 
 
-class KempliMeta(MetaDataBaseType):
+class KempliMeta(MetaDataBaseModel):
     metatype: Literal["KEMPLI"]
     status: MetaDataSwitch
     beats: Optional[list[int]] = field(default_factory=list)
     scope: Optional[Scope] = Scope.GONGAN
 
 
-class LabelMeta(MetaDataBaseType):
+class LabelMeta(MetaDataBaseModel):
     metatype: Literal["LABEL"]
     name: str
     beat: Optional[int] = 1
@@ -117,7 +172,7 @@ class LabelMeta(MetaDataBaseType):
         return self.beat - 1
 
 
-class OctavateMeta(MetaDataBaseType):
+class OctavateMeta(MetaDataBaseModel):
     metatype: Literal["OCTAVATE"]
     instrument: InstrumentType
     octaves: int
@@ -133,17 +188,17 @@ class OctavateMeta(MetaDataBaseType):
         return LOOKUP.TAG_TO_POSITION[data][0]
 
 
-class PartMeta(MetaDataBaseType):
+class PartMeta(MetaDataBaseModel):
     metatype: Literal["PART"]
     name: str
 
 
-class RepeatMeta(MetaDataBaseType):
+class RepeatMeta(MetaDataBaseModel):
     metatype: Literal["REPEAT"]
     count: int = 1
 
 
-class SuppressMeta(MetaDataBaseType):
+class SuppressMeta(MetaDataBaseModel):
     metatype: Literal["SUPPRESS"]
     positions: list[Position] = field(default_factory=list)
     passes: Optional[list[int]] = field(default_factory=list)
@@ -156,32 +211,24 @@ class SuppressMeta(MetaDataBaseType):
         # Delay import to avoid circular reference.
         from src.common.lookups import LOOKUP
 
-        return sum((LOOKUP.TAG_TO_POSITION[pos] for pos in data), [])
+        try:
+            return sum((LOOKUP.TAG_TO_POSITION[pos] for pos in data), [])
+        except:
+            raise ValueError(f"Unrecognized instrument position in {data}.")
 
 
-class TempoMeta(MetaDataBaseType):
+class TempoMeta(GradualChangeMetadata):
     metatype: Literal["TEMPO"]
-    value: BPM
-    first_beat: Optional[int] = 1
-    beat_count: Optional[int] = 0
-    passes: Optional[list[int]] = field(
-        default_factory=lambda: list([DEFAULT])
-    )  # On which pass(es) should goto be performed?
-
-    @property
-    def first_beat_seq(self) -> int:
-        # Returns the pythonic sequence id (numbered from 0)
-        return self.first_beat - 1
 
 
-class ValidationMeta(MetaDataBaseType):
+class ValidationMeta(MetaDataBaseModel):
     metatype: Literal["VALIDATION"]
     beats: Optional[list[int]] = field(default_factory=list)
     ignore: list[ValidationProperty]
     scope: Optional[Scope] = Scope.GONGAN
 
 
-class WaitMeta(MetaDataBaseType):
+class WaitMeta(MetaDataBaseModel):
     metatype: Literal["WAIT"]
     seconds: float = None
     after: bool = True

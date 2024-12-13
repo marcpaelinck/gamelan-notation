@@ -1,4 +1,3 @@
-import json
 import os
 import re
 from enum import StrEnum
@@ -243,4 +242,5 @@ def save_midiplayer_content(playercontent: Content):
 
 if __name__ == "__main__":
     # For testing
-    print(get_run_settings())
+    run_settings = get_run_settings()
+    x = 1

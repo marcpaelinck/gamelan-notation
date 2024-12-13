@@ -27,7 +27,7 @@ def notation_to_midi(run_settings: RunSettings):
         else:
             raise Exception(f"Cannot parse font {run_settings.font.fontversion}.")
         notation = font_parser.parse_notation()
-        score = DictToScoreConverter(notation).convert_notation_to_midi()
+        score = DictToScoreConverter(notation).create_score()
         score = ScoreValidator(score).validate_score()
         MidiGenerator(score).create_midifile()
 
