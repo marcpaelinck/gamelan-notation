@@ -40,7 +40,7 @@ class Font5Parser(ParserModel):
         r"[kxytb089\(\)\*][:;]",  # non-melodic note followed by a tremolo symbol.
         r"[aeiours][,<]{0,1}[_=]{0,1}[/?]{0,1}",  # melodic note symbol optionally followed by octave symbol, note duration modifier and/or mute/abbrev symbol
         r"[kxytbkxytb089\(\)\*][_=]{0,1}[/?]{0,1}",  # non-melodic symbol optionally followed by note duration modifier and/or mute/abbrev symbol
-        r"[AEIOU](?=[aeiou])",  # melodic grace note. Must be followed by a melodic note.
+        r"[AEIOU](?=[aeiours])",  # melodic grace note. Must be followed by a melodic note.
         r"X(?=x)|Y(?=y)|K(?=k)|B(?=b)",  # non-melodic grace note. Must be followed by a note with the same pitch.
         r"[\-\.][_=]{0,1}",  # rest optionally followed by note duration modifier and grace note
         r"[GPTX]",  # gong section (GPT) without modifier
@@ -190,38 +190,6 @@ class Font5Parser(ParserModel):
 
         return metadata
 
-    def _replace_grace_notes(self, line: str) -> str:
-        """Replaces the inaccurate grace note notation with an accurate equivalent.
-        A grace note represents a short off-beat note before the next note. The interpretation is that
-        a grace note combines with the previous note or rest by replacing part of the duration
-        of that previous note or rest.
-        This method will not replace grace notes at the beginning of a line (=gongan). Because of the complexity
-        these will be handled during the conversion to MIDI.
-
-        Grace cause two complications:
-        1. A grace note is both a note and a modifier: it affects the duration of the preceding note.
-        2. A grace note is accepted at the beginning of a beat. This is inaccurate because the grace note
-            actually belongs to the preceding beat.
-        Both problems are tackled by replacing the grace note
-
-        Args:
-            line (str): _description_
-
-        Returns:
-            str: _description_
-        """
-
-        def replace(m: re.Match):
-            # TODO This only works if the previous note is not a half or quarter note. This is not checked.
-            return f"{m.group(1)}_{m.group(3).lower()}_{m.group(2)}"
-
-        if len(line) <= 1:
-            # No notation: nothing to do
-            return line
-        notation_part = "\t".join(line[1:])
-        notation_part = re.sub(r"(.)(\t{0,1})([" + self.GRACE_NOTES + "])", replace, notation_part)
-        return line[:1] + notation_part.split("\t")
-
     def _get_nearest_octave(self, note: Note, other_note: Note, noterange: list[tuple[Pitch, Octave]]) -> Octave:
         """Returns the octave for note that minimizes the distance between the two note pitches.
 
@@ -339,10 +307,7 @@ class Font5Parser(ParserModel):
                         if not LOOKUP.TAG_TO_POSITION.get(pos, None):
                             self.logerror(f"unrecognized instrument tag {pos}.")
                             continue
-                        # Grace note is an inaccurate shorthand notation: replace with exact notation.
-                        # TODO This should be performed after the object model has been created so that we can
-                        # process grace notes at the beginning of a gongan, which affect the previous gongan.
-                        line = self._replace_grace_notes(line)
+
                         positions = [Position[tag] for tag in LOOKUP.TAG_TO_POSITION.get(pos, [])]
                         for self.curr_beat_id in range(1, len(line)):
                             for self.curr_position in positions:

@@ -8,7 +8,7 @@ midi:
 samples:
   instrumentgroup: GAMELAN
 notation:
-  piece: lengker
+  piece: sekargendot
   part: full
 soundfont:
   definition_file_out: viena_definitions_${midi.midiversion}.txt

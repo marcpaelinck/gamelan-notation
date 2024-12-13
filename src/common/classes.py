@@ -333,8 +333,7 @@ class Score:
     midi_notes_dict: dict[tuple[Position, Pitch, Octave, Stroke], MidiNote] = None
     position_range_lookup: dict[Position, tuple[Pitch, Octave, Stroke]] = None
     flowinfo: FlowInfo = field(default_factory=FlowInfo)
-    total_duration: float | None = None
-    midifile_length: int = None
+    midifile_duration: int = None
 
 
 #
@@ -499,7 +498,7 @@ class ParserModel:
         prefix = (
             f"{self.curr_gongan_id:02d}-{self.curr_beat_id:02d} | "
             if self.curr_beat_id
-            else f"{self.curr_gongan_id:02d}    | "
+            else f"{self.curr_gongan_id:02d}    | " if self.curr_gongan_id else "      | "
         )
         if level > logging.INFO:
             if not self.errors:

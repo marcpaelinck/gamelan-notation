@@ -105,9 +105,13 @@
             "parts": [
                 {
                     "name": "entire piece",
-                    "file": "Lengker Ubud_full_GAMELAN1.mid",
+                    "file": "Lengker_entire piece_GAMELAN1.mid",
                     "loop": false,
-                    "markers": {}
+                    "markers": {
+                        "Pengawit": 0.0,
+                        "Pengawak": 0.3241643617032103,
+                        "Pengecet": 0.8409442921370726
+                    }
                 },
                 {
                     "name": "penyalit",
@@ -177,12 +181,12 @@
                     "file": "Sekar Gendot_entire piece_GAMELAN1.mid",
                     "loop": false,
                     "markers": {
-                        "Pengawit": 0.03615304065887514,
-                        "Pengawak": 0.12632658038889186,
-                        "Pengecet": 0.5267516729538065,
-                        "Batel 1": 0.6770048395999949,
-                        "Pengecet part 2": 0.7519920483116417,
-                        "Batel 2": 0.9060376714903731
+                        "Pengawit": 0.03613932172318973,
+                        "Pengawak": 0.12627864344637946,
+                        "Pengecet": 0.5265517873510541,
+                        "Batel 1": 0.6767479376718607,
+                        "Pengecet part 2": 0.7517066911090743,
+                        "Batel 2": 0.9056938588450962
                     }
                 }
             ]

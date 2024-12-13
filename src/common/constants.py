@@ -154,6 +154,7 @@ class Stroke(NotationEnum):
     OPEN = "OPEN"
     MUTED = "MUTED"
     ABBREVIATED = "ABBREVIATED"
+    GRACE_NOTE = "GRACE_NOTE"
     TICK1 = "TICK1"
     TICK2 = "TICK2"
     KAPAK = "KAPAK"
@@ -173,7 +174,6 @@ class Modifier(StrEnum):
     MODIFIER_PREV1 = "MODIFIER_PREV1"
     MODIFIER_PREV2 = "MODIFIER_PREV2"
     # Font5
-    GRACE_NOTE = "GRACE_NOTE"
     OCTAVE_0 = "OCTAVE_0"
     OCTAVE_2 = "OCTAVE_2"
     MUTE = "MUTE"

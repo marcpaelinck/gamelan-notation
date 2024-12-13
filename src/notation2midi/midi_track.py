@@ -19,8 +19,9 @@ class MidiTrackX(MidiTrack):
     preset: int
     PPQ: int  # pulses per quarternote
     # The next attribute keeps track of the end message of the last note.
-    # The time of this message will be delayed if an extension character is encountered.
-    last_noteoff_msg = None
+    # The time of this message will be delayed if an extension note is encountered.
+    last_note: Note = None
+    last_noteoff_msg: Message = None
     time_since_last_note_end: int = 0
     current_bpm: int = 0
     current_velocity: int = LOOKUP.DYNAMICS_TO_VELOCITY[LOOKUP.DEFAULT_DYNAMICS]
@@ -86,20 +87,45 @@ class MidiTrackX(MidiTrack):
     def marker(self, message: str) -> None:
         self.append(MetaMessage("marker", text=message))
 
-    def add_note(self, character: Note):
+    def _process_grace_note(self) -> int:
+        """A grace note uses half of the duration of the previous note or rest,
+        with a maximum of 0.5 units. This method modifies the last
+        note_off message or the the time_since_last_noteoff accordingly.
+        Returns:
+            int: Duration for the grace note (MIDI value)
+        """
+        MAX_DURATION = int(0.5 * BASE_NOTE_TIME)
+        midi_duration = 0
+        if self.time_since_last_note_end > 0:
+            # subtract duration from preceding rest.
+            midi_duration = min(int(self.time_since_last_note_end / 2), MAX_DURATION)
+            self.time_since_last_note_end -= midi_duration
+        else:
+            # subtract duration from preceding note.
+            midi_duration = int(self.last_note.duration * BASE_NOTE_TIME / 2) if self.last_note else MAX_DURATION
+            self.last_noteoff_msg.time -= midi_duration
+        return midi_duration
+
+    def add_note(self, note: Note):
         """Converts a note into a midi event
 
         Args:
             position (Position): The instrument position playing the note.
-            note (Character): Note to be processed.
+            note (note): Note to be processed.
 
         Raises:
             ValueError: _description_
         """
-        if not character.pitch == Pitch.NONE:
+        if not note.pitch == Pitch.NONE:
             # Set ON and OFF messages for actual note
             # In case of multiple midi notes, all notes should start and stop at the same time.
-            for count, midivalue in enumerate(character.midinote):
+            for count, midivalue in enumerate(note.midinote):
+
+                if note.stroke is Stroke.GRACE_NOTE:
+                    # Use part of the duration of the previous note or rest (max 1/2 unit).
+                    midi_duration = self._process_grace_note()
+                else:
+                    midi_duration = note.duration * BASE_NOTE_TIME
                 self.append(
                     Message(
                         type="note_on",
@@ -109,35 +135,35 @@ class MidiTrackX(MidiTrack):
                         channel=self.channel,
                     )
                 )
-            for count, midivalue in enumerate(character.midinote):
+            for count, midivalue in enumerate(note.midinote):
                 self.append(
                     off_msg := Message(
                         type="note_off",
                         note=midivalue,
-                        # velocity=self.current_velocity,
-                        time=round(character.duration * BASE_NOTE_TIME) if count == 0 else 0,  # all notes end together
+                        time=round(midi_duration) if count == 0 else 0,  # all notes end together
                         channel=self.channel,
                     )
                 )
                 if count == 0:
-                    # If the character corresponds with more than one MIDI note (e.g. reyong `byong`),
+                    # If the note corresponds with more than one MIDI note (e.g. reyong `byong`),
                     # we keep track of the note_off message of the first of these notes.
                     # If the combined note needs to be extended, we should only delay
                     # the note-off message of this first note.
                     self.last_noteoff_msg = off_msg
 
-            self.time_since_last_note_end = round(character.rest_after * BASE_NOTE_TIME)
+            self.time_since_last_note_end = round(note.rest_after * BASE_NOTE_TIME)
+            self.last_note = note
         # TODO next two ifs can now be combined
-        elif character.stroke is Stroke.SILENCE:
+        elif note.stroke is Stroke.SILENCE:
             # Increment time since last note ended
-            self.time_since_last_note_end += round(character.rest_after * BASE_NOTE_TIME)
+            self.time_since_last_note_end += round(note.rest_after * BASE_NOTE_TIME)
             self.last_noteoff_msg = None
-        elif character.stroke is Stroke.EXTENSION:
+        elif note.stroke is Stroke.EXTENSION:
             # Extension of note duration: add duration to last note
             # If a SILENCE occurred previously, treat the EXTENSION as a SILENCE
             if self.last_noteoff_msg and self.time_since_last_note_end == 0:
-                self.last_noteoff_msg.time += round(character.duration * BASE_NOTE_TIME)
+                self.last_noteoff_msg.time += round(note.duration * BASE_NOTE_TIME)
             else:
-                self.time_since_last_note_end += round(character.duration * BASE_NOTE_TIME)
+                self.time_since_last_note_end += round(note.duration * BASE_NOTE_TIME)
         else:
-            raise ValueError(f"Unexpected note value {character.pitch} {character.octave} {character.stroke}")
+            raise ValueError(f"Unexpected note value {note.pitch} {note.octave} {note.stroke}")

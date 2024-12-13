@@ -137,7 +137,7 @@ class MidiGenerator(ParserModel):
             self.loginfo(f"Existing part {part.name} updated for MIDI player content")
             part.file = self.player_data.file
             part.loop = self.player_data.loop
-        part.markers = self.markers_millis_to_frac(self.player_data.markers, self.score.total_duration)
+        part.markers = self.markers_millis_to_frac(self.player_data.markers, self.score.midifile_duration)
         self.loginfo(f"Added time markers to part {part.name}")
         save_midiplayer_content(content)
 
@@ -155,7 +155,7 @@ class MidiGenerator(ParserModel):
             midifile.tracks.append(track)
         if not self.run_settings.notation.part.loop:
             self._add_attenuation_time(midifile.tracks, seconds=ATTENUATION_SECONDS_AFTER_MUSIC_END)
-        self.score.midifile_length = int(midifile.length * 1000)
+        self.score.midifile_duration = int(midifile.length * 1000)
 
         if self.run_settings.options.notation_to_midi.save_midifile:
             if self.run_settings.options.notation_to_midi.update_midiplayer_content:

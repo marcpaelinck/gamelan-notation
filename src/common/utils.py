@@ -93,7 +93,6 @@ def create_rest_staves(
 def gongan_to_records(
     gongan: Gongan, skipemptylines: bool = True, fontversion: NotationFont = None
 ) -> list[dict[Position | int, list[str]]]:
-    # TODO grace notes that occur at the end of a beat should be moved to the start of the next beat.
     """Converts a gongan to a dict containing the notation for the individual beats.
 
     Args:
@@ -139,9 +138,6 @@ def gongan_to_records(
     if not try_to_aggregate(REYONG, "REYONG"):
         try_to_aggregate(REYONG_13, "REYONG_13")
         try_to_aggregate(REYONG_24, "REYONG_24")
-
-    # if fontversion is NotationFont.BALIMUSIC5:
-    #     move_grace_notes_at_end_of_beat()
 
     result = (
         [{InstrumentFields.POSITION: SpecialTags.COMMENT, 1: comment} for comment in gongan.comments]

@@ -210,7 +210,8 @@ class Lookup:
                 (
                     rec
                     for rec in record_list
-                    if all(rec[f] == note_record[f] for f in fields)
+                    # A grace note should never be returned: there is always a better equivalent.
+                    if all(rec[f] == note_record[f] and rec[STROKE] != Stroke.GRACE_NOTE for f in fields)
                     # In case of a note, we are looking for a record that has a symbol value.
                     and (
                         (ismodifier and rec[MODIFIER] != Modifier.NONE)
@@ -317,13 +318,16 @@ class Lookup:
             if record[SYMBOL] or (record[PITCH] == Pitch.NONE and record[MODIFIER] == Modifier.NONE):
                 match = record
             else:
-                match = getmatch(record, [INSTRUMENTTYPE, PITCH], notes, False)
+                # Try to find a similar matched note that can be used as a starting point.
+                # A grace note should never be selected as a match (this is checked in getmatch).
+                match = getmatch(record, [INSTRUMENTTYPE, PITCH, STROKE], notes, False) or getmatch(
+                    record, [INSTRUMENTTYPE, PITCH], notes, False
+                )
             modifier = None
             if match:
                 # We matched on instrumenttype because position might not have all OPEN note pitches (e.g. reyong position).
                 # So we must now update the actual position.
                 match[POSITION] = record[POSITION]
-            # Try to add an octave modifier
             if match and match[OCTAVE] != record[OCTAVE]:
                 modifier = getmatch(record, [OCTAVE], modifiers, True)
                 match = match | (
