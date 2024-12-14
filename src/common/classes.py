@@ -61,6 +61,8 @@ class TimingData:
 
 
 class NotationModel(BaseModel):
+    # Class model containing common utilities.
+
     @classmethod
     def to_list(cls, value, el_type: type):
         # This method tries to to parse a string or a list of strings
@@ -475,7 +477,11 @@ class RunSettings(BaseModel):
 
 
 class ParserModel:
+    # Base class for the classes that each perform a step of the conversion
+    # from notation to MIDI output. It provides a uniform logging format.
     class ParserType(StrEnum):
+        # Used by the logger to determine the source of a warning or error
+        # message.
         NOTATIONPARSER = "parsing the notation"
         SCOREGENERATOR = "generating the score"
         VALIDATOR = "validating the score"
@@ -486,6 +492,7 @@ class ParserModel:
     curr_gongan_id: int = None
     curr_beat_id: int = None
     curr_position: Position = None
+    curr_line_nr: int = None
     errors = []
     logger = None
 
@@ -494,16 +501,17 @@ class ParserModel:
         self.run_settings = run_settings
         self.logger = get_logger(self.__class__.__name__)
 
+    def f(self, val: int | None, pos: int):
+        # Number formatting
+        p = f"{pos:02d}"
+        return f"{val:{p}d}" if val else " " * pos
+
     def log(self, err_msg: str, level: logging = logging.ERROR) -> str:
-        prefix = (
-            f"{self.curr_gongan_id:02d}-{self.curr_beat_id:02d} | "
-            if self.curr_beat_id
-            else f"{self.curr_gongan_id:02d}    | " if self.curr_gongan_id else "      | "
-        )
+        prefix = f"{self.f(self.curr_gongan_id,2)}-{self.f(self.curr_beat_id,2)} |{self.f(self.curr_line_nr,4)}| "
         if level > logging.INFO:
             if not self.errors:
-                self.logger.error(f"Errors encountered while {self.parser_type.value}:")
-            msg = "     " + prefix + err_msg
+                self.logger.error(f"ERRORS ENCOUNTERED WHILE {self.parser_type.value.upper()}:")
+            msg = prefix + err_msg
             self.logger.log(level, msg)
             if level > logging.INFO:
                 self.errors.append(msg)

@@ -261,7 +261,7 @@ class Font5Parser(ParserModel):
         self.curr_gongan_id = 0
         prev_staves = defaultdict(list)
 
-        for line_nr, line in enumerate(self.notation_lines):
+        for self.curr_line_nr, line in enumerate(self.notation_lines, 1):
             # remove trailing tabs and split the line on the remaining tabs.
             line = re.sub(r"\t+$", "", line).split("\t")
 
@@ -270,7 +270,7 @@ class Font5Parser(ParserModel):
             match tag:
                 case "":
                     if len(line) > 1:
-                        self.logerror(f"line {line_nr} has content but has no label in the first position.")
+                        self.logerror(f"line {self.curr_line_nr} has content but has no label in the first position.")
                     new_gongan = True
                     continue
                 case _:
