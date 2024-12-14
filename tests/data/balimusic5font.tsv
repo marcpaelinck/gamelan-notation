@@ -11,16 +11,16 @@ symbol	unicode	symbol_description	balifont_symbol_description	pitch	octave	strok
 9	0x0039	digit 9	d	DE		OPEN	1.0	0.0	NONE	kendang dé (wadon)
 :	0x003A	colon	three vertical lines above char (combining)	NONE		TREMOLO_ACCELERATING	0	0	TREMOLO_ACCELERATING	"repeated, rapid beats on preceding note "
 ;	0x003B	semicolon	three vertical lines of increasing length above char (combining)	NONE		TREMOLO	0	0	TREMOLO	repeated beats on preceding note, starting slowly and accelerating
-A	0x0041	uppercase A	superscript a in front of next note	DANG	1	OPEN	0.5	0	GRACE_NOTE	grace note dang, subtracts own duration from preceding note
-B	0x0041	uppercase B	superscript b in front of next note	BYONG		OPEN	0.5	0	GRACE_NOTE	grace note byong, subtracts own duration from preceding note
-E	0x0045	uppercase E	superscript e in front of next note	DENG	1	OPEN	0.5	0	GRACE_NOTE	grace note deng, subtracts own duration from preceding note
+A	0x0041	uppercase A	superscript a in front of next note	DANG	1	GRACE_NOTE	0	0	NONE	grace note, will be combined with previous note
+B	0x0041	uppercase B	superscript b in front of next note	BYONG		GRACE_NOTE	0	0	NONE	grace note , will be combined with previous note
+E	0x0045	uppercase E	superscript e in front of next note	DENG	1	GRACE_NOTE	0	0	NONE	grace note, will be combined with previous note
 G	0x0047	uppercase G	G	GIR		OPEN	1.0	0.0	NONE	gir
-I	0x0049	uppercase I	superscript i in front of next note	DING	1	OPEN	0.5	0	GRACE_NOTE	grace note ding, subtracts own duration from preceding note
-O	0x004F	uppercase O	superscript o in front of next note	DONG	1	OPEN	0.5	0	GRACE_NOTE	grace note dong, subtracts own duration from preceding note
+I	0x0049	uppercase I	superscript i in front of next note	DING	1	GRACE_NOTE	0	0	NONE	grace note, will be combined with previous note
+O	0x004F	uppercase O	superscript o in front of next note	DONG	1	GRACE_NOTE	0	0	NONE	grace note, will be combined with previous note
 P	0x0050	uppercase P	P	PUR		OPEN	1.0	0.0	NONE	pur
 T	0x0054	uppercase T	T	TONG		OPEN	1.0	0.0	NONE	tong
-U	0x0055	uppercase U	superscript u in front of next note	DUNG	1	OPEN	0.5	0	GRACE_NOTE	grace note dung, subtracts own duration from preceding note
-X	0x0058	uppercase X	superscript x in front of next note	STRIKE		TICK1	0.5	0	GRACE_NOTE	grace tick, subtracts own duration from preceding note
+U	0x0055	uppercase U	superscript u in front of next note	DUNG	1	GRACE_NOTE	0	0	NONE	grace note, will be combined with previous note
+X	0x0058	uppercase X	superscript x in front of next note	STRIKE		GRACE_NOTE	0	0	NONE	grace note, will be combined with previous note
 a	0x0061	lowercase a	a	DANG	1	OPEN	1.0	0.0	NONE	dang1 open
 b	0x0062	lowercase b	b	BYONG		OPEN	1.0	0.0	NONE	byong
 e	0x0065	lowercase e	e	DENG	1	OPEN	1.0	0.0	NONE	deng1 open

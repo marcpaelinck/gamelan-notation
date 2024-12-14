@@ -32,13 +32,13 @@ metadata = [
     ),
     (
         "int param",
-        "{TEMPO bpm=70}",
-        {"metatype": "TEMPO", "bpm": 70},
+        "{TEMPO value=70}",
+        {"metatype": "TEMPO", "value": 70},
     ),
     (
         "negative int param",
-        "{TEMPO bpm=-70}",
-        {"metatype": "TEMPO", "bpm": -70},
+        "{TEMPO value=-70}",
+        {"metatype": "TEMPO", "value": -70},
     ),
     (
         "float param",
@@ -96,7 +96,7 @@ metadata_valid = [
     ),
     (
         "TEMPO",
-        "{TEMPO bpm=70, passes=[1,3,5]}",
+        "{TEMPO value=70, passes=[1,3,5]}",
         MetaData(data=TempoMeta(metatype="TEMPO", value=70, passes=[1, 3, 5])),
     ),
     (
