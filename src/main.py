@@ -2,12 +2,12 @@
 The settings in the /settings/run-settings.yaml file determine which application will be executed.
 """
 
-from src.common.classes import RunSettings
 from src.common.constants import NotationFont
 from src.notation2midi.dict_to_score import DictToScoreConverter
 from src.notation2midi.notation5_to_dict import Font5Parser
 from src.notation2midi.score_to_midi import MidiGenerator
 from src.notation2midi.score_validation import ScoreValidator
+from src.settings.classes import RunSettings
 from src.settings.settings import get_run_settings
 from src.settings.settings_validation import validate_input_data
 from src.soundfont.soundfont_generator import create_soundfont_files
@@ -52,24 +52,24 @@ def single_run():
 
 
 notations = [
-    {"composition": "sinomladrang-sp", "part": "full"},
-    {"composition": "sinomladrang-sp", "part": "pengawak"},
-    {"composition": "sinomladrang-sp", "part": "pengecet"},
-    {"composition": "sinomladrang-gk", "part": "full"},
-    {"composition": "lengker", "part": "full"},
-    {"composition": "lengker", "part": "penyalit"},
-    {"composition": "lengker", "part": "pengecet"},
-    {"composition": "lengker", "part": "pengawak"},
-    {"composition": "godekmiring", "part": "full"},
-    {"composition": "godekmiring", "part": "penyalit"},
-    {"composition": "godekmiring", "part": "pengecet"},
-    {"composition": "godekmiring", "part": "penyalit-angsel"},
-    {"composition": "godekmiring", "part": "pengawak"},
-    {"composition": "cendrawasih", "part": "full"},
+    {"piece": "sinomladrang-sp", "part": "full"},
+    {"piece": "sinomladrang-sp", "part": "pengawak"},
+    {"piece": "sinomladrang-sp", "part": "pengecet"},
+    {"piece": "sinomladrang-gk", "part": "full"},
+    {"piece": "lengker", "part": "full"},
+    {"piece": "lengker", "part": "penyalit"},
+    {"piece": "lengker", "part": "pengecet"},
+    {"piece": "lengker", "part": "pengawak"},
+    {"piece": "godekmiring", "part": "full"},
+    {"piece": "godekmiring", "part": "penyalit"},
+    {"piece": "godekmiring", "part": "pengecet"},
+    {"piece": "godekmiring", "part": "penyalit-angsel"},
+    {"piece": "godekmiring", "part": "pengawak"},
+    {"piece": "cendrawasih", "part": "full"},
 ]
 notations = [
-    # {"composition": "godekmiring", "part": "full"},
-    {"composition": "godekmiring", "part": "pengecet"},
+    # {"piece": "godekmiring", "part": "full"},
+    {"piece": "godekmiring", "part": "pengecet"},
 ]
 single_run()
 # multiple_notations_to_midi(notations)

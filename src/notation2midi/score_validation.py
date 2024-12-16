@@ -1,7 +1,7 @@
 import math
 from typing import Any
 
-from src.common.classes import Beat, Gongan, Note, ParserModel, Score
+from src.common.classes import Beat, Gongan, Note, Score
 from src.common.constants import (
     BeatId,
     Duration,
@@ -14,6 +14,7 @@ from src.common.constants import (
 from src.common.lookups import LOOKUP
 from src.common.metadata_classes import GonganType, ValidationProperty
 from src.common.utils import get_whole_rest_note, score_to_notation_file
+from src.notation2midi.classes import ParserModel
 
 
 class ScoreValidator(ParserModel):

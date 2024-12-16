@@ -4,8 +4,7 @@
     Main method: convert_notation_to_midi()
 """
 
-from common.playercontent_classes import Part
-from src.common.classes import Beat, Gongan, Notation, Note, ParserModel, Score
+from src.common.classes import Beat, Gongan, Notation, Note, Score
 from src.common.constants import (
     DEFAULT,
     NotationDict,
@@ -40,6 +39,7 @@ from src.common.utils import (
     has_kempli_beat,
     most_occurring_beat_duration,
 )
+from src.notation2midi.classes import ParserModel
 
 
 class DictToScoreConverter(ParserModel):

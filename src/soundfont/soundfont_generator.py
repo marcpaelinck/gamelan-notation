@@ -10,9 +10,9 @@ import time
 
 import pyautogui
 
-from src.common.classes import RunSettings
 from src.common.logger import get_logger
 from src.common.lookups import LOOKUP
+from src.settings.classes import RunSettings
 from src.settings.settings import get_run_settings
 from src.soundfont.soundfont_textfile import SoundfontTextfile
 

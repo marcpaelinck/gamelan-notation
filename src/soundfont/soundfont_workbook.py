@@ -4,8 +4,8 @@ from openpyxl.styles import Font, PatternFill
 from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
-from src.common.classes import RunSettings
 from src.common.constants import MidiDict
+from src.settings.classes import RunSettings
 
 BOLD = Font(bold=True)
 

@@ -1,11 +1,9 @@
 import json
-import logging
-import os
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
-from typing import Optional
+from typing import ClassVar
 
 from pydantic import (
     BaseModel,
@@ -20,12 +18,9 @@ from src.common.constants import (
     DEFAULT,
     PASS,
     Duration,
-    DynamicLevel,
-    InstrumentGroup,
     InstrumentType,
     Modifier,
     NotationDict,
-    NotationFont,
     Octave,
     Pass,
     Pitch,
@@ -33,7 +28,6 @@ from src.common.constants import (
     Stroke,
     Velocity,
 )
-from src.common.logger import get_logger
 from src.common.metadata_classes import (
     GonganType,
     GoToMeta,
@@ -41,7 +35,9 @@ from src.common.metadata_classes import (
     MetaDataType,
     ValidationProperty,
 )
-from src.common.playercontent_classes import Part
+from src.settings.classes import RunSettings
+from src.settings.font_to_valid_notes import get_note_records
+from src.settings.settings import get_run_settings
 
 
 @dataclass
@@ -85,20 +81,23 @@ class NotationModel(BaseModel):
 
 
 class Note(NotationModel):
-    model_config = ConfigDict(extra="ignore", frozen=True)
+    # config revalidate_instances forces validation when using model_copy
+    model_config = ConfigDict(extra="ignore", frozen=True, revalidate_instances="always")
 
+    VALIDNOTES: ClassVar[list[dict]] = get_note_records(get_run_settings())
+
+    instrumenttype: InstrumentType
     position: Position
     symbol: str
-    # symbolvalue: SymbolValue  # Phase out
     pitch: Pitch
-    octave: Optional[int]
+    octave: int | None
     stroke: Stroke
-    duration: Optional[float]
-    rest_after: Optional[float]
-    velocity: Optional[int] = 127
+    duration: float | None
+    rest_after: float | None
+    velocity: int = 127
     modifier: Modifier
-    midinote: list[int] = 127  # 0..128, used when generating MIDI output.
-    rootnote: Optional[str] = ""
+    midinote: list[int] = [127]  # 0..128, used when generating MIDI output.
+    rootnote: str = ""
     sample: str = ""  # file name of the (mp3) sample.
     _validate_range: bool = True
 
@@ -155,10 +154,10 @@ class MidiNote(NotationModel):
     instrumenttype: InstrumentType
     positions: list[Position]
     pitch: Pitch
-    octave: Optional[int]
+    octave: int | None
     stroke: Stroke
     midinote: list[int]  # 0..128, used when generating MIDI output.
-    rootnote: Optional[str]
+    rootnote: str | None
     sample: str  # file name of the (mp3) sample.
     # preset: Preset
     remark: str
@@ -336,211 +335,3 @@ class Score:
     position_range_lookup: dict[Position, tuple[Pitch, Octave, Stroke]] = None
     flowinfo: FlowInfo = field(default_factory=FlowInfo)
     midifile_duration: int = None
-
-
-#
-# # RUN SETTINGS
-#
-
-
-class RunSettings(BaseModel):
-    class NotationPart(BaseModel):
-        name: str
-        file: str
-        loop: bool
-
-    class NotationInfo(BaseModel):
-        title: str
-        instrumentgroup: InstrumentGroup
-        folder: str
-        subfolder: str
-        midiplayer_folder: str
-        part: Part
-        midi_out_file: str
-        beat_at_end: bool
-        autocorrect_kempyung: bool
-
-        @property
-        def subfolderpath(self):
-            return os.path.join(self.folder, self.subfolder)
-
-        @property
-        def filepath(self):
-            return os.path.join(self.folder, self.subfolder, self.part.file)
-
-        @property
-        def midi_out_filepath(self):
-            return os.path.join(self.folder, self.subfolder, self.midi_out_file)
-
-        @property
-        def midi_out_filepath_midiplayer(self):
-            return os.path.join(self.midiplayer_folder, self.midi_out_file)
-
-    class MidiInfo(BaseModel):
-        midiversion: str
-        folder: str
-        midi_definition_file: str
-        presets_file: str
-        PPQ: int  # pulses per quarternote
-        dynamics: dict[DynamicLevel, int] = field(default_factory=dict)
-        default_dynamics: DynamicLevel
-
-        @property
-        def notes_filepath(self):
-            return os.path.join(self.folder, self.midi_definition_file)
-
-        @property
-        def presets_filepath(self):
-            return os.path.join(self.folder, self.presets_file)
-
-    class SampleInfo(BaseModel):
-        folder: str
-        subfolder: str
-
-    class InstrumentInfo(BaseModel):
-        instrumentgroup: InstrumentGroup
-        folder: str
-        instruments_file: str
-        tags_file: str
-
-        @property
-        def instr_filepath(self):
-            return os.path.join(self.folder, self.instruments_file)
-
-        @property
-        def tag_filepath(self):
-            return os.path.join(self.folder, self.tags_file)
-
-    class FontInfo(BaseModel):
-        fontversion: NotationFont
-        folder: str
-        file: str
-
-        @property
-        def filepath(self):
-            return os.path.join(self.folder, self.file)
-
-    class SoundfontInfo(BaseModel):
-        folder: str
-        path_to_viena_app: str
-        definition_file_out: str
-        soundfont_file_out: str
-        soundfont_destination_folders: list[str]
-
-        @property
-        def def_filepath(self) -> str:
-            return os.path.normpath(
-                os.path.abspath(os.path.join(os.path.expanduser(self.folder), self.definition_file_out))
-            )
-
-        @property
-        def sf_filepath_list(self) -> list[str]:
-            return [
-                os.path.normpath(os.path.abspath(os.path.join(os.path.expanduser(folder), self.soundfont_file_out)))
-                for folder in self.soundfont_destination_folders
-            ]
-
-    class MidiPlayerInfo(BaseModel):
-        folder: str
-        contentfile: str
-
-    class Options(BaseModel):
-        class NotationToMidiOptions(BaseModel):
-            run: bool
-            detailed_validation_logging: bool
-            autocorrect: bool
-            save_corrected_to_file: bool
-            save_midifile: bool
-            update_midiplayer_content: bool
-
-        class SoundfontOptions(BaseModel):
-            run: bool
-            create_sf2_files: bool
-
-        debug_logging: bool
-        validate_settings: bool
-        notation_to_midi: NotationToMidiOptions
-        soundfont: SoundfontOptions
-
-    # attributes of class RunSettings
-    options: Options
-    midi: MidiInfo
-    midiplayer: MidiPlayerInfo
-    soundfont: SoundfontInfo
-    samples: SampleInfo
-    notation: Optional[NotationInfo] = None
-    instruments: Optional[InstrumentInfo] = None
-    font: Optional[FontInfo] = None
-
-
-# BASE CLASS FOR THE CLASSES THAT PERFORM THE NOTATION -> MIDI CONVERSION
-
-
-class ParserModel:
-    # Base class for the classes that each perform a step of the conversion
-    # from notation to MIDI output. It provides a uniform logging format.
-    class ParserType(StrEnum):
-        # Used by the logger to determine the source of a warning or error
-        # message.
-        NOTATIONPARSER = "parsing the notation"
-        SCOREGENERATOR = "generating the score"
-        VALIDATOR = "validating the score"
-        MIDIGENERATOR = "generating the midi file"
-
-    parser_type: ParserType
-    run_settings = None
-    curr_gongan_id: int = None
-    curr_beat_id: int = None
-    curr_position: Position = None
-    curr_line_nr: int = None
-    errors = []
-    logger = None
-
-    def __init__(self, parser_type: ParserType, run_settings: RunSettings):
-        self.parser_type = parser_type
-        self.run_settings = run_settings
-        self.logger = get_logger(self.__class__.__name__)
-
-    def f(self, val: int | None, pos: int):
-        # Number formatting
-        p = f"{pos:02d}"
-        return f"{val:{p}d}" if val else " " * pos
-
-    def log(self, err_msg: str, level: logging = logging.ERROR) -> str:
-        prefix = f"{self.f(self.curr_gongan_id,2)}-{self.f(self.curr_beat_id,2)} |{self.f(self.curr_line_nr,4)}| "
-        if level > logging.INFO:
-            if not self.errors:
-                self.logger.error(f"ERRORS ENCOUNTERED WHILE {self.parser_type.value.upper()}:")
-            msg = prefix + err_msg
-            self.logger.log(level, msg)
-            if level > logging.INFO:
-                self.errors.append(msg)
-
-    def logerror(self, msg: str) -> str:
-        self.log(msg, level=logging.ERROR)
-
-    def logwarning(self, msg: str) -> str:
-        self.log(msg, level=logging.WARNING)
-
-    def loginfo(self, msg: str) -> str:
-        self.log(msg, level=logging.INFO)
-
-    """Use the following generators to iterate through gongans and beats if you 
-    want to use the logging methods of this class. This will ensure that the the 
-    logging is prefixed with the correct gongan and beat ids.
-    """
-
-    def gongan_iterator(self, score: Score):
-        for gongan in score.gongans:
-            self.curr_gongan_id = gongan.id
-            self.curr_beat_id = None
-            yield gongan
-
-    def beat_iterator(self, gongan: Gongan):
-        for beat in gongan.beats:
-            self.curr_beat_id = beat.id
-            yield beat
-
-    @property
-    def has_errors(self):
-        return len(self.errors) > 0

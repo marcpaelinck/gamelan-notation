@@ -100,6 +100,7 @@ notations:
     sinomladrang-sp:
         title: Sinom Ladrang
         subfolder: sinom ladrang
+        instrumentgroup: SEMAR_PAGULINGAN
         beat_at_end: false
         part:
             full:
@@ -118,7 +119,6 @@ notations:
         title: Sinom Ladrang (GK)
         subfolder: sinom ladrang
         beat_at_end: false
-        instrumentgroup: GONG_KEBYAR
         part:
             full:
                 name: entire piece

@@ -1,52 +1,52 @@
-import os
+# import os
 
-from pydantic import BaseModel, Field
+# from pydantic import BaseModel, Field
 
-from src.common.constants import AnimationProfiles, InstrumentGroup, NoteOct, Stroke
-
-
-class Part(BaseModel):
-    name: str
-    file: str
-    loop: bool
-    markers: dict[str, float] = Field(default_factory=dict)  # {partname: milliseconds}
+# from src.common.constants import AnimationProfiles, InstrumentGroup, NoteOct, Stroke
 
 
-class InstrumentInfo(BaseModel):
-    name: str
-    channels: list[int]
-    midioffset: int
-    animation: AnimationProfiles
+# class Part(BaseModel):
+#     name: str
+#     file: str
+#     loop: bool
+#     markers: dict[str, float] = Field(default_factory=dict)  # {partname: milliseconds}
 
 
-class Profile(BaseModel):
-    file: str
-    notes: dict[NoteOct, list[int | None]]
-    strokes: list[Stroke]
+# class InstrumentInfo(BaseModel):
+#     name: str
+#     channels: list[int]
+#     midioffset: int
+#     animation: AnimationProfiles
 
 
-class AnimationInfo(BaseModel):
-    highlight: dict[Stroke, list[str]]
-    profiles: dict[AnimationProfiles, Profile]
+# class Profile(BaseModel):
+#     file: str
+#     notes: dict[NoteOct, list[int | None]]
+#     strokes: list[Stroke]
 
 
-class Song(BaseModel):
-    title: str
-    instrumentgroup: InstrumentGroup
-    display: bool
-    parts: list[Part] = Field(default_factory=list)
+# class AnimationInfo(BaseModel):
+#     highlight: dict[Stroke, list[str]]
+#     profiles: dict[AnimationProfiles, Profile]
 
 
-class Content(BaseModel):
-    songs: list[Song]
-    instrumentgroups: dict[InstrumentGroup, list[InstrumentInfo]]
-    animation: AnimationInfo
-    soundfont: str
+# class Song(BaseModel):
+#     title: str
+#     instrumentgroup: InstrumentGroup
+#     display: bool
+#     parts: list[Part] = Field(default_factory=list)
 
 
-if __name__ == "__main__":
-    DATAFOLDER = "./data/midiplayer"
-    with open(os.path.join(DATAFOLDER, "content.json"), "r") as contentfile:
-        result = contentfile.read()
-        content = Content.model_validate_json(result)
-        print(content)
+# class Content(BaseModel):
+#     songs: list[Song]
+#     instrumentgroups: dict[InstrumentGroup, list[InstrumentInfo]]
+#     animation: AnimationInfo
+#     soundfont: str
+
+
+# if __name__ == "__main__":
+#     DATAFOLDER = "./data/midiplayer"
+#     with open(os.path.join(DATAFOLDER, "content.json"), "r") as contentfile:
+#         result = contentfile.read()
+#         content = Content.model_validate_json(result)
+#         print(content)

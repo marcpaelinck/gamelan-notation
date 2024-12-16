@@ -1,11 +1,12 @@
 from mido import MidiFile
 
-from src.common.classes import Beat, ParserModel, Score
+from src.common.classes import Beat, Score
 from src.common.constants import Position
 from src.common.lookups import LOOKUP
 from src.common.metadata_classes import PartMeta
-from src.common.playercontent_classes import Part, Song
+from src.notation2midi.classes import ParserModel
 from src.notation2midi.midi_track import MidiTrackX
+from src.settings.classes import Part, Song
 from src.settings.settings import (
     ATTENUATION_SECONDS_AFTER_MUSIC_END,
     get_midiplayer_content,

@@ -6,9 +6,8 @@ from typing import Any
 import yaml
 from pydantic import BaseModel
 
-from src.common.classes import RunSettings
 from src.common.logger import get_logger
-from src.common.playercontent_classes import Content
+from src.settings.classes import Content, RunSettings
 
 logger = get_logger(__name__)
 
@@ -112,6 +111,10 @@ def post_process(subdict: dict[str, Any], run_settings_dict: dict[str, Any] = No
     return subdict
 
 
+def get_cwd():
+    return os.getcwd()
+
+
 def read_settings(filename: str) -> dict:
     """Retrieves settings from the given (YAML) file. The file should occur in SETTINGSFOLDER.
 
@@ -199,7 +202,7 @@ def get_run_settings(notation: dict[str, str] = None) -> RunSettings:
     # NOTATION INFORMATION
 
     if notation:
-        run_settings_dict[NOTATIONS] = notation
+        run_settings_dict[NOTATION] = notation
 
     notation = data_dict[NOTATIONS][DEFAULTS] | data_dict[NOTATIONS][run_settings_dict[NOTATION][PIECE]]
     notation[PART] = data_dict[NOTATIONS][run_settings_dict[NOTATION][PIECE]][PART][run_settings_dict[NOTATION][PART]]

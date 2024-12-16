@@ -8,7 +8,15 @@ import pandas as pd
 import regex
 from scipy.io import wavfile
 
-from src.common.constants import InstrumentGroup, InstrumentType, Position, Stroke
+from src.common.classes import Note
+from src.common.constants import (
+    InstrumentGroup,
+    InstrumentType,
+    Modifier,
+    Pitch,
+    Position,
+    Stroke,
+)
 from src.common.logger import get_logger
 from src.common.lookups import LOOKUP, InstrumentTag
 
@@ -281,6 +289,23 @@ def parse_metadata(meta: str):
 
 
 if __name__ == "__main__":
-    meta = "{TEMPO bpm=60, beat_count=8, passes=[4,5,6]}"
-    # meta = "{LABEL name='This', scope=0}"
-    parse_metadata(meta)
+    note = Note(
+        position=Position.KANTILAN_POLOS,
+        symbol="a",
+        pitch=Pitch.DANG,
+        octave=1,
+        stroke=Stroke.OPEN,
+        duration=1,
+        rest_after=0,
+        modifier=Modifier.NONE,
+    )
+    note = Note(
+        position=Position.KANTILAN_POLOS,
+        symbol="a,",
+        pitch=Pitch.DANG,
+        octave=0,
+        stroke=Stroke.OPEN,
+        duration=1,
+        rest_after=0,
+        modifier=Modifier.NONE,
+    )

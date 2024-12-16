@@ -8,8 +8,9 @@ Returns:
 
 import os
 
-from src.common.classes import MidiNote, Preset, RunSettings
+from src.common.classes import MidiNote, Preset
 from src.common.constants import InstrumentType, MidiDict, Position
+from src.settings.classes import RunSettings
 from src.soundfont.utils import sample_name_lookup, sample_notes_lookup, truncated_name
 
 SampleFileName = str

@@ -2,7 +2,7 @@ import json
 import re
 from collections import defaultdict
 
-from src.common.classes import Notation, Note, ParserModel, RunSettings, Score
+from src.common.classes import Notation, Note
 from src.common.constants import (
     DEFAULT,
     NotationDict,
@@ -15,7 +15,8 @@ from src.common.constants import (
 )
 from src.common.lookups import LOOKUP
 from src.common.metadata_classes import MetaData, Scope
-from src.common.playercontent_classes import Part
+from src.notation2midi.classes import ParserModel
+from src.settings.classes import RunSettings
 from src.settings.settings import BASE_NOTE_TIME, get_run_settings
 
 # ==================== BALI MUSIC 5 FONT =====================================

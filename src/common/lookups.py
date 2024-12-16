@@ -8,14 +8,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 
-from src.common.classes import (
-    InstrumentTag,
-    MidiNote,
-    NotationModel,
-    Note,
-    Preset,
-    RunSettings,
-)
+from src.common.classes import InstrumentTag, MidiNote, NotationModel, Note, Preset
 from src.common.constants import (
     Duration,
     DynamicLevel,
@@ -30,6 +23,7 @@ from src.common.constants import (
     Velocity,
 )
 from src.common.logger import get_logger
+from src.settings.classes import RunSettings
 from src.settings.settings import (
     FontFields,
     InstrumentTagFields,
@@ -374,6 +368,7 @@ class Lookup:
         for record in rests:
             for position in pos_char_dict.keys():
                 record[POSITION] = position
+                record[INSTRUMENTTYPE] = position.instrumenttype
                 rest = Note.model_validate(record)
                 P_O_S = (record[PITCH], record[OCTAVE], record[STROKE])
                 pos_char_dict[position][P_O_S][rest.duration, rest.rest_after] = rest
@@ -439,7 +434,7 @@ class Lookup:
 
         # Add tremolo variants for each whole-duration note (norot only to melodic notes)
         MODIFIERS = [Modifier.TREMOLO, Modifier.TREMOLO_ACCELERATING]
-        note_filter = lambda note: note.pitch != Pitch.NONE and note.total_duration == 1
+        note_filter = lambda note: note.pitch != Pitch.NONE and note.stroke == Stroke.OPEN and note.total_duration == 1
         stroke_updater = lambda note, mod: mod[STROKE]
         add_modified_notes(MODIFIERS, note_filter=note_filter, stroke_updater=stroke_updater)
 
@@ -459,7 +454,12 @@ class Lookup:
                 InstrumentType.UGAL,
             ]
         ]
-        note_filter = lambda note: note.pitch in melodics and note.total_duration == 1 and note.position in positions
+        note_filter = (
+            lambda note: note.pitch in melodics
+            and note.stroke == Stroke.OPEN
+            and note.total_duration == 1
+            and note.position in positions
+        )
         stroke_updater = lambda note, mod: mod[STROKE]
         add_modified_notes(MODIFIERS, note_filter=note_filter, stroke_updater=stroke_updater)
 
