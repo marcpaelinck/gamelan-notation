@@ -3,12 +3,11 @@ f"""Separate location for lookup tables, which are populated with methods in uti
 """
 
 import csv
-from collections import defaultdict
 
 import numpy as np
 import pandas as pd
 
-from src.common.classes import InstrumentTag, MidiNote, NotationModel, Note, Preset
+from src.common.classes import InstrumentTag, MidiNote, Preset
 from src.common.constants import (
     DynamicLevel,
     InstrumentGroup,
@@ -33,9 +32,6 @@ class Lookup:
     TAG_TO_POSITION: dict[InstrumentTag, list[Position]] = dict()  # KEEP
     INSTRUMENT_TO_MIDINOTE: dict[InstrumentType, list[MidiNote]] = dict()  # DELETE
 
-    DYNAMICS_TO_VELOCITY: dict[DynamicLevel, Velocity]
-    DEFAULT_DYNAMICS: DynamicLevel
-
     def __init__(self, run_settings: RunSettings) -> None:
         """Initializes lookup dicts and lists from settings files
 
@@ -47,26 +43,19 @@ class Lookup:
         # self.TEST = self.create_instrumentposition_to_midinote_lookup_test(
         #     run_settings.instruments.instrumentgroup, fromfile=run_settings.midi.notes_filepath
         # )
+        # INSTRUMENT_TO_PRESET ony used by Soundfont Generator and MidiTrackX (not yet operational)
         self.INSTRUMENT_TO_PRESET.update(
             self._create_instrumentposition_to_preset_lookup(
                 run_settings.instruments.instrumentgroup, run_settings.midi.presets_filepath
             )
         )
         self.TAG_TO_POSITION.update(self._create_tag_to_position_lookup(run_settings.instruments))
+        # INSTRUMENT_TO_MIDINOTE ony used by Soundfont Generator
         self.INSTRUMENT_TO_MIDINOTE.update(
             self._create_instrumentposition_to_midinote_lookup(
                 run_settings.instruments.instrumentgroup, fromfile=run_settings.midi.notes_filepath
             )
         )
-        # self.POSITION_P_O_S_TO_NOTE = self._create_position_p_o_s_to_note_lookup(run_settings)
-        # self.POSITION_CHARS_TO_NOTELIST = {
-        #     (position, note.symbol): note
-        #     for position, P_O_S in self.POSITION_P_O_S_TO_NOTE.items()
-        #     for props in P_O_S.values()
-        #     for note in props.values()
-        # }
-        self.DYNAMICS_TO_VELOCITY = run_settings.midi.dynamics
-        self.DEFAULT_DYNAMICS = run_settings.midi.default_dynamics
 
     def _create_instrumentposition_to_midinote_lookup(
         self, instrumentgroup: InstrumentGroup, fromfile: str

@@ -261,6 +261,8 @@ def save_midiplayer_content(playercontent: Content):
         contentfile.write(playercontent.model_dump_json(indent=4, serialize_as_any=True))
 
 
+RUN_SETTINGS: RunSettings = get_run_settings()
+
 if __name__ == "__main__":
     # For testing
     run_settings = get_run_settings()

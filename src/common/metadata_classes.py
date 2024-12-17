@@ -14,6 +14,7 @@ from src.common.constants import (
     NotationEnum,
     Position,
 )
+from src.settings.settings import RUN_SETTINGS
 
 
 # MetaData related constants
@@ -125,10 +126,9 @@ class DynamicsMeta(GradualChangeMetadata):
     @field_validator("value", mode="before")
     @classmethod
     def set_value(cls, value: DynamicLevel):
-        from src.common.lookups import LOOKUP
 
         try:
-            value = LOOKUP.DYNAMICS_TO_VELOCITY[value]
+            value = RUN_SETTINGS.midi.dynamics[value]
         except:
             # Should not occur because the validator is called after resolving the other fields
             raise Exception(f"illegal value for dynamics: {value}")

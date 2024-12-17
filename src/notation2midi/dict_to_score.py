@@ -12,8 +12,8 @@ from src.common.constants import (
     Position,
     SpecialTags,
     Stroke,
+    Velocity,
 )
-from src.common.lookups import LOOKUP
 from src.common.metadata_classes import (
     DynamicsMeta,
     GonganMeta,
@@ -54,9 +54,13 @@ class DictToScoreConverter(ParserModel):
         Position.KEMPLI,
     ]
 
+    DEFAULT_VELOCITY: Velocity
+
     def __init__(self, notation: Notation):
         super().__init__(self.ParserType.SCOREGENERATOR, notation.settings)
         self.notation = notation
+        self.DEFAULT_VELOCITY = self.run_settings.midi.dynamics[self.run_settings.midi.default_dynamics]
+
         self.score = Score(
             title=self.run_settings.notation.title,
             settings=notation.settings,
@@ -436,7 +440,7 @@ class DictToScoreConverter(ParserModel):
                             vel := (
                                 self.score.gongans[-1].beats[-1].velocities_end[-1].copy()
                                 if self.score.gongans
-                                else Beat.get_default_velocities()
+                                else {pos: self.DEFAULT_VELOCITY for pos in Position}
                             )
                         )
                     },

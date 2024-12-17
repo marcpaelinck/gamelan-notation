@@ -349,13 +349,6 @@ class Beat:
                 return change.new_value
         return None
 
-    @classmethod
-    def get_default_velocities(cls) -> dict[Position, Velocity]:
-        from src.common.lookups import LOOKUP
-
-        default_velocity = LOOKUP.DYNAMICS_TO_VELOCITY[LOOKUP.DEFAULT_DYNAMICS]
-        return {pos: default_velocity for pos in Position}
-
 
 @dataclass
 class Gongan:

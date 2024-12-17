@@ -68,7 +68,7 @@ class MidiGenerator(ParserModel):
                     return
                 self.player_data.markers[partinfo.name] = int(curr_time)
 
-        track = MidiTrackX(position, LOOKUP.INSTRUMENT_TO_PRESET[position], self.run_settings.midi.PPQ)
+        track = MidiTrackX(position, LOOKUP.INSTRUMENT_TO_PRESET[position], self.run_settings)
 
         reset_pass_counters()
         beat = self.score.gongans[0].beats[0]

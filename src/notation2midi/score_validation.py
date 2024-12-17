@@ -317,6 +317,9 @@ class ScoreValidator(ParserModel):
                 corrected_invalid_kempyung.extend(corrected)
                 ignored_invalid_kempyung.extend(ignored)
 
+        self.curr_gongan_id = None
+        self.curr_beat_id = None
+
         def log_list(loglevel: callable, title: str, list: list[Any]) -> None:
             loglevel(title)
             for element in list:
