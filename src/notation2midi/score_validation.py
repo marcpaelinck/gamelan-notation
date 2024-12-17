@@ -13,7 +13,7 @@ from src.common.constants import (
 )
 from src.common.lookups import LOOKUP
 from src.common.metadata_classes import GonganType, ValidationProperty
-from src.common.utils import get_whole_rest_note, score_to_notation_file
+from src.common.utils import score_to_notation_file
 from src.notation2midi.classes import ParserModel
 
 
@@ -89,7 +89,7 @@ class ScoreValidator(ParserModel):
                 if autocorrect:
                     corrected_positions = dict()
                     for position, notes in unequal_lengths.items():
-                        filler = get_whole_rest_note(position, Stroke.EXTENSION)
+                        filler = Note.get_whole_rest_note(position, Stroke.EXTENSION)
                         uncorrected_position = {position: sum(note.total_duration for note in notes)}
                         if position in self.POSITIONS_AUTOCORRECT_UNEQUAL_STAVES:
                             stave_duration = sum(note.total_duration for note in notes)
@@ -125,14 +125,11 @@ class ScoreValidator(ParserModel):
                     )
         return invalids, corrected, ignored
 
-    def _out_of_range(
-        self, gongan: Gongan, ranges: dict[Position, list[(Pitch, Octave, Stroke)]], autocorrect: bool
-    ) -> tuple[list[str, list[Note]]]:
+    def _out_of_range(self, gongan: Gongan, autocorrect: bool) -> tuple[list[str, list[Note]]]:
         """Checks that the notes of each instrument matches the instrument's range.
 
         Args:
             gongan (Gongan): the gongan to check
-            ranges(dict[Position, list[(Pitch, Octave, Stroke)]]): list of notes for each instrument
             autocorrect (bool): if True, an attempt will be made to correct notes that are out of range (currently not effective)
 
         Returns:
@@ -147,7 +144,7 @@ class ScoreValidator(ParserModel):
                 ignored.append(f"BEAT {beat.full_id} skipped due to override")
                 continue
             for position, notes in beat.staves.items():
-                instr_range = ranges[position]
+                instr_range = Note.get_all_p_o_s(position)
                 badnotes = list()
                 for note in notes:
                     if note.pitch is not Pitch.NONE and (note.pitch, note.octave, note.stroke) not in instr_range:
@@ -177,7 +174,6 @@ class ScoreValidator(ParserModel):
     def _incorrect_kempyung(
         self,
         gongan: Gongan,
-        ranges: dict[Position, list[tuple[Pitch, Octave, Stroke]]],
         autocorrect: bool,
     ) -> list[tuple[BeatId, tuple[Position, Position]]]:
 
@@ -192,7 +188,7 @@ class ScoreValidator(ParserModel):
                 ignored.append(f"BEAT {beat.full_id} skipped due to override")
                 continue
             for polos, sangsih in self.POSITIONS_VALIDATE_AND_CORRECT_KEMPYUNG:
-                instrumentrange = ranges[polos]
+                instrumentrange = Note.get_all_p_o_s(polos)
                 kempyung_dict = self._get_kempyung_dict(instrumentrange)
                 # check if both instruments occur in the beat
                 if all(instrument in beat.staves.keys() for instrument in (polos, sangsih)):
@@ -225,14 +221,14 @@ class ScoreValidator(ParserModel):
                                         correct_note, correct_octave = kempyung_dict[
                                             (polosnote.pitch, polosnote.octave)
                                         ]
-                                        correct_sangsih = LOOKUP.get_note(
+                                        correct_sangsih = Note.get_note(
                                             position=sangsih,
                                             pitch=correct_note,
                                             octave=correct_octave,
                                             stroke=sangsihnote.stroke,
                                             duration=sangsihnote.duration,
                                             rest_after=sangsihnote.rest_after,
-                                        ).model_copy()
+                                        )
                                         if not (correct_sangsih):
                                             self.logerror(
                                                 f"Trying to create an incorrect combination {sangsih} {correct_note} OCT{correct_octave} {sangsihnote.stroke} duration={sangsihnote.duration} rest_after{sangsihnote.rest_after} while correcting kempyung."
@@ -310,17 +306,13 @@ class ScoreValidator(ParserModel):
             corrected_stave_lengths.extend(corrected)
             ignored_stave_lengths.extend(ignored)
 
-            invalids, corrected, ignored = self._out_of_range(
-                gongan, ranges=self.score.position_range_lookup, autocorrect=autocorrect
-            )
+            invalids, corrected, ignored = self._out_of_range(gongan, autocorrect=autocorrect)
             remaining_note_out_of_range.extend(invalids)
             corrected_note_out_of_range.extend(corrected)
             ignored_note_out_of_range.extend(corrected)
 
             if self.score.settings.notation.autocorrect_kempyung:
-                invalids, corrected, ignored = self._incorrect_kempyung(
-                    gongan, ranges=self.score.position_range_lookup, autocorrect=autocorrect
-                )
+                invalids, corrected, ignored = self._incorrect_kempyung(gongan, autocorrect=autocorrect)
                 remaining_incorrect_kempyung.extend(invalids)
                 corrected_invalid_kempyung.extend(corrected)
                 ignored_invalid_kempyung.extend(ignored)
@@ -338,7 +330,7 @@ class ScoreValidator(ParserModel):
                 if ignored:
                     log_list(self.logger.info, "ignored:", ignored)
             if remaining:
-                log_list(self.logwarning.warning, "remaining invalids:", remaining)
+                log_list(self.logger.warning, "remaining invalids:", remaining)
 
         log_results("INCORRECT BEAT LENGTHS", corrected_beat_lengths, ignored_beat_lengths, remaining_bad_beat_lengths)
         log_results(

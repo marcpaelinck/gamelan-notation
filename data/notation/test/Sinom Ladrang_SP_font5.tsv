@@ -1,6 +1,5 @@
-metadata	{OCTAVATE instrument=TROMPONG, octaves=1, range=SCORE}
 metadata	{GONGAN type=gineman}								
-metadata	{TEMPO bpm=45}
+metadata	{TEMPO value=45}
 calung	o-------
 jegog	o-------
 
@@ -22,9 +21,9 @@ metadata	{GOTO label=PENGAWAK_2}
 
 comment	GONGAN 5
 comment	pengawak
-metadata	{TEMPO bpm=50}
-metadata	{TEMPO bpm=60, passes=[3]}
-metadata	{TEMPO bpm=50, passes=[3], first_beat=8, beats=1}
+metadata	{TEMPO value=50}
+metadata	{TEMPO value=60, passes=[3]}
+metadata	{TEMPO value=50, passes=[3], first_beat=8, beat_count=1}
 metadata	{LABEL name=PENGAWAK}
 metadata	{LABEL name=PENGAWAK_2, beat=2}
 trompong	u-------	--------	u-a-u-e-	uue-Ua--a	u---u-ue	uueua-u-	e---uueu	a--ueuaa
@@ -42,7 +41,7 @@ jegog	u				a
 kendang	-9-8*-8-	*-*-8-*-	-8*8*-8*	-8*8*9(9	(-9--8*9	(8*9(9((	-9-9-(-(	-9-((9(9
 gong								
 
-metadata	{TEMPO bpm=65, passes=[3], beat_count=7}
+metadata	{TEMPO value=65, passes=[3], beat_count=7}
 trompong	o-------	o---a,u,a,i	o---e-u-	e-o-i-a,-	u,---u-u.	u-a-u-eu	a---u--u	e--eoeuu
 gangsa p	o.o.o.o.	o.o.o.o.	o.o..e/e.	e.e.eu/u.	u.u.u.u.	u.u.ua/a.	a.a.au/u.	u.u.ue/e.
 gangsa s	.e.e.e.e	.e.e.e.e	.e.e.e/eu	.u.u.u/ua	.a.a.a.a	.a.a.a/as	.s.s.u/ua	.a.a.e/eu
@@ -51,8 +50,8 @@ jegog	o				u
 kendang	(--8*-8-	*-*-8-*-	-8*8*-8*	-8*8*-8-	*-8-*-(-	9-(-(-9-	9-(-(-9-	(-9-(-(-
 gong								
 
-metadata	{TEMPO bpm=47, passes=[1,2], first_beat=5, beat_count=3}
-metadata	{TEMPO bpm=90, passes=[3], beat_count=7}
+metadata	{TEMPO value=47, passes=[1,2], first_beat=5, beat_count=3}
+metadata	{TEMPO value=90, passes=[3], beat_count=7}
 trompong	e---e-ee/	e-u-a-sa	u--eo-e-	u-o-eoue	o---o-oo/	oeu-euoe	u-a-u-ee/	e-u-a-sa
 gangsa p	e.e.e.e.	e.e.eu/u.	u.u.ue/e.	e.e.eo/o.	o.o.o.o.	o.o.ou/u.	u.u.ue/e.	e.e.eu/u.
 gangsa s	.u.u.u.u	.u.u.u/ua	.a.a.e/eu	.u.u.o/oe	.e.e.e.e	.e.e.u/ua	.a.a.e/eu	.u.u.u/ua
@@ -63,8 +62,8 @@ gong
 metadata	{GOTO label=PENGAWAK, passes=[1,2]}				
 
 comment	pengecet
-metadata	{TEMPO bpm=90}
-metadata	{TEMPO bpm=95, passes=[3]}
+metadata	{TEMPO value=90}
+metadata	{TEMPO value=95, passes=[3]}
 metadata	{LABEL name=PENGECET}
 metadata	{SUPPRESS passes=[1], positions=["gangsa p", "gangsa s"], beats=[2,3,4,5,6,7,8]}
 trompong	u---	--a-	u-e-	u-a-	--u-	--a-	u-e-	u-a-
@@ -139,7 +138,7 @@ kendang	(8*9	(8*9	(*8(	9000	08*(	9-(9	-((-	9---
 jegog	a							
 gong								
 
-metadata	{TEMPO bpm=95, passes=[2], first_beat=3, beat_count=5}
+metadata	{TEMPO value=95, passes=[2], first_beat=3, beat_count=5}
 trompong	e---	u-e-	u---	e---	o-o-	Eu---	e-u-	a-e-
 gangsa p	.i.o	i.io	.eoo	.o.e	o.oe	.oe.	eo.e	o.oe
 gangsa s	eue.	ueu.	e.aa	.au.	aua.	ua.u	.au.	aua.
@@ -151,7 +150,7 @@ metadata	{GOTO label=PENGECET, passes=[1,2]}
 
 comment	pengecet end of last pass
 metadata	{LABEL name=D}
-metadata	{TEMPO bpm=70, first_beat:3, beat_count=5}
+metadata	{TEMPO value=70, first_beat=3, beat_count=5}
 trompong	a--a	a-a-	a-s-	a-u-	a--e	e-e-	--o-	e-u-
 gangsa p	.eu.	ue.u	.eu.	ue.u	...e	e-e-	----	----
 gangsa s	as.a	.sa.	as.a	.sa.	a--s	s-s-	----	----
@@ -160,7 +159,7 @@ jegog	a
 kendang	(*8(	9---	(*8(	9---	---9	9-9-	(-9-	*-(-
 gong								
 
-metadata	{TEMPO bpm=60, beat_count=5}
+metadata	{TEMPO value=60, beat_count=5}
 trompong	e---	u-e-	u---	e---	o-o-	Eu---	e-u-	a-e-
 gangsa p	----	----	----	----	o.oe	.oe.	eo.e	o.oe
 gangsa s	----	----	----	----	aua.	ua.u	.au.	aua.

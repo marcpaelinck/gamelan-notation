@@ -1,5 +1,5 @@
 metadata	{KEMPLI status=off}							
-metadata	{TEMPO bpm=120}								
+metadata	{TEMPO value=120}								
 ugal	oeu-a-u-eua-u---u/.u/...								
 gangsa p	oeu-a-u-eua-u---u/.u/...								
 gangsa s	ai<u-a-u-i<ua-u---u/.u/...								
@@ -25,8 +25,8 @@ jegog	o
 gong	G								
 									
 comment	system # 5								
-metadata	{TEMPO bpm=100, first_beat=1,  beat_count=3}								
-metadata	{TEMPO bpm=120, first_beat=5, beat_count=2}								
+metadata	{TEMPO value=100, first_beat=1,  beat_count=3}								
+metadata	{TEMPO value=120, first_beat=5, beat_count=2}								
 gangsa p	e,---	----	----	----	----	----	----	----
 gangsa s	i---	----	----	----	----	----	----	----
 reyong1	b--u,	a,-u,-	e,e,-u,	a,-u,-	e,-u,a,	.u,a,.	.a,i.	.io.	
@@ -130,8 +130,8 @@ jegog	a
 gong	T				P				
 									
 metadata	{KEMPLI status=off}								
-metadata	{TEMPO bpm=70, first_beat=1, beat_count=0}								
-metadata	{TEMPO bpm=50, first_beat=2, beat_count=3}								
+metadata	{TEMPO value=70, first_beat=1, beat_count=0}								
+metadata	{TEMPO value=50, first_beat=2, beat_count=3}								
 ugal	o--eueo	--ioo_i_a,u,a,	e,u,a,ii_a_ioee_o_eua	i<aueioia,---u,?u,-a,i-o-					
 gangsa p	o--eueo	--ioo_i_a,u,a,	e,u,a,ii_a,_ioee_o_eua	i<aueioia,---u,?u,-a,i-o-					
 gangsa s	a--i<ui<a	--uaa_u_eoe	ioeuu_e_uai<i<_a_i<ua	i<aui<uaue---o?o-eu-a-					
@@ -144,7 +144,7 @@ jegog	o-----o	-----_-_--a	---i-_-_--e-_-_--a	---e---a---u-------
 gong	G-----G	-----_-_--P	-----_-_--T-_-_---	-------P-----------					
 									
 metadata	{LABEL name=B}								
-metadata	{TEMPO bpm=100, first_beat=1, beat_count=0}								
+metadata	{TEMPO value=100, first_beat=1, beat_count=0}								
 ugal	i-------	i---i-i?.	i-----o-	Eu-a-u-e-	Ua-----u-	e/...u-Ai<-	a-i-o-e-	o-Eu-e-o-	
 gangsa p	i-------	i---i-i?.	i-----o-	Eu-a-u-e-	Ua-----u-	e/...u-Ai<-	a-i-o-e-	o-Eu-e-o-	
 gangsa s	u-------	u---u-u?.	u-----a-	Iu-a-u-i<-	Ua-----u-	i</...u-Ai<-	a-u-a-i<-	a-Iu-i<-a-	
@@ -192,7 +192,7 @@ calung	u		u		u		u
 jegog	u				u							
 gong	G		P		T		P					
 									
-metadata	{TEMPO bpm=80, first_beat=2, beat_count=2, passes=[1]}								
+metadata	{TEMPO value=80, first_beat=2, beat_count=2, passes=[1]}								
 metadata	{GOTO label=B, passes=[1]}								
 gangsa p	o.a,---i-	o.a,---i-	o.a,---i-	.u,-a,i-o-					
 gangsa s	a.e---u-	a.e---u-	a.e---u-	.o-eu-a-					
@@ -312,7 +312,7 @@ gong	G				P
 									
 comment	system # 35								
 metadata	{KEMPLI status=off}								
-metadata	{TEMPO bpm=80, first_beat=1, beat_count=0}								
+metadata	{TEMPO value=80, first_beat=1, beat_count=0}								
 gangsa p	u--au_aueo_ei-oeueoia,-eee/.								
 gangsa s	u--au_aui<a_i<u-ai<ui<aue-i<i<i</.								
 reyong1	b--a,u,_a,u,e,a,_e,u,-a,e,u,e,a,u,a,-xxx/.								
@@ -336,7 +336,7 @@ calung	a		i		a		i
 jegog	a				a				
 gong	G		P		T		P		
 									
-metadata	{TEMPO bpm=40, first_beat=1, beat_count=8}								
+metadata	{TEMPO value=40, first_beat=1, beat_count=8}								
 ugal	a	i	a	o	a	i	a	o	
 gangsa p	a,i	a,i	a,i	oi	a,i	a,i	a,i	oi	
 gangsa s	eu	eu	eu	au	eu	eu	eu	au	
@@ -348,7 +348,7 @@ calung	a		i		a		i
 jegog	a				a				
 gong	G		P		T		P		
 									
-metadata	{TEMPO bpm=80, first_beat=1, beat_count=0}								
+metadata	{TEMPO value=80, first_beat=1, beat_count=0}								
 gangsa p	a,a,-u,	-u,a,i	oo-a,	-a,-i	a,a,-u,	-u,a,i	oo-e	-e-u	
 gangsa s	ee-o	-oeu	aa-e	-e-u	ee-o	-oeu	aa-i<	-i<-u	
 reyong1	a,a,-u,	-u,a,.	a,a,-a,	-a,-u,	a,a,-u,	-u,a,.	a,a,-a,	-a,-u,	

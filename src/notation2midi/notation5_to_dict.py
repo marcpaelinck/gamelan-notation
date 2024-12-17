@@ -22,7 +22,7 @@ from src.settings.settings import BASE_NOTE_TIME, get_run_settings
 # ==================== BALI MUSIC 5 FONT =====================================
 
 
-class Font5Parser(ParserModel):
+class Notation5Parser(ParserModel):
     run_settings: RunSettings
     notation_lines: list[str]
     curr_position: int
@@ -33,75 +33,11 @@ class Font5Parser(ParserModel):
     TREMOLO_ACCELERATING_PATTERN: list[int] = [48, 40, 32, 26, 22, 18, 14, 10, 10, 10, 10, 10]
     TREMOLO_ACCELERATING_VELOCITY: list[int] = [100] * (len(TREMOLO_ACCELERATING_PATTERN) - 5) + [90, 80, 70, 60, 50]
 
-    NOTATION_PATTERNS = [
-        # For the tremolo, we could have used r"([aeiours][,<]{0,1}[;]){1,2}" but in case of two successive tremolo notes
-        # this string does not yield the two separate sets of <note-char><tremolo-car> as would be expected.
-        r"([aeiours][,<]{0,1}[;])([aeiours][,<]{0,1}[;]){0,1}",  # one or two occurrences of a melodic note followed by an optional octave and a tremolo symbols.
-        r"([aeiours][,<]{0,1}[:])([aeiours][,<]{0,1}[:]){0,1}",  # same for accelerating tremolo
-        r"[kxytb089\(\)\*][:;]",  # non-melodic note followed by a tremolo symbol.
-        r"[aeiours][,<]{0,1}[_=]{0,1}[/?]{0,1}",  # melodic note symbol optionally followed by octave symbol, note duration modifier and/or mute/abbrev symbol
-        r"[kxytbkxytb089\(\)\*][_=]{0,1}[/?]{0,1}",  # non-melodic symbol optionally followed by note duration modifier and/or mute/abbrev symbol
-        r"[AEIOU](?=[aeiours])",  # melodic grace note. Must be followed by a melodic note.
-        r"X(?=x)|Y(?=y)|K(?=k)|B(?=b)",  # non-melodic grace note. Must be followed by a note with the same pitch.
-        r"[\-\.][_=]{0,1}",  # rest optionally followed by note duration modifier and grace note
-        r"[GPTX]",  # gong section (GPT) without modifier
-    ]
-    GRACE_NOTES = "AEIOU"
-
-    # List of characters that change the octave, stroke or duration of the preceding note
-    MODIFIERS_PATTERN = "[,<:;_=/?]+[AEIOU]{0,1}"
-
     def __init__(self, run_settings: RunSettings):
         super().__init__(self.ParserType.NOTATIONPARSER, run_settings)
         self.run_settings = run_settings
         with open(run_settings.notation.filepath, "r") as input:
             self.notation_lines = [line.rstrip() for line in input]
-
-    def _sort_modifiers(self, notes: str) -> str:
-        """Sorts the modifier characters to simplify the validation
-
-        Args:
-            notes (str): list of characters
-
-        Returns:
-            str: the string, with modifier characters ordered
-        """
-        offset = 0
-        # Search the string for groups of modifiers
-        while offset < len(notes) and (match := re.search(self.MODIFIERS_PATTERN, notes[offset:])):
-            matchstart = offset + match.start()
-            matchend = offset + match.end()
-            # The `sorted` function converts the string into a list of characters, hence the `join` operation.
-            sorted_modifiers = "".join(sorted(notes[matchstart:matchend], key=lambda x: self.MODIFIERS_PATTERN.find(x)))
-            notes = notes[:matchstart] + sorted_modifiers + notes[matchend:]
-            offset = matchend + 1
-        return notes
-
-    def _note_from_chars(self, position: Position, note_chars: tuple[str]) -> list[Note]:
-        """Translates a list of characters to a Note object.
-
-        Args:
-            position (Position): _description_
-            note_chars (str): A set of characters consisting of a note followed by modifier characters.
-            prev_note (Note): preceding note, which has already been parsed (the note might occur in another beat).
-            next_note_chars (str): following note, not yet parsed. Is needed to process some modifiers.
-
-        Returns:
-            Note: a list containing one or two notes.
-        """
-        # Create a list containing one Note object for each symbol in note_chars.
-        notes = []
-        char_groups = [group for group in note_chars if group]
-        for chars in char_groups:
-            if note := LOOKUP.POSITION_CHARS_TO_NOTELIST.get((position, chars), None):
-                notes.append(note)
-            else:
-                self.logerror(f"Illegal character(s) {chars} for {position}")
-
-        if notes and all(note.stroke in (Stroke.TREMOLO, Stroke.TREMOLO_ACCELERATING) for note in notes):
-            notes = self._generate_tremolo(notes)
-
-        return notes
 
     def _passes_str_to_list(self, rangestr: str) -> list[int]:
         """Converts a pass indicator following a position tag to a list of passes.
@@ -129,8 +65,39 @@ class Font5Parser(ParserModel):
         else:
             return list(json.loads(f"[{rangestr}]"))
 
+    def _generate_tremolo(self, notes: list[Note]) -> list[Note]:
+        """Generates the note sequence for a tremolo.
+         TREMOLO: The duration and pitch will be that of the given note.
+         TREMOLO_ACCELERATING: The pitch will be that of the given note(s), the duration will be derived
+         from the TREMOLO_ACCELERATING_PATTERN.
+
+        Args:
+            notes (list[Note]): One or two notes on which to base the tremolo (piitch only)
+
+        Returns:
+            list[Note]: The resulting notes
+        """
+        tremolo_notes = []
+
+        if notes[0].stroke is Stroke.TREMOLO:
+            note = notes[0]
+            nr_of_notes = round(note.duration * self.TREMOLO_NR_OF_NOTES_PER_QUARTERNOTE)
+            duration = note.duration / nr_of_notes
+            for _ in range(nr_of_notes):
+                tremolo_notes.append(note.model_copy(update={"duration": duration}))
+        elif notes[0].stroke is Stroke.TREMOLO_ACCELERATING:
+            durations = [i / BASE_NOTE_TIME for i in self.TREMOLO_ACCELERATING_PATTERN]
+            note_idx = 0
+            for duration, velocity in zip(durations, self.TREMOLO_ACCELERATING_VELOCITY):
+                tremolo_notes.append(notes[note_idx].model_copy(update={"duration": duration, "velocity": velocity}))
+                note_idx = (note_idx + 1) % len(notes)
+        else:
+            self.logerror(f"Unexpected tremolo type {notes[0].stroke}.")
+
+        return tremolo_notes
+
     def _parse_stave(self, stave: str, position: Position) -> list[Note]:
-        """Validates the notation
+        """Parses the notation of a stave to note objects
 
         Args:
             stave (str): one stave of notation
@@ -138,28 +105,26 @@ class Font5Parser(ParserModel):
 
         Returns: str | None: _description_
         """
-        # Sort the modifiers so that they will always appear in the same order.
-        # This reduces the number of necessary validation patterns.
-        note_chars = self._sort_modifiers(stave)
-
         notes = []  # will contain the Note objects
-        # Group each note character with its corresponding modifier characters
+        tremolo_notes = []
+        note_chars = stave
         while note_chars:
-            for pattern in self.NOTATION_PATTERNS:
-                match = re.match(pattern, note_chars)
-                if match:
-                    break
-            if not match:
+            # try parsing the next note
+            next_note = Note.parse_next_note(note_chars, position)
+            if not next_note:
                 self.logerror(f" {position.value} {stave} has invalid {note_chars[0]}")
                 note_chars = note_chars[1:]
             else:
-                note = self._note_from_chars(
-                    position=position,
-                    # If the pattern has capturing groups,
-                    note_chars=[group for group in match.groups() if group] or [match.group(0)],
-                )
-                notes.extend(note)
-                note_chars = note_chars[match.end() :]
+                if istremolo := (next_note.stroke in (Stroke.TREMOLO, Stroke.TREMOLO_ACCELERATING)):
+                    tremolo_notes.append(next_note)
+                if len(tremolo_notes) == 2 or (
+                    tremolo_notes and (not istremolo or len(note_chars) == len(next_note.symbol))
+                ):
+                    notes.extend(self._generate_tremolo(tremolo_notes))
+                    tremolo_notes.clear()
+                if not istremolo:
+                    notes.append(next_note)
+                note_chars = note_chars[len(next_note.symbol) :]
 
         return notes
 
@@ -191,7 +156,7 @@ class Font5Parser(ParserModel):
 
         return metadata
 
-    def _get_nearest_octave(self, note: Note, other_note: Note, noterange: list[tuple[Pitch, Octave]]) -> Octave:
+    def _get_nearest_note(self, note: Note, other_note: Note) -> Note:
         """Returns the octave for note that minimizes the distance between the two note pitches.
 
         Args:
@@ -202,52 +167,41 @@ class Font5Parser(ParserModel):
         Returns:
             Octave: the octave that puts the pitch of note nearest to that of other_note
         """
-        next_note_idx = noterange.index((other_note.pitch, other_note.octave))
-        octave = None
-        best_distance = 99
+
+        def index(note: Note) -> int:
+            return list(Pitch).index(note.pitch) + 100 * note.octave
+
+        if not note.pitch or not other_note.pitch or other_note.octave == None:
+            raise Exception(f"Can't set octave for grace note {note}")
+
+        next_note_idx = index(other_note)
+        nearest_note = None
+        best_distance = 999
         for offset in [0, 1, -1]:
             new_octave = other_note.octave + offset
-            if (note.pitch, new_octave) in noterange and (
-                new_distance := abs(noterange.index((note.pitch, new_octave)) - next_note_idx)
+            if (try_note := note.model_copy(update={"octave": new_octave})) and (
+                new_distance := abs(index(try_note) - next_note_idx)
             ) < best_distance:
-                octave = new_octave
                 best_distance = min(new_distance, best_distance)
-        return octave
+                nearest_note = try_note
+        return nearest_note
 
-    def _generate_tremolo(self, notes: list[Note]) -> list[Note]:
-        """Generates the note sequence for a tremolo.
-         TREMOLO: The duration and pitch will be that of the given note.
-         TREMOLO_ACCELERATING: The pitch will be that of the given note, the duration will be derived
-         from the TREMOLO_ACCELERATING_PATTERN.
-
+    def _update_grace_notes(self, notation_dict: NotationDict):
+        """Modifies the octave of all the grace notes to match the not that follows.
+        The octave is set to minimise the 'distance' between both notes.
         Args:
-            notes (list[Note]): One or two notes on which to base the tremolo (piitch only)
-
-        Returns:
-            list[Note]: The resulting notes
+            notation_dict (NotationDict): The notation
         """
-        tremolo_notes = []
-
-        if notes[0].stroke is Stroke.TREMOLO:
-            note = notes[0]
-            nr_of_notes = round(note.duration * self.TREMOLO_NR_OF_NOTES_PER_QUARTERNOTE)
-            duration = note.duration / nr_of_notes
-            for _ in range(nr_of_notes):
-                tremolo_notes.append(note.model_copy(update={"duration": duration, "_validate_range": False}))
-        elif notes[0].stroke is Stroke.TREMOLO_ACCELERATING:
-            durations = [i / BASE_NOTE_TIME for i in self.TREMOLO_ACCELERATING_PATTERN]
-            note_idx = 0
-            for duration, velocity in zip(durations, self.TREMOLO_ACCELERATING_VELOCITY):
-                tremolo_notes.append(
-                    notes[note_idx].model_copy(
-                        update={"duration": duration, "velocity": velocity, "_validate_range": False}
-                    )
-                )
-                note_idx = (note_idx + 1) % len(notes)
-        else:
-            self.logerror(f"Unexpected tremolo type {notes[0].stroke}.")
-
-        return tremolo_notes
+        for self.curr_gongan_id, beat_dict in notation_dict.items():
+            for self.curr_beat_id, staves in beat_dict.items():
+                if not isinstance(self.curr_beat_id, int):
+                    continue
+                for position, stave in staves.items():
+                    for pass_, notes in stave.items():
+                        for note, nextnote in zip(notes.copy(), notes.copy()[1:]):
+                            if note.stroke == Stroke.GRACE_NOTE:
+                                new_note = self._get_nearest_note(note=note, other_note=nextnote)
+                                notes[notes.index(note)] = new_note
 
     def parse_notation(self) -> tuple[NotationDict, list[Position]]:
         """Parses a notation file into a dict.
@@ -330,6 +284,9 @@ class Font5Parser(ParserModel):
                                     # (notation_dict is a defaultdict)
                                     notation_dict[self.curr_gongan_id][self.curr_beat_id]
 
+        # Set the octave of each grace note to minimize the 'distance' to the following note
+        self._update_grace_notes(notation_dict)
+
         if self.has_errors:
             self.logger.error("Program halted.")
             exit()
@@ -344,13 +301,12 @@ class Font5Parser(ParserModel):
 
 def get_parser(run_settings: RunSettings):
     if run_settings.font.fontversion is NotationFont.BALIMUSIC5:
-        return Font5Parser(run_settings)
+        return Notation5Parser(run_settings)
     else:
         raise NotImplementedError(f"No parser available for font {run_settings.font.fontversion}.")
 
 
 if __name__ == "__main__":
     run_settings = get_run_settings()
-    parser = Font5Parser(run_settings)
-    line = r"u_,"
-    print(f"{line} ==> {parser._sort_modifiers(line)}")
+    parser = Notation5Parser(run_settings)
+    notation = parser.parse_notation()

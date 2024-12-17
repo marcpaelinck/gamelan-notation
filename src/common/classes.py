@@ -3,7 +3,7 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
-from typing import ClassVar
+from typing import Any, ClassVar, Optional
 
 from pydantic import (
     BaseModel,
@@ -21,6 +21,7 @@ from src.common.constants import (
     InstrumentType,
     Modifier,
     NotationDict,
+    NoteRecord,
     Octave,
     Pass,
     Pitch,
@@ -36,8 +37,8 @@ from src.common.metadata_classes import (
     ValidationProperty,
 )
 from src.settings.classes import RunSettings
-from src.settings.font_to_valid_notes import get_note_records
-from src.settings.settings import get_run_settings
+from src.settings.font_to_valid_notes import get_font_characters, get_note_records
+from src.settings.settings import FontFields, MidiNotesFields, get_run_settings
 
 
 @dataclass
@@ -84,7 +85,10 @@ class Note(NotationModel):
     # config revalidate_instances forces validation when using model_copy
     model_config = ConfigDict(extra="ignore", frozen=True, revalidate_instances="always")
 
-    VALIDNOTES: ClassVar[list[dict]] = get_note_records(get_run_settings())
+    _VALIDNOTES: ClassVar[list["Note"]]
+    _SYMBOL_TO_NOTE: ClassVar[dict[str, "Note"]]
+    _POS_P_O_S_D_R_TO_NOTE: ClassVar[dict[tuple[Position, Pitch, Octave, Stroke, Duration, Duration], "Note"]]
+    _FONT_SORTING_ORDER: ClassVar[dict[str, int]]
 
     instrumenttype: InstrumentType
     position: Position
@@ -95,11 +99,10 @@ class Note(NotationModel):
     duration: float | None
     rest_after: float | None
     velocity: int = 127
-    modifier: Modifier
+    modifier: Modifier | None = Modifier.NONE
     midinote: list[int] = [127]  # 0..128, used when generating MIDI output.
     rootnote: str = ""
     sample: str = ""  # file name of the (mp3) sample.
-    _validate_range: bool = True
 
     @property
     def total_duration(self):
@@ -115,27 +118,90 @@ class Note(NotationModel):
     @classmethod
     @model_validator(mode="after")
     def validate_note(self):
-        if not self._validate_range:
+        if (
+            self.position,
+            self.pitch,
+            self.octave,
+            self.stroke,
+            self.duration,
+            self.rest_after,
+        ) in self._POS_P_O_S_D_R_TO_NOTE:
             return self
-        # Delay import of the lookup to avoid circular reference.
-        from src.common.lookups import LOOKUP
-
-        if self.position not in LOOKUP.POSITION_P_O_S_TO_NOTE.keys():
-            self._errormsg = f"No range information for {self.position}"
-            return None
-        if (self.pitch, self.octave, self.stroke) not in LOOKUP.POSITION_P_O_S_TO_NOTE[self.position]:
-            self._errormsg = f"{self.pitch} OCT{self.octave} {self.stroke} not in range of {self.position}"
-            return None
-        return self
-
-    def matches(self, pitch: Pitch, octave: Octave, stroke: Stroke, duration: Duration, rest_after: Duration) -> bool:
-        return (
-            pitch == self.pitch
-            and self.stroke == stroke
-            and self.duration == duration
-            and (self.octave == octave or octave is None)
-            and (self.rest_after == rest_after or rest_after is None)
+        raise ValueError(
+            f"Invalid combination {self.pitch} OCT{self.octave} {self.stroke} "
+            f"{self.duration} {self.rest_after} for {self.position}"
         )
+
+    @classmethod
+    def get_note(
+        cls,
+        position: Position,
+        pitch: Pitch,
+        octave: int | None,
+        stroke: Stroke,
+        duration: float | None,
+        rest_after: float | None,
+    ) -> Optional["Note"]:
+        note_record = (position, pitch, octave, stroke, duration, rest_after)
+        note: Note = cls._POS_P_O_S_D_R_TO_NOTE.get(note_record, None)
+        if note:
+            return note.model_copy()
+        return None
+
+    @classmethod
+    def get_whole_rest_note(cls, position: Position, resttype: Stroke):
+        return cls.get_note(
+            position=position, pitch=Pitch.NONE, octave=None, stroke=resttype, duration=1, rest_after=0
+        ) or cls.get_note(position=position, pitch=Pitch.NONE, octave=None, stroke=resttype, duration=0, rest_after=1)
+
+    @classmethod
+    def get_all_p_o_s(cls, position: Position) -> list[tuple[Pitch, Octave, Stroke]]:
+        return set((tup[1], tup[2], tup[3]) for tup in cls._POS_P_O_S_D_R_TO_NOTE.keys() if tup[0] == position)
+
+    @classmethod
+    def note_from_symbol(cls, symbol: str):
+        note = cls._SYMBOL_TO_NOTE.get(symbol, None)
+        if note:
+            return note.model_copy()
+        return None
+
+    @classmethod
+    def sorted_chars(cls, chars: str) -> str:
+        return "".join(sorted(chars, key=lambda c: cls._FONT_SORTING_ORDER.get(c, 99)))
+
+    @classmethod
+    def parse_next_note(cls, notation: str, position: Position) -> Optional["Note"]:
+        """Parses the first note from the notation.
+        Args: notation (str): a notation string
+        Returns: tuple[Optional["Note"], str]: The note
+        """
+        max_length = min(max(*{len(sym) for _, sym in cls._SYMBOL_TO_NOTE.keys()}), len(notation))
+        note = None
+        for charcount in range(max_length, 0, -1):
+            note = cls._SYMBOL_TO_NOTE.get((position, cls.sorted_chars(notation[:charcount])), None)
+            if note:
+                return note.model_copy()
+        return None
+
+    @classmethod
+    def _build_class(cls):
+        settings = get_run_settings()
+        font = get_font_characters(settings)
+        mod_list = list(Modifier)
+        cls._FONT_SORTING_ORDER = {sym[FontFields.SYMBOL]: mod_list.index(sym[FontFields.MODIFIER]) for sym in font}
+
+        valid_records = get_note_records(settings)
+        cls._VALIDNOTES = [Note(**record) for record in valid_records]
+        cls._SYMBOL_TO_NOTE = {(n.position, cls.sorted_chars(n.symbol)): n for n in cls._VALIDNOTES}
+        cls._POS_P_O_S_D_R_TO_NOTE = {
+            (n.position, n.pitch, n.octave, n.stroke, n.duration, n.rest_after): n for n in cls._VALIDNOTES
+        }
+
+
+# INITIALIZE THE Note CLASS WITH LIST OF VALID NOTES AND CORRESPONDING LOOKUPS
+##############################################################################
+Note._build_class()
+##############################################################################
 
 
 class Preset(NotationModel):
@@ -332,6 +398,5 @@ class Score:
     instrument_positions: set[Position] = None
     gongans: list[Gongan] = field(default_factory=list)
     midi_notes_dict: dict[tuple[Position, Pitch, Octave, Stroke], MidiNote] = None
-    position_range_lookup: dict[Position, tuple[Pitch, Octave, Stroke]] = None
     flowinfo: FlowInfo = field(default_factory=FlowInfo)
     midifile_duration: int = None

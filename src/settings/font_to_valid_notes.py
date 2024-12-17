@@ -5,8 +5,9 @@ meaningful combinations of Position, Pitch, Octave, Stroke, Modifier, duration a
 for Note objects, together with the corresponding combination of characters from the font. 
 All Note objects should be created from this list. This will be enforced by the Note validator.
 
-The result is intentionally returned as a list of records (list[str, Any]) and not as a list of Note objects
-to enable the Note validator to use it without causing a circular reference.
+The result is intentionally returned as a list of records (NotationRecord = list[str, Any]) and not 
+as a list of Note objects to enable the Note validator to import this module without causing a 
+circular reference.
 """
 
 import csv
@@ -19,11 +20,11 @@ from pydantic import BaseModel, ConfigDict
 from src.common.constants import InstrumentType, Modifier, Pitch, Position, Stroke
 from src.common.utils_generic import to_list
 from src.settings.classes import RunSettings
-from src.settings.settings import FontFields, MidiNotesFields, get_run_settings
+from src.settings.settings import MidiNotesFields, NoteFields, get_run_settings
 
 
-class NoteRecord(BaseModel):
-    # Class used to generate all combinations of attributes. None values are accepted here.
+class AnyNote(BaseModel):
+    # Class used to create valid note objects. None values are accepted here.
     model_config = ConfigDict(frozen=True)
 
     instrumenttype: InstrumentType | None
@@ -41,8 +42,9 @@ class NoteRecord(BaseModel):
 
 
 class ValidNote(BaseModel):
-    # Class used to validate the record format. Only int values may be None.
-    # We don't use the Note class for this to avoid circular references.
+    # Class used to create notes with validated field values. Only int values may be None,
+    # other values will raise an exception if missing, malformed or None (we use Pydantic to check this).
+    # We don't use the Note class here to avoid circular references.
     model_config = ConfigDict(extra="forbid", frozen=True, revalidate_instances="always")
 
     instrumenttype: InstrumentType
@@ -61,8 +63,28 @@ class ValidNote(BaseModel):
 
 NoteDict = dict[str, Any]
 
+# Functions that should be applied to each field when processing the MIDI data
+MIDI_FORMATTERS = {
+    NoteFields.PITCH.value: lambda x: Pitch[x],
+    NoteFields.STROKE.value: lambda x: Stroke[x],
+    NoteFields.INSTRUMENTTYPE.value: lambda x: InstrumentType[x],
+    NoteFields.PITCH.value: lambda x: Pitch[x],
+    NoteFields.STROKE.value: lambda x: Stroke[x],
+    NoteFields.MIDINOTE.value: lambda x: eval(x) if x.startswith("[") else [int(x)],
+    NoteFields.SAMPLE.value: lambda x: "" if pd.isna(x) else x,
+    NoteFields.SYMBOL.value: lambda x: "" if pd.isna(x) else x,
+    NoteFields.ROOTNOTE.value: lambda x: "" if pd.isna(x) else x,
+}
+# Same for the font data
+FONT_FORMATTERS = {
+    NoteFields.PITCH.value: lambda x: Pitch[x],
+    NoteFields.STROKE.value: lambda x: Stroke[x],
+    NoteFields.MODIFIER.value: lambda x: Modifier[x],
+}
+DTYPES = {NoteFields.OCTAVE.value: "Int64"}
 
-def create_note_records(run_settings: RunSettings) -> list[NoteRecord]:
+
+def create_note_records(run_settings: RunSettings) -> list[AnyNote]:
     """Creates a list of records containing all possible attribute combinations for a Note object.
        The records are created by combining the MIDI definitions and the font definitions files
        and will be used to validate the creation of new Note objects. This will ensure that any character combination
@@ -73,8 +95,8 @@ def create_note_records(run_settings: RunSettings) -> list[NoteRecord]:
     """
 
     def getmatch(
-        note_record: NoteRecord, fields: list[str], record_list: list[NoteRecord], ismodifier: bool
-    ) -> NoteRecord | ModuleNotFoundError:
+        note_record: AnyNote, fields: list[str], record_list: list[AnyNote], ismodifier: bool
+    ) -> AnyNote | ModuleNotFoundError:
         """Searches for a record in record_list with a value that matches the given fields of note_record.
         Args:
             note_record (NoteRecord): A dict containing note properties
@@ -109,45 +131,27 @@ def create_note_records(run_settings: RunSettings) -> list[NoteRecord]:
 
     # Fields that should be returned
     keep = [
-        INSTRUMENTTYPE := MidiNotesFields.INSTRUMENTTYPE,
-        POSITION := "position",
-        PITCH := MidiNotesFields.PITCH.value,
-        OCTAVE := MidiNotesFields.OCTAVE.value,
-        STROKE := MidiNotesFields.STROKE.value,
-        MODIFIER := FontFields.MODIFIER.value,
-        SYMBOL := FontFields.SYMBOL.value,
-        DURATION := FontFields.DURATION.value,
-        REST_AFTER := FontFields.REST_AFTER.value,
-        MIDINOTE := MidiNotesFields.MIDINOTE.value,
-        SAMPLE := MidiNotesFields.SAMPLE.value,
-        ROOTNOTE := MidiNotesFields.ROOTNOTE.value,
+        INSTRUMENTTYPE := NoteFields.INSTRUMENTTYPE.value,
+        POSITION := NoteFields.POSITION.value,
+        PITCH := NoteFields.PITCH.value,
+        OCTAVE := NoteFields.OCTAVE.value,
+        STROKE := NoteFields.STROKE.value,
+        MODIFIER := NoteFields.MODIFIER.value,
+        SYMBOL := NoteFields.SYMBOL.value,
+        DURATION := NoteFields.DURATION.value,
+        REST_AFTER := NoteFields.REST_AFTER.value,
+        MIDINOTE := NoteFields.MIDINOTE.value,
+        SAMPLE := NoteFields.SAMPLE.value,
+        ROOTNOTE := NoteFields.ROOTNOTE.value,
     ]
-    INSTRUMENTGROUP = MidiNotesFields.INSTRUMENTGROUP.value
+    INSTRUMENTGROUP = NoteFields.INSTRUMENTGROUP.value
     POSITIONS = MidiNotesFields.POSITIONS.value
-    # Functions that should be applied to each field when processing the MIDI data
-    midi_formatters = {
-        PITCH: lambda x: Pitch[x],
-        STROKE: lambda x: Stroke[x],
-        INSTRUMENTTYPE: lambda x: InstrumentType[x],
-        PITCH: lambda x: Pitch[x],
-        STROKE: lambda x: Stroke[x],
-        MIDINOTE: lambda x: eval(x) if x.startswith("[") else [int(x)],
-        SAMPLE: lambda x: "" if pd.isna(x) else x,
-        SYMBOL: lambda x: "" if pd.isna(x) else x,
-        ROOTNOTE: lambda x: "" if pd.isna(x) else x,
-    }
-    # Same for the font data
-    font_formatters = {
-        PITCH: lambda x: Pitch[x],
-        STROKE: lambda x: Stroke[x],
-        MODIFIER: lambda x: Modifier[x],
-    }
-    dtypes = {OCTAVE: "Int64"}
+
     REST_STROKES = [Stroke.SILENCE, Stroke.EXTENSION]
 
     # READ MIDINOTES DATA
     midinotes_df = pd.read_csv(
-        run_settings.midi.notes_filepath, sep="\t", comment="#", dtype=dtypes, converters=midi_formatters
+        run_settings.midi.notes_filepath, sep="\t", comment="#", dtype=DTYPES, converters=MIDI_FORMATTERS
     )
     # Filter on instrument group
     midinotes_df = midinotes_df[midinotes_df[INSTRUMENTGROUP] == run_settings.instruments.instrumentgroup.value].drop(
@@ -165,7 +169,7 @@ def create_note_records(run_settings: RunSettings) -> list[NoteRecord]:
 
     # READ FONT DATA
     balifont_df = pd.read_csv(
-        run_settings.font.filepath, sep="\t", quoting=csv.QUOTE_NONE, dtype=dtypes, converters=font_formatters
+        run_settings.font.filepath, sep="\t", quoting=csv.QUOTE_NONE, dtype=DTYPES, converters=FONT_FORMATTERS
     )
 
     # MERGE BOTH TABLES
@@ -176,15 +180,18 @@ def create_note_records(run_settings: RunSettings) -> list[NoteRecord]:
     # CREATE SEPARATE NOTES, RESTS AND MODIFIERS LISTS.
     # The unmodified_notes list contains only notes without modifiers, i.e. notes that correspond with a single character
     midi_notes_dicts = notes_df[~pd.isna(notes_df[INSTRUMENTTYPE])].to_dict(orient="records")
-    midi_notes = [NoteRecord(**note) for note in midi_notes_dicts]
+    midi_notes = [AnyNote(**note) for note in midi_notes_dicts]
 
     rest_notes_dicts = notes_df[notes_df[STROKE].isin(REST_STROKES)].to_dict(orient="records")
-    rest_notes = [NoteRecord(**note) for note in rest_notes_dicts]
+    rest_notes = [AnyNote(**note) for note in rest_notes_dicts]
 
     modifiers_dicts = notes_df[
         pd.isna(notes_df[INSTRUMENTTYPE]) & (notes_df[PITCH] == "NONE") & (notes_df[MODIFIER] != "NONE")
     ].to_dict(orient="records")
-    modifiers = [NoteRecord(**note) for note in modifiers_dicts]
+    modifiers = [AnyNote(**note) for note in modifiers_dicts]
+
+    global MODIFIERS
+    MODIFIERS = modifiers
 
     unmatched = list()
     unmatched.extend(modifiers)
@@ -215,9 +222,11 @@ def create_note_records(run_settings: RunSettings) -> list[NoteRecord]:
             )
         modifier = None
         if match:
-            # We matched on instrumenttype because position might not have all OPEN note pitches (e.g. reyong position).
-            # So we must now update the actual position.
+            # We previously matched on instrumenttype because matching on position might not find
+            # all possible OPEN note pitches for the instrument (e.g. reyong positions).
+            # So here we update the actual position in the match record.
             match = match.model_copy(update={POSITION: record.position})
+        # Try adding an octave modifier
         if match and match.octave != record.octave:
             modifier = getmatch(record, [OCTAVE], modifiers, True)
             match = match.model_copy(
@@ -225,7 +234,7 @@ def create_note_records(run_settings: RunSettings) -> list[NoteRecord]:
             )
             if match and modifier in unmatched:
                 unmatched.remove(modifier)
-        # Try to add a stroke modifier
+        # Try adding a stroke modifier
         if match and match.stroke != record.stroke:
             modifier = getmatch(record, [STROKE], modifiers, True)
             match = match.model_copy(
@@ -274,7 +283,7 @@ def create_note_records(run_settings: RunSettings) -> list[NoteRecord]:
         stroke_updater: callable = None,
         duration_updater: callable = None,
         restafter_updater: callable = None,
-    ) -> list[NoteRecord]:
+    ) -> list[AnyNote]:
         """Creates (pseudo-)notes by applying modifiers to a copy of previously created notes, and adds the new notes
         to the pos_char_dict.
         This function should be used to create notes for which there is no entry in the MIDI notes table.
@@ -363,7 +372,21 @@ def get_note_records(run_settings: RunSettings):
     return create_note_records(run_settings)
 
 
+def get_font_characters(run_settings: RunSettings):
+    return pd.read_csv(
+        run_settings.font.filepath, sep="\t", quoting=csv.QUOTE_NONE, dtype=DTYPES, converters=FONT_FORMATTERS
+    ).to_dict(orient="records")
+
+
+def sort_chars(chars: str, sortingorder) -> str:
+    return "".join(sorted(chars, key=lambda c: sortingorder.get(c, 99)))
+
+
 if __name__ == "__main__":
     settings = get_run_settings()
-    notes = get_note_records(settings)
-    print(set([(n["pitch"], n["octave"], n["stroke"], n["modifier"]) for n in notes if not n["instrumenttype"]]))
+    font = get_font_characters(settings)
+    mod_list = list(Modifier)
+    sortingorder = {sym[NoteFields.SYMBOL]: mod_list.index(sym[NoteFields.MODIFIER]) for sym in font}
+    print([(n, o) for n, o in sortingorder.items() if o > 0])
+    for chars in ["a_,/", "an<", "x:_"]:
+        print(f"{chars} -> {sort_chars(chars, sortingorder)}")

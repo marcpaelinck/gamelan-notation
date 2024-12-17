@@ -26,6 +26,21 @@ class SStrEnum(StrEnum):
         return self.value
 
 
+# gamelan_midinotes<nr>.tsv
+class MidiNotesFields(SStrEnum):
+    INSTRUMENTGROUP = "instrumentgroup"
+    INSTRUMENTTYPE = "instrumenttype"
+    POSITIONS = "positions"
+    PITCH = "pitch"
+    OCTAVE = "octave"
+    STROKE = "stroke"
+    REMARK = "remark"
+    MIDINOTE = "midinote"
+    ROOTNOTE = "rootnote"
+    SAMPLE = "sample"
+
+
+# balimusic<nr>font.tsv
 class FontFields(SStrEnum):
     SYMBOL = "symbol"
     UNICODE = "unicode"
@@ -40,6 +55,23 @@ class FontFields(SStrEnum):
     DESCRIPTION = "description"
 
 
+# Combination of the above classes
+class NoteFields(SStrEnum):
+    INSTRUMENTGROUP = "instrumentgroup"
+    INSTRUMENTTYPE = "instrumenttype"
+    POSITION = "position"
+    SYMBOL = "symbol"
+    PITCH = "pitch"
+    OCTAVE = "octave"
+    STROKE = "stroke"
+    MODIFIER = "modifier"
+    DURATION = "duration"
+    REST_AFTER = "rest_after"
+    MIDINOTE = "midinote"
+    ROOTNOTE = "rootnote"
+    SAMPLE = "sample"
+
+
 # instruments.tsv
 class InstrumentFields(SStrEnum):
     POSITION = "position"
@@ -52,20 +84,6 @@ class InstrumentTagFields(SStrEnum):
     TAG = "tag"
     INFILE = "infile"
     POSITIONS = "positions"
-
-
-# midinotes.tsv
-class MidiNotesFields(SStrEnum):
-    INSTRUMENTGROUP = "instrumentgroup"
-    INSTRUMENTTYPE = "instrumenttype"
-    POSITIONS = "positions"
-    PITCH = "pitch"
-    OCTAVE = "octave"
-    STROKE = "stroke"
-    REMARK = "remark"
-    MIDINOTE = "midinote"
-    ROOTNOTE = "rootnote"
-    SAMPLE = "sample"
 
 
 class PresetsFields(SStrEnum):

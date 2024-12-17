@@ -35,7 +35,6 @@ from src.common.metadata_classes import (
 from src.common.utils import (
     create_rest_stave,
     create_rest_staves,
-    get_whole_rest_note,
     has_kempli_beat,
     most_occurring_beat_duration,
 )
@@ -62,7 +61,6 @@ class DictToScoreConverter(ParserModel):
             title=self.run_settings.notation.title,
             settings=notation.settings,
             instrument_positions=self._get_all_positions(notation.notation_dict),
-            position_range_lookup=LOOKUP.POSITION_P_O_S_TO_NOTE,  # replace with LOOKUP
         )
 
     def _get_all_positions(self, notation_dict: NotationDict) -> set[Position]:
@@ -121,7 +119,7 @@ class DictToScoreConverter(ParserModel):
 
         # Add a rest at the beginning of the first beat
         for instrument, notes in self.score.gongans[0].beats[0].staves.items():
-            notes.insert(0, get_whole_rest_note(Stroke.SILENCE))
+            notes.insert(0, Note.get_whole_rest_note(Stroke.SILENCE))
 
     def _apply_metadata(self, metadata: list[MetaData], gongan: Gongan) -> None:
         """Processes the metadata of a gongan into the object model.
@@ -175,7 +173,7 @@ class DictToScoreConverter(ParserModel):
                             for idx in range(len(stave := beat.staves[meta.data.instrument])):
                                 note = stave[idx]
                                 if note.octave != None:
-                                    stave[idx] = LOOKUP.get_note(
+                                    note = Note.get_note(
                                         note.position,
                                         note.pitch,
                                         note.octave + meta.data.octaves,
@@ -183,6 +181,12 @@ class DictToScoreConverter(ParserModel):
                                         note.duration,
                                         note.rest_after,
                                     )
+                                    if note:
+                                        stave[idx] = note
+                                    else:
+                                        self.logerror(
+                                            f"could not octavate note {stave[idx].pitch}{stave[idx].octave} with {meta.data.octaves} octave for {meta.data.instrument}."
+                                        )
                 case PartMeta():
                     pass
                 case RepeatMeta():
@@ -305,7 +309,7 @@ class DictToScoreConverter(ParserModel):
         )
         # a kempli beat is a muted stroke
         # Note: these two line are BaliMusic5 font exclusive!
-        KEMPLI_BEAT = LOOKUP.get_note(
+        KEMPLI_BEAT = Note.get_note(
             Position.KEMPLI, pitch=Pitch.STRIKE, octave=None, stroke=Stroke.MUTED, duration=1, rest_after=0
         )
 
@@ -352,7 +356,7 @@ class DictToScoreConverter(ParserModel):
             notes (list[Note]): the stave content
             duration (float): target duration
         """
-        filler = get_whole_rest_note(position, Stroke.EXTENSION)
+        filler = Note.get_whole_rest_note(position, Stroke.EXTENSION)
         stave_duration = sum(note.total_duration for note in notes)
         # Add rests of duration 1 to match the integer part of the beat's duration
         if int(duration - stave_duration) >= 1:
@@ -407,7 +411,6 @@ class DictToScoreConverter(ParserModel):
                     continue
                 # create the staves (regular and exceptions)
                 # TODO merge Beat.staves and Beat.exceptions and use pass=-1 for default stave. Similar to Beat.tempo_changes.
-                staves = {position: staves[DEFAULT] for position, staves in beat_info.items() if position in Position}
                 exceptions = {
                     (position, pass_): stave
                     for position, staves in beat_info.items()
@@ -417,6 +420,7 @@ class DictToScoreConverter(ParserModel):
                 }
 
                 # Create the beat and add it to the list of beats
+                staves = {position: staves[DEFAULT] for position, staves in beat_info.items() if position in Position}
                 new_beat = Beat(
                     id=self.curr_beat_id,
                     gongan_id=self.curr_gongan_id,
@@ -460,7 +464,6 @@ class DictToScoreConverter(ParserModel):
                 beats = []
 
         # Add extension notes to pokok notation having only one note per beat
-        gongan_iterator = self.gongan_iterator(self.score)
         try:
             self._complement_shorthand_pokok_staves()
         except Exception as error:

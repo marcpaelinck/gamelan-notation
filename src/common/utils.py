@@ -43,12 +43,6 @@ def stave_to_string(stave: list[Note]) -> str:
     return "".join((n.symbol for n in stave))
 
 
-def get_whole_rest_note(position: Position, resttype: Stroke):
-    return LOOKUP.POSITION_P_O_S_TO_NOTE[position][Pitch.NONE, None, resttype].get(
-        (1, 0), LOOKUP.POSITION_P_O_S_TO_NOTE[position][Pitch.NONE, None, resttype].get((0, 1), None)
-    )
-
-
 def create_rest_stave(position: Position, resttype: Stroke, duration: float) -> list[Note]:
     """Creates a stave with rests of the given type for the given duration.
     If the duration is non-integer, the stave will also contain half and/or quarter rests.
@@ -62,7 +56,7 @@ def create_rest_stave(position: Position, resttype: Stroke, duration: float) -> 
     """
     # TODO exception handling
     notes = []
-    whole_rest: Note = get_whole_rest_note(position, resttype)
+    whole_rest: Note = Note.get_whole_rest_note(position, resttype)
     for i in range(int(duration)):
         notes.append(whole_rest.model_copy())
 
@@ -175,10 +169,6 @@ def score_to_notation_file(score: Score) -> None:
 
 # Create lookup dicts based on the settings files (CSV)
 #
-
-
-def get_instrument_range(position: Position) -> list[tuple[Note, Octave]]:
-    return {(note, oct) for (note, oct, stroke) in LOOKUP.POSITION_P_O_S_TO_NOTE[position].keys() if note and oct}
 
 
 def flatten(lst: list[list | object]):

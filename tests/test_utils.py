@@ -6,7 +6,7 @@ import pytest
 from src.common.classes import Beat, Gongan, Note
 from src.common.constants import InstrumentType, Position
 from src.common.utils import gongan_to_records, stave_to_string
-from src.notation2midi.notation5_to_dict import Font5Parser
+from src.notation2midi.notation5_to_dict import Notation5Parser
 from src.settings.settings import InstrumentFields, get_run_settings
 
 
@@ -19,7 +19,6 @@ def create_symbol_to_note_lookup(fromfile: str) -> dict[str, Note]:
             | {
                 "instrumenttype": InstrumentType.GENDERRAMBAT,
                 "position": Position.GENDERRAMBAT,
-                "_validate_range": False,
             }
         )
         for note_def in balifont_obj
@@ -120,7 +119,7 @@ bad_ranges = ["1,2,", "realbad", "1-", "-1", "-", ",", "1-4-"]
 # Tests the conversion of optional range indicators following the position name in the score
 def test_range_str_to_list(rangestr, expected):
     run_settings = get_run_settings()
-    parser = Font5Parser(run_settings=run_settings)
+    parser = Notation5Parser(run_settings=run_settings)
     assert parser._passes_str_to_list(rangestr) == expected
 
 
@@ -129,5 +128,5 @@ def test_range_str_to_list(rangestr, expected):
 def test_range_str_to_list_exception(rangestr):
     with pytest.raises(ValueError):
         run_settings = get_run_settings()
-        parser = Font5Parser(run_settings=run_settings)
+        parser = Notation5Parser(run_settings=run_settings)
         parser._passes_str_to_list(rangestr)

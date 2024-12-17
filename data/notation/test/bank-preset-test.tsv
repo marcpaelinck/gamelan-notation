@@ -5,7 +5,7 @@ gangsa s	.oe.	eo.e	.u.e	u.eu	.eu.	ue.u	.e.o	e.oe
 calung	u		u		a		a		
 jegog	u				a				
 									
-metadata	{TEMPO bpm=100, first_beat=1, beat_count=3}								
+metadata	{TEMPO value=100, first_beat=1, beat_count=3}								
 gangsa p	e,---	----	----	----	----	----	----	----
 gangsa s	i---	----	----	----	----	----	----	----
 reyong1	b--u,	a,-u,-	e,e,-u,	a,-u,-	e,-u,a,	.u,a,.	.a,i.	.io.	

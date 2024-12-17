@@ -4,7 +4,7 @@ The settings in the /settings/run-settings.yaml file determine which application
 
 from src.common.constants import NotationFont
 from src.notation2midi.dict_to_score import DictToScoreConverter
-from src.notation2midi.notation5_to_dict import Font5Parser
+from src.notation2midi.notation5_to_dict import Notation5Parser
 from src.notation2midi.score_to_midi import MidiGenerator
 from src.notation2midi.score_validation import ScoreValidator
 from src.settings.classes import RunSettings
@@ -23,7 +23,7 @@ def import_run_settings(notation: dict[str, str] = None) -> RunSettings:
 def notation_to_midi(run_settings: RunSettings):
     if run_settings.options.notation_to_midi:
         if run_settings.font.fontversion is NotationFont.BALIMUSIC5:
-            font_parser = Font5Parser(run_settings)
+            font_parser = Notation5Parser(run_settings)
         else:
             raise Exception(f"Cannot parse font {run_settings.font.fontversion}.")
         notation = font_parser.parse_notation()

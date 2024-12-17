@@ -146,6 +146,7 @@ class Pitch(NotationEnum):
     PEK = "PEK"
     PUR = "PUR"
     STRIKE = "STRIKE"
+    STRIKE2 = "STRIKE2"
     TONG = "TONG"
     NONE = "NONE"
 
@@ -155,8 +156,6 @@ class Stroke(NotationEnum):
     MUTED = "MUTED"
     ABBREVIATED = "ABBREVIATED"
     GRACE_NOTE = "GRACE_NOTE"
-    TICK1 = "TICK1"
-    TICK2 = "TICK2"
     KAPAK = "KAPAK"
     DETUT = "DETUT"
     CUNGKUNG = "CUNGKUNG"
@@ -169,6 +168,13 @@ class Stroke(NotationEnum):
 
 
 class Modifier(StrEnum):
+    # The order of the values should comply to the
+    # standardized sequence for the font characters:
+    # 1. NONE (=pitch character)
+    # 2. octave modifiers
+    # 3. stroke modifiers
+    # 4. duration modifiers
+    # 5. other modifiers
     NONE = "NONE"
     # Font4
     MODIFIER_PREV1 = "MODIFIER_PREV1"
@@ -176,8 +182,8 @@ class Modifier(StrEnum):
     # Font5
     OCTAVE_0 = "OCTAVE_0"
     OCTAVE_2 = "OCTAVE_2"
-    MUTE = "MUTE"
     ABBREVIATE = "ABBREVIATE"
+    MUTE = "MUTE"
     HALF_NOTE = "HALF_NOTE"
     QUARTER_NOTE = "QUARTER_NOTE"
     TREMOLO = "TREMOLO"

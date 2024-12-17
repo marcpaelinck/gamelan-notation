@@ -42,13 +42,12 @@ class ParserModel:
 
     def log(self, err_msg: str, level: logging = logging.ERROR) -> str:
         prefix = f"{self.f(self.curr_gongan_id,2)}-{self.f(self.curr_beat_id,2)} |{self.f(self.curr_line_nr,4)}| "
+        if level > logging.INFO and not self.errors:
+            self.logger.error(f"ERRORS ENCOUNTERED WHILE {self.parser_type.value.upper()}:")
+        msg = prefix + err_msg
+        self.logger.log(level, msg)
         if level > logging.INFO:
-            if not self.errors:
-                self.logger.error(f"ERRORS ENCOUNTERED WHILE {self.parser_type.value.upper()}:")
-            msg = prefix + err_msg
-            self.logger.log(level, msg)
-            if level > logging.INFO:
-                self.errors.append(msg)
+            self.errors.append(msg)
 
     def logerror(self, msg: str) -> str:
         self.log(msg, level=logging.ERROR)
@@ -75,7 +74,7 @@ class ParserModel:
     def beat_iterator(self, object: Any):
         if not hasattr(object, "beats"):
             raise Exception("base object has no attribute `beats`")
-        for beat in gongan.beats:
+        for beat in object.beats:
             self.curr_beat_id = beat.id
             yield beat
 
