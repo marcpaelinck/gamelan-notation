@@ -21,7 +21,7 @@ from src.common.constants import InstrumentType, Modifier, Pitch, Position, Stro
 from src.common.utils_generic import to_list
 from src.settings.classes import RunSettings
 from src.settings.constants import MidiNotesFields, NoteFields
-from src.settings.settings import get_run_settings
+from src.settings.settings import RUN_SETTINGS
 
 
 class AnyNote(BaseModel):
@@ -384,7 +384,7 @@ def sort_chars(chars: str, sortingorder) -> str:
 
 
 if __name__ == "__main__":
-    settings = get_run_settings()
+    settings = RUN_SETTINGS
     font = get_font_characters(settings)
     mod_list = list(Modifier)
     sortingorder = {sym[NoteFields.SYMBOL]: mod_list.index(sym[NoteFields.MODIFIER]) for sym in font}

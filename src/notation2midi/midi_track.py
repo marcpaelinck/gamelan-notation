@@ -54,7 +54,7 @@ class MidiTrackX(MidiTrack):
         self.channel = preset.channel
         self.port = preset.port
         self.bank = preset.bank
-        self.preset = preset.preset  # TODO not yet operational, see LOOKUP
+        self.preset = preset.preset
         self.PPQ = run_settings.midi.PPQ
         self.DYNAMICS_TO_VELOCITY = run_settings.midi.dynamics
         self.current_velocity = run_settings.midi.dynamics[run_settings.midi.default_dynamics]

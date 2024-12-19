@@ -2,10 +2,10 @@ import json
 import re
 from dataclasses import field
 from enum import StrEnum
-from typing import Any, Literal, Optional, Union
+from typing import Any, ClassVar, Literal, Optional, Union
 
 import regex
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
 from src.common.constants import (
     DEFAULT,
@@ -14,6 +14,7 @@ from src.common.constants import (
     NotationEnum,
     Position,
 )
+from src.settings.constants import InstrumentTagFields
 from src.settings.settings import RUN_SETTINGS
 
 
@@ -39,6 +40,28 @@ class ValidationProperty(NotationEnum):
 class Scope(NotationEnum):
     GONGAN = "GONGAN"
     SCORE = "SCORE"
+
+
+def tag_to_position_dict() -> dict[str, list[Position]]:
+    """Creates a dict that maps 'free format' position tags to a list of InstumentPosition values
+    Args:  run_settings (RunSettings):
+    Returns (dict[str, list[Position]]):
+    """
+    TAG = InstrumentTagFields.TAG
+    POS = InstrumentTagFields.POSITIONS
+    locals_ = {"None": None} | {x.value: x for x in Position}
+    format = lambda val: eval("None" if val == "" else val, locals_)
+    tag_rec_list = [record | {POS: format(record[POS])} for record in RUN_SETTINGS.data.instrument_tags]
+    tag_rec_list += [
+        {TAG: instr, POS: [pos for pos in Position if pos.instrumenttype == instr]} for instr in InstrumentType
+    ]
+    tag_rec_list += [{TAG: pos, POS: [pos]} for pos in Position]
+    lookup_dict = {record[TAG]: record[POS] for record in tag_rec_list}
+
+    return lookup_dict
+
+
+TAG_TO_POSITION = tag_to_position_dict()
 
 
 class MetaDataBaseModel(BaseModel):
@@ -115,11 +138,8 @@ class DynamicsMeta(GradualChangeMetadata):
     @classmethod
     # Converts 'free format' position tags to Position values.
     def normalize_positions(cls, data: list[str]) -> list[Position]:
-        # Delay import to avoid circular reference.
-        from src.common.lookups import LOOKUP
-
         try:
-            return sum((LOOKUP.TAG_TO_POSITION[pos] for pos in data), [])
+            return sum((TAG_TO_POSITION[pos] for pos in data), [])
         except:
             raise ValueError(f"Unrecognized instrument position in {data}.")
 
@@ -181,11 +201,10 @@ class OctavateMeta(MetaDataBaseModel):
     @field_validator("instrument", mode="before")
     @classmethod
     # Converts 'free format' position tags to Position values.
+    # TODO the tag might refer to more than one instrument. Consider replacing
+    # the single instrument attribute with a list of instruments.
     def normalize_positions(cls, data: str) -> Position:
-        # Delay import to avoid circular reference.
-        from src.common.lookups import LOOKUP
-
-        return LOOKUP.TAG_TO_POSITION[data][0]
+        return TAG_TO_POSITION[data][0].instrumenttype
 
 
 class PartMeta(MetaDataBaseModel):
@@ -208,11 +227,8 @@ class SuppressMeta(MetaDataBaseModel):
     @classmethod
     # Converts 'free format' position tags to Position values.
     def normalize_positions(cls, data: list[str]) -> list[Position]:
-        # Delay import to avoid circular reference.
-        from src.common.lookups import LOOKUP
-
         try:
-            return sum((LOOKUP.TAG_TO_POSITION[pos] for pos in data), [])
+            return sum((TAG_TO_POSITION[pos] for pos in data), [])
         except:
             raise ValueError(f"Unrecognized instrument position in {data}.")
 

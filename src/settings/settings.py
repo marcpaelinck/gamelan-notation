@@ -172,7 +172,7 @@ def get_run_settings(notation: dict[str, str] = None) -> RunSettings:
 
 
 def get_midiplayer_content() -> Content:
-    run_settings = get_run_settings()
+    run_settings = RUN_SETTINGS
     datafolder = run_settings.midiplayer.folder
     contentfile = run_settings.midiplayer.contentfile
     with open(os.path.join(datafolder, contentfile), "r") as contentfile:
@@ -181,7 +181,7 @@ def get_midiplayer_content() -> Content:
 
 
 def save_midiplayer_content(playercontent: Content):
-    run_settings = get_run_settings()
+    run_settings = RUN_SETTINGS
     datafolder = run_settings.midiplayer.folder
     contentfile = run_settings.midiplayer.contentfile
     with open(os.path.join(datafolder, contentfile), "w") as contentfile:
@@ -190,6 +190,7 @@ def save_midiplayer_content(playercontent: Content):
 
 RUN_SETTINGS: RunSettings = get_run_settings()
 
+
 if __name__ == "__main__":
     # For testing
-    run_settings = get_run_settings()
+    run_settings = RUN_SETTINGS

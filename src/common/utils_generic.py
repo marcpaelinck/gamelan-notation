@@ -23,41 +23,6 @@ def to_list(value, el_type: type):
         raise ValueError(f"Cannot convert value {value} to a list of {el_type}")
 
 
-def create_instr_to_preset_dict(preset_records: list[str, str], instrumentgroup):  # -> dict[Position, Preset]
-    """Creates a dict to lookup the preset information for a position
-
-    Args:
-        run_settings (RunSettings):
-
-    Returns:
-        dict[Position, Preset]:
-    """
-    from src.common.classes import Preset
-    from src.common.constants import InstrumentType, Position
-    from src.settings.constants import PresetsFields
-
-    # Select records for the current instrument group
-    presets_list = [
-        record for record in preset_records if record[PresetsFields.INSTRUMENTGROUP] == instrumentgroup.value
-    ]
-
-    # Replace missing position values with a list of positions that correspond with the instrument type.
-    # Replace non-missing values with a list.
-    for record in presets_list:
-        record[PresetsFields.POSITION] = (
-            [record[PresetsFields.POSITION]]
-            if record[PresetsFields.POSITION]
-            else [p.value for p in Position if p.instrumenttype is InstrumentType[record[PresetsFields.INSTRUMENTTYPE]]]
-        )
-    # 'Explode' the list by position, i.e. repeat each record for each position in its list of positions.
-    preset_list_exploded = [
-        Preset.model_validate(record | {PresetsFields.POSITION: position})
-        for record in presets_list
-        for position in record[PresetsFields.POSITION]
-    ]
-    return {preset.position: preset for preset in preset_list_exploded}
-
-
 def create_tag_to_position_lookup(tag_records: list[dict[str, str]]):  # -> dict[str, list[Position]]:
     """Creates a dict that maps 'free format' position tags to a list of Position values.
     A tag can represent multiple positions, e.g. the tag `gangsa` maps to the list

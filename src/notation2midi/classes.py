@@ -27,7 +27,7 @@ class ParserModel:
     curr_beat_id: int = None
     curr_position: Position = None
     curr_line_nr: int = None
-    errors = []
+    log_msgs: dict[int, str] = {logging.ERROR: [], logging.WARNING: []}
     logger = None
 
     def __init__(self, parser_type: ParserType, run_settings: RunSettings):
@@ -40,14 +40,17 @@ class ParserModel:
         p = f"{pos:02d}"
         return f"{val:{p}d}" if val else " " * pos
 
-    def log(self, err_msg: str, level: logging = logging.ERROR) -> str:
-        prefix = f"{self.f(self.curr_gongan_id,2)}-{self.f(self.curr_beat_id,2)} |{self.f(self.curr_line_nr,4)}| "
-        if level > logging.INFO and not self.errors:
-            self.logger.error(f"ERRORS ENCOUNTERED WHILE {self.parser_type.value.upper()}:")
+    def log(self, err_msg: str, level: int = logging.ERROR) -> str:
+        extra_spaces = " " * (7 - len(logging.getLevelName(level)))
+        prefix = f"{extra_spaces}{self.f(self.curr_gongan_id,2)}-{self.f(self.curr_beat_id,2)} |{self.f(self.curr_line_nr,4)}| "
+        if level > logging.INFO and not self.log_msgs[level]:
+            self.logger.log(
+                level, f"{logging.getLevelName(level)}S ENCOUNTERED WHILE {self.parser_type.value.upper()}:"
+            )
         msg = prefix + err_msg
         self.logger.log(level, msg)
         if level > logging.INFO:
-            self.errors.append(msg)
+            self.log_msgs[level].append(msg)
 
     def logerror(self, msg: str) -> str:
         self.log(msg, level=logging.ERROR)
@@ -80,4 +83,8 @@ class ParserModel:
 
     @property
     def has_errors(self):
-        return len(self.errors) > 0
+        return len(self.log_msgs[logging.ERROR]) > 0
+
+    @property
+    def has_warnings(self):
+        return len(self.log_msgs[logging.WARNING]) > 0

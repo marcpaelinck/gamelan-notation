@@ -13,6 +13,7 @@ BeatId = str
 Octave = int
 MIDIvalue = int
 MidiDict = dict[str, list[dict[str, str | int | None]]]
+DataRecord = list[str, str | None]
 NotationDict = dict[int, dict[int, dict[str, dict[tuple[int], str]]]]  # notation[gongan_id][beat_id][position][passes]
 NoteRecord = dict[str, Any]
 ErrorMessage = str

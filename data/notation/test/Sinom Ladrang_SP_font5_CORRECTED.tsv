@@ -91,9 +91,9 @@ comment	GONGAN 10
 metadata	{SUPPRESS positions=[PEMADE_POLOS, KANTILAN_POLOS, PEMADE_SANGSIH, KANTILAN_SANGSIH], passes=[1]}							
 TROMPONG	--u-	--a-	u-e-	u-a-	u-e-	o---	i-o-	a,-i-
 PEMADE_P	.oe.	eo.e	.oe.	eo.e	.o.e	oo.o	.eoo	.o.e
-PEMADE_S	ua.u	.au.	ua.u	.au.	uau.	uu.u	u.aa	.au.
+PEMADE_S	ua.u	.au.	ua.u	.au.	uau.	aa.a	u.aa	.au.
 KANTILAN_P	.oe.	eo.e	.oe.	eo.e	.o.e	oo.o	.eoo	.o.e
-KANTILAN_S	ua.u	.au.	ua.u	.au.	uau.	uu.u	u.aa	.au.
+KANTILAN_S	ua.u	.au.	ua.u	.au.	uau.	aa.a	u.aa	.au.
 CALUNG	--u-	--a-	u-e-	u-a-	u-e-	o---	o---	----
 KENDANG	-9(9	(-9-	(--9	-(-(	-99(	98*8	*-00	-9--
 KEMPLI	x?---	x?---	x?---	x?---	x?---	x?---	x?---	x?---
@@ -113,9 +113,9 @@ KEMPLI	x?---	x?---	x?---	x?---	x?---	x?---	x?---	x?---
 metadata	{SUPPRESS positions=[PEMADE_POLOS, KANTILAN_POLOS, PEMADE_SANGSIH, KANTILAN_SANGSIH], passes=[1]}							
 TROMPONG	e---	u-e-	u---	a---	u-e-	o---	i-o-	a,-i-
 PEMADE_P	.i.o	i.io	.e.o	e.oe	.o.e	oo.o	.eoo	.o.e
-PEMADE_S	eue.	ueu.	e.ua	.ua.	uau.	uu.u	u.aa	.au.
+PEMADE_S	eue.	ueu.	e.ua	.ua.	uau.	aa.a	u.aa	.au.
 KANTILAN_P	.i.o	i.io	.e.o	e.oe	.o.e	oo.o	.eoo	.o.e
-KANTILAN_S	eue.	ueu.	e.ua	.ua.	uau.	uu.u	u.aa	.au.
+KANTILAN_S	eue.	ueu.	e.ua	.ua.	uau.	aa.a	u.aa	.au.
 CALUNG	e---	u-e-	u---	a---	u-e-	o---	i---	o---
 JEGOGAN	e---	----	----	----	u---	----	----	----
 KENDANG	-9(9	(-9-	(--9	-(-(	-99(	98*8	*-00	-9--
@@ -180,9 +180,9 @@ metadata	{LABEL name=D}
 metadata	{TEMPO value=70, first_beat=3, beat_count=5}							
 TROMPONG	a--a	a-a-	a-s-	a-u-	a--e	e-e-	--o-	e-u-
 PEMADE_P	.eu.	ue.u	.eu.	ue.u	...e	e-e-	----	----
-PEMADE_S	as.a	.sa.	as.a	.sa.	a--s	a-a-	----	----
+PEMADE_S	as.a	.sa.	as.a	.sa.	a--s	s-s-	----	----
 KANTILAN_P	.eu.	ue.u	.eu.	ue.u	...e	e-e-	----	----
-KANTILAN_S	as.a	.sa.	as.a	.sa.	a--s	a-a-	----	----
+KANTILAN_S	as.a	.sa.	as.a	.sa.	a--s	s-s-	----	----
 CALUNG	a--a	a-a-	a-i-	a-u-	a-u-	e---	u-o-	e-u-
 JEGOGAN	a---	----	----	----	----	----	----	----
 KENDANG	(*8(	9---	(*8(	9---	---9	9-9-	(-9-	*-(-

@@ -8,7 +8,7 @@ import src.settings.settings
 from src.common.constants import InstrumentGroup, NoteRecord, Pitch, Position, Stroke
 from src.settings.constants import NoteFields
 from src.settings.font_to_valid_notes import get_note_records
-from src.settings.settings import get_run_settings
+from src.settings.settings import RUN_SETTINGS, get_run_settings
 
 
 @pytest.fixture(scope="module")

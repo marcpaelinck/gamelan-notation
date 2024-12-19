@@ -2,7 +2,7 @@ import json
 import re
 from collections import defaultdict
 
-from src.common.classes import Notation, Note
+from src.common.classes import InstrumentTag, Notation, Note
 from src.common.constants import (
     DEFAULT,
     NotationDict,
@@ -13,11 +13,10 @@ from src.common.constants import (
     SpecialTags,
     Stroke,
 )
-from src.common.lookups import LOOKUP
 from src.common.metadata_classes import MetaData, Scope
 from src.notation2midi.classes import ParserModel
 from src.settings.classes import RunSettings
-from src.settings.settings import BASE_NOTE_TIME, get_run_settings
+from src.settings.settings import BASE_NOTE_TIME, RUN_SETTINGS
 
 # ==================== BALI MUSIC 5 FONT =====================================
 
@@ -259,11 +258,11 @@ class Notation5Parser(ParserModel):
                         pos, pass_ = tag, DEFAULT
 
                     if len(line) > 1:
-                        if not LOOKUP.TAG_TO_POSITION.get(pos, None):
+                        if not InstrumentTag.get_positions(pos):
                             self.logerror(f"unrecognized instrument tag {pos}.")
                             continue
 
-                        positions = [Position[tag] for tag in LOOKUP.TAG_TO_POSITION.get(pos, [])]
+                        positions = InstrumentTag.get_positions(pos)
                         for self.curr_beat_id in range(1, len(line)):
                             for self.curr_position in positions:
                                 if line[self.curr_beat_id]:
@@ -307,6 +306,6 @@ def get_parser(run_settings: RunSettings):
 
 
 if __name__ == "__main__":
-    run_settings = get_run_settings()
+    run_settings = RUN_SETTINGS
     parser = Notation5Parser(run_settings)
     notation = parser.parse_notation()

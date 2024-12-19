@@ -2,16 +2,14 @@ from mido import MidiFile
 
 from src.common.classes import Beat, Preset, Score
 from src.common.constants import Position
-from src.common.lookups import LOOKUP
 from src.common.metadata_classes import PartMeta
-from src.common.utils_generic import create_instr_to_preset_dict
 from src.notation2midi.classes import ParserModel
 from src.notation2midi.midi_track import MidiTrackX
 from src.settings.classes import Part, RunSettings, Song
 from src.settings.settings import (
     ATTENUATION_SECONDS_AFTER_MUSIC_END,
+    RUN_SETTINGS,
     get_midiplayer_content,
-    get_run_settings,
     save_midiplayer_content,
 )
 
@@ -27,9 +25,6 @@ class MidiGenerator(ParserModel):
             name=self.run_settings.notation.part.name,
             file=self.run_settings.notation.midi_out_file,
             loop=self.run_settings.notation.part.loop,
-        )
-        self.INSTRUMENT_TO_PRESET = create_instr_to_preset_dict(
-            preset_records=score.settings.data.presets, instrumentgroup=score.settings.instruments.instrumentgroup
         )
 
     def _add_attenuation_time(self, tracks: list[MidiTrackX], seconds: int) -> None:
@@ -73,7 +68,7 @@ class MidiGenerator(ParserModel):
                     return
                 self.player_data.markers[partinfo.name] = int(curr_time)
 
-        track = MidiTrackX(position, self.INSTRUMENT_TO_PRESET[position], self.run_settings)
+        track = MidiTrackX(position, Preset.get_preset(position), self.run_settings)
 
         reset_pass_counters()
         beat = self.score.gongans[0].beats[0]
@@ -178,7 +173,7 @@ class MidiGenerator(ParserModel):
 
 
 if __name__ == "__main__":
-    settings = get_run_settings()
+    settings = RUN_SETTINGS
     score = Score(title="Test", gongans=[], settings=settings)
     gen = MidiGenerator(score)
     x = 1

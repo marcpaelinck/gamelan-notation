@@ -67,8 +67,6 @@ metadata	{TEMPO value=95, passes=[3]}
 metadata	{LABEL name=PENGECET}
 metadata	{SUPPRESS passes=[1], positions=["gangsa p", "gangsa s"], beats=[2,3,4,5,6,7,8]}
 trompong	u---	--a-	u-e-	u-a-	--u-	--a-	u-e-	u-a-
-gangsa p:1	u---
-gangsa s:1	u---
 gangsa p	.oe.	eo.e	.oe.	eo.e	.oe.	eo.e	.oe.	eo.e
 gangsa s	ua.u	.au.	ua.u	.au.	ua.u	.au.	ua.u	.au.
 calung	u---	--a-	u-e-	u-a-	--u-	--a-	u-e-	u-a-

@@ -13,9 +13,8 @@ import pyautogui
 from src.common.classes import Note
 from src.common.constants import InstrumentType
 from src.common.logger import get_logger
-from src.common.utils_generic import create_instr_to_preset_dict
 from src.settings.classes import RunSettings
-from src.settings.settings import get_run_settings
+from src.settings.settings import RUN_SETTINGS
 from src.soundfont.soundfont_textfile import SoundfontTextfile
 
 logger = get_logger(__name__)
@@ -35,13 +34,8 @@ def create_soundfont_definition_file(run_settings: RunSettings) -> None:
         for instrument in InstrumentType
     }
 
-    instrument_to_preset = create_instr_to_preset_dict(
-        preset_records=run_settings.data.presets, instrumentgroup=run_settings.instruments.instrumentgroup
-    )
     # workbook = SoundfontWorkbook(midi_dict=midi_dict, preset_dict=preset_dict, settings=run_settings)
-    sf_file = SoundfontTextfile(
-        midi_dict=instrument_to_midi_dict, preset_dict=instrument_to_preset, settings=run_settings
-    )
+    sf_file = SoundfontTextfile(midi_dict=instrument_to_midi_dict, settings=run_settings)
     sf_file.create_soundfont_definition()
     filepath = sf_file.save()
     logger.info(f"SoundFont definition saved to {filepath}")
@@ -88,6 +82,6 @@ def create_soundfont_files(run_settings: RunSettings) -> None:
 
 
 if __name__ == "__main__":
-    run_settings = get_run_settings()
+    run_settings = RUN_SETTINGS
     run_settings.options.soundfont.run = True
     create_soundfont_files(run_settings)

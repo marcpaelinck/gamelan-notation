@@ -5,13 +5,13 @@ from src.common.classes import Beat, Gongan, Note, Score
 from src.common.constants import (
     BeatId,
     Duration,
+    InstrumentGroup,
     InstrumentType,
     Octave,
     Pitch,
     Position,
     Stroke,
 )
-from src.common.lookups import LOOKUP
 from src.common.metadata_classes import GonganType, ValidationProperty
 from src.notation2midi.classes import ParserModel
 
@@ -175,6 +175,7 @@ class ScoreValidator(ParserModel):
         gongan: Gongan,
         autocorrect: bool,
     ) -> list[tuple[BeatId, tuple[Position, Position]]]:
+        # TODO: currently only works for gong kebyar, not for semar pagulingan
 
         def note_pairs(beat: Beat, pair: list[InstrumentType]):
             return list(zip([n for n in beat.staves[pair[0]]], [n for n in beat.staves[pair[1]]]))
@@ -187,7 +188,11 @@ class ScoreValidator(ParserModel):
                 ignored.append(f"BEAT {beat.full_id} skipped due to override")
                 continue
             for polos, sangsih in self.POSITIONS_VALIDATE_AND_CORRECT_KEMPYUNG:
-                instrumentrange = Note.get_all_p_o_s(polos)
+                instrumentrange = [
+                    (pitch, octave, stroke)
+                    for (pitch, octave, stroke) in Note.get_all_p_o_s(polos)
+                    if stroke == Stroke.OPEN
+                ]
                 kempyung_dict = self._get_kempyung_dict(instrumentrange)
                 # check if both instruments occur in the beat
                 if all(instrument in beat.staves.keys() for instrument in (polos, sangsih)):
@@ -288,6 +293,9 @@ class ScoreValidator(ParserModel):
         autocorrect = self.score.settings.options.notation_to_midi.autocorrect
         detailed_logging = self.score.settings.options.notation_to_midi.detailed_validation_logging
 
+        if self.score.settings.instruments.instrumentgroup != InstrumentGroup.GONG_KEBYAR:
+            self.logwarning("Skipping kempyung validation for non-gong kebyar scores.")
+
         for gongan in self.gongan_iterator(self.score):
             # Determine if the beat duration is a power of 2 (ignore kebyar)
             invalids, corrected, ignored = self._invalid_beat_lengths(gongan, autocorrect)
@@ -309,7 +317,7 @@ class ScoreValidator(ParserModel):
             corrected_note_out_of_range.extend(corrected)
             ignored_note_out_of_range.extend(corrected)
 
-            if self.score.settings.notation.autocorrect_kempyung:
+            if self.score.settings.instruments.instrumentgroup == InstrumentGroup.GONG_KEBYAR:
                 invalids, corrected, ignored = self._incorrect_kempyung(gongan, autocorrect=autocorrect)
                 remaining_incorrect_kempyung.extend(invalids)
                 corrected_invalid_kempyung.extend(corrected)

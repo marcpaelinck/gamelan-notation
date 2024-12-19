@@ -9,7 +9,7 @@ from src.notation2midi.score_to_midi import MidiGenerator
 from src.notation2midi.score_to_notation import score_to_notation_file
 from src.notation2midi.score_validation import ScoreValidator
 from src.settings.classes import RunSettings
-from src.settings.settings import get_run_settings
+from src.settings.settings import RUN_SETTINGS, get_run_settings
 from src.settings.settings_validation import validate_input_data
 from src.soundfont.soundfont_generator import create_soundfont_files
 

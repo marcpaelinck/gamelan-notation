@@ -6,7 +6,7 @@ import pandas as pd
 from src.common.classes import Gongan, Note, Score
 from src.common.constants import NotationFont, Pitch, Position, SpecialTags
 from src.settings.constants import InstrumentFields
-from src.settings.settings import get_run_settings
+from src.settings.settings import RUN_SETTINGS
 
 
 def stave_to_string(stave: list[Note]) -> str:  # here: gongan_to_records, test_utils

@@ -47,9 +47,25 @@ TYPES = {
 
 
 # Functions that should be applied to each field when processing the MIDI data
+# def formatter(element_type: type):
+#     locals_ = {"NONE": None} | {x.value: x for x in element_type} if issubclass(element_type, Enum) else None
+#     # locals_ = element_type | {"": None}
+#     return lambda x: (
+#         (eval("NONE" if x == "" else x, locals_) if locals_ else eval(x)) if x.startswith("[") else element_type(x)
+#     )
+
+
 def formatter(element_type: type):
-    locals = {"": "x"} | {x.value: x for x in element_type} if issubclass(element_type, Enum) else None
-    return lambda x: ((eval(x, globals(), locals) if locals else eval(x)) if x.startswith("[") else element_type(x))
+    locals_ = {"NONE": None} | {x.value: x for x in element_type} if issubclass(element_type, Enum) else None
+
+    def format_(x):
+        x_ = "NONE" if x == "" else x
+        if locals_:
+            return eval(x_, locals_)
+        else:
+            return x
+
+    return format_
 
 
 DTYPES = {int: "int64", float: "float64"}
@@ -63,7 +79,7 @@ def get_dtypes(fields: Enum) -> dict[str, str]:
     return {field: DTYPES[TYPES[field]] for field in fields if DTYPES.get(TYPES[field], None)}
 
 
-def read_table(filepath: str, fields: Enum, outtype: BaseModel) -> list[InstrumentRecord]:
+def read_table(filepath: str, fields: Enum, outtype: BaseModel) -> list[BaseModel]:
     formatters = get_formatters(fields)
     dtypes = get_dtypes(fields)
 
@@ -75,7 +91,6 @@ def read_table(filepath: str, fields: Enum, outtype: BaseModel) -> list[Instrume
 
 if __name__ == "__main__":
     # instr = read_table("./data/instruments/instruments.tsv", InstrumentFields, InstrumentRecord)
-    instr = read_table("./data/midi/gamelan_midinotes1.tsv", InstrumentTagFields, InstrumentTagRecord)
-    print(locals())
+    instr = read_table("./data/instruments/instrumenttags.tsv", InstrumentTagFields, InstrumentTagRecord)
     # print(eval())
     x = 1
