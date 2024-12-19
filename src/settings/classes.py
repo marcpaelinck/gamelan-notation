@@ -1,15 +1,78 @@
 import os
+from typing import Any
 
 from pydantic import BaseModel, Field
 
 from src.common.constants import (
     AnimationProfiles,
+    Duration,
     DynamicLevel,
     InstrumentGroup,
+    InstrumentType,
+    MIDIvalue,
+    Modifier,
     NotationFont,
     NoteOct,
+    Octave,
+    Pitch,
+    Position,
     Stroke,
 )
+
+
+# RAW CLASSES FOR DATA FILE CONTENTS
+# The following preprocessing will be performed
+# - Resolve all Enums defined in src.common.constants
+# - Explode pseudo lists (string values containing comma separated values between square brackets)
+class InstrumentRecord(BaseModel):
+    group: InstrumentGroup
+    position: Position
+    instrument: InstrumentType
+
+
+class InstrumentTagRecord(BaseModel):
+    tag: str
+    infile: str
+    positions: list[Position]
+
+
+class MidiNoteRecord(BaseModel):
+    instrumentgroup: InstrumentGroup
+    instrumenttype: InstrumentType
+    positions: Position
+    pitch: Pitch
+    octave: Octave
+    stroke: Stroke
+    remark: str
+    midinote: list[MIDIvalue]
+    rootnote: str
+    sample: str
+
+
+class PresetRecord(BaseModel):
+    instrumentgroup: InstrumentGroup
+    instrumenttype: InstrumentType
+    positions: Position
+    bank: int
+    preset: int
+    channel: int
+    port: int
+    preset_name: str
+
+
+class FontRecord(BaseModel):
+    symbol: str
+    unicode: str
+    symbol_description: str
+    balifont_symbol_description: str
+    pitch: Pitch
+    octave: Octave
+    stroke: Stroke
+    duration: Duration
+    rest_after: Duration
+    modifier: Modifier
+    description: str
+
 
 # ANIMATION SETTINGS
 #
@@ -176,6 +239,14 @@ class RunSettings(BaseModel):
         notation_to_midi: NotationToMidiOptions
         soundfont: SoundfontOptions
 
+    class Data(BaseModel):
+        # Contains pre-formatted table data
+        font: list[dict[str, str | None]] | None
+        instruments: list[dict[str, str | None]] | None
+        instrument_tags: list[dict[str, str | None]] | None
+        midinotes: list[dict[str, str | None]] | None
+        presets: list[dict[str, str | None]] | None
+
     # attributes of class RunSettings
     options: Options
     midi: MidiInfo
@@ -185,3 +256,4 @@ class RunSettings(BaseModel):
     notation: NotationInfo | None = None
     instruments: InstrumentInfo | None = None
     font: FontInfo | None = None
+    data: Data

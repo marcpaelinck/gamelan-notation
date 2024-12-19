@@ -10,8 +10,10 @@ import time
 
 import pyautogui
 
+from src.common.classes import Note
+from src.common.constants import InstrumentType
 from src.common.logger import get_logger
-from src.common.lookups import LOOKUP
+from src.common.utils_generic import create_instr_to_preset_dict
 from src.settings.classes import RunSettings
 from src.settings.settings import get_run_settings
 from src.soundfont.soundfont_textfile import SoundfontTextfile
@@ -28,9 +30,17 @@ def create_soundfont_definition_file(run_settings: RunSettings) -> None:
     logger.info("======== SOUNDFONT CREATION ========")
     logger.info(f"Midi version: {run_settings.midi.midiversion}")
 
+    instrument_to_midi_dict = {
+        instrument: [note.midinote for note in Note._VALIDNOTES if note.position.instrumenttype is instrument]
+        for instrument in InstrumentType
+    }
+
+    instrument_to_preset = create_instr_to_preset_dict(
+        preset_records=run_settings.data.presets, instrumentgroup=run_settings.instruments.instrumentgroup
+    )
     # workbook = SoundfontWorkbook(midi_dict=midi_dict, preset_dict=preset_dict, settings=run_settings)
     sf_file = SoundfontTextfile(
-        midi_dict=LOOKUP.INSTRUMENT_TO_MIDINOTE, preset_dict=LOOKUP.INSTRUMENT_TO_PRESET, settings=run_settings
+        midi_dict=instrument_to_midi_dict, preset_dict=instrument_to_preset, settings=run_settings
     )
     sf_file.create_soundfont_definition()
     filepath = sf_file.save()

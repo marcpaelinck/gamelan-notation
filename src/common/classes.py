@@ -16,12 +16,10 @@ from pydantic import (
 from src.common.constants import (
     BPM,
     DEFAULT,
-    PASS,
     Duration,
     InstrumentType,
     Modifier,
     NotationDict,
-    NoteRecord,
     Octave,
     Pass,
     Pitch,
@@ -37,8 +35,9 @@ from src.common.metadata_classes import (
     ValidationProperty,
 )
 from src.settings.classes import RunSettings
+from src.settings.constants import FontFields
 from src.settings.font_to_valid_notes import get_font_characters, get_note_records
-from src.settings.settings import FontFields, MidiNotesFields, get_run_settings
+from src.settings.settings import get_run_settings
 
 
 @dataclass
@@ -73,12 +72,15 @@ class NotationModel(BaseModel):
         if isinstance(value, list):
             # List of strings: convert strings to enumtype objects.
             if all(isinstance(el, str) for el in value):
-                return [el_type[el] if issubclass(el_type, StrEnum) else float(el) for el in value]
+                try:
+                    return [el_type[el] if issubclass(el_type, StrEnum) else float(el) for el in value]
+                except:
+                    raise ValueError(f"Could not convert value {value} to a list of {el_type}")
             elif all(isinstance(el, el_type) for el in value):
                 # List of el_type: do nothing
                 return value
         else:
-            raise ValueError(f"Cannot convert value {value} to a list of {el_type}")
+            raise ValueError(f"Could not convert value {value} to a list of {el_type}")
 
 
 class Note(NotationModel):
@@ -291,24 +293,24 @@ class Beat:
 
     id: int
     gongan_id: int
-    bpm_start: dict[PASS, BPM]  # tempo at beginning of beat (can vary per pass)
-    bpm_end: dict[PASS, BPM]  # tempo at end of beat (can vary per pass)
-    velocities_start: dict[PASS, dict[Position, Velocity]]  # Same for velocity, specified per position
-    velocities_end: dict[PASS, dict[Position, Velocity]]
+    bpm_start: dict[Pass, BPM]  # tempo at beginning of beat (can vary per pass)
+    bpm_end: dict[Pass, BPM]  # tempo at end of beat (can vary per pass)
+    velocities_start: dict[Pass, dict[Position, Velocity]]  # Same for velocity, specified per position
+    velocities_end: dict[Pass, dict[Position, Velocity]]
     duration: float
-    changes: dict[Change.Type, dict[PASS, Change]] = field(default_factory=lambda: defaultdict(dict))
+    changes: dict[Change.Type, dict[Pass, Change]] = field(default_factory=lambda: defaultdict(dict))
     staves: dict[Position, list[Note]] = field(default_factory=dict)
     # Exceptions contains alternative staves for specific passes.
     exceptions: dict[(Position, Pass), list[Note]] = field(default_factory=dict)
     prev: "Beat" = field(default=None, repr=False)  # previous beat in the score
     next: "Beat" = field(default=None, repr=False)  # next beat in the score
-    goto: dict[PASS, "Beat"] = field(
+    goto: dict[Pass, "Beat"] = field(
         default_factory=dict
     )  # next beat to be played according to the flow (GOTO metadata)
     has_kempli_beat: bool = True
     repeat: Repeat = None
     validation_ignore: list[ValidationProperty] = field(default_factory=list)
-    _pass_: PASS = 0  # Counts the number of times the beat is passed during generation of MIDI file.
+    _pass_: Pass = 0  # Counts the number of times the beat is passed during generation of MIDI file.
 
     @computed_field
     @property
@@ -361,7 +363,7 @@ class Gongan:
     gongantype: GonganType = GonganType.REGULAR
     metadata: list[MetaData] = field(default_factory=list)
     comments: list[str] = field(default_factory=list)
-    _pass_: PASS = 0  # Counts the number of times the gongan is passed during generation of MIDI file.
+    _pass_: Pass = 0  # Counts the number of times the gongan is passed during generation of MIDI file.
 
     def get_metadata(self, cls: MetaDataType):
         return next((meta.data for meta in self.metadata if isinstance(meta.data, cls)), None)

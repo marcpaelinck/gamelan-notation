@@ -5,9 +5,10 @@ import pytest
 
 from src.common.classes import Beat, Gongan, Note
 from src.common.constants import InstrumentType, Position
-from src.common.utils import gongan_to_records, stave_to_string
 from src.notation2midi.notation5_to_dict import Notation5Parser
-from src.settings.settings import InstrumentFields, get_run_settings
+from src.notation2midi.score_to_notation import gongan_to_records, stave_to_string
+from src.settings.constants import InstrumentFields
+from src.settings.settings import get_run_settings
 
 
 def create_symbol_to_note_lookup(fromfile: str) -> dict[str, Note]:

@@ -20,7 +20,8 @@ from pydantic import BaseModel, ConfigDict
 from src.common.constants import InstrumentType, Modifier, Pitch, Position, Stroke
 from src.common.utils_generic import to_list
 from src.settings.classes import RunSettings
-from src.settings.settings import MidiNotesFields, NoteFields, get_run_settings
+from src.settings.constants import MidiNotesFields, NoteFields
+from src.settings.settings import get_run_settings
 
 
 class AnyNote(BaseModel):

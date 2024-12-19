@@ -1,92 +1,25 @@
 import csv
 from os import path
-from statistics import mode
 
 import pandas as pd
 
-from src.common.classes import Beat, Gongan, Note, Score
-from src.common.constants import (
-    Duration,
-    NotationFont,
-    Octave,
-    Pitch,
-    Position,
-    SpecialTags,
-    Stroke,
-)
-from src.common.lookups import LOOKUP
-from src.common.metadata_classes import GonganType, KempliMeta, MetaDataSwitch
-from src.settings.settings import InstrumentFields, get_run_settings
+from src.common.classes import Gongan, Note, Score
+from src.common.constants import NotationFont, Pitch, Position, SpecialTags
+from src.settings.constants import InstrumentFields
+from src.settings.settings import get_run_settings
 
 
-def has_kempli_beat(gongan: Gongan):
-    return (
-        not (kempli := gongan.get_metadata(KempliMeta)) or kempli.status != MetaDataSwitch.OFF
-    ) and gongan.gongantype not in [GonganType.KEBYAR, GonganType.GINEMAN]
+def stave_to_string(stave: list[Note]) -> str:  # here: gongan_to_records, test_utils
+    return "".join((n.symbol for n in stave))
 
 
-def most_occurring_beat_duration(beats: list[Beat]):
-    return mode(beat.duration for beat in beats)
-
-
-def most_occurring_stave_duration(staves: dict[Position, list[Note]]):
-    return mode(sum(note.total_duration for note in notes) for notes in list(staves.values()))
-
-
-def is_silent(gongan: Gongan, position: Position):
+def is_silent(gongan: Gongan, position: Position):  # here: gongan_to_records
     no_occurrence = sum((beat.staves.get(position, []) for beat in gongan.beats), []) == []
     all_rests = all(note.pitch == Pitch.NONE for beat in gongan.beats for note in beat.staves.get(position, []))
     return no_occurrence or all_rests
 
 
-def stave_to_string(stave: list[Note]) -> str:
-    return "".join((n.symbol for n in stave))
-
-
-def create_rest_stave(position: Position, resttype: Stroke, duration: float) -> list[Note]:
-    """Creates a stave with rests of the given type for the given duration.
-    If the duration is non-integer, the stave will also contain half and/or quarter rests.
-
-    Args:
-        resttype (Stroke): the type of rest (SILENCE or EXTENSION)
-        duration (float): the duration, which can be non-integer.
-
-    Returns:
-        list[Note]: _description_
-    """
-    # TODO exception handling
-    notes = []
-    whole_rest: Note = Note.get_whole_rest_note(position, resttype)
-    for i in range(int(duration)):
-        notes.append(whole_rest.model_copy())
-
-    # if duration is not integer, add the fractional part as an extra rest.
-    if frac_duration := duration - int(duration):
-        attribute = "duration" if whole_rest.duration > 0 else "rest_after"
-        notes.append(whole_rest.model_copy(update={attribute: frac_duration}))
-
-    return notes
-
-
-def create_rest_staves(
-    prev_beat: Beat,
-    positions: list[Position],
-    duration: Duration,
-    force_silence: list[Position] = [],
-):
-    silence = Stroke.SILENCE
-    extension = Stroke.EXTENSION
-    prevstrokes = {pos: (prev_beat.staves[pos][-1].stroke if prev_beat else silence) for pos in positions}
-    resttypes = {
-        pos: silence if prevstroke is silence or pos in force_silence else extension
-        for pos, prevstroke in prevstrokes.items()
-    }
-    return {position: create_rest_stave(position, resttypes[position], duration) for position in positions}
-
-
-def gongan_to_records(
-    gongan: Gongan, skipemptylines: bool = True, fontversion: NotationFont = None
-) -> list[dict[Position | int, list[str]]]:
+def gongan_to_records(gongan: Gongan, skipemptylines: bool = True) -> list[dict[Position | int, list[str]]]:
     """Converts a gongan to a dict containing the notation for the individual beats.
 
     Args:
@@ -153,7 +86,7 @@ def gongan_to_records(
     return result
 
 
-def score_to_notation_file(score: Score) -> None:
+def score_to_notation_file(score: Score) -> None:  # score_validation
     """Converts a score object to notation and saves it to file.
         This method is used to export a corrected version of the original score.
 
@@ -165,25 +98,3 @@ def score_to_notation_file(score: Score) -> None:
     fpath, ext = path.splitext(score.settings.notation.filepath)
     filepath = fpath + "_CORRECTED" + ext
     score_df.to_csv(filepath, sep="\t", index=False, header=False, quoting=csv.QUOTE_NONE)
-
-
-# Create lookup dicts based on the settings files (CSV)
-#
-
-
-def flatten(lst: list[list | object]):
-    """unpacks lists within a list in-place. lst can contain both lists and objects or scalars
-
-    Args:
-        lst (list[list  |  object]): list containing lists and objects
-
-    Returns:
-        list[object]: The list with unpacked list objects.
-    """
-    flattened = sum((obj if isinstance(obj, list) else [obj] for obj in lst), [])
-    lst.clear()
-    lst.extend(flattened)
-
-
-if __name__ == "__main__":
-    settings = get_run_settings()

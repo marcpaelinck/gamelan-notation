@@ -6,6 +6,7 @@ from src.common.constants import NotationFont
 from src.notation2midi.dict_to_score import DictToScoreConverter
 from src.notation2midi.notation5_to_dict import Notation5Parser
 from src.notation2midi.score_to_midi import MidiGenerator
+from src.notation2midi.score_to_notation import score_to_notation_file
 from src.notation2midi.score_validation import ScoreValidator
 from src.settings.classes import RunSettings
 from src.settings.settings import get_run_settings
@@ -30,6 +31,9 @@ def notation_to_midi(run_settings: RunSettings):
         score = DictToScoreConverter(notation).create_score()
         score = ScoreValidator(score).validate_score()
         MidiGenerator(score).create_midifile()
+
+    if run_settings.options.notation_to_midi.save_corrected_to_file:
+        score_to_notation_file(score)
 
     if run_settings.options.soundfont.run:
         create_soundfont_files(run_settings)

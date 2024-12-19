@@ -4,9 +4,12 @@
     Main method: convert_notation_to_midi()
 """
 
+from statistics import mode
+
 from src.common.classes import Beat, Gongan, Notation, Note, Score
 from src.common.constants import (
     DEFAULT,
+    Duration,
     NotationDict,
     Pitch,
     Position,
@@ -31,12 +34,6 @@ from src.common.metadata_classes import (
     ValidationMeta,
     ValidationProperty,
     WaitMeta,
-)
-from src.common.utils import (
-    create_rest_stave,
-    create_rest_staves,
-    has_kempli_beat,
-    most_occurring_beat_duration,
 )
 from src.notation2midi.classes import ParserModel
 
@@ -78,10 +75,15 @@ class DictToScoreConverter(ParserModel):
         ]
         return set(all_instruments)
 
+    def _has_kempli_beat(self, gongan: Gongan):
+        return (
+            not (kempli := gongan.get_metadata(KempliMeta)) or kempli.status != MetaDataSwitch.OFF
+        ) and gongan.gongantype not in [GonganType.KEBYAR, GonganType.GINEMAN]
+
     def _move_beat_to_start(self) -> None:
         # If the last gongan is regular (has a kempli beat), create an additional gongan with an empty beat
         last_gongan = self.score.gongans[-1]
-        if has_kempli_beat(last_gongan):
+        if self._has_kempli_beat(last_gongan):
             new_gongan = Gongan(id=last_gongan.id + 1, beats=[], beat_duration=0)
             self.score.gongans.append(new_gongan)
             last_beat = last_gongan.beats[-1]
@@ -124,6 +126,42 @@ class DictToScoreConverter(ParserModel):
         # Add a rest at the beginning of the first beat
         for instrument, notes in self.score.gongans[0].beats[0].staves.items():
             notes.insert(0, Note.get_whole_rest_note(Stroke.SILENCE))
+
+    def _create_rest_stave(self, position: Position, resttype: Stroke, duration: float) -> list[Note]:
+        """Creates a stave with rests of the given type for the given duration.
+        If the duration is non-integer, the stave will also contain half and/or quarter rests.
+
+        Args:
+            resttype (Stroke): the type of rest (SILENCE or EXTENSION)
+            duration (float): the duration, which can be non-integer.
+
+        Returns:
+            list[Note]: _description_
+        """
+        # TODO exception handling
+        notes = []
+        whole_rest: Note = Note.get_whole_rest_note(position, resttype)
+        for i in range(int(duration)):
+            notes.append(whole_rest.model_copy())
+
+        # if duration is not integer, add the fractional part as an extra rest.
+        if frac_duration := duration - int(duration):
+            attribute = "duration" if whole_rest.duration > 0 else "rest_after"
+            notes.append(whole_rest.model_copy(update={attribute: frac_duration}))
+
+        return notes
+
+    def _create_rest_staves(
+        self, prev_beat: Beat, positions: list[Position], duration: Duration, force_silence: list[Position] = []
+    ):
+        silence = Stroke.SILENCE
+        extension = Stroke.EXTENSION
+        prevstrokes = {pos: (prev_beat.staves[pos][-1].stroke if prev_beat else silence) for pos in positions}
+        resttypes = {
+            pos: silence if prevstroke is silence or pos in force_silence else extension
+            for pos, prevstroke in prevstrokes.items()
+        }
+        return {position: self._create_rest_stave(position, resttypes[position], duration) for position in positions}
 
     def _apply_metadata(self, metadata: list[MetaData], gongan: Gongan) -> None:
         """Processes the metadata of a gongan into the object model.
@@ -207,7 +245,9 @@ class DictToScoreConverter(ParserModel):
                             for position in meta.data.positions:
                                 beat.exceptions.update(
                                     {
-                                        (position, pass_): create_rest_stave(position, Stroke.EXTENSION, beat.duration)
+                                        (position, pass_): self._create_rest_stave(
+                                            position, Stroke.EXTENSION, beat.duration
+                                        )
                                         for pass_ in meta.data.passes
                                     }
                                 )
@@ -279,7 +319,7 @@ class DictToScoreConverter(ParserModel):
                     )
                     lastbeat.next.prev = newbeat
                     lastbeat.next = newbeat
-                    newbeat.staves = create_rest_staves(
+                    newbeat.staves = self._create_rest_staves(
                         prev_beat=lastbeat, positions=lastbeat.staves.keys(), duration=duration
                     )
                     gongan.beats.append(newbeat)
@@ -318,17 +358,17 @@ class DictToScoreConverter(ParserModel):
         )
 
         if missing_positions := (all_instruments - set(beat.staves.keys())):
-            staves = create_rest_staves(
+            staves = self._create_rest_staves(
                 prev_beat=prevbeat, positions=missing_positions, duration=beat.duration, force_silence=force_silence
             )
 
             # Add a kempli beat, except if a metadata label indicates otherwise or if the kempli part was already given in the original score
             if Position.KEMPLI in staves.keys():  # and has_kempli_beat(gongan):
                 if beat.has_kempli_beat:
-                    rests = create_rest_stave(Position.KEMPLI, Stroke.EXTENSION, beat.duration - 1)
+                    rests = self._create_rest_stave(Position.KEMPLI, Stroke.EXTENSION, beat.duration - 1)
                     staves[Position.KEMPLI] = [KEMPLI_BEAT] + rests
                 else:
-                    all_rests = create_rest_stave(Position.KEMPLI, Stroke.EXTENSION, beat.duration)
+                    all_rests = self._create_rest_stave(Position.KEMPLI, Stroke.EXTENSION, beat.duration)
                     staves[Position.KEMPLI] = all_rests
 
             return staves
@@ -445,6 +485,7 @@ class DictToScoreConverter(ParserModel):
                         )
                     },
                     velocities_end={DEFAULT: vel.copy()},
+                    # TODO Shouldn't we use mode instead of max? Makes a difference for error logging.
                     duration=max(sum(note.total_duration for note in notes) for notes in list(staves.values())),
                 )
                 prev_beat = beats[-1] if beats else self.score.gongans[-1].beats[-1] if self.score.gongans else None
@@ -459,7 +500,7 @@ class DictToScoreConverter(ParserModel):
                 gongan = Gongan(
                     id=int(self.curr_gongan_id),
                     beats=beats,
-                    beat_duration=most_occurring_beat_duration(beats),
+                    beat_duration=mode(beat.duration for beat in beats),  # most occuring duration
                     metadata=gongan_info.get(SpecialTags.METADATA, [])
                     + self.notation.notation_dict[DEFAULT][SpecialTags.METADATA],
                     comments=gongan_info.get(SpecialTags.COMMENT, []),
@@ -481,7 +522,7 @@ class DictToScoreConverter(ParserModel):
         for gongan in self.gongan_iterator(self.score):
             # TODO temporary fix. Create generators to iterate through gongans, beats and positions
             # These should update the curr counters.
-            gongan.beat_duration = most_occurring_beat_duration(gongan.beats)
+            gongan.beat_duration = mode(beat.duration for beat in gongan.beats)  # most occuring duration
             self._apply_metadata(gongan.metadata, gongan)
         # Add kempli beats
         self._add_missing_staves(add_kempli=True)

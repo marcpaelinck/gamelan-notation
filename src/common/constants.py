@@ -7,17 +7,17 @@ logger = get_logger(__name__)
 
 BPM = int
 Velocity = int
-PASS = int
-DEFAULT = -1
+Pass = int
 Duration = int
 BeatId = str
-Pass = int
 Octave = int
 MIDIvalue = int
 MidiDict = dict[str, list[dict[str, str | int | None]]]
 NotationDict = dict[int, dict[int, dict[str, dict[tuple[int], str]]]]  # notation[gongan_id][beat_id][position][passes]
 NoteRecord = dict[str, Any]
 ErrorMessage = str
+
+DEFAULT = -1
 
 
 class SpecialTags(StrEnum):

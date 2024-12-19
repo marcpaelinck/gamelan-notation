@@ -56,6 +56,3 @@ def sample_name_lookup(midi_dict: dict[InstrumentType, MidiNote]) -> dict[MidiNo
 
 if __name__ == "__main__":
     run_settings = get_run_settings()
-    lookup = sample_name_lookup(LOOKUP.INSTRUMENT_TO_MIDINOTE)
-    for filename, samplename in lookup.items():
-        print(f"{filename} - {samplename}")

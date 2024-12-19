@@ -13,7 +13,6 @@ from src.common.constants import (
 )
 from src.common.lookups import LOOKUP
 from src.common.metadata_classes import GonganType, ValidationProperty
-from src.common.utils import score_to_notation_file
 from src.notation2midi.classes import ParserModel
 
 
@@ -287,7 +286,6 @@ class ScoreValidator(ParserModel):
         remaining_incorrect_ubitan = []
 
         autocorrect = self.score.settings.options.notation_to_midi.autocorrect
-        save_corrected = self.score.settings.options.notation_to_midi.save_corrected_to_file
         detailed_logging = self.score.settings.options.notation_to_midi.detailed_validation_logging
 
         for gongan in self.gongan_iterator(self.score):
@@ -351,8 +349,5 @@ class ScoreValidator(ParserModel):
         log_results(
             "INCORRECT KEMPYUNG", corrected_invalid_kempyung, ignored_invalid_kempyung, remaining_incorrect_kempyung
         )
-
-        if save_corrected:
-            score_to_notation_file(self.score)
 
         return self.score

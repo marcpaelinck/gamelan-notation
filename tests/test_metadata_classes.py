@@ -1,21 +1,13 @@
-from typing import Literal
-
 import pytest
 
 from src.common.constants import Position
 from src.common.metadata_classes import (
-    GonganMeta,
-    GoToMeta,
     KempliMeta,
-    LabelMeta,
     MetaData,
     MetaDataSwitch,
-    OctavateMeta,
     PartMeta,
-    RepeatMeta,
     SuppressMeta,
     TempoMeta,
-    ValidationMeta,
     WaitMeta,
 )
 

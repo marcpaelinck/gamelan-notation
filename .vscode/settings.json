@@ -25,5 +25,7 @@
     },
     "python.analysis.extraPaths": [
         "./src/common"
-    ]
+    ],
+    "scm.autoReveal": false,
+    "explorer.autoReveal": false
 }
