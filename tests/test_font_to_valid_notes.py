@@ -6,9 +6,9 @@ from _pytest.monkeypatch import MonkeyPatch
 
 import src.settings.settings
 from src.common.constants import InstrumentGroup, NoteRecord, Pitch, Position, Stroke
-from src.settings.constants import NoteFields
+from src.settings.constants import NoteFields, Yaml
 from src.settings.font_to_valid_notes import get_note_records
-from src.settings.settings import RUN_SETTINGS, get_run_settings
+from src.settings.settings import load_run_settings
 
 
 @pytest.fixture(scope="module")
@@ -39,9 +39,9 @@ def to_tuple(note_records: list[dict[str, Any]]) -> list[tuple[Any]]:
 def valid_notes(monkeymodule) -> tuple[list[NoteRecord]]:
     # Creates a list of valid notes for Semar Pagulingan and for Gong Kebyar
     monkeymodule.setattr(src.settings.settings, "SETTINGSFOLDER", "./tests/settings")
-    settings = get_run_settings({"piece": "sinomladrang-sp", "part": "full"})
+    settings = load_run_settings({Yaml.COMPOSITION: "sinomladrang-sp", Yaml.PART: "full"})
     notes_sp = get_note_records(settings)
-    settings = get_run_settings({"piece": "sinomladrang-gk", "part": "full"})
+    settings = load_run_settings({Yaml.COMPOSITION: "sinomladrang-gk", Yaml.PART: "full"})
     notes_gk = get_note_records(settings)
     return notes_sp, notes_gk
 

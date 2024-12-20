@@ -17,6 +17,9 @@ logger = get_logger(__name__)
 BASE_NOTE_TIME = 24
 BASE_NOTES_PER_BEAT = 4
 ATTENUATION_SECONDS_AFTER_MUSIC_END = 10  # additional time in seconds to let final chord attenuate.
+_RUN_SETTINGS: RunSettings = None
+_RUN_SETTINGS_LISTENERS: set[callable] = set()
+
 
 # Contains information about where to find the data sources in the Value
 DATA = {
@@ -102,9 +105,32 @@ def read_data(settings_dict: dict) -> dict[str, list[dict[str, str]]]:
     return data
 
 
-def get_run_settings(notation: dict[str, str] = None) -> RunSettings:
+def get_run_settings(listener: callable = None) -> RunSettings:
+    """Retrieves the most recently loaded run settings. Loads the settings from the run-settings.yaml file if no
+    settings have been loaded yet.
+
+    Args:
+        listener (callable, optional): A function that should be called when new run settings are loaded. This value
+        can be passed by modules and objects that use the run settings during their initialization phase. Defaults to None.
+
+    Returns:
+        RunSettings: settings object
+    """
+    if not _RUN_SETTINGS:
+        load_run_settings()
+    if listener:
+        _RUN_SETTINGS_LISTENERS.add(listener)
+
+    return _RUN_SETTINGS
+
+
+def load_run_settings(notation: dict[str, str] = None) -> RunSettings:
     """Retrieves the run settings from the run settings yaml file, enriched with information
        from the data information yaml file.
+
+    Args:
+        notation (dict[str, str], optional): A dict {'piece': <composition>, 'part': <part>} that defines a
+        composition/part combination in the data.yaml file. Defaults to the values in the run-settings.yaml file.
 
     Returns:
         RunSettings: settings object
@@ -143,9 +169,9 @@ def get_run_settings(notation: dict[str, str] = None) -> RunSettings:
 
     notation = (
         data_dict[Yaml.NOTATIONS][Yaml.DEFAULTS]
-        | data_dict[Yaml.NOTATIONS][run_settings_dict[Yaml.NOTATION][Yaml.PIECE]]
+        | data_dict[Yaml.NOTATIONS][run_settings_dict[Yaml.NOTATION][Yaml.COMPOSITION]]
     )
-    notation[Yaml.PART] = data_dict[Yaml.NOTATIONS][run_settings_dict[Yaml.NOTATION][Yaml.PIECE]][Yaml.PART][
+    notation[Yaml.PART] = data_dict[Yaml.NOTATIONS][run_settings_dict[Yaml.NOTATION][Yaml.COMPOSITION]][Yaml.PART][
         run_settings_dict[Yaml.NOTATION][Yaml.PART]
     ]
 
@@ -168,11 +194,16 @@ def get_run_settings(notation: dict[str, str] = None) -> RunSettings:
     settings_dict = post_process(settings_dict)
     settings_dict[Yaml.DATA] = read_data(settings_dict)
 
-    return RunSettings.model_validate(settings_dict)
+    global _RUN_SETTINGS
+    _RUN_SETTINGS = RunSettings.model_validate(settings_dict)
+
+    for listener in _RUN_SETTINGS_LISTENERS:
+        listener(_RUN_SETTINGS)
+    return get_run_settings()
 
 
 def get_midiplayer_content() -> Content:
-    run_settings = RUN_SETTINGS
+    run_settings = _RUN_SETTINGS
     datafolder = run_settings.midiplayer.folder
     contentfile = run_settings.midiplayer.contentfile
     with open(os.path.join(datafolder, contentfile), "r") as contentfile:
@@ -181,16 +212,14 @@ def get_midiplayer_content() -> Content:
 
 
 def save_midiplayer_content(playercontent: Content):
-    run_settings = RUN_SETTINGS
+    run_settings = _RUN_SETTINGS
     datafolder = run_settings.midiplayer.folder
     contentfile = run_settings.midiplayer.contentfile
     with open(os.path.join(datafolder, contentfile), "w") as contentfile:
         contentfile.write(playercontent.model_dump_json(indent=4, serialize_as_any=True))
 
 
-RUN_SETTINGS: RunSettings = get_run_settings()
-
-
 if __name__ == "__main__":
     # For testing
-    run_settings = RUN_SETTINGS
+    run_settings = get_run_settings()
+    x = 1

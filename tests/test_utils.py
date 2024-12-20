@@ -8,7 +8,7 @@ from src.common.constants import InstrumentType, Position
 from src.notation2midi.notation5_to_dict import Notation5Parser
 from src.notation2midi.score_to_notation import gongan_to_records, stave_to_string
 from src.settings.constants import InstrumentFields
-from src.settings.settings import RUN_SETTINGS
+from src.settings.settings import get_run_settings
 
 
 def create_symbol_to_note_lookup(fromfile: str) -> dict[str, Note]:
@@ -119,7 +119,7 @@ bad_ranges = ["1,2,", "realbad", "1-", "-1", "-", ",", "1-4-"]
 @pytest.mark.parametrize("rangestr, expected", correct_ranges)
 # Tests the conversion of optional range indicators following the position name in the score
 def test_range_str_to_list(rangestr, expected):
-    run_settings = RUN_SETTINGS
+    run_settings = get_run_settings()
     parser = Notation5Parser(run_settings=run_settings)
     assert parser._passes_str_to_list(rangestr) == expected
 
@@ -128,6 +128,6 @@ def test_range_str_to_list(rangestr, expected):
 # Test that invalid values cause a ValueError to be raised
 def test_range_str_to_list_exception(rangestr):
     with pytest.raises(ValueError):
-        run_settings = RUN_SETTINGS
+        run_settings = get_run_settings()
         parser = Notation5Parser(run_settings=run_settings)
         parser._passes_str_to_list(rangestr)

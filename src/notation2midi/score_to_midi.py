@@ -8,8 +8,8 @@ from src.notation2midi.midi_track import MidiTrackX
 from src.settings.classes import Part, RunSettings, Song
 from src.settings.settings import (
     ATTENUATION_SECONDS_AFTER_MUSIC_END,
-    RUN_SETTINGS,
     get_midiplayer_content,
+    get_run_settings,
     save_midiplayer_content,
 )
 
@@ -173,7 +173,7 @@ class MidiGenerator(ParserModel):
 
 
 if __name__ == "__main__":
-    settings = RUN_SETTINGS
+    settings = get_run_settings()
     score = Score(title="Test", gongans=[], settings=settings)
     gen = MidiGenerator(score)
     x = 1

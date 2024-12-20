@@ -1,6 +1,6 @@
 from src.common.classes import MidiNote
 from src.common.constants import InstrumentType, Stroke
-from src.settings.settings import RUN_SETTINGS
+from src.settings.settings import get_run_settings
 
 
 def truncated_name(components: list[str]) -> str:
@@ -54,4 +54,4 @@ def sample_name_lookup(midi_dict: dict[InstrumentType, MidiNote]) -> dict[MidiNo
 
 
 if __name__ == "__main__":
-    run_settings = RUN_SETTINGS
+    run_settings = get_run_settings()

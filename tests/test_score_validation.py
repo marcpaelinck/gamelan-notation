@@ -1,65 +1,76 @@
 import pytest
 
 from src.common.classes import Beat, Gongan, Note, Score
-from src.common.constants import Duration, Pitch, Position, Stroke
-from src.common.metadata_classes import GonganType, ValidationProperty
+from src.common.constants import Pitch, Position, Stroke
+from src.common.metadata_classes import GonganType
 from src.notation2midi.score_validation import ScoreValidator
+from src.settings.constants import Yaml
+from src.settings.settings import load_run_settings
+
+
+def note(position: Position, pitch: Pitch, octave: int):
+    return Note.get_note(position, pitch, octave, Stroke.OPEN, 1, 0)
 
 
 @pytest.fixture
-def sample_score():
-    # Create a sample score with necessary settings
-    class Settings:
-        class Options:
-            class NotationToMidi:
-                autocorrect = True
-                detailed_validation_logging = True
-
-            notation_to_midi = NotationToMidi()
-            notation = NotationToMidi()
-
-        options = Options()
-
-    return Score(settings=Settings())
-
-
-@pytest.fixture
-def sample_gongan():
-    # Create a sample gongan with necessary attributes
+def sample_gk_score():
+    # Create a sample gongan with one incorrect beat (PEMADE and SANGSIH are the same) and one correct beat
+    settings = load_run_settings({Yaml.COMPOSITION: "sinomladrang-gk", Yaml.PART: "full"})
     gongan = Gongan(
+        id=1,
         gongantype=GonganType.REGULAR,
         beats=[
             Beat(
-                full_id="1",
-                duration=4,
+                id=1,
+                gongan_id=1,
+                bpm_start=[],
+                bpm_end=[],
+                velocities_start=[],
+                velocities_end=[],
+                duration=10,
                 staves={
-                    Position.PEMADE_POLOS: [
-                        Note(pitch=Pitch.C, octave=4, stroke=Stroke.OPEN, duration=1, rest_after=0)
+                    (P := Position.PEMADE_POLOS): [
+                        note(P, Pitch.DONG, 0),
+                        note(P, Pitch.DENG, 0),
+                        note(P, Pitch.DUNG, 0),
+                        note(P, Pitch.DANG, 0),
+                        note(P, Pitch.DING, 1),
+                        note(P, Pitch.DONG, 1),
+                        note(P, Pitch.DENG, 1),
+                        note(P, Pitch.DUNG, 1),
+                        note(P, Pitch.DANG, 1),
+                        note(P, Pitch.DING, 2),
                     ],
-                    Position.PEMADE_SANGSIH: [
-                        Note(pitch=Pitch.D, octave=4, stroke=Stroke.OPEN, duration=1, rest_after=0)
+                    (S := Position.PEMADE_SANGSIH): [
+                        note(P, Pitch.DONG, 0),
+                        note(P, Pitch.DENG, 0),
+                        note(P, Pitch.DUNG, 0),
+                        note(P, Pitch.DANG, 0),
+                        note(P, Pitch.DING, 1),
+                        note(P, Pitch.DONG, 1),
+                        note(P, Pitch.DENG, 1),
+                        note(P, Pitch.DUNG, 1),
+                        note(P, Pitch.DANG, 1),
+                        note(P, Pitch.DING, 2),
                     ],
                 },
                 validation_ignore=[],
             )
         ],
     )
-    return gongan
+    return Score(title="Test", gongans=[gongan], settings=settings)
 
 
-def test_incorrect_kempyung(sample_score, sample_gongan):
-    validator = ScoreValidator(sample_score)
-    invalids, corrected, ignored = validator._incorrect_kempyung(sample_gongan, autocorrect=True)
+def test_incorrect_kempyung(sample_gk_score):
 
-    assert len(invalids) == 1
+    validator = ScoreValidator(sample_gk_score)
+    invalids, corrected, ignored = validator._incorrect_kempyung(sample_gk_score.gongans[0], autocorrect=True)
+
+    assert len(invalids) == 0
     assert len(corrected) == 1
     assert len(ignored) == 0
 
     # Check the content of the invalids and corrected lists
-    assert "BEAT 1" in invalids[0]
-    assert "PEMADE_POLOS" in invalids[0]
-    assert "PEMADE_SANGSIH" in invalids[0]
-
     assert "BEAT 1" in corrected[0]
-    assert "PEMADE_POLOS" in corrected[0]
-    assert "PEMADE_SANGSIH" in corrected[0]
+    assert "PEMADE" in corrected[0]
+    assert "P=[o,e,u,a,ioeuai<] S=[o,e,u,a,ioeuai<] -> S=[a,ioeuai<uai<]" in corrected[0]

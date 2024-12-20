@@ -14,7 +14,7 @@ from src.common.classes import Note
 from src.common.constants import InstrumentType
 from src.common.logger import get_logger
 from src.settings.classes import RunSettings
-from src.settings.settings import RUN_SETTINGS
+from src.settings.settings import get_run_settings
 from src.soundfont.soundfont_textfile import SoundfontTextfile
 
 logger = get_logger(__name__)
@@ -82,6 +82,6 @@ def create_soundfont_files(run_settings: RunSettings) -> None:
 
 
 if __name__ == "__main__":
-    run_settings = RUN_SETTINGS
+    run_settings = get_run_settings()
     run_settings.options.soundfont.run = True
     create_soundfont_files(run_settings)

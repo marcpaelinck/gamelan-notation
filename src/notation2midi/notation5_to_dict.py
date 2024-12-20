@@ -16,7 +16,7 @@ from src.common.constants import (
 from src.common.metadata_classes import MetaData, Scope
 from src.notation2midi.classes import ParserModel
 from src.settings.classes import RunSettings
-from src.settings.settings import BASE_NOTE_TIME, RUN_SETTINGS
+from src.settings.settings import BASE_NOTE_TIME, get_run_settings
 
 # ==================== BALI MUSIC 5 FONT =====================================
 
@@ -306,6 +306,6 @@ def get_parser(run_settings: RunSettings):
 
 
 if __name__ == "__main__":
-    run_settings = RUN_SETTINGS
+    run_settings = get_run_settings()
     parser = Notation5Parser(run_settings)
     notation = parser.parse_notation()

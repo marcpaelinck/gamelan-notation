@@ -39,7 +39,7 @@ from src.common.metadata_classes import (
 from src.settings.classes import RunSettings
 from src.settings.constants import FontFields, PresetsFields
 from src.settings.font_to_valid_notes import get_font_characters, get_note_records
-from src.settings.settings import RUN_SETTINGS
+from src.settings.settings import get_run_settings
 
 
 @dataclass
@@ -188,18 +188,23 @@ class Note(NotationModel):
         return None
 
     @classmethod
-    def _build_class(cls):
-        settings = RUN_SETTINGS
-        font = get_font_characters(settings)
+    def _set_up_dicts(cls, run_settings: RunSettings):
+        print(f"INITIALIZING NOTE CLASS FOR COMPOSITION {run_settings.notation.title}")
+        font = get_font_characters(run_settings)
         mod_list = list(Modifier)
         cls._FONT_SORTING_ORDER = {sym[FontFields.SYMBOL]: mod_list.index(sym[FontFields.MODIFIER]) for sym in font}
 
-        valid_records = get_note_records(settings)
+        valid_records = get_note_records(run_settings)
         cls._VALIDNOTES = [Note(**record) for record in valid_records]
         cls._SYMBOL_TO_NOTE = {(n.position, cls.sorted_chars(n.symbol)): n for n in cls._VALIDNOTES}
         cls._POS_P_O_S_D_R_TO_NOTE = {
             (n.position, n.pitch, n.octave, n.stroke, n.duration, n.rest_after): n for n in cls._VALIDNOTES
         }
+
+    @classmethod
+    def _build_class(cls):
+        run_settings = get_run_settings(cls._set_up_dicts)
+        cls._set_up_dicts(run_settings)
 
 
 # INITIALIZE THE Note CLASS WITH LIST OF VALID NOTES AND CORRESPONDING LOOKUPS
@@ -266,7 +271,8 @@ class Preset(NotationModel):
     def get_preset_dict(cls) -> dict[Position, "Preset"]:
         return cls._POSITION_TO_PRESET.copy()
 
-    def _position_to_preset_dict(run_settings: RunSettings):  # -> dict[Position, Preset]
+    @classmethod
+    def _create_position_to_preset_dict(cls, run_settings: RunSettings):  # -> dict[Position, Preset]
         """Creates a dict to lookup the preset information for a position
         Args: run_settings (RunSettings):
         Returns: dict[Position, Preset]:
@@ -280,12 +286,12 @@ class Preset(NotationModel):
         presets_rec_list = convert_pos_to_list(presets_rec_list, PresetsFields.POSITION, PresetsFields.INSTRUMENTTYPE)
         presets_rec_list = explode_list_by_pos(presets_rec_list, PresetsFields.POSITION)
         presets_obj_list = [Preset.model_validate(record) for record in presets_rec_list]
-        return {preset.position: preset for preset in presets_obj_list}
+        cls._POSITION_TO_PRESET = {preset.position: preset for preset in presets_obj_list}
 
     @classmethod
     def _build_class(cls):
-        settings = RUN_SETTINGS
-        cls._POSITION_TO_PRESET = cls._position_to_preset_dict(settings)
+        run_settings = get_run_settings(cls._create_position_to_preset_dict)
+        cls._create_position_to_preset_dict(run_settings)
 
 
 # INITIALIZE THE Preset CLASS TO GENERATE THE POSITION_TO_PRESET LOOKUP DICT
@@ -307,7 +313,7 @@ class InstrumentTag(NotationModel):
         return cls.to_list(value, Position)
 
     @classmethod
-    def _tag_to_position_dict(cls, run_settings: RunSettings) -> dict[str, list[Position]]:
+    def _create_tag_to_position_dict(cls, run_settings: RunSettings) -> dict[str, list[Position]]:
         """Creates a dict that maps 'free format' position tags to a list of InstumentPosition values
         Args:  run_settings (RunSettings):
         Returns (dict[str, list[Position]]):
@@ -320,7 +326,7 @@ class InstrumentTag(NotationModel):
         tag_obj_list += [InstrumentTag(tag=pos, positions=[pos]) for pos in Position]
         lookup_dict = {t.tag: t.positions for t in tag_obj_list}
 
-        return lookup_dict
+        cls._TAG_TO_POSITION_LIST = lookup_dict
 
     @classmethod
     def get_positions(cls, tag: str) -> list[Position]:
@@ -328,8 +334,8 @@ class InstrumentTag(NotationModel):
 
     @classmethod
     def _build_class(cls):
-        settings = RUN_SETTINGS
-        cls._TAG_TO_POSITION_LIST = cls._tag_to_position_dict(settings)
+        settings = get_run_settings(cls._create_tag_to_position_dict)
+        cls._create_tag_to_position_dict(settings)
 
 
 # INITIALIZE THE InstrumentTag CLASS TO GENERATE THE TAG_TO_POSITION_LIST LOOKUP DICT

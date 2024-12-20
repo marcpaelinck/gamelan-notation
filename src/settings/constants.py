@@ -99,7 +99,7 @@ class Yaml(SStrEnum):
     SOUNDFONTS = "soundfonts"
     SOUNDFONT = "soundfont"
     OPTIONS = "options"
-    PIECE = "piece"
+    COMPOSITION = "composition"
     PART = "part"
     INSTRUMENTGROUPS = "instrumentgroups"
     INSTRUMENTGROUP = "instrumentgroup"

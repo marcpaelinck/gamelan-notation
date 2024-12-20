@@ -151,6 +151,10 @@ class Pitch(NotationEnum):
     TONG = "TONG"
     NONE = "NONE"
 
+    @property
+    def index(self):
+        return list(Pitch).index(self)
+
 
 class Stroke(NotationEnum):
     OPEN = "OPEN"

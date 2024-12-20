@@ -2,7 +2,7 @@ import json
 import re
 from dataclasses import field
 from enum import StrEnum
-from typing import Any, ClassVar, Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 import regex
 from pydantic import BaseModel, Field, field_validator
@@ -15,7 +15,7 @@ from src.common.constants import (
     Position,
 )
 from src.settings.constants import InstrumentTagFields
-from src.settings.settings import RUN_SETTINGS
+from src.settings.settings import get_run_settings
 
 
 # MetaData related constants
@@ -51,7 +51,8 @@ def tag_to_position_dict() -> dict[str, list[Position]]:
     POS = InstrumentTagFields.POSITIONS
     locals_ = {"None": None} | {x.value: x for x in Position}
     format = lambda val: eval("None" if val == "" else val, locals_)
-    tag_rec_list = [record | {POS: format(record[POS])} for record in RUN_SETTINGS.data.instrument_tags]
+    run_settings = get_run_settings()
+    tag_rec_list = [record | {POS: format(record[POS])} for record in run_settings.data.instrument_tags]
     tag_rec_list += [
         {TAG: instr, POS: [pos for pos in Position if pos.instrumenttype == instr]} for instr in InstrumentType
     ]
@@ -148,7 +149,8 @@ class DynamicsMeta(GradualChangeMetadata):
     def set_value(cls, value: DynamicLevel):
 
         try:
-            value = RUN_SETTINGS.midi.dynamics[value]
+            run_settingss = get_run_settings()
+            value = run_settingss.midi.dynamics[value]
         except:
             # Should not occur because the validator is called after resolving the other fields
             raise Exception(f"illegal value for dynamics: {value}")

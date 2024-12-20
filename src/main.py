@@ -9,13 +9,14 @@ from src.notation2midi.score_to_midi import MidiGenerator
 from src.notation2midi.score_to_notation import score_to_notation_file
 from src.notation2midi.score_validation import ScoreValidator
 from src.settings.classes import RunSettings
-from src.settings.settings import RUN_SETTINGS, get_run_settings
+from src.settings.constants import Yaml
+from src.settings.settings import get_run_settings, load_run_settings
 from src.settings.settings_validation import validate_input_data
 from src.soundfont.soundfont_generator import create_soundfont_files
 
 
-def import_run_settings(notation: dict[str, str] = None) -> RunSettings:
-    run_settings = get_run_settings(notation)
+def load_and_validate_run_settings(notation: dict[str, str] = None) -> RunSettings:
+    run_settings = load_run_settings(notation)
     if run_settings.options.validate_settings:
         validate_input_data(run_settings)
     return run_settings
@@ -46,34 +47,36 @@ def multiple_notations_to_midi(notations: list[str, str]):
         notations (list[tuple[str, str]]): list of (composition, part) pairs
     """
     for notation in notations:
-        run_settings = import_run_settings(notation)
+        run_settings = load_and_validate_run_settings(notation)
         notation_to_midi(run_settings)
 
 
 def single_run():
-    run_settings = import_run_settings()
+    run_settings = load_and_validate_run_settings()
     notation_to_midi(run_settings)
 
 
 notations = [
-    {"piece": "sinomladrang-sp", "part": "full"},
-    {"piece": "sinomladrang-sp", "part": "pengawak"},
-    {"piece": "sinomladrang-sp", "part": "pengecet"},
-    {"piece": "sinomladrang-gk", "part": "full"},
-    {"piece": "lengker", "part": "full"},
-    {"piece": "lengker", "part": "penyalit"},
-    {"piece": "lengker", "part": "pengecet"},
-    {"piece": "lengker", "part": "pengawak"},
-    {"piece": "godekmiring", "part": "full"},
-    {"piece": "godekmiring", "part": "penyalit"},
-    {"piece": "godekmiring", "part": "pengecet"},
-    {"piece": "godekmiring", "part": "penyalit-angsel"},
-    {"piece": "godekmiring", "part": "pengawak"},
-    {"piece": "cendrawasih", "part": "full"},
+    {Yaml.COMPOSITION: "sinomladrang-sp", Yaml.PART: "full"},
+    {Yaml.COMPOSITION: "sinomladrang-sp", Yaml.PART: "pengawak"},
+    {Yaml.COMPOSITION: "sinomladrang-sp", Yaml.PART: "pengecet"},
+    {Yaml.COMPOSITION: "sinomladrang-gk", Yaml.PART: "full"},
+    {Yaml.COMPOSITION: "lengker", Yaml.PART: "full"},
+    {Yaml.COMPOSITION: "lengker", Yaml.PART: "penyalit"},
+    {Yaml.COMPOSITION: "lengker", Yaml.PART: "pengecet"},
+    {Yaml.COMPOSITION: "lengker", Yaml.PART: "pengawak"},
+    {Yaml.COMPOSITION: "godekmiring", Yaml.PART: "full"},
+    {Yaml.COMPOSITION: "godekmiring", Yaml.PART: "penyalit"},
+    {Yaml.COMPOSITION: "godekmiring", Yaml.PART: "pengecet"},
+    {Yaml.COMPOSITION: "godekmiring", Yaml.PART: "penyalit-angsel"},
+    {Yaml.COMPOSITION: "godekmiring", Yaml.PART: "pengawak"},
+    {Yaml.COMPOSITION: "cendrawasih", Yaml.PART: "full"},
 ]
 notations = [
-    # {"piece": "godekmiring", "part": "full"},
-    {"piece": "godekmiring", "part": "pengecet"},
+    # {Yaml.COMPOSITION: "godekmiring", Yaml.PART: "full"},
+    {Yaml.COMPOSITION: "sinomladrang-gk", Yaml.PART: "full"},
 ]
+get_run_settings()
 single_run()
+
 # multiple_notations_to_midi(notations)

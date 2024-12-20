@@ -8,7 +8,7 @@ midi:
 samples:
   instrumentgroup: GAMELAN
 notation:
-  piece: test-sp
+  composition: test-sp
   part: sinomladrang
 soundfont:
   definition_file_out: viena_definitions_${midi.midiversion}.txt

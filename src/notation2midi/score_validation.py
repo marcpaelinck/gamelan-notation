@@ -1,4 +1,5 @@
 import math
+from itertools import product
 from typing import Any
 
 from src.common.classes import Beat, Gongan, Note, Score
@@ -152,7 +153,7 @@ class ScoreValidator(ParserModel):
                     invalids.append({f"BEAT {beat.full_id} {position}": badnotes})
         return invalids, corrected, ignored
 
-    def _get_kempyung_dict(self, instrumentrange: dict[tuple[Pitch, Octave], tuple[Pitch, Octave]]):
+    def _get_kempyung_dict(self, instrumentrange: dict[tuple[Pitch, Octave, Stroke], tuple[Pitch, Octave]]):
         """returns a dict mapping the kempyung note to each base note in the instrument's range.
 
         Args:
@@ -161,13 +162,13 @@ class ScoreValidator(ParserModel):
         Returns:
             dict[tuple[Pitch, Octave], tuple[Pitch, Octave]]: the kempyung dict
         """
-        ordered = sorted(
-            list({(note, octave) for note, octave, _ in instrumentrange if octave}),
-            key=lambda item: item[0].sequence + 100 * item[1],
+        # CURRENLTY GONG KEBYAR ONLY
+        all_notes = sorted(
+            list(product([Pitch.DING, Pitch.DONG, Pitch.DENG, Pitch.DUNG, Pitch.DANG], [0, 1, 2])),
+            key=lambda x: x[0].index + x[1] * 10,
         )
-        kempyung = zip(ordered, ordered[3:] + ordered[-3:])
-        kempyung_dict = {polos: sangsih for polos, sangsih in kempyung}
-        # raises error if not found (should not happen)
+        base_dict = list(zip(all_notes, all_notes[3:]))
+        kempyung_dict = {p: s if s in instrumentrange else p for (p, s) in base_dict if p in instrumentrange}
         return kempyung_dict
 
     def _incorrect_kempyung(
@@ -189,9 +190,7 @@ class ScoreValidator(ParserModel):
                 continue
             for polos, sangsih in self.POSITIONS_VALIDATE_AND_CORRECT_KEMPYUNG:
                 instrumentrange = [
-                    (pitch, octave, stroke)
-                    for (pitch, octave, stroke) in Note.get_all_p_o_s(polos)
-                    if stroke == Stroke.OPEN
+                    (pitch, octave) for (pitch, octave, stroke) in Note.get_all_p_o_s(polos) if stroke == Stroke.OPEN
                 ]
                 kempyung_dict = self._get_kempyung_dict(instrumentrange)
                 # check if both instruments occur in the beat
@@ -221,7 +220,7 @@ class ScoreValidator(ParserModel):
                                     and not (sangsihnote.pitch, sangsihnote.octave)
                                     == kempyung_dict[(polosnote.pitch, polosnote.octave)]
                                 ):
-                                    if autocorrect and iteration == 1:
+                                    if autocorrect and iteration == 2:
                                         correct_note, correct_octave = kempyung_dict[
                                             (polosnote.pitch, polosnote.octave)
                                         ]
@@ -250,7 +249,7 @@ class ScoreValidator(ParserModel):
                     if autocorrected:
                         corrected_sangsih_str = "".join((n.symbol for n in beat.staves[(polos, sangsih)[1]]))
                         corrected.append(
-                            f"BEAT {beat.full_id}: {(polos, sangsih)[0].instrumenttype} P=[{''.join((n.symbol for n in beat.staves[(polos, sangsih)[0]]))}] S=[{orig_sangsih_str}] -> [{corrected_sangsih_str}]"
+                            f"BEAT {beat.full_id}: {(polos, sangsih)[0].instrumenttype} P=[{''.join((n.symbol for n in beat.staves[(polos, sangsih)[0]]))}] S=[{orig_sangsih_str}] -> S=[{corrected_sangsih_str}]"
                         )
         return invalids, corrected, ignored
 
