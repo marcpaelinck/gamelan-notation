@@ -104,7 +104,7 @@ class Note(NotationModel):
     rest_after: float | None
     velocity: int = 127
     modifier: Modifier | None = Modifier.NONE
-    midinote: list[int] = [127]  # 0..128, used when generating MIDI output.
+    midinote: tuple[int, ...] = (127,)  # 0..128, used when generating MIDI output.
     rootnote: str = ""
     sample: str = ""  # file name of the (mp3) sample.
 

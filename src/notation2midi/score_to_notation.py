@@ -29,8 +29,21 @@ def gongan_to_records(gongan: Gongan, skipemptylines: bool = True) -> list[dict[
         list[dict[Position | int, list[str]]]: _description_
     """
 
-    # pos_tags maps positions to tag values. It contains only the positions that occur in the gongan.
-    pos_tags = {position: position.shortcode for position in gongan.beats[0].staves.keys()}
+    # pos_tags maps positions to tag values. It contains only the positions that occur in the gongan. KEMPLI is omitted.
+    pos_tags = {
+        position: position.shortcode for position in gongan.beats[0].staves.keys() if position != Position.KEMPLI
+    }
+
+    def same(notes1: list[Note], notes2: list[Note]) -> bool:
+        return all(
+            note1.pitch == note2.pitch
+            and note1.octave == note2.octave
+            and note1.stroke == note2.stroke
+            and note1.duration == note2.duration
+            and note1.rest_after == note2.rest_after
+            and note1.velocity == note2.velocity
+            for note1, note2 in zip(notes1, notes2)
+        )
 
     def try_to_aggregate(positions: list[Position], aggregate_tag: str):
         """Determines if the notation is identical for all of the given positions.
@@ -40,7 +53,7 @@ def gongan_to_records(gongan: Gongan, skipemptylines: bool = True) -> list[dict[
         if not all(pos in gongan.beats[0].staves for pos in positions):
             return False
         all_positions_have_same_notation = all(
-            all(beat.staves[pos] == beat.staves[positions[0]] for beat in gongan.beats) for pos in positions
+            all(same(beat.staves[pos], beat.staves[positions[0]]) for beat in gongan.beats) for pos in positions
         )
         if all_positions_have_same_notation:
             # Set the tag of the first position as the aggregate tag.
@@ -74,8 +87,7 @@ def gongan_to_records(gongan: Gongan, skipemptylines: bool = True) -> list[dict[
         + [
             {InstrumentFields.POSITION: pos_tags.get(position, position)}
             | {beat.id: stave_to_string(beat.staves[position]) for beat in gongan.beats}
-            for position in Position
-            if position in pos_tags.keys()
+            for position in pos_tags.keys()
             if any(position in beat.staves for beat in gongan.beats)
             and not (is_silent(gongan, position) and skipemptylines)
         ]

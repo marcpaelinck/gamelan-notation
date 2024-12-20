@@ -8,8 +8,8 @@ midi:
 samples:
   instrumentgroup: GAMELAN
 notation:
-  composition: test-sp
-  part: sinomladrang
+  composition: rejangdewa
+  part: pengawak
 soundfont:
   definition_file_out: viena_definitions_${midi.midiversion}.txt
   soundfont_file_out: ${midi.midiversion}.sf2
