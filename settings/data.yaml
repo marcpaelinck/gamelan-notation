@@ -60,9 +60,10 @@ soundfonts:
 midiplayer:
     folder: ./data/midiplayer
     contentfile: content.json
+    helpinghand: [CALUNG, JEGOGAN] # Animate an arrow that moves ahead to the next note for these instruments.
 notations:
     # `beat_at_end` indicates whether the notation has the gir at the end of each gongan (Balinese concept) or at the beginning.
-    # the entries under the 'files' label will be referred to as 'part'.
+    # `beat_at_end` notation will be converted to beat at beginning.
     # ${midi.midiversion} will resolve to the value that is set in run-settings.yaml
     # ${notation.part} will resolve to the label of the selected part.
     # If `loop`==false, the last note of each instrument will be extended for a natural fade out.
@@ -75,78 +76,34 @@ notations:
         fontversion: BaliMusic5
         instrumentgroup: GONG_KEBYAR
         midi_out_file: ${notation.title}_${notation.part.name}_${midi.midiversion}.mid
-    rejangdewa:
-        title: Rejang Dewa
-        subfolder: rejang dewa
-        part:
-            full:
-                name: entire piece
-                file: rejang dewa_font5.tsv
-                loop: false
-            intro:
-                name: intro
-                file: rejang dewa intro_font5.tsv
-                loop: true
-            pengawak:
-                name: pengawak
-                file: rejang dewa pengawak_font5.tsv
-                loop: true
-            pengecet:
-                name: pengecet
-                file: rejang dewa pengecet_font5.tsv
-                loop: true
-        beat_at_end: false
-        autocorrect_kempyung : false
-    sinomladrang-sp:
-        title: Sinom Ladrang
-        subfolder: sinom ladrang
+    cendrawasih:
+        title: Cendrawasih
+        subfolder: cendrawasih
         beat_at_end: false
         part:
             full:
                 name: entire piece
-                file: Sinom Ladrang_SP_font5.tsv
+                file: Cendrawasih_complete_font5.tsv
                 loop: false
-            pengawak:
-                name: pengawak
-                file: Sinom Ladrang_SP_font5_pengawak.tsv
-                loop: true
-            pengecet:
-                name: pengecet
-                file: Sinom Ladrang_SP_font5_pengecet.tsv
-                loop: true
-    sinomladrang-gk:
-        title: Sinom Ladrang (GK)
-        subfolder: sinom ladrang
-        beat_at_end: false
-        instrumentgroup: GONG_KEBYAR
-        part:
-            full:
-                name: entire piece
-                file: Sinom Ladrang_GK_ubit4_font5.tsv
-                loop: false
-    lengker:
-        title: Lengker
-        subfolder: lengker
-        beat_at_end: false
-        autocorrect_kempyung : false
+    bapangselisir:
+        title: Bapang Selisir
+        subfolder: bapang selisir
         instrumentgroup: SEMAR_PAGULINGAN
+        beat_at_end: false
         part:
             full:
                 name: entire piece
-                file: Lengker Ubud font5.tsv
+                file: Bapang Selisir_font5.tsv
                 loop: false
-            penyalit:
-                name: penyalit
-                file: Lengker Ubud font5_penyalit.tsv
-                loop: true
-            pengecet:
-                name: pengecet
-                file: Lengker Ubud font5_pengecet.tsv
-                loop: true
-            pengawak:
-                name: pengawak
-                file: Lengker Ubud font5_pengawak.tsv
-                loop: true
+    gilakdeng:
+        title: Gilak Deng
+        subfolder: gilak deng
+        beat_at_end: false
+        part:
+            full:
+                name: entire piece
+                file: Gilak Deng.tsv
+                loop: false
     godekmiring:
         title: Godek Miring
         subfolder: godek miring
@@ -174,26 +131,29 @@ notations:
                 name: pengawak
                 file: Godek Miring font5_pengawak.tsv
                 loop: true
-    sekargendot:
-        title: Sekar Gendot
-        subfolder: sekar gendot
+    lengker:
+        title: Lengker
+        subfolder: lengker
+        beat_at_end: false
+        autocorrect_kempyung : false
         instrumentgroup: SEMAR_PAGULINGAN
-        beat_at_end: false
-        autocorrect_kempyung : true
         part:
             full:
                 name: entire piece
-                file: Sekar Gendot font5.tsv
+                file: Lengker Ubud font5.tsv
                 loop: false
-    cendrawasih:
-        title: Cendrawasih
-        subfolder: cendrawasih
-        beat_at_end: false
-        part:
-            full:
-                name: entire piece
-                file: Cendrawasih_complete_font5.tsv
-                loop: false
+            penyalit:
+                name: penyalit
+                file: Lengker Ubud font5_penyalit.tsv
+                loop: true
+            pengecet:
+                name: pengecet
+                file: Lengker Ubud font5_pengecet.tsv
+                loop: true
+            pengawak:
+                name: pengawak
+                file: Lengker Ubud font5_pengawak.tsv
+                loop: true
     margapati:
         title: Margapati
         subfolder: margapati
@@ -215,6 +175,70 @@ notations:
             full:
                 name: entire piece
                 file: pendet_font5_beat_at_end.tsv
+                loop: false
+    rejangdewa:
+        title: Rejang Dewa
+        subfolder: rejang dewa
+        part:
+            full:
+                name: entire piece
+                file: rejang dewa_font5.tsv
+                loop: false
+            intro:
+                name: intro
+                file: rejang dewa intro_font5.tsv
+                loop: false
+            pengawak:
+                name: pengawak
+                file: rejang dewa pengawak_font5.tsv
+                loop: true
+            pengawak-reyong:
+                name: pengawak reyong
+                file: rejang dewa pengawak reyong_font5.tsv
+                loop: true
+            pengecet:
+                name: pengecet
+                file: rejang dewa pengecet_font5.tsv
+                loop: true
+        beat_at_end: false
+        autocorrect_kempyung : false
+    sekargendot:
+        title: Sekar Gendot
+        subfolder: sekar gendot
+        instrumentgroup: SEMAR_PAGULINGAN
+        beat_at_end: false
+        autocorrect_kempyung : true
+        part:
+            full:
+                name: entire piece
+                file: Sekar Gendot font5.tsv
+                loop: false
+    sinomladrang-sp:
+        title: Sinom Ladrang
+        subfolder: sinom ladrang
+        beat_at_end: false
+        part:
+            full:
+                name: entire piece
+                file: Sinom Ladrang_SP_font5.tsv
+                loop: false
+            pengawak:
+                name: pengawak
+                file: Sinom Ladrang_SP_font5_pengawak.tsv
+                loop: true
+            pengecet:
+                name: pengecet
+                file: Sinom Ladrang_SP_font5_pengecet.tsv
+                loop: true
+    sinomladrang-gk:
+        title: Sinom Ladrang (GK)
+        subfolder: sinom ladrang
+        beat_at_end: false
+        instrumentgroup: GONG_KEBYAR
+        part:
+            full:
+                name: entire piece
+                file: Sinom Ladrang_GK_ubit4_font5.tsv
                 loop: false
     test-gk:
         title: Test Gong Kebyar

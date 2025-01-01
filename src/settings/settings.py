@@ -18,6 +18,7 @@ BASE_NOTE_TIME = 24
 BASE_NOTES_PER_BEAT = 4
 ATTENUATION_SECONDS_AFTER_MUSIC_END = 10  # additional time in seconds to let final chord attenuate.
 _RUN_SETTINGS: RunSettings = None
+# List of functions that should be called when new run settings are loaded
 _RUN_SETTINGS_LISTENERS: set[callable] = set()
 
 
@@ -67,7 +68,7 @@ def read_settings(filename: str) -> dict:
     """Retrieves settings from the given (YAML) file. The file should occur in SETTINGSFOLDER.
 
     Args:
-        filename (str): YAML file name.
+        filename (str): YAML file name. Should occur in SETTINGSFOLDER.
 
     Returns:
         dict: dict containing all the settings contained in the file.
@@ -149,16 +150,16 @@ def load_run_settings(notation: dict[str, str] = None) -> RunSettings:
         RunSettings.MidiInfo, data_dict[Yaml.MIDI] | run_settings_dict[Yaml.MIDI] | midiversion
     )
 
-    # Sample info
-    samples = data_dict[Yaml.SAMPLES][Yaml.INSTRUMENTGROUPS][run_settings_dict[Yaml.SAMPLES][Yaml.INSTRUMENTGROUP]]
-    settings_dict[Yaml.SAMPLES] = get_settings_fields(
-        RunSettings.SampleInfo, samples | run_settings_dict[Yaml.SAMPLES] | data_dict[Yaml.SAMPLES]
-    )
+    # # Sample info
+    # samples = data_dict[Yaml.SAMPLES][Yaml.INSTRUMENTGROUPS][run_settings_dict[Yaml.SAMPLES][Yaml.INSTRUMENTGROUP]]
+    # settings_dict[Yaml.SAMPLES] = get_settings_fields(
+    #     RunSettings.SampleInfo, samples | run_settings_dict[Yaml.SAMPLES] | data_dict[Yaml.SAMPLES]
+    # )
 
-    # Soundfont info
-    settings_dict[Yaml.SOUNDFONT] = get_settings_fields(
-        RunSettings.SoundfontInfo, data_dict[Yaml.SOUNDFONTS] | run_settings_dict[Yaml.SOUNDFONT]
-    )
+    # # Soundfont info
+    # settings_dict[Yaml.SOUNDFONT] = get_settings_fields(
+    #     RunSettings.SoundfontInfo, data_dict[Yaml.SOUNDFONTS] | run_settings_dict[Yaml.SOUNDFONT]
+    # )
 
     settings_dict[Yaml.MIDIPLAYER] = get_settings_fields(RunSettings.MidiPlayerInfo, data_dict[Yaml.MIDIPLAYER])
 

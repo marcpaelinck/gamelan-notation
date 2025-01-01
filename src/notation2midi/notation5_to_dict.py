@@ -5,6 +5,7 @@ from collections import defaultdict
 from src.common.classes import InstrumentTag, Notation, Note
 from src.common.constants import (
     DEFAULT,
+    InstrumentGroup,
     NotationDict,
     NotationFont,
     Octave,
@@ -167,8 +168,17 @@ class Notation5Parser(ParserModel):
             Octave: the octave that puts the pitch of note nearest to that of other_note
         """
 
+        # Nothing if either note is non-melodic (reyong can have both types of notes)
+        if not note.octave or not other_note.octave:
+            return note
+
         def index(note: Note) -> int:
-            return list(Pitch).index(note.pitch) + 100 * note.octave
+            noterange = (
+                [Pitch.DING, Pitch.DONG, Pitch.DENG, Pitch.DEUNG, Pitch.DUNG, Pitch.DANG, Pitch.DAING]
+                if self.run_settings.instruments.instrumentgroup == InstrumentGroup.SEMAR_PAGULINGAN
+                else [Pitch.DING, Pitch.DONG, Pitch.DENG, Pitch.DUNG, Pitch.DANG]
+            )
+            return noterange.index(note.pitch) + len(noterange) * note.octave
 
         if not note.pitch or not other_note.pitch or other_note.octave == None:
             raise Exception(f"Can't set octave for grace note {note}")

@@ -1,7 +1,8 @@
 from enum import StrEnum
 
 SETTINGSFOLDER = "./settings"
-RUN_SETTINGSFILE = "run-settings.yaml"
+DATAFOLDER = "./data"
+RUN_SETTINGSFILE = "notation2midi.yaml"
 DATA_INFOFILE = "data.yaml"
 
 

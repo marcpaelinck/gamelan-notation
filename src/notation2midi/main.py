@@ -36,9 +36,6 @@ def notation_to_midi(run_settings: RunSettings):
     if run_settings.options.notation_to_midi.save_corrected_to_file:
         score_to_notation_file(score)
 
-    if run_settings.options.soundfont.run:
-        create_soundfont_files(run_settings)
-
 
 def multiple_notations_to_midi(notations: list[str, str]):
     """Creates multiple notations

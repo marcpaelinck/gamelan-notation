@@ -1,0 +1,20 @@
+---
+# The settings below (except for options) refer to values in the data.yaml file.
+# The font selection is defined in the details of the selected notation component (see data.yaml file).
+midi:
+  midiversion: GAMELAN1
+notation:
+  composition: cendrawasih
+  part: full
+options:
+  comment: Option autocorrect should be set in the input files. Default should be false.
+  debug_logging: false
+  validate_settings : true
+  notation_to_midi:
+    run: true
+    detailed_validation_logging : false
+    autocorrect : true
+    save_corrected_to_file : true
+    save_midifile : true
+    comment: if update_midiplayer_content==true, MIDI file is saved in midiplayer folder and content.json file is updated.
+    update_midiplayer_content: false    

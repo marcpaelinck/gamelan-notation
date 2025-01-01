@@ -3,7 +3,7 @@ import os
 from mido import MidiFile
 
 # midifile_name = r"C:\Users\marcp\Documents\administratie\_VRIJETIJD_REIZEN\Scripts-Programmas\PythonProjects\gamelan-notation\data\notation\lengker\Lengker_GAMELAN1.mid"
-midifile_name = "./data/notation/pendet/Pendet_full_GAMELAN1.mid"
+midifile_name = "./data/notation/cendrawasih/Cendrawasih_entire piece_GAMELAN1.mid"
 mid = MidiFile(midifile_name)
 txt = os.path.splitext(midifile_name)[0] + ".txt"
 
@@ -14,4 +14,4 @@ with open(txt, "w") as csvfile:
         csvfile.write("Track {}: {}".format(i, track.name) + "\n")
         for msg in track:
             clocktime += msg.time
-            csvfile.write("    {} -- {}".format(str(msg), clocktime) + "\n")
+            csvfile.write(f"    {str(msg)} -- {clocktime} {clocktime * 60000}" + "\n")

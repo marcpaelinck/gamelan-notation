@@ -96,6 +96,8 @@ class MidiGenerator(ParserModel):
                     beat.repeat.reset()
                 beat = beat.goto.get(beat._pass_, beat.next)
 
+        track.finalize()
+
         return track
 
     def markers_millis_to_frac(self, markers: dict[str, int], total_duration: int) -> dict[str, float]:

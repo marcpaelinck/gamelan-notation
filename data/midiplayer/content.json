@@ -45,6 +45,12 @@
                     "file": "Rejang Dewa_pengecet_GAMELAN1.mid",
                     "loop": true,
                     "markers": {}
+                },
+                {
+                    "name": "pengawak reyong",
+                    "file": "Rejang Dewa_pengawak reyong_GAMELAN1.mid",
+                    "loop": true,
+                    "markers": {}
                 }
             ]
         },
@@ -187,6 +193,34 @@
                         "Batel 1": 0.6767479376718607,
                         "Pengecet part 2": 0.7517066911090743,
                         "Batel 2": 0.9056938588450962
+                    }
+                }
+            ]
+        },
+        {
+            "title": "Gilak Deng",
+            "instrumentgroup": "GONG_KEBYAR",
+            "display": true,
+            "parts": [
+                {
+                    "name": "entire piece",
+                    "file": "Gilak Deng_entire piece_GAMELAN1.mid",
+                    "loop": false,
+                    "markers": {}
+                }
+            ]
+        },
+        {
+            "title": "Bapang Selisir",
+            "instrumentgroup": "SEMAR_PAGULINGAN",
+            "display": true,
+            "parts": [
+                {
+                    "name": "entire piece",
+                    "file": "Bapang Selisir_entire piece_GAMELAN1.mid",
+                    "loop": false,
+                    "markers": {
+                        "pengawit": 0.03518690108962104
                     }
                 }
             ]

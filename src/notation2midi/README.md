@@ -2,7 +2,7 @@
 
 The `notation2midi` folder contains several modules that work together to convert musical notation into MIDI files. Below is a brief explanation of each module:
 
-1. **notation5_to_dict.py**: This module is responsible for parsing the input notation files. It reads and validates the notation data and converts it into a record format that can be processed by other modules. This module processes notation written with the *Bali Music 5* font. In order to be able to convert other notation types, this is the only module that needs to be replicated.
+1. **notation5_to_dict.py**: This module is responsible for parsing the input notation files. It reads and validates the notation data and converts it into a record format that can be processed by other modules. This module processes notation written with the *Bali Music 5* font. To convert other notation types, this is the only module that needs to be rewritten.
 
 2. **dict_to_score.py**: This module takes the parsed notation data and converts it into an object model that has a Score object as root. It processes the metadata into the object model and generates a structure that reflects the notation flow (repeat and goto metadata statements).
 

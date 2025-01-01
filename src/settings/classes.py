@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 from src.common.constants import (
     AnimationProfiles,
+    AnimationStroke,
     Duration,
     DynamicLevel,
     InstrumentGroup,
@@ -95,11 +96,11 @@ class InstrumentInfo(BaseModel):
 class Profile(BaseModel):
     file: str
     notes: dict[NoteOct, list[int | None]]
-    strokes: list[Stroke]
+    strokes: list[AnimationStroke]
 
 
 class AnimationInfo(BaseModel):
-    highlight: dict[Stroke, list[str]]
+    highlight: dict[AnimationStroke, list[str]]
     profiles: dict[AnimationProfiles, Profile]
 
 
@@ -220,6 +221,7 @@ class RunSettings(BaseModel):
     class MidiPlayerInfo(BaseModel):
         folder: str
         contentfile: str
+        helpinghand: list[Position] = None
 
     class Options(BaseModel):
         class NotationToMidiOptions(BaseModel):
@@ -236,8 +238,8 @@ class RunSettings(BaseModel):
 
         debug_logging: bool
         validate_settings: bool
-        notation_to_midi: NotationToMidiOptions
-        soundfont: SoundfontOptions
+        notation_to_midi: NotationToMidiOptions | None = None
+        soundfont: SoundfontOptions | None = None
 
     class Data(BaseModel):
         # Contains pre-formatted table data
@@ -249,10 +251,10 @@ class RunSettings(BaseModel):
 
     # attributes of class RunSettings
     options: Options
-    midi: MidiInfo
-    midiplayer: MidiPlayerInfo
-    soundfont: SoundfontInfo
-    samples: SampleInfo
+    midi: MidiInfo | None = None
+    midiplayer: MidiPlayerInfo | None = None
+    soundfont: SoundfontInfo | None = None
+    samples: SampleInfo | None = None
     notation: NotationInfo | None = None
     instruments: InstrumentInfo | None = None
     font: FontInfo | None = None

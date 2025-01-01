@@ -146,7 +146,7 @@ Terminology:
 | VALIDATION ||||| Suppresses specific aspects of the validation and autocorrection. |
 |         | beats      | list of integer values             |[5, 6]   | all beats | The beats to which the action applies. |
 |         | scope      | *GONGAN* or* SCORE*                | GONGAN   | GONGAN  | The scope for which to suppress the validation. |
-|         | ignore     | list of items                      |[kempyung]|       | The scope for which to suppress the validation. Possible values: *beat-duration*, *stave-length*, *instrument-range*, *kempyung*|
+|         | ignore     | list of items                      |[kempyung]|       | List of validations that should be skipped. Possible values: *beat-duration*, *stave-length*, *instrument-range*, *kempyung*|
 
 
 ## Vocabulary

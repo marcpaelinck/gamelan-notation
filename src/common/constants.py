@@ -253,6 +253,18 @@ class NoteOct(NotationEnum):
     TONG = "TONG"
 
 
+class AnimationStroke(NotationEnum):
+    OPEN = "OPEN"
+    MUTED = "MUTED"
+    ABBREVIATED = "ABBREVIATED"
+    KAPAK = "KAPAK"
+    DETUT = "DETUT"
+    CUNGKUNG = "CUNGKUNG"
+    TICK1 = "TICK1"
+    TICK2 = "TICK2"
+    NONE = "NONE"
+
+
 class DynamicLevel(NotationEnum):
     PIANISSIMO = "pp"
     PIANO = "p"

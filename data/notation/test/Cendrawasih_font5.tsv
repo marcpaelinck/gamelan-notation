@@ -1,4 +1,4 @@
-metadata	{KEMPLI status=off}							
+metadata	{GONGAN type=kebyar}							
 metadata	{TEMPO value=120}								
 ugal	oeu-a-u-eua-u---u/.u/...								
 gangsa p	oeu-a-u-eua-u---u/.u/...								
@@ -129,7 +129,7 @@ calung	a
 jegog	a								
 gong	T				P				
 									
-metadata	{KEMPLI status=off}								
+metadata	{GONGAN type=kebyar}								
 metadata	{TEMPO value=70, first_beat=1, beat_count=0}								
 metadata	{TEMPO value=50, first_beat=2, beat_count=3}								
 ugal	o--eueo	--ioo_i_a,u,a,	e,u,a,ii_a_ioee_o_eua	i<aueioia,---u,?u,-a,i-o-					
@@ -311,7 +311,7 @@ jegog	u				i
 gong	G				P				
 									
 comment	system # 35								
-metadata	{KEMPLI status=off}								
+metadata	{GONGAN type=kebyar}							
 metadata	{TEMPO value=80, first_beat=1, beat_count=0}								
 gangsa p	u--au_aueo_ei-oeueoia,-eee/.								
 gangsa s	u--au_aui<a_i<u-ai<ui<aue-i<i<i</.								
