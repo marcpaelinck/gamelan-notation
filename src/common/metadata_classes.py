@@ -219,6 +219,11 @@ class RepeatMeta(MetaDataBaseModel):
     count: int = 1
 
 
+class SequenceMeta(MetaDataBaseModel):
+    metatype: Literal["SEQUENCE"]
+    value: list[str] = field(default_factory=list)
+
+
 class SuppressMeta(MetaDataBaseModel):
     metatype: Literal["SUPPRESS"]
     positions: list[Position] = field(default_factory=list)
@@ -261,6 +266,7 @@ MetaDataType = Union[
     OctavateMeta,
     PartMeta,
     RepeatMeta,
+    SequenceMeta,
     SuppressMeta,
     TempoMeta,
     ValidationMeta,

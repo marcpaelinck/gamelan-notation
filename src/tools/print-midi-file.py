@@ -14,4 +14,4 @@ with open(txt, "w") as csvfile:
         csvfile.write("Track {}: {}".format(i, track.name) + "\n")
         for msg in track:
             clocktime += msg.time
-            csvfile.write(f"    {str(msg)} -- {clocktime} {clocktime * 60000}" + "\n")
+            csvfile.write(f"    {str(msg)} -- {clocktime}" + "\n")

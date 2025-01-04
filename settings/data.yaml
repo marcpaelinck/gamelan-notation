@@ -19,6 +19,8 @@ midi:
         p: 45
         pp: 30
     default_dynamics: mf
+    silence_seconds_before_start: 3 
+    silence_seconds_after_end: 10
     midiversions:
         GONG_KEBYAR1:
             comment: two presets (melodic and percussion)
@@ -131,6 +133,15 @@ notations:
                 name: pengawak
                 file: Godek Miring font5_pengawak.tsv
                 loop: true
+    legongmahawidya:
+        title: Legong Mahawidya
+        subfolder: legong mahawidya
+        beat_at_end: false
+        part:
+            full:
+                name: entire piece
+                file: Legong Mahawidya_font5.tsv
+                loop: false
     lengker:
         title: Lengker
         subfolder: lengker

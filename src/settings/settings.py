@@ -16,7 +16,6 @@ logger = get_logger(__name__)
 
 BASE_NOTE_TIME = 24
 BASE_NOTES_PER_BEAT = 4
-ATTENUATION_SECONDS_AFTER_MUSIC_END = 10  # additional time in seconds to let final chord attenuate.
 _RUN_SETTINGS: RunSettings = None
 # List of functions that should be called when new run settings are loaded
 _RUN_SETTINGS_LISTENERS: set[callable] = set()

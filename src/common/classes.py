@@ -34,6 +34,7 @@ from src.common.metadata_classes import (
     GoToMeta,
     MetaData,
     MetaDataType,
+    SequenceMeta,
     ValidationProperty,
 )
 from src.settings.classes import RunSettings
@@ -492,6 +493,7 @@ class FlowInfo:
     # have not yet been encountered while processing the score.
     labels: dict[str, Beat] = field(default_factory=dict)
     gotos: dict[str, tuple[Gongan, GoToMeta]] = field(default_factory=lambda: defaultdict(list))
+    sequences: list[tuple[Gongan, SequenceMeta]] = field(default_factory=list)
 
 
 @dataclass

@@ -29,6 +29,7 @@ from src.common.metadata_classes import (
     OctavateMeta,
     PartMeta,
     RepeatMeta,
+    SequenceMeta,
     SuppressMeta,
     TempoMeta,
     ValidationMeta,
@@ -236,6 +237,8 @@ class DictToScoreConverter(ParserModel):
                     # for counter in range(meta.data.count):
                     #     gongan.beats[-1].goto[counter + 1] = gongan.beats[0]
                     gongan.beats[-1].repeat = Beat.Repeat(goto=gongan.beats[0], iterations=meta.data.count)
+                case SequenceMeta():
+                    self.score.flowinfo.sequences.append((gongan, meta.data))
                 case SuppressMeta():
                     # Silences the given positions for the given beats and passes.
                     # This is done by adding "silence" staves to the `exception` list of the beat.
@@ -317,8 +320,9 @@ class DictToScoreConverter(ParserModel):
                         has_kempli_beat=False,
                         validation_ignore=[ValidationProperty.BEAT_DURATION],
                     )
-                    lastbeat.next.prev = newbeat
-                    lastbeat.next = newbeat
+                    if lastbeat.next:
+                        lastbeat.next.prev = newbeat
+                        lastbeat.next = newbeat
                     newbeat.staves = self._create_rest_staves(
                         prev_beat=lastbeat, positions=lastbeat.staves.keys(), duration=duration
                     )
@@ -332,7 +336,16 @@ class DictToScoreConverter(ParserModel):
             for beat in gongan.beats:
                 if not beat.changes and beat.prev:
                     beat.changes.update(beat.prev.changes)
-            return
+
+    def _process_sequences(self):
+        for initial_gongan, sequence in self.score.flowinfo.sequences:
+            gongan = initial_gongan
+            for label in sequence.value:
+                from_beat = gongan.beats[-1]  # Sequence always links last beat to first beat of next gongan in the list
+                to_beat = self.score.flowinfo.labels[label]
+                pass_nr = max([p for p in from_beat.goto.keys()] or [0]) + 1  # Select next available pass
+                from_beat.goto[pass_nr] = to_beat
+                gongan = self.score.gongans[to_beat.gongan_seq]
 
     def _create_missing_staves(
         self, beat: Beat, prevbeat: Beat, add_kempli: bool = True, force_silence=[]
@@ -524,6 +537,8 @@ class DictToScoreConverter(ParserModel):
             # These should update the curr counters.
             gongan.beat_duration = mode(beat.duration for beat in gongan.beats)  # most occuring duration
             self._apply_metadata(gongan.metadata, gongan)
+        # Process the sequences metadata
+        self._process_sequences()
         # Add kempli beats
         self._add_missing_staves(add_kempli=True)
 

@@ -1,4 +1,8 @@
+from enum import Enum
+from typing import override
+
 from mido import Message, MetaMessage, MidiTrack, bpm2tempo, tempo2bpm
+from mido.messages import BaseMessage
 
 from src.common.classes import Note, Preset
 from src.common.constants import (
@@ -16,6 +20,12 @@ from src.settings.settings import BASE_NOTE_TIME, BASE_NOTES_PER_BEAT
 logger = get_logger(__name__)
 
 
+class TimeUnit(Enum):
+    TICK = 1
+    NOTE = 2
+    SECOND = 3
+
+
 class MidiTrackX(MidiTrack):
     name: str
     position: Position
@@ -30,13 +40,11 @@ class MidiTrackX(MidiTrack):
     # The time of this message will be delayed if an extension note is encountered.
     last_note: Note = None
     last_helpinghand_msg: Message = None
-    last_noteoff_msg: Message = None
-    time_since_last_note_end: int = 0
-    time_last_message: int = 0
-    current_time: int = 0
+    last_noteoff_msgs: list[Message] = []
+    ticktime_last_message: int = 0
+    current_ticktime: int = 0
     current_bpm: int = 0
     current_velocity: int
-    current_signature: int = 0
     DYNAMICS_TO_VELOCITY: dict[DynamicLevel, Velocity]
 
     def set_channel_bank_and_preset(self):
@@ -66,7 +74,21 @@ class MidiTrackX(MidiTrack):
         self.msg_id = 0
         # unique id for helpinghand messages
         self.set_channel_bank_and_preset()
-        # logger.info(f"Track {self.name}: channel {self.channel}, bank {self.bank}, preset {self.preset}")
+        self.update_tempo(60)  # set default tempo, needed for initial silence
+        self.last_helpinghand_msg = self._append_helpinghand_message()
+
+    @override
+    def append(self, message: BaseMessage, **kwargs):
+        # print(f"*** {message.type} m.time={message.time} sum={sum(m.time for m in self)} last={self.time_last_message}")
+        super().append(message, **kwargs)
+        self.ticktime_last_message += message.time
+        x = 1
+
+    def append_all_and_clear(self, messages: list[Message]):
+        for msg in messages:
+            msg.time = self.current_ticktime - self.ticktime_last_message
+            self.append(msg)
+        messages.clear()
 
     def total_tick_time(self):
         return sum(msg.time for msg in self)
@@ -96,17 +118,39 @@ class MidiTrackX(MidiTrack):
         if new_bpm != self.current_bpm:
             if debug:
                 logger.info(f"                 setting metamessage with new tempo {new_bpm}")
-            self.append(MetaMessage("set_tempo", tempo=bpm2tempo(new_bpm), time=self.time_since_last_note_end))
-            self.time_since_last_note_end = 0
+            # self.append(MetaMessage("set_tempo", tempo=bpm2tempo(new_bpm), time=self.time_since_last_note_end))
+            self.append(
+                MetaMessage(
+                    "set_tempo", tempo=bpm2tempo(new_bpm), time=(self.current_ticktime - self.ticktime_last_message)
+                )
+            )
+            # self.ticktime_since_last_note_end = 0
             self.current_bpm = new_bpm
 
     def update_dynamics(self, new_velocity):
         self.current_velocity = new_velocity
 
-    def extend_last_note(self, seconds: int) -> None:
-        if self.last_noteoff_msg:
-            beats = round(self.current_bpm * seconds / 60)
-            self.last_noteoff_msg.time += beats * BASE_NOTE_TIME * BASE_NOTES_PER_BEAT
+    def units_to_ticks(self, value: int, unit: TimeUnit) -> int:
+        match unit:
+            case TimeUnit.SECOND:
+                beats = round(self.current_bpm * value / 60)
+                return beats * BASE_NOTE_TIME * BASE_NOTES_PER_BEAT
+            case TimeUnit.NOTE:
+                return round(value * BASE_NOTE_TIME)
+            case TimeUnit.TICK:
+                return value
+            case _:
+                raise ValueError(f"Unexpected unit value {unit}")
+
+    def extend_last_notes(self, value: int, unit: TimeUnit) -> None:
+        for i in range(len(self) - 1, -1, -1):
+            if self[i].type == "note_off":
+                self[i].time += self.units_to_ticks(value, unit)
+            else:
+                break
+
+    def increase_current_time(self, value: int, unit: TimeUnit) -> None:
+        self.current_ticktime += self.units_to_ticks(value, unit)
 
     def comment(self, message: str) -> None:
         self.append(MetaMessage("text", text=message))
@@ -122,47 +166,50 @@ class MidiTrackX(MidiTrack):
             int: Duration for the grace note (MIDI value)
         """
         MAX_DURATION = int(0.5 * BASE_NOTE_TIME)
-        midi_duration = 0
-        if self.time_since_last_note_end > 0:
-            # subtract duration from preceding rest.
-            midi_duration = min(int(self.time_since_last_note_end / 2), MAX_DURATION)
-            self.time_since_last_note_end -= midi_duration
-        else:
-            # subtract duration from preceding note.
-            midi_duration = int(self.last_note.duration * BASE_NOTE_TIME / 2) if self.last_note else MAX_DURATION
-            self.last_noteoff_msg.time -= midi_duration
-        return midi_duration
+        tick_duration = min(int((self.current_ticktime - self.ticktime_last_message) / 2), MAX_DURATION)
+        return tick_duration
 
     def _append_helpinghand_message(self):
         if not self.animate_helpinghand:
             return
         # Add a message to animate the 'helping hand' (moving arrow).
-        # The content (pitch, octave and time_until) will be updated when the next note is processed.
-        text = f'{{"id": {self.msg_id}, "type": "helpinghand", "position": "{self.position}", "channel": {self.channel}, "pitch": "{{pitch}}", "octave": {{octave}}, "timeuntil": {{time_until}}}}'
+        # The pitch, octave and time_until values will be updated when the next note is processed.
+        text = f'{{"id": {self.msg_id}, "type": "helpinghand", "position": "{self.position}", "channel": {self.channel}, "pitch": "{{pitch}}", "octave": {{octave}}, "timeuntil": {{time_until}}, "islast": {{is_last}}}}'
         self.msg_id += 1
         new_msg = MetaMessage("marker", text=text)
         self.append(new_msg)
         return new_msg
 
-    def _update_prev_helpinghand_message(self, note: Note):
+    def _update_prev_helpinghand_message(self, note: Note, is_last: bool = False):
         if not self.animate_helpinghand or not self.last_helpinghand_msg:
             return
         # Edit the previous helping hand message with the current note information.
-        time_until = self.current_time_in_millis() - self.current_time_in_millis(self.last_helpinghand_msg)
+        if is_last:
+            pitch = "NONE"
+            octave = 0
+            time_until = 0
+        else:
+            pitch = note.pitch
+            octave = note.octave
+            time_until = self.current_time_in_millis() - self.current_time_in_millis(self.last_helpinghand_msg)
         text = self.last_helpinghand_msg.text
         text = (
-            text.replace("{pitch}", f"{note.pitch}")
-            .replace("{octave}", f"{note.octave}")
+            text.replace("{pitch}", f"{pitch}")
+            .replace("{octave}", f"{octave}")
             .replace("{time_until}", f"{time_until}")
+            .replace("{is_last}", str(is_last).lower())  # format for javascript
         )
         self.last_helpinghand_msg.text = text
 
     def finalize(self):
         # Removes the last helping hand message if it has not been updated.
         if self.last_helpinghand_msg and "{time_until}" in self.last_helpinghand_msg.text:
-            self.remove(
-                self.last_helpinghand_msg
-            )  # NOTE: Expecting that (the text of) this message is unique, otherwise the wrong message might be removed.
+            self._update_prev_helpinghand_message(note=None, is_last=True)
+            # self.remove(
+            #     self.last_helpinghand_msg
+            # )  # NOTE: Expecting that (the text of) this message is unique, otherwise the wrong message might be removed.
+        if self.last_noteoff_msgs:
+            self.append_all_and_clear(self.last_noteoff_msgs)
 
     def add_note(self, note: Note):
         """Converts a note into a midi event
@@ -180,58 +227,66 @@ class MidiTrackX(MidiTrack):
             for count, midivalue in enumerate(note.midinote):
                 if note.stroke is Stroke.GRACE_NOTE:
                     # Use part of the duration of the previous note or rest (max 1/2 unit).
-                    midi_duration = self._process_grace_note()
+                    grace_tick_duration = self._process_grace_note()
                 else:
-                    midi_duration = note.duration * BASE_NOTE_TIME
+                    grace_tick_duration = 0
+
+                if count == 0:
+                    # Grace notes have duration 0: they don't advance the current time but "eat up"
+                    # a part of the previous note's duration. To achieve this, we shift the current time
+                    # back to the start of the grace note before adding the grace note to the track.
+                    # We then reset it to its former value.
+                    self.increase_current_time(-grace_tick_duration, TimeUnit.TICK)
+
+                # Append any delayed note_off messages before appending a new note_on message.
+                self.append_all_and_clear(self.last_noteoff_msgs)
                 self.append(
-                    Message(
+                    tst := Message(
                         type="note_on",
                         note=midivalue,
                         velocity=self.current_velocity,
-                        time=self.time_since_last_note_end if count == 0 else 0,  # all notes start together
+                        time=self.current_ticktime - self.ticktime_last_message,
                         channel=self.channel,
                     )
                 )
-                self.time_last_message += self.time_since_last_note_end
+
                 if count == 0:
+                    # In case of a grace note: reset the current time to its former value.
+                    self.increase_current_time(grace_tick_duration, unit=TimeUnit.TICK)
+                    # Add helping hand message
                     new_helpinghand_msg = self._append_helpinghand_message()
                     self._update_prev_helpinghand_message(note)
                     self.last_helpinghand_msg = new_helpinghand_msg
 
             for count, midivalue in enumerate(note.midinote):
-                self.append(
-                    off_msg := Message(
+                # Do not append the note_off message to the track yet. It might be followed by extension 'notes'.
+                self.last_noteoff_msgs.append(
+                    Message(
                         type="note_off",
                         note=midivalue,
-                        time=round(midi_duration) if count == 0 else 0,  # all notes end together
+                        time=0,  # the time will be determined by the self.append method
                         channel=self.channel,
                     )
                 )
-                self.time_last_message += round(midi_duration)
-                if count == 0:
-                    # If the note corresponds with more than one MIDI note (e.g. reyong `byong`),
-                    # we keep track of the note_off message of the first of these notes.
-                    # If the combined note needs to be extended, we should only delay
-                    # the note-off message of this first note.
-                    # self._update_prev_helpinghand_message(note)
-                    # self.last_helpinghand_msg = new_helpinghand_msg
-                    self.last_noteoff_msg = off_msg
 
-            self.time_since_last_note_end = round(note.rest_after * BASE_NOTE_TIME)
-            self.last_note = note
+            if note.rest_after:
+                # if the note is abbreviated or muted, it can not be extended.
+                self.append_all_and_clear(self.last_noteoff_msgs)
+            self.increase_current_time(note.duration + note.rest_after, unit=TimeUnit.NOTE)
         # TODO next two ifs can now be combined
         elif note.stroke is Stroke.SILENCE:
             # Increment time since last note ended
-            self.time_since_last_note_end += round(note.rest_after * BASE_NOTE_TIME)
-            self.last_noteoff_msg = None
+            self.append_all_and_clear(self.last_noteoff_msgs)
+            self.increase_current_time(note.rest_after, unit=TimeUnit.NOTE)
+            # self.current_ticktime += duration
+            # self.ticktime_since_last_note_end += round(note.rest_after * BASE_NOTE_TIME)
         elif note.stroke is Stroke.EXTENSION:
             # Extension of note duration: add duration to last note
             # If a SILENCE occurred previously, treat the EXTENSION as a SILENCE
-            if self.last_noteoff_msg and self.time_since_last_note_end == 0:
-                self.last_noteoff_msg.time += round(note.duration * BASE_NOTE_TIME)
-            else:
-                self.time_since_last_note_end += round(note.duration * BASE_NOTE_TIME)
+            # if self.last_noteoff_msgs and self.ticktime_since_last_note_end == 0:
+            self.increase_current_time(note.duration, unit=TimeUnit.NOTE)
+            # self.last_noteoff_msg.time += round(note.duration * BASE_NOTE_TIME)
+        # else:
+        #     self.ticktime_since_last_note_end += round(note.duration * BASE_NOTE_TIME)
         else:
             raise ValueError(f"Unexpected note value {note.pitch} {note.octave} {note.stroke}")
-
-        self.current_time += round((note.duration + note.rest_after) * BASE_NOTE_TIME)

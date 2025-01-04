@@ -162,6 +162,8 @@ class RunSettings(BaseModel):
         PPQ: int  # pulses per quarternote
         dynamics: dict[DynamicLevel, int] = Field(default_factory=dict)
         default_dynamics: DynamicLevel
+        silence_seconds_before_start: int  # silence before first note
+        silence_seconds_after_end: int  # silence after last note
 
         @property
         def notes_filepath(self):

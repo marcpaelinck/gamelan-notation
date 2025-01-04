@@ -4,10 +4,9 @@ from src.common.classes import Beat, Preset, Score
 from src.common.constants import Position
 from src.common.metadata_classes import PartMeta
 from src.notation2midi.classes import ParserModel
-from src.notation2midi.midi_track import MidiTrackX
-from src.settings.classes import Part, RunSettings, Song
+from src.notation2midi.midi_track import MidiTrackX, TimeUnit
+from src.settings.classes import Part, Song
 from src.settings.settings import (
-    ATTENUATION_SECONDS_AFTER_MUSIC_END,
     get_midiplayer_content,
     get_run_settings,
     save_midiplayer_content,
@@ -37,7 +36,7 @@ class MidiGenerator(ParserModel):
         max_ticks = max(track.total_tick_time() for track in tracks)
         for track in tracks:
             if track.total_tick_time() == max_ticks:
-                track.extend_last_note(seconds)
+                track.extend_last_notes(seconds, TimeUnit.SECOND)
 
     def _notation_to_track(self, position: Position) -> MidiTrackX:
         """Generates the MIDI content for a single instrument position.
@@ -69,6 +68,7 @@ class MidiGenerator(ParserModel):
                 self.player_data.markers[partinfo.name] = int(curr_time)
 
         track = MidiTrackX(position, Preset.get_preset(position), self.run_settings)
+        track.increase_current_time(self.run_settings.midi.silence_seconds_before_start, TimeUnit.SECOND)
 
         reset_pass_counters()
         beat = self.score.gongans[0].beats[0]
@@ -157,7 +157,7 @@ class MidiGenerator(ParserModel):
             track = self._notation_to_track(position)
             midifile.tracks.append(track)
         if not self.run_settings.notation.part.loop:
-            self._add_attenuation_time(midifile.tracks, seconds=ATTENUATION_SECONDS_AFTER_MUSIC_END)
+            self._add_attenuation_time(midifile.tracks, seconds=self.run_settings.midi.silence_seconds_after_end)
         self.score.midifile_duration = int(midifile.length * 1000)
 
         if self.run_settings.options.notation_to_midi.save_midifile:
