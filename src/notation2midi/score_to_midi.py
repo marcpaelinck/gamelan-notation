@@ -1,11 +1,14 @@
+import os
+import pprint
+
 from mido import MidiFile
 
 from src.common.classes import Beat, Preset, Score
-from src.common.constants import Position
+from src.common.constants import Pitch, Position
 from src.common.metadata_classes import PartMeta
 from src.notation2midi.classes import ParserModel
 from src.notation2midi.midi_track import MidiTrackX, TimeUnit
-from src.settings.classes import Part, Song
+from src.settings.classes import Part, RunSettings, Song
 from src.settings.settings import (
     get_midiplayer_content,
     get_run_settings,
@@ -21,7 +24,7 @@ class MidiGenerator(ParserModel):
         super().__init__(self.ParserType.MIDIGENERATOR, score.settings)
         self.score = score
         self.player_data = Part(
-            name=self.run_settings.notation.part.name,
+            part=self.run_settings.notation.part.name,
             file=self.run_settings.notation.midi_out_file,
             loop=self.run_settings.notation.part.loop,
         )
@@ -57,18 +60,21 @@ class MidiGenerator(ParserModel):
                         beat.repeat.reset()
 
         def store_part_info(beat: Beat):
+            # current_time_in_millis might be incorrect if the beat consists of only silences.
+            if all(note.pitch == Pitch.NONE for note in beat.staves[position]):
+                return
             gongan = self.score.gongans[beat.gongan_seq]
             if partinfo := gongan.get_metadata(PartMeta):
-                curr_time = track.current_time_in_millis()
-                # check if part was already set by another trach
-                time = self.player_data.markers.get(partinfo.name)
-                if time and time < curr_time:
-                    # keep the earliest time
+                if self.player_data.markers.get(partinfo.name, None):
+                    # Return if the part has already been registered
                     return
+                curr_time = track.current_time_in_millis()
                 self.player_data.markers[partinfo.name] = int(curr_time)
 
         track = MidiTrackX(position, Preset.get_preset(position), self.run_settings)
-        track.increase_current_time(self.run_settings.midi.silence_seconds_before_start, TimeUnit.SECOND)
+        # Add silence before the start of the piece, except if the piece should be played in a loop.
+        if not self.run_settings.notation.part.loop:
+            track.increase_current_time(self.run_settings.midi.silence_seconds_before_start, TimeUnit.SECOND)
 
         reset_pass_counters()
         beat = self.score.gongans[0].beats[0]
@@ -100,9 +106,10 @@ class MidiGenerator(ParserModel):
 
         return track
 
-    def markers_millis_to_frac(self, markers: dict[str, int], total_duration: int) -> dict[str, float]:
+    def sorted_markers_millis_to_frac(self, markers: dict[str, int], total_duration: int) -> dict[str, float]:
         """Converts the markers that indicate the start of parts of the composition from milliseconds to
         percentage of the total duration (rounded off to 5%)
+        The list needs to be sorted chronologically for the user interface of the midi player.
 
         Args:
             dict: a dict
@@ -110,7 +117,7 @@ class MidiGenerator(ParserModel):
         Returns:
             dict: a new markers dict
         """
-        return {part: time / total_duration for part, time in markers.items()}
+        return {part: time / total_duration for part, time in sorted(list(markers.items()), key=lambda it: it[1])}
 
     def update_midiplayer_content(self) -> None:
         content = get_midiplayer_content()
@@ -126,22 +133,22 @@ class MidiGenerator(ParserModel):
                 )
             )
             self.loginfo(f"New song {song.title} created for MIDI player content")
-        part = next((part for part in song.parts if part.name == self.player_data.name), None)
+        part = next((part for part in song.parts if part.part == self.player_data.part), None)
         if not part:
             song.parts.append(
                 part := Part(
-                    name=self.player_data.name,
+                    part=self.player_data.part,
                     file=self.player_data.file,
                     loop=self.player_data.loop,
                 )
             )
-            self.loginfo(f"New part {part.name} created for MIDI player content")
+            self.loginfo(f"New part {part.part} created for MIDI player content")
         else:
-            self.loginfo(f"Existing part {part.name} updated for MIDI player content")
+            self.loginfo(f"Existing part {part.part} updated for MIDI player content")
             part.file = self.player_data.file
             part.loop = self.player_data.loop
-        part.markers = self.markers_millis_to_frac(self.player_data.markers, self.score.midifile_duration)
-        self.loginfo(f"Added time markers to part {part.name}")
+        part.markers = self.sorted_markers_millis_to_frac(self.player_data.markers, self.score.midifile_duration)
+        self.loginfo(f"Added time markers to part {part.part}")
         save_midiplayer_content(content)
 
     def create_midifile(self):
@@ -175,7 +182,10 @@ class MidiGenerator(ParserModel):
 
 
 if __name__ == "__main__":
-    settings = get_run_settings()
-    score = Score(title="Test", gongans=[], settings=settings)
-    gen = MidiGenerator(score)
-    x = 1
+    run_settings = get_run_settings()
+    content = get_midiplayer_content()
+    str_content = content.model_dump_json(indent=4, serialize_as_any=True)
+    datafolder = run_settings.notation.folder
+    content_json = content.model_dump_json(indent=4, serialize_as_any=True)
+    with open(os.path.join(datafolder, "content_test.json"), "w") as contentfile:
+        pprint.pprint(content_json, stream=contentfile, width=250)

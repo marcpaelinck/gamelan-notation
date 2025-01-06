@@ -74,20 +74,19 @@ class FontRecord(BaseModel):
     modifier: Modifier
     description: str
 
-
-# ANIMATION SETTINGS
-#
+    # ANIMATION SETTINGS
+    #
 
 
 class Part(BaseModel):
-    name: str
+    part: str
     file: str
     loop: bool
     markers: dict[str, float] = Field(default_factory=dict)  # {partname: milliseconds}
 
 
 class InstrumentInfo(BaseModel):
-    name: str
+    group: str
     channels: list[int]
     midioffset: int
     animation: AnimationProfiles
@@ -133,7 +132,7 @@ class RunSettings(BaseModel):
         folder: str
         subfolder: str
         midiplayer_folder: str
-        part: Part
+        part: "RunSettings.NotationPart"
         midi_out_file: str
         beat_at_end: bool
         autocorrect_kempyung: bool

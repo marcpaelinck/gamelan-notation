@@ -4,7 +4,7 @@
 midi:
   midiversion: GAMELAN1
 notation:
-  composition: legongmahawidya
+  composition: sekargendot
   part: full
 options:
   comment: Option autocorrect should be set in the input files. Default should be false.
@@ -14,7 +14,7 @@ options:
     run: true
     detailed_validation_logging : false
     autocorrect : true
-    save_corrected_to_file : true
+    save_corrected_to_file : false
     save_midifile : true
     comment: if update_midiplayer_content==true, MIDI file is saved in midiplayer folder and content.json file is updated.
-    update_midiplayer_content: false    
+    update_midiplayer_content: true

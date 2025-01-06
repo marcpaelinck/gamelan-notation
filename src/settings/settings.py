@@ -1,6 +1,5 @@
 import os
 import re
-from enum import StrEnum
 from typing import Any
 
 import numpy as np
@@ -11,6 +10,7 @@ from pydantic import BaseModel
 from src.common.logger import get_logger
 from src.settings.classes import Content, RunSettings
 from src.settings.constants import DATA_INFOFILE, RUN_SETTINGSFILE, SETTINGSFOLDER, Yaml
+from src.settings.utils import pretty_compact_json
 
 logger = get_logger(__name__)
 
@@ -202,6 +202,16 @@ def load_run_settings(notation: dict[str, str] = None) -> RunSettings:
     return get_run_settings()
 
 
+def get_all_notation_parts(include_tests: bool = False) -> dict[str, str]:
+    data_dict = read_settings(DATA_INFOFILE)
+    return [
+        {Yaml.COMPOSITION: n, Yaml.PART: p}
+        for n in data_dict[Yaml.NOTATIONS].keys()
+        if not n.startswith("default") and (include_tests or not n.startswith("test"))
+        for p in data_dict[Yaml.NOTATIONS][n][Yaml.PART].keys()
+    ]
+
+
 def get_midiplayer_content() -> Content:
     run_settings = _RUN_SETTINGS
     datafolder = run_settings.midiplayer.folder
@@ -211,15 +221,17 @@ def get_midiplayer_content() -> Content:
     return Content.model_validate_json(playercontent)
 
 
-def save_midiplayer_content(playercontent: Content):
+def save_midiplayer_content(playercontent: Content, filename: str = None):
     run_settings = _RUN_SETTINGS
     datafolder = run_settings.midiplayer.folder
-    contentfile = run_settings.midiplayer.contentfile
+    contentfile = filename or run_settings.midiplayer.contentfile
     with open(os.path.join(datafolder, contentfile), "w") as contentfile:
-        contentfile.write(playercontent.model_dump_json(indent=4, serialize_as_any=True))
+        jsonised = pretty_compact_json(playercontent.model_dump())
+        contentfile.write(jsonised)
+        # contentfile.write(playercontent.model_dump_json(indent=4, serialize_as_any=True))
 
 
 if __name__ == "__main__":
     # For testing
-    run_settings = get_run_settings()
-    x = 1
+    notations = get_all_notation_parts()
+    print(notations)

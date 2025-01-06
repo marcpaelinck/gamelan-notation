@@ -190,7 +190,9 @@ class Note(NotationModel):
 
     @classmethod
     def _set_up_dicts(cls, run_settings: RunSettings):
-        print(f"INITIALIZING NOTE CLASS FOR COMPOSITION {run_settings.notation.title}")
+        print(
+            f"INITIALIZING NOTE CLASS FOR COMPOSITION {run_settings.notation.title} - {run_settings.notation.part.name}"
+        )
         font = get_font_characters(run_settings)
         mod_list = list(Modifier)
         cls._FONT_SORTING_ORDER = {sym[FontFields.SYMBOL]: mod_list.index(sym[FontFields.MODIFIER]) for sym in font}

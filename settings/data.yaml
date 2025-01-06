@@ -117,13 +117,13 @@ notations:
                 name: entire piece
                 file: Godek Miring font5.tsv
                 loop: false
-            penyalit:
-                name: penyalit (no angsel)
-                file: Godek Miring font5_penyalit.tsv
+            kawitan:
+                name: kawitan (no angsel)
+                file: Godek Miring font5_kawitan.tsv
                 loop: true
-            penyalit-angsel: 
-                name: penyalit (with angsel)
-                file: Godek Miring font5_penyalit with angsel.tsv
+            kawitan-angsel: 
+                name: kawitan (with angsel)
+                file: Godek Miring font5_kawitan with angsel.tsv
                 loop: true
             pengecet:
                 name: pengecet
@@ -153,9 +153,9 @@ notations:
                 name: entire piece
                 file: Lengker Ubud font5.tsv
                 loop: false
-            penyalit:
-                name: penyalit
-                file: Lengker Ubud font5_penyalit.tsv
+            kawitan:
+                name: kawitan
+                file: Lengker Ubud font5_kawitan.tsv
                 loop: true
             pengecet:
                 name: pengecet
@@ -173,10 +173,6 @@ notations:
             full:
                 name: entire piece
                 file: Margapati_font5.tsv
-                loop: false
-            reyong:
-                name: entire piece
-                file: Margapati reyong_font5.tsv
                 loop: false
     pendet:
         title: Pendet
@@ -227,6 +223,7 @@ notations:
     sinomladrang-sp:
         title: Sinom Ladrang
         subfolder: sinom ladrang
+        instrumentgroup: SEMAR_PAGULINGAN
         beat_at_end: false
         part:
             full:

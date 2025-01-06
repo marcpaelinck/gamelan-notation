@@ -3,6 +3,8 @@ import logging
 # List will collect all logging
 LOGGING = []  # TODO operational but not yet in use
 
+loggers: dict[str, logging.Logger] = {}
+
 
 class CustomFormatter(logging.Formatter):
     grey = "\x1b[38;20m"
@@ -52,12 +54,18 @@ class CustomHandler(logging.Handler):
 
 
 def get_logger(name) -> logging.Logger:
+    if name in loggers:
+        # logging.getLogger is supposed to return previously created logger instances,
+        # but this doen't seem to work.
+        return loggers[name]
+
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
     handler = logging.StreamHandler()
     handler.setFormatter(CustomFormatter())
     logger.addHandler(handler)
     logger.addHandler(CustomHandler())
+    loggers[name] = logger
     return logger
 
 

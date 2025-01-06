@@ -91,42 +91,41 @@ class DictToScoreConverter(ParserModel):
             new_beat = Beat(
                 id=1,
                 gongan_id=last_gongan.id + 1,
-                bpm_start={DEFAULT, last_beat.bpm_end[-1]},
-                bpm_end={DEFAULT, last_beat.bpm_end[-1]},
+                bpm_start={DEFAULT: last_beat.bpm_end[-1]},
+                bpm_end={DEFAULT: last_beat.bpm_end[-1]},
                 # velocity_start and velocity_end are dict[pass, dict[Position, Velocity]]
-                velocities_start={DEFAULT, last_beat.velocities_end[DEFAULT].copy()},
-                velocities_end={DEFAULT, last_beat.velocities_end[DEFAULT].copy()},
+                velocities_start={DEFAULT: last_beat.velocities_end[DEFAULT].copy()},
+                velocities_end={DEFAULT: last_beat.velocities_end[DEFAULT].copy()},
                 duration=0,
                 prev=last_beat,
             )
             last_beat.next = new_beat
-            for instrument, notes in last_beat.staves.items():
-                new_beat.staves[instrument] = []
+            for position, notes in last_beat.staves.items():
+                new_beat.staves[position] = []
             new_gongan.beats.append(new_beat)
 
         # Iterate through the beats starting from the end.
         # Move the end note of each instrument in the previous beat to the start of the current beat.
         beat = self.score.gongans[-1].beats[-1]
         while beat.prev:
-            for instrument, notes in beat.prev.staves.items():
+            for position, notes in beat.prev.staves.items():
                 if notes:
                     # move notes with a total of 1 duration unit
                     notes_to_move = []
                     while notes and sum((note.total_duration for note in notes_to_move), 0) < 1:
                         notes_to_move.insert(0, notes.pop())
-                    if not instrument in beat.staves:
-                        beat.staves[instrument] = []
-                    beat.staves[instrument][0:0] = notes_to_move  # insert at beginning
+                    if not position in beat.staves:
+                        beat.staves[position] = []
+                    beat.staves[position][0:0] = notes_to_move  # insert at beginning
             # update beat and gongan duration values
-            # beat.duration = most_occurring_stave_duration(beat.staves)
-            # beat.duration = max(sum(note.total_duration for note in notes) for notes in list(beat.staves.values()))
-            # gongan = self.score.gongans[beat.gongan_seq]
-            # gongan.beat_duration = most_occurring_beat_duration(gongan.beats)
+            beat.duration = mode(sum(note.total_duration for note in notes) for notes in list(beat.staves.values()))
+            gongan = self.score.gongans[beat.gongan_seq]
+            gongan.beat_duration = mode(beat.duration for beat in gongan.beats)
             beat = beat.prev
 
         # Add a rest at the beginning of the first beat
-        for instrument, notes in self.score.gongans[0].beats[0].staves.items():
-            notes.insert(0, Note.get_whole_rest_note(Stroke.SILENCE))
+        for position, notes in self.score.gongans[0].beats[0].staves.items():
+            notes.insert(0, Note.get_whole_rest_note(position, Stroke.SILENCE))
 
     def _create_rest_stave(self, position: Position, resttype: Stroke, duration: float) -> list[Note]:
         """Creates a stave with rests of the given type for the given duration.
@@ -338,6 +337,7 @@ class DictToScoreConverter(ParserModel):
                     beat.changes.update(beat.prev.changes)
 
     def _process_sequences(self):
+        """Translates the labels of the sequences into goto directives in the respective beats."""
         for initial_gongan, sequence in self.score.flowinfo.sequences:
             gongan = initial_gongan
             for label in sequence.value:
@@ -499,6 +499,7 @@ class DictToScoreConverter(ParserModel):
                     },
                     velocities_end={DEFAULT: vel.copy()},
                     # TODO Shouldn't we use mode instead of max? Makes a difference for error logging.
+                    # Answer: not here, because at this stage, pokok positions with length 1 haven't been extended yet.
                     duration=max(sum(note.total_duration for note in notes) for notes in list(staves.values())),
                 )
                 prev_beat = beats[-1] if beats else self.score.gongans[-1].beats[-1] if self.score.gongans else None
@@ -535,7 +536,7 @@ class DictToScoreConverter(ParserModel):
         for gongan in self.gongan_iterator(self.score):
             # TODO temporary fix. Create generators to iterate through gongans, beats and positions
             # These should update the curr counters.
-            gongan.beat_duration = mode(beat.duration for beat in gongan.beats)  # most occuring duration
+            gongan.beat_duration = max(beat.duration for beat in gongan.beats)  # most occuring duration
             self._apply_metadata(gongan.metadata, gongan)
         # Process the sequences metadata
         self._process_sequences()

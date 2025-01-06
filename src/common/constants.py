@@ -199,12 +199,14 @@ class Modifier(StrEnum):
 class AnimationProfiles(NotationEnum):
     GK_GONGS = "GK_GONGS"
     GK_KENDANG = "GK_KENDANG"
-    GK_POKOK = "GK_POKOK"
+    GK_CALUNG = "GK_CALUNG"
+    GK_JEGOGAN = "GK_JEGOGAN"
     GK_GANGSA = "GK_GANGSA"
     GK_REYONG = "GK_REYONG"
     SP_GONGS = "SP_GONGS"
+    SP_CALUNG = "SP_CALUNG"
+    SP_JEGOGAN = "SP_JEGOGAN"
     SP_KENDANG = "SP_KENDANG"
-    SP_POKOK = "SP_POKOK"
     SP_GANGSA = "SP_GANGSA"
     SP_TROMPONG = "SP_TROMPONG"
 

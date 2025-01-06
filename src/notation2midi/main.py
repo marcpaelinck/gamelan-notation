@@ -1,5 +1,4 @@
-"""This module can be used to run applications.
-The settings in the /settings/run-settings.yaml file determine which application will be executed.
+"""This module can be used to perform a complete run cycle (notation -> midi output).
 """
 
 from src.common.constants import NotationFont
@@ -9,10 +8,8 @@ from src.notation2midi.score_to_midi import MidiGenerator
 from src.notation2midi.score_to_notation import score_to_notation_file
 from src.notation2midi.score_validation import ScoreValidator
 from src.settings.classes import RunSettings
-from src.settings.constants import Yaml
 from src.settings.settings import get_run_settings, load_run_settings
 from src.settings.settings_validation import validate_input_data
-from src.soundfont.soundfont_generator import create_soundfont_files
 
 
 def load_and_validate_run_settings(notation: dict[str, str] = None) -> RunSettings:
@@ -37,43 +34,13 @@ def notation_to_midi(run_settings: RunSettings):
         score_to_notation_file(score)
 
 
-def multiple_notations_to_midi(notations: list[str, str]):
-    """Creates multiple notations
-
-    Args:
-        notations (list[tuple[str, str]]): list of (composition, part) pairs
-    """
-    for notation in notations:
-        run_settings = load_and_validate_run_settings(notation)
-        notation_to_midi(run_settings)
-
-
 def single_run():
     run_settings = load_and_validate_run_settings()
     notation_to_midi(run_settings)
 
 
-notations = [
-    {Yaml.COMPOSITION: "sinomladrang-sp", Yaml.PART: "full"},
-    {Yaml.COMPOSITION: "sinomladrang-sp", Yaml.PART: "pengawak"},
-    {Yaml.COMPOSITION: "sinomladrang-sp", Yaml.PART: "pengecet"},
-    {Yaml.COMPOSITION: "sinomladrang-gk", Yaml.PART: "full"},
-    {Yaml.COMPOSITION: "lengker", Yaml.PART: "full"},
-    {Yaml.COMPOSITION: "lengker", Yaml.PART: "penyalit"},
-    {Yaml.COMPOSITION: "lengker", Yaml.PART: "pengecet"},
-    {Yaml.COMPOSITION: "lengker", Yaml.PART: "pengawak"},
-    {Yaml.COMPOSITION: "godekmiring", Yaml.PART: "full"},
-    {Yaml.COMPOSITION: "godekmiring", Yaml.PART: "penyalit"},
-    {Yaml.COMPOSITION: "godekmiring", Yaml.PART: "pengecet"},
-    {Yaml.COMPOSITION: "godekmiring", Yaml.PART: "penyalit-angsel"},
-    {Yaml.COMPOSITION: "godekmiring", Yaml.PART: "pengawak"},
-    {Yaml.COMPOSITION: "cendrawasih", Yaml.PART: "full"},
-]
-notations = [
-    # {Yaml.COMPOSITION: "godekmiring", Yaml.PART: "full"},
-    {Yaml.COMPOSITION: "sinomladrang-gk", Yaml.PART: "full"},
-]
-get_run_settings()
-single_run()
+if __name__ == "__main__":
+    get_run_settings()
+    single_run()
 
 # multiple_notations_to_midi(notations)
