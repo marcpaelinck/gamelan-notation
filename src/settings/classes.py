@@ -87,6 +87,7 @@ class Part(BaseModel):
 
 class InstrumentInfo(BaseModel):
     group: str
+    label: str  # for instrument selector dropdown
     channels: list[int]
     midioffset: int
     animation: AnimationProfiles

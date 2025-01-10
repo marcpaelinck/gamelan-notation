@@ -62,7 +62,7 @@ soundfonts:
 midiplayer:
     folder: ./data/midiplayer
     contentfile: content.json
-    helpinghand: [CALUNG, JEGOGAN] # Animate an arrow that moves ahead to the next note for these instruments.
+    helpinghand: [CALUNG, JEGOGAN, PEMADE_POLOS, PEMADE_SANGSIH, KANTILAN_POLOS, KANTILAN_SANGSIH] # Animate panggul.
 notations:
     # `beat_at_end` indicates whether the notation has the gir at the end of each gongan (Balinese concept) or at the beginning.
     # `beat_at_end` notation will be converted to beat at beginning.
@@ -133,7 +133,7 @@ notations:
                 name: pengawak
                 file: Godek Miring font5_pengawak.tsv
                 loop: true
-    legongmahawidya:
+    test-legongmahawidya:
         title: Legong Mahawidya
         subfolder: legong mahawidya
         beat_at_end: false

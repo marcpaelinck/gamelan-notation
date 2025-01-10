@@ -61,4 +61,4 @@ if __name__ == "__main__":
 
     settings = get_run_settings()
     content = get_midiplayer_content()
-    save_midiplayer_content(content, "content_test.json")
+    save_midiplayer_content(content, "content.json")

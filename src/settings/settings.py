@@ -225,10 +225,18 @@ def save_midiplayer_content(playercontent: Content, filename: str = None):
     run_settings = _RUN_SETTINGS
     datafolder = run_settings.midiplayer.folder
     contentfile = filename or run_settings.midiplayer.contentfile
-    with open(os.path.join(datafolder, contentfile), "w") as contentfile:
-        jsonised = pretty_compact_json(playercontent.model_dump())
-        contentfile.write(jsonised)
-        # contentfile.write(playercontent.model_dump_json(indent=4, serialize_as_any=True))
+    contentfilepath = os.path.join(datafolder, contentfile)
+    tempfilepath = os.path.join(datafolder, "_" + contentfile)
+    try:
+        with open(tempfilepath, "w") as outfile:
+            jsonised = pretty_compact_json(playercontent.model_dump())
+            outfile.write(jsonised)
+    except Exception as e:
+        os.remove(tempfilepath)
+        logger.error(e)
+    else:
+        os.remove(contentfilepath)
+        os.rename(tempfilepath, contentfilepath)
 
 
 if __name__ == "__main__":
