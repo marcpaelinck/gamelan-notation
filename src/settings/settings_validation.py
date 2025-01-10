@@ -5,10 +5,10 @@ import csv
 
 import pandas as pd
 
-from src.common.classes import RunSettings
 from src.common.constants import Pitch
 from src.common.logger import get_logger
-from src.settings.settings import FontFields, MidiNotesFields
+from src.settings.classes import RunSettings
+from src.settings.constants import FontFields, MidiNotesFields
 
 logger = get_logger(__name__)
 

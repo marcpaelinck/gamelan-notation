@@ -1,28 +1,33 @@
 import json
 import re
 from dataclasses import field
-from typing import Any, ClassVar, Literal, Optional, Union
+from enum import StrEnum
+from typing import Any, Literal, Optional, Union
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+import regex
+from pydantic import BaseModel, Field, field_validator
 
 from src.common.constants import (
     DEFAULT,
-    InstrumentPosition,
+    DynamicLevel,
     InstrumentType,
     NotationEnum,
+    Position,
 )
+from src.settings.constants import InstrumentTagFields
+from src.settings.settings import get_run_settings
 
 
 # MetaData related constants
-class MetaDataSwitch(NotationEnum):
-    OFF = "off"
-    ON = "on"
-
-
 class GonganType(NotationEnum):
     REGULAR = "regular"
     KEBYAR = "kebyar"
     GINEMAN = "gineman"
+
+
+class MetaDataSwitch(NotationEnum):
+    OFF = "off"
+    ON = "on"
 
 
 class ValidationProperty(NotationEnum):
@@ -32,20 +37,84 @@ class ValidationProperty(NotationEnum):
     KEMPYUNG = "kempyung"
 
 
-class Range(NotationEnum):
+class Scope(NotationEnum):
     GONGAN = "GONGAN"
     SCORE = "SCORE"
 
 
-class MetaDataSubType(BaseModel):
+def tag_to_position_dict() -> dict[str, list[Position]]:
+    """Creates a dict that maps 'free format' position tags to a list of InstumentPosition values
+    Args:  run_settings (RunSettings):
+    Returns (dict[str, list[Position]]):
+    """
+    TAG = InstrumentTagFields.TAG
+    POS = InstrumentTagFields.POSITIONS
+    locals_ = {"None": None} | {x.value: x for x in Position}
+    format = lambda val: eval("None" if val == "" else val, locals_)
+    run_settings = get_run_settings()
+    tag_rec_list = [record | {POS: format(record[POS])} for record in run_settings.data.instrument_tags]
+    tag_rec_list += [
+        {TAG: instr, POS: [pos for pos in Position if pos.instrumenttype == instr]} for instr in InstrumentType
+    ]
+    tag_rec_list += [{TAG: pos, POS: [pos]} for pos in Position]
+    lookup_dict = {record[TAG]: record[POS] for record in tag_rec_list}
+
+    return lookup_dict
+
+
+TAG_TO_POSITION = tag_to_position_dict()
+
+
+class MetaDataBaseModel(BaseModel):
     metatype: Literal[""]
-    range: Optional[Range] = Range.GONGAN
+    scope: Optional[Scope] = Scope.GONGAN
     _processingorder_ = 99
 
+    @classmethod
+    def string_to_list(cls, value: str, el_type: type):
+        """Tries to to parse a string or a list of strings. If el_type is None, returns a list of strings.
+        If el_type is given, the function tries to parse the list elements into `el_type` values.
+        `el_type` should either be `float` or a subclass of `StrEnum`.
+        Args:
+            value (str): a json-interpretable string.
+            el_type (type): type to which to convert the list elements. Should either be a subtype of StrEnum
+                            or a type that can be cast from string by applying el_type(value).
+        Returns:
+            list[el_type]:
+        """
+        if isinstance(value, str):
+            # Single string representing a list of strings: parse into a list of strings
+            # First add double quotes around each list element.
+            val = re.sub(r"([A-Za-z_][\w]*)", r'"\1"', value)
+            try:
+                value = json.loads(val)
+            except Exception:
+                raise ValueError(
+                    f"{value} is not a valid list. Elements should be comma separated and enclosed between square brackets []."
+                )
+        if isinstance(value, list):
+            # List of strings: convert strings to enumtype objects.
+            if all(isinstance(el, str) for el in value):
+                try:
+                    return [el_type[el] if issubclass(el_type, StrEnum) else el_type(el) for el in value]
+                except Exception:
+                    ValueError(f"Could not convert the elements of {value} to {el_type} types.")
+            elif all(isinstance(el, el_type) for el in value):
+                # List of el_type: return as-is
+                return value
+        else:
+            raise ValueError(f"Could not convert {value} into a list of {el_type}.")
 
-class TempoMeta(MetaDataSubType):
-    metatype: Literal["TEMPO"]
-    bpm: int
+    def model_dump_notation(self):
+        json = self.model_dump(exclude_defaults=True)
+        del json["metatype"]
+        return f"{{{self.metatype} {', '.join([f'{key}={val}' for key, val in json.items()])}}}"
+
+
+class GradualChangeMetadata(MetaDataBaseModel):
+    # Generic class that represent a value that can gradually
+    # change over a number of beats, such as tempo or dynamics.
+    value: int | DynamicLevel = None
     first_beat: Optional[int] = 1
     beat_count: Optional[int] = 0
     passes: Optional[list[int]] = field(
@@ -58,7 +127,61 @@ class TempoMeta(MetaDataSubType):
         return self.first_beat - 1
 
 
-class LabelMeta(MetaDataSubType):
+# THE METADATA CLASSES
+
+
+class DynamicsMeta(GradualChangeMetadata):
+    metatype: Literal["DYNAMICS"]
+    # Currently, an empty list stands for all positions.
+    positions: list[Position] = field(default_factory=list)
+
+    @field_validator("positions", mode="before")
+    @classmethod
+    # Converts 'free format' position tags to Position values.
+    def normalize_positions(cls, data: list[str]) -> list[Position]:
+        try:
+            return sum((TAG_TO_POSITION[pos] for pos in data), [])
+        except:
+            raise ValueError(f"Unrecognized instrument position in {data}.")
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def set_value(cls, value: DynamicLevel):
+
+        try:
+            run_settingss = get_run_settings()
+            value = run_settingss.midi.dynamics[value]
+        except:
+            # Should not occur because the validator is called after resolving the other fields
+            raise Exception(f"illegal value for dynamics: {value}")
+        return value
+
+
+class GonganMeta(MetaDataBaseModel):
+    metatype: Literal["GONGAN"]
+    type: GonganType
+
+
+class GoToMeta(MetaDataBaseModel):
+    metatype: Literal["GOTO"]
+    label: str
+    from_beat: Optional[int] | None = None  # Beat number from which to goto. Default is last beat of the gongan.
+    passes: Optional[list[int]] = field(default_factory=list)  # On which pass(es) should goto be performed?
+
+    @property
+    def beat_seq(self) -> int:
+        # Returns the pythonic sequence id (numbered from 0)
+        return self.from_beat - 1 if self.from_beat else -1
+
+
+class KempliMeta(MetaDataBaseModel):
+    metatype: Literal["KEMPLI"]
+    status: MetaDataSwitch
+    beats: Optional[list[int]] = field(default_factory=list)
+    scope: Optional[Scope] = Scope.GONGAN
+
+
+class LabelMeta(MetaDataBaseModel):
     metatype: Literal["LABEL"]
     name: str
     beat: Optional[int] = 1
@@ -71,83 +194,92 @@ class LabelMeta(MetaDataSubType):
         return self.beat - 1
 
 
-class GoToMeta(MetaDataSubType):
-    metatype: Literal["GOTO"]
-    label: str
-    from_beat: Optional[int] | None = None  # Beat number from which to goto. Default is last beat of the gongan.
-    passes: Optional[list[int]] = field(default_factory=list)  # On which pass(es) should goto be performed?
+class OctavateMeta(MetaDataBaseModel):
+    metatype: Literal["OCTAVATE"]
+    instrument: InstrumentType
+    octaves: int
+    scope: Optional[Scope] = Scope.GONGAN
 
-    @property
-    def beat_seq(self) -> int:
-        # Returns the pythonic sequence id (numbered from 0)
-        return self.from_beat - 1 if self.from_beat else -1
+    @field_validator("instrument", mode="before")
+    @classmethod
+    # Converts 'free format' position tags to Position values.
+    # TODO the tag might refer to more than one instrument. Consider replacing
+    # the single instrument attribute with a list of instruments.
+    def normalize_positions(cls, data: str) -> Position:
+        return TAG_TO_POSITION[data][0].instrumenttype
 
 
-class RepeatMeta(MetaDataSubType):
+class PartMeta(MetaDataBaseModel):
+    metatype: Literal["PART"]
+    name: str
+
+
+class RepeatMeta(MetaDataBaseModel):
     metatype: Literal["REPEAT"]
     count: int = 1
 
 
-class KempliMeta(MetaDataSubType):
-    metatype: Literal["KEMPLI"]
-    status: MetaDataSwitch
-    beats: list[int] = field(default_factory=list)
+class SequenceMeta(MetaDataBaseModel):
+    metatype: Literal["SEQUENCE"]
+    value: list[str] = field(default_factory=list)
 
 
-class GonganMeta(MetaDataSubType):
-    metatype: Literal["GONGAN"]
-    type: GonganType
-
-
-class SilenceMeta(MetaDataSubType):
-    # Pointer to cls.common.lookup.TAG_TO_POSITION_LOOKUP
-    # TODO temporary solution in order to avoid circular imports. Should look for more elegant solution.
-    # There is no guarantee that the attribute will be assigned a value before it is referred to.
-    TAG_TO_POSITION_LOOKUP: ClassVar[list] = None
-
-    metatype: Literal["SILENCE"]
-    positions: list[InstrumentPosition] = field(default_factory=list)
+class SuppressMeta(MetaDataBaseModel):
+    metatype: Literal["SUPPRESS"]
+    positions: list[Position] = field(default_factory=list)
     passes: Optional[list[int]] = field(default_factory=list)
     beats: list[int] = field(default_factory=list)
 
     @field_validator("positions", mode="before")
     @classmethod
-    # Converts 'free format' position tags to InstrumentPosition values.
-    def normalize_positions(cls, data: list[str]) -> list[InstrumentPosition]:
-        return sum((cls.TAG_TO_POSITION_LOOKUP[pos] for pos in data), [])
+    # Converts 'free format' position tags to Position values.
+    def normalize_positions(cls, data: list[str]) -> list[Position]:
+        try:
+            return sum((TAG_TO_POSITION[pos] for pos in data), [])
+        except:
+            raise ValueError(f"Unrecognized instrument position in {data}.")
 
 
-class ValidationMeta(MetaDataSubType):
+class TempoMeta(GradualChangeMetadata):
+    metatype: Literal["TEMPO"]
+
+
+class ValidationMeta(MetaDataBaseModel):
     metatype: Literal["VALIDATION"]
     beats: Optional[list[int]] = field(default_factory=list)
     ignore: list[ValidationProperty]
+    scope: Optional[Scope] = Scope.GONGAN
 
 
-class OctavateMeta(MetaDataSubType):
-    metatype: Literal["OCTAVATE"]
-    instrument: InstrumentType
-    octaves: int
+class WaitMeta(MetaDataBaseModel):
+    metatype: Literal["WAIT"]
+    seconds: float = None
+    after: bool = True
 
 
-MetaDataSubType = Union[
-    TempoMeta,
-    LabelMeta,
-    GoToMeta,
-    RepeatMeta,
-    KempliMeta,
+MetaDataType = Union[
+    DynamicsMeta,
     GonganMeta,
-    ValidationMeta,
-    SilenceMeta,
+    GoToMeta,
+    KempliMeta,
+    LabelMeta,
     OctavateMeta,
+    PartMeta,
+    RepeatMeta,
+    SequenceMeta,
+    SuppressMeta,
+    TempoMeta,
+    ValidationMeta,
+    WaitMeta,
 ]
 
 
 class MetaData(BaseModel):
-    data: MetaDataSubType = Field(..., discriminator="metatype")
+    data: MetaDataType = Field(..., discriminator="metatype")
 
     @classmethod
     def __get_all_subtype_fieldnames__(cls):
-        membertypes = list(MetaDataSubType.__dict__.values())[4]
+        membertypes = list(MetaDataType.__dict__.values())[4]
         return {fieldname for member in membertypes for fieldname in member.model_fields.keys()}
 
     @classmethod
@@ -165,39 +297,80 @@ class MetaData(BaseModel):
         Returns:
             _type_: _description_
         """
-        # Switch metadata keyword to lowercase and add 'metatype: ' in front.
-        fieldnames = cls.__get_all_subtype_fieldnames__()
-        value = data
-        match = r"\{(\w+)"
-        p = re.compile(match)
-        keyword_uc = p.findall(value)[0]
-        value = value.replace(keyword_uc, "metatype: " + keyword_uc + ", ")
-        # Replace equal signs with colon.
-        value = value.replace("=", ": ")
-        # Split value into (fieldname, fieldvalue) pairs.
-        # Field value should be either a single string:
-        #   [^\[\]]*?
-        # or a list of strings starting with '[' and ending with ']':
-        #   \[[^\[\]]*?\]
-        # Field/value pairs should be separated by a comma or (in case of the last pair) a brace:
-        #   [,}]
-        match = "(" + "|".join(fieldnames) + r"): *([^\[\]]*?|\[[^\[\]]*?\])[,}]"
-        p = re.compile(match)
-        field_list = p.findall(value)
-        # The following code put quotes around the keywords and string values.
-        # `match` matches quoted and unquoted strings and omits strings representing number values.
-        # The first component "([^"]+)" will be tried first, which prioritizes matching quoted strings.
-        # Note that the capturing brackets are placed within the quotes, so the captured values will be unquoted.
-        # If no quoted string can be matched, the second component (\w*[A-Za-z_]\w*\b) will capture single, unquoted
-        # non-numeric values.
-        match = r'"([^"]+)"|(\w*[A-Za-z_]\w*\b)'
-        pv = re.compile(match)
-        # In the substitution, \1\2 stand for the captured quoted and unquoted strings (only one of these placeholders
-        # will contain a non-empty value).
-        # Because quoted strings are captured without quotes, quoting either of these values yields
-        # the required result.
-        quoted_fields = [": ".join((f'"{field}"', pv.sub(r'"\1\2"', value))) for field, value in field_list]
-        value = "{" + ", ".join(quoted_fields) + "}"
-        # unquote already quoted strings (which are now double quoted)
-        value = value.replace('""', "")
-        return json.loads(value)
+        if not isinstance(data, str):
+            return data
+
+        meta = data.strip()
+        membertypes = MetaDataType.__dict__["__args__"]
+        # create a dict containing the valid parameters for each metadata keyword.
+        # Format: {<meta-keyword>: [<parameter1>, <parameter2>, ...]}
+        field_dict = {
+            member.model_fields["metatype"].annotation.__args__[0]: [
+                param for param in list(member.model_fields.keys()) if param != "metatype"
+            ]
+            for member in membertypes
+        }
+        # Try to retrieve the keyword
+        keyword_pattern = r"\{ *([A-Z]+) +"
+        match = regex.match(keyword_pattern, meta)
+        if not match:
+            # NOTE All exceptions in this method are unit tested by checking the error number
+            # a the beginning of the error message.
+            raise Exception(f"Err1 - Bad metadata format {data}: could not determine metadata type.")
+        meta_keyword = match.group(1)
+        if not meta_keyword in field_dict.keys():
+            raise Exception(f"Err2 - Metadata {data} has an invalid keyword {meta_keyword}.")
+
+        # Retrieve the corresponding parameter names
+        param_names = field_dict[meta_keyword]
+
+        # Create a match pattern for the parameter values
+        value_pattern_list = [
+            r"(?P<value>'[^']+')",  # quoted value (single quotes)
+            r"(?P<value>\"[^\"]+\")",  # quoted value (double quotes)
+            r"(?P<value>\[[^\[\]]+\])",  # list
+            r"(?P<value>[^,\"'\[\]]+)",  # simple unquoted value
+        ]
+        value_pattern = "(?:" + "|".join(value_pattern_list) + ")"
+
+        # Create a pattern to validate the general format of the string, without validating the parameter names.
+        # This test is performed separately in order to have a more specific error handling.
+        single_param_pattern = r"(?: *(?P<parameter>[\w]+) *= *" + value_pattern + " *)"
+        multiple_params_pattern = "(?:" + single_param_pattern + ", *)*" + single_param_pattern
+        full_metadata_pattern = r"^\{ *" + meta_keyword + " +" + multiple_params_pattern + r"\}"
+        # Validate the general structure.
+        match = regex.fullmatch(full_metadata_pattern, meta)
+        if not match:
+            raise Exception(
+                f"Err3 - Bad metadata format {data}, please check the format. Are the parameters separated by commas?"
+            )
+
+        # Create a pattern requiring valid parameter nammes exclusively.
+        single_param_pattern = f"(?: *(?P<parameter>{'|'.join(param_names)})" + r" *= *" + value_pattern + " *)"
+        multiple_params_pattern = "(?:" + single_param_pattern + ", *)*" + single_param_pattern
+        full_metadata_pattern = r"^\{ *" + meta_keyword + " +" + multiple_params_pattern + r"\}"
+        # Validate the parameter names.
+        match = regex.fullmatch(full_metadata_pattern, meta)
+        if not match:
+            raise Exception(
+                f"Err4 - Metadata {data} contains invalid parameter(s). Valid values are: {', '.join(field_dict[meta_keyword])}."
+            )
+
+        # Capture the (parametername, value) pairs
+        groups = [match.captures(i) for i, reg in enumerate(match.regs) if i > 0 and reg != (-1, -1)]
+
+        # Quote non-numeric values, either quoted or non-quoted
+        nonnumeric = r'(?: *\'([^"]+)\')|(?: *"([^"]+)")|(?: *(\w*[A-Za-z_]\w*\b) *)'
+        # nonnumeric = r"(?: *(\w*[A-Za-z_ ]+\w*) *) *"
+        pv = regex.compile(nonnumeric)
+
+        # create a json string
+        parameters = [f'"{p}": {pv.sub(r'"\1\2\3"', v)}' for p, v in zip(*groups)]
+        json_str = f'{{"metatype": "{meta_keyword}", {" ,".join(parameters)}}}'
+
+        try:
+            json_result = json.loads(json_str)
+        except:
+            raise Exception(f"Err5 - Bad metadata format {data}. Could not parse the value, please check the format.")
+
+        return json_result

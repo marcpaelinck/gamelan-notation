@@ -1,20 +1,37 @@
+import csv
+
+import pandas as pd
 import pytest
 
 from src.common.classes import Beat, Gongan, Note
-from src.common.constants import InstrumentPosition
-from src.common.utils import (
-    create_symbol_to_note_lookup,
-    gongan_to_records,
-    stave_to_string,
-)
-from src.notation2midi.notation_to_midi import passes_str_to_tuple
-from src.settings.settings import InstrumentFields
+from src.common.constants import InstrumentType, Position
+from src.notation2midi.notation5_to_dict import Notation5Parser
+from src.notation2midi.score_to_notation import gongan_to_records, stave_to_string
+from src.settings.constants import InstrumentFields
+from src.settings.settings import get_run_settings
 
-BALIFONT5_TO_CHARACTER_DICT = create_symbol_to_note_lookup(fromfile="tests/data/balimusic5font.tsv")
+
+def create_symbol_to_note_lookup(fromfile: str) -> dict[str, Note]:
+    balifont_df = pd.read_csv(fromfile, sep="\t", quoting=csv.QUOTE_NONE)
+    balifont_obj = balifont_df.where(pd.notnull(balifont_df), "NONE").to_dict(orient="records")
+    balifont = [
+        Note.model_validate(
+            note_def
+            | {
+                "instrumenttype": InstrumentType.GENDERRAMBAT,
+                "position": Position.GENDERRAMBAT,
+            }
+        )
+        for note_def in balifont_obj
+    ]
+    return {note.symbol: note for note in balifont}
+
+
+BALIFONT5_TO_NOTE_DICT = create_symbol_to_note_lookup(fromfile="tests/data/balimusic5font.tsv")
 
 
 def getchar(c: str) -> Note:
-    return BALIFONT5_TO_CHARACTER_DICT[c]
+    return BALIFONT5_TO_NOTE_DICT[c]
 
 
 data1 = [
@@ -36,15 +53,17 @@ data2 = [
             beats=[
                 Beat(
                     id=idx + 1,
-                    sys_id=1,
+                    gongan_id=1,
                     bpm_start={},
                     bpm_end={},
+                    velocities_start={},
+                    velocities_end={},
                     duration=2,
                     staves={
                         instr: [getchar(c) for c in staves[idx]]
                         for instr, staves in {
-                            InstrumentPosition.PEMADE_POLOS: ["a,a,", "oo", "ii", "ee", "oo", "ee", "ii", "oo"],
-                            InstrumentPosition.PEMADE_SANGSIH: ["ee", "aa", "uu", "i<i<", "aa", "i<i<", "uu", "aa"],
+                            Position.PEMADE_POLOS: ["a,a,", "oo", "ii", "ee", "oo", "ee", "ii", "oo"],
+                            Position.PEMADE_SANGSIH: ["ee", "aa", "uu", "i<i<", "aa", "i<i<", "uu", "aa"],
                         }.items()
                     },
                 )
@@ -53,7 +72,7 @@ data2 = [
         ),
         [
             {
-                InstrumentFields.POSITION: InstrumentPosition.PEMADE_POLOS,
+                InstrumentFields.POSITION: "PEMADE_P",
                 1: "a,a,",
                 2: "oo",
                 3: "ii",
@@ -64,7 +83,7 @@ data2 = [
                 8: "oo",
             },
             {
-                InstrumentFields.POSITION: InstrumentPosition.PEMADE_SANGSIH,
+                InstrumentFields.POSITION: "PEMADE_S",
                 1: "ee",
                 2: "aa",
                 3: "uu",
@@ -74,17 +93,7 @@ data2 = [
                 7: "uu",
                 8: "aa",
             },
-            {
-                InstrumentFields.POSITION: "",
-                1: "",
-                2: "",
-                3: "",
-                4: "",
-                5: "",
-                6: "",
-                7: "",
-                8: "",
-            },
+            {InstrumentFields.POSITION: "", 1: "", 2: "", 3: "", 4: "", 5: "", 6: "", 7: "", 8: ""},
         ],
     )
 ]
@@ -110,11 +119,15 @@ bad_ranges = ["1,2,", "realbad", "1-", "-1", "-", ",", "1-4-"]
 @pytest.mark.parametrize("rangestr, expected", correct_ranges)
 # Tests the conversion of optional range indicators following the position name in the score
 def test_range_str_to_list(rangestr, expected):
-    assert passes_str_to_tuple(rangestr) == expected
+    run_settings = get_run_settings()
+    parser = Notation5Parser(run_settings=run_settings)
+    assert parser._passes_str_to_list(rangestr) == expected
 
 
 @pytest.mark.parametrize("rangestr", bad_ranges)
 # Test that invalid values cause a ValueError to be raised
 def test_range_str_to_list_exception(rangestr):
     with pytest.raises(ValueError):
-        passes_str_to_tuple(rangestr)
+        run_settings = get_run_settings()
+        parser = Notation5Parser(run_settings=run_settings)
+        parser._passes_str_to_list(rangestr)

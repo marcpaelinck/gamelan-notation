@@ -66,10 +66,87 @@ jegogan     ----     ----     ----     ---o     ----     ----     ----     ---a
 gong        ----     ----     ----     ---G     ---P     ----     ---P     ---G
 
 ```
+Metadata or comment lines can either appear at the top or at the bottom of a gongan. The position will not affect the functionality of a metadata tag. Gongan should be separated by one or more empty line(s).
 
+Terminology:
+- **tag** - the text at the beginning of a line (*comment*, *metadata* or the name of an instrument or instrument position).
+- **beat** - group of notes corresponding with one kempli beat. Each beat should be separated by a tab character. The kempli beats will be added by default and do not need to be written in the notation. For technical reasons, the kempli beat is added at the beginning of a beat. As a consequence the GIR should occur at the beginning of the first beat.
+- **flow** - the sequence in which the beats should be played. By default, the flow runs through the gongans in sequence. The flow can be modified with the use of LABEL and GOTO metadata items. These items can be used to repeat parts of the score or to skip to a next part.
+- **pass** - value that is incremented each time a beat is played. The first pass is numbered 1. Be aware that if a gongan is repeated but the first beat is skipped the first time, the pass value of this beat will be one lower than that of the other beats in the gongan.
+- **octave** - An octave runs from DING through DANG (or DAING for a seven-note tuning). Octaves are numbered from 0 through 2 and are relative to the instrument's range. The numbering depends on the number of octaves that are (partly) covered by the instrument.
+  - one octave: value = 1
+  - two octaves: the lower octave is numbered 0, the second one 1.
+  - three octaves: the octaves are numbered 0 through 3. Usually octaves 0 and 2 will contain fewer notes than octave 1.
+  - **metadata** - instructions to the MIDI generator, such as tempo changes, loops and repeats.
 
 ### Metadata syntax
 
+General syntax:
+```
+{<KEYWORD> <parameter>=<value> [, <parameter>=<value> [, ...]]}
+
+example:
+{GOTO label=C, passes=[1,2,3]}
+```
+
+In the following table, parameters without default value must always be given.
+
+Terminology:
+- **list** - comma separated values, enclosed between square brackets, e.g. [1,2,3] or [gangsa polos, gangsa sangsih, ugal].
+- **numbering** - the numbering of gongans, beats and passes starts at 1.
+
+
+| keyword | parameters | values | example |default |comment |
+|---------|------------|--------|---------|--------|-------|
+| GONGAN  ||||| The type of gongan. this affects whether there will be a kempli beat and whether the beat length will be validated.|
+|         | type       | *regular*, *kebyar*, *gineman*     | regular | regular | regular adds a kempli beat and activates validation of the beat length. Gineman and kebyar suppress the kempli and disable beat length validation. |
+| DYNAMICS||||| Sets dynamics or a gradual increase/decrease in dynamic. |
+|         | positions  | list of position tags   |[gangsa p, gangsa s]  |         | The tags should occur in the tag list below |
+|         | value      | p, mp, mf or f                     | mf      |           | The value is translated to a MIDI velocity value: p=60, mp=80, mf=100, f=127. |
+|         | first_beat | integer value                      | 3       | 1         | The beat of the gongan where the new dynamics should be applied or where the gradual dynamics change should start |
+|         | beat_count | integer value                      | 6       | 0         | If 0, the dynamics are effective from the given beat. If greater than 0, the dynamics will gradually increase/decrease over the number of beats, starting with first_beat |
+|         | passes     | list of integer values             |[1]      | all passes| The passes for which the dynamics change applies. |
+| GOTO    ||||| Indicates the next beat in the flow sequence. A GOTO can refer either backward or forward in the notation. The GOTO metadata line can appear at the end of a gongan for more clarity. |
+|         | label      | Existing LABEL *name* parameter.   | PENGECET|         |  |
+|         | from_beat  | int                                | 4       | last    | The beat after which to go to the labelled beat. Beats are numbered from 1. Default is the last beat of the gongan. |
+|         | passes     | list of integer values             | [1,2,3] | all     | Passes for which the GOTO will be active. If no passes are given, the GOTO will always be active |
+| KEMPLI  ||||| Suppresses the kempli in a *regular* gongan. |
+|         | status     |*on* or *off*                       |*off*    |           | Usually *off* will be selected. *on* would only have effect in a *gineman* or *kebyar* gongan. |
+|         | beats      | list of integer values             |[5, 6]   | all beats | The beats for which the kempli should be silenced. |
+|         | scope      | *GONGAN* or* SCORE*                | GONGAN  | GONGAN    | The scope for which to suppress the validation. |
+| LABEL   ||||| Labels a beat in a gongan. Used in combination with GOTO to change the flow sequence. By default the label refers to the first beat of the gongan. |
+|         | name       | character string without spaces    | PENGECET|         | 
+|         | beat_nr    | integer                            | 2       | 1       | The beat in the gongan to which the label refers. 1 = first beat. |  
+
+| keyword | parameters | values | example |default |comment |
+|---------|------------|--------|---------|--------|-------|
+| OCTAVATE||||| Indicates that the notation for an instrument should be transposed by one or more octaves |
+|         | instrument | label of an instrument             | trompong|         | Can be any tag value in the tag list (see below) |
+|         | octaves    | positive or negative int           | -1      |         | Be sure that the resulting note values will all remain within the instrument's range |
+|         | scope      | *GONGAN* or* SCORE*                | SCORE   | GONGAN  | The scope for which to octavate: either the current gongan or the entire score. |
+| PART    ||||| Indicates the start of a new part of the composition. This action will add a tick mark on the progress bar in the MIDI app.  |
+|         | name       | name (may contain space chars)     | PENGAWAK|         |  |
+| REPEAT  ||||| Repeats a single gongan. The REPEAT remains effective for each GOTO that redirects to the gongan.   |
+|         | count      | integer value                      | 3       |         | Number of times to play the gongan. |
+| SUPPRESS||||| Add a period of silence after a gongan. Instruments will not be muted (sound will attenuate). |
+|         | seconds    | value with decimals                |2.25     |         | Number of seconds. Will be rounded off to the nearest quarter of a second. |
+|         | after      | *true* or *false*                  | false   | true    | Indicates whether the silence should be added before or after the gongan (not operational yet). |
+
+| keyword | parameters | values | example |default |comment |
+|---------|------------|--------|---------|--------|-------|
+| SUPPRESS||||| used to suppress specific instruments, e.g. during the first pass of a gongan. |
+|         | positions  | list of position tags |[gangsa p, gangsa s]  |         | The tags should occur in the tag list below |
+|         | passes     | list of integer values             |[1]      | all passes | The passes for which this meta item should be applied. |
+|         | beats      | list of integer values             |[5, 6]   | all beats | The beats that should be silenced. |
+| TEMPO   ||||| used to set a tempo or a gradual increase/decrease in tempo. |
+|         | value      | integer value                      | 120     |           | Beats per minute for 4 full-length notes. |
+|         | first_beat | integer value                      | 3       | 1         | The beat of the gongan where the new tempo should be applied or where the gradual tempo change should start |
+|         | beat_count | integer value                      | 6       | 0         | If 0, the tempo is effective from the given beat. If greater than 0, the tempo will gradually increase/decrease over the number of beats, starting with first_beat |
+|         | passes     | list of integer values             |[1]      | all passes| The passes for which the tempo change applies. |
+| VALIDATION ||||| Suppresses specific aspects of the validation and autocorrection. |
+|         | beats      | list of integer values             |[5, 6]   | all beats | The beats to which the action applies. |
+|         | scope      | *GONGAN* or* SCORE*                | GONGAN   | GONGAN  | The scope for which to suppress the validation. |
+|         | ignore     | list of items                      |[kempyung]|       | List of validations that should be skipped. Possible values: *beat-duration*, *stave-length*, *instrument-range*, *kempyung*|
 
 
 ## Vocabulary

@@ -1,11 +1,11 @@
-metadata	{TEMPO bpm=50}
+metadata	{TEMPO value=50}
 metadata	{GONGAN type=gineman}								
 gangsa p	o,-e,-u,-a,-i-o-e-u-a-i<----
 
-metadata	{TEMPO bpm=50}
+metadata	{TEMPO value=50}
 metadata	{GONGAN type=gineman}								
 gangsa p	o,/.e,/.u,/.a,/.i/.o/.e/.u/.a/.i</....
 
-metadata	{TEMPO bpm=50}
+metadata	{TEMPO value=50}
 metadata	{GONGAN type=gineman}								
 gangsa p	o,?.e,?.u,?.a,?.i?.o?.e?.u?.a?.i<?....

@@ -8,8 +8,9 @@ Returns:
 
 import os
 
-from src.common.classes import MidiNote, Preset, RunSettings
-from src.common.constants import InstrumentPosition, InstrumentType, MidiDict
+from src.common.classes import MidiNote, Preset
+from src.common.constants import InstrumentType, Position
+from src.settings.classes import RunSettings
 from src.soundfont.utils import sample_name_lookup, sample_notes_lookup, truncated_name
 
 SampleFileName = str
@@ -19,15 +20,14 @@ SampleName = str
 class SoundfontTextfile:
     content: str = ""
     type_to_midi_dict: dict[InstrumentType, list[MidiNote]]
-    pos_to_midi_dict: dict[InstrumentPosition, list[MidiNote]]
+    pos_to_midi_dict: dict[Position, list[MidiNote]]
     sample_name_lookup: dict[SampleFileName, SampleName]
-    preset_dict: dict[InstrumentPosition, Preset]
+    preset_dict: dict[Position, Preset]
     settings: RunSettings
 
     def __init__(
         self,
         midi_dict: dict[InstrumentType, list[MidiNote]],
-        preset_dict: dict[InstrumentPosition, Preset],
         settings: RunSettings,
     ):
         self.type_to_midi_dict = {
@@ -38,12 +38,10 @@ class SoundfontTextfile:
         self.pos_to_midi_dict = {
             pos: notes
             for i_type, notes in self.type_to_midi_dict.items()
-            for pos in InstrumentPosition
+            for pos in Position
             if pos.instrumenttype == i_type
         }
-        self.preset_dict = {
-            pos: preset for pos, preset in preset_dict.items() if pos.instrumenttype in self.type_to_midi_dict.keys()
-        }
+        self.preset_dict = Preset.get_preset_dict()
         self.settings = settings
         self.sample_name_lookup = sample_name_lookup(self.type_to_midi_dict)
 

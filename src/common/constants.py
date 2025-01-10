@@ -1,18 +1,31 @@
 from enum import StrEnum
+from typing import Any
 
 from src.common.logger import get_logger
 
 logger = get_logger(__name__)
 
 BPM = int
-PASS = int
-DEFAULT = -1
+Velocity = int
+Pass = int
 Duration = int
 BeatId = str
-Pass = int
 Octave = int
 MIDIvalue = int
 MidiDict = dict[str, list[dict[str, str | int | None]]]
+DataRecord = list[str, str | None]
+NotationDict = dict[int, dict[int, dict[str, dict[tuple[int], str]]]]  # notation[gongan_id][beat_id][position][passes]
+NoteRecord = dict[str, Any]
+ErrorMessage = str
+
+DEFAULT = -1
+
+
+class SpecialTags(StrEnum):
+    # Putting constants in a class enables them to be used in a `match`statement
+    # See e.g. https://github.com/microsoft/pylance-release/issues/4309
+    METADATA = "metadata"
+    COMMENT = "comment"
 
 
 class NotationEnum(StrEnum):
@@ -44,15 +57,6 @@ class NotationFont(NotationEnum):
     BALIMUSIC5 = "BaliMusic5"
 
 
-class NoteSource(NotationEnum):
-    # indicates whether the character occurs in the score
-    # or was added by this application.
-    # SCORE is also applicable for Pitch Characters that have been
-    # changed by applying one or more Modifier Characters.
-    SCORE = "SCORE"
-    VALIDATOR = "VALIDATOR"
-
-
 class InstrumentGroup(NotationEnum):
     # TODO replace with settings file
     GONG_KEBYAR = "GONG_KEBYAR"
@@ -79,7 +83,7 @@ class InstrumentType(NotationEnum):
     SULING = "SULING"
 
 
-class InstrumentPosition(NotationEnum):
+class Position(NotationEnum):
     # TODO replace with settings file
     # The sorting order affects the layout of the
     # corrected score (see common.utils.gongan_to_records)
@@ -143,37 +147,133 @@ class Pitch(NotationEnum):
     PEK = "PEK"
     PUR = "PUR"
     STRIKE = "STRIKE"
+    STRIKE2 = "STRIKE2"
     TONG = "TONG"
     NONE = "NONE"
+
+    @property
+    def index(self):
+        return list(Pitch).index(self)
 
 
 class Stroke(NotationEnum):
     OPEN = "OPEN"
     MUTED = "MUTED"
     ABBREVIATED = "ABBREVIATED"
-    TICK1 = "TICK1"
-    TICK2 = "TICK2"
+    GRACE_NOTE = "GRACE_NOTE"
+    KAPAK = "KAPAK"
+    DETUT = "DETUT"
+    CUNGKUNG = "CUNGKUNG"
+    TREMOLO = "TREMOLO"
+    TREMOLO_ACCELERATING = "TREMOLO_ACCELERATING"
     EXTENSION = "EXTENSION"
     SILENCE = "SILENCE"
+    NOROT = "NOROT"
     NONE = "NONE"
 
 
 class Modifier(StrEnum):
+    # The order of the values should comply to the
+    # standardized sequence for the font characters:
+    # 1. NONE (=pitch character)
+    # 2. octave modifiers
+    # 3. stroke modifiers
+    # 4. duration modifiers
+    # 5. other modifiers
     NONE = "NONE"
     # Font4
     MODIFIER_PREV1 = "MODIFIER_PREV1"
     MODIFIER_PREV2 = "MODIFIER_PREV2"
     # Font5
-    GRACE_NOTE = "GRACE_NOTE"
     OCTAVE_0 = "OCTAVE_0"
     OCTAVE_2 = "OCTAVE_2"
-    MUTE = "MUTE"
     ABBREVIATE = "ABBREVIATE"
+    MUTE = "MUTE"
     HALF_NOTE = "HALF_NOTE"
     QUARTER_NOTE = "QUARTER_NOTE"
     TREMOLO = "TREMOLO"
     TREMOLO_ACCELERATING = "TREMOLO_ACCELERATING"
     NOROT = "NOROT"
+
+
+class AnimationProfiles(NotationEnum):
+    GK_GONGS = "GK_GONGS"
+    GK_KENDANG = "GK_KENDANG"
+    GK_CALUNG = "GK_CALUNG"
+    GK_JEGOGAN = "GK_JEGOGAN"
+    GK_GANGSA = "GK_GANGSA"
+    GK_REYONG = "GK_REYONG"
+    SP_GONGS = "SP_GONGS"
+    SP_CALUNG = "SP_CALUNG"
+    SP_JEGOGAN = "SP_JEGOGAN"
+    SP_KENDANG = "SP_KENDANG"
+    SP_GANGSA = "SP_GANGSA"
+    SP_TROMPONG = "SP_TROMPONG"
+
+
+class NoteOct(NotationEnum):
+    DING0 = "DING0"
+    DONG0 = "DONG0"
+    DENG0 = "DENG0"
+    DEUNG0 = "DEUNG0"
+    DUNG0 = "DUNG0"
+    DANG0 = "DANG0"
+    DAING0 = "DAING0"
+    DING1 = "DING1"
+    DONG1 = "DONG1"
+    DENG1 = "DENG1"
+    DEUNG1 = "DEUNG1"
+    DUNG1 = "DUNG1"
+    DANG1 = "DANG1"
+    DAING1 = "DAING1"
+    DING2 = "DING2"
+    DONG2 = "DONG2"
+    DENG2 = "DENG2"
+    DEUNG2 = "DEUNG2"
+    DUNG2 = "DUNG2"
+    DANG2 = "DANG2"
+    DAING2 = "DAING2"
+    DENGDING = "DENGDING"
+    BYONG = "BYONG"
+    BYOT = "BYOT"
+    KA = "KA"
+    PAK = "PAK"
+    DE = "DE"
+    TUT = "TUT"
+    CUNG = "CUNG"
+    KUNG = "KUNG"
+    PLAK = "PLAK"
+    DAG = "DAG"
+    DUG = "DUG"
+    GIR = "GIR"
+    JET = "JET"
+    MUTED = "MUTED"
+    OPEN = "OPEN"
+    PEK = "PEK"
+    PUR = "PUR"
+    STRIKE = "STRIKE"
+    TONG = "TONG"
+
+
+class AnimationStroke(NotationEnum):
+    OPEN = "OPEN"
+    MUTED = "MUTED"
+    ABBREVIATED = "ABBREVIATED"
+    KAPAK = "KAPAK"
+    DETUT = "DETUT"
+    CUNGKUNG = "CUNGKUNG"
+    TICK1 = "TICK1"
+    TICK2 = "TICK2"
+    NONE = "NONE"
+
+
+class DynamicLevel(NotationEnum):
+    PIANISSIMO = "pp"
+    PIANO = "p"
+    MEZZOPIANO = "mp"
+    MEZZOFORTE = "mf"
+    FORTE = "f"
+    FORTISSIMO = "ff"
 
 
 # MIDI to Notation

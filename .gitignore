@@ -2,5 +2,7 @@
 data/samples/*/
 data/notation/*/
 !data/notation/test
+data/midiplayer/*
+notebooks/*
 __pycache__
 .pytest_cache/*

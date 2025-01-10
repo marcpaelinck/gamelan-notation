@@ -1,89 +1,34 @@
 import os
 import re
-from enum import StrEnum
 from typing import Any
 
+import numpy as np
+import pandas as pd
 import yaml
 from pydantic import BaseModel
 
-from src.common.classes import RunSettings
 from src.common.logger import get_logger
+from src.settings.classes import Content, RunSettings
+from src.settings.constants import DATA_INFOFILE, RUN_SETTINGSFILE, SETTINGSFOLDER, Yaml
+from src.settings.utils import pretty_compact_json
 
 logger = get_logger(__name__)
 
 BASE_NOTE_TIME = 24
 BASE_NOTES_PER_BEAT = 4
-ATTENUATION_SECONDS_AFTER_MUSIC_END = 10  # additional time in seconds to let final chord attenuate.
-
-METADATA = "metadata"
-COMMENT = "comment"
-NON_INSTRUMENT_TAGS = [METADATA, COMMENT]
+_RUN_SETTINGS: RunSettings = None
+# List of functions that should be called when new run settings are loaded
+_RUN_SETTINGS_LISTENERS: set[callable] = set()
 
 
-# list of column headers used in the settings files
-
-# balimusic4font.tsv: Fields should correspond exactly with the Character class attributes
-
-
-class SStrEnum(StrEnum):
-    def __str__(self):
-        return self.value
-
-
-class FontFields(SStrEnum):
-    SYMBOL = "symbol"
-    UNICODE = "unicode"
-    SYMBOL_DESCRIPTION = "symbol_description"
-    BALIFONT_SYMBOL_DESCRIPTION = "balifont_symbol_description"
-    PITCH = "pitch"
-    OCTAVE = "octave"
-    STROKE = "stroke"
-    DURATION = "duration"
-    REST_AFTER = "rest_after"
-    DESCRIPTION = "description"
-
-
-# instruments.tsv
-class InstrumentFields(SStrEnum):
-    POSITION = "position"
-    INSTRUMENT = "instrument"
-    GROUP = "group"
-
-
-# instrumenttags.tsv
-class InstrumentTagFields(SStrEnum):
-    TAG = "tag"
-    INFILE = "infile"
-    POSITIONS = "positions"
-
-
-# midinotes.tsv
-class MidiNotesFields(SStrEnum):
-    INSTRUMENTGROUP = "instrumentgroup"
-    INSTRUMENTTYPE = "instrumenttype"
-    POSITIONS = "positions"
-    PITCH = "pitch"
-    OCTAVE = "octave"
-    STROKE = "stroke"
-    REMARK = "remark"
-    MIDINOTE = "midinote"
-    ROOTNOTE = "rootnote"
-    SAMPLE = "sample"
-
-
-class PresetsFields(SStrEnum):
-    INSTRUMENTGROUP = "instrumentgroup"
-    INSTRUMENTTYPE = "instrumenttype"
-    POSITION = "position"
-    BANK = "bank"
-    PRESET = "preset"
-    CHANNEL = "channel"
-    PRESET_NAME = "preset_name"
-
-
-SETTINGSFOLDER = "./settings"
-RUN_SETTINGSFILE = "run-settings.yaml"
-DATA_INFOFILE = "data.yaml"
+# Contains information about where to find the data sources in the Value
+DATA = {
+    "font": {"category": "font", "folder": "folder", "filename": "file"},
+    "instruments": {"category": "instruments", "folder": "folder", "filename": "instruments_file"},
+    "instrument_tags": {"category": "instruments", "folder": "folder", "filename": "tags_file"},
+    "midinotes": {"category": "midi", "folder": "folder", "filename": "midi_definition_file"},
+    "presets": {"category": "midi", "folder": "folder", "filename": "presets_file"},
+}
 
 
 def post_process(subdict: dict[str, Any], run_settings_dict: dict[str, Any] = None):
@@ -114,11 +59,15 @@ def post_process(subdict: dict[str, Any], run_settings_dict: dict[str, Any] = No
     return subdict
 
 
+def get_cwd():
+    return os.getcwd()
+
+
 def read_settings(filename: str) -> dict:
     """Retrieves settings from the given (YAML) file. The file should occur in SETTINGSFOLDER.
 
     Args:
-        filename (str): YAML file name.
+        filename (str): YAML file name. Should occur in SETTINGSFOLDER.
 
     Returns:
         dict: dict containing all the settings contained in the file.
@@ -141,9 +90,47 @@ def get_settings_fields(cls: BaseModel, settings_dict: dict) -> dict[str, Any]:
     return retval
 
 
-def get_run_settings(notation: dict[str, str] = None) -> RunSettings:
+def read_data(settings_dict: dict) -> dict[str, list[dict[str, str]]]:
+    data = dict()
+    for item, entry in DATA.items():
+        category = entry["category"]
+        folder = settings_dict[category][entry["folder"]]
+        file = settings_dict[category][entry["filename"]]
+        filepath = os.path.join(folder, file)
+        data[item] = (
+            pd.read_csv(filepath, sep="\t", comment="#", dtype=str)
+            .replace([np.nan], [""], regex=False)
+            .to_dict(orient="records")
+        )
+    return data
+
+
+def get_run_settings(listener: callable = None) -> RunSettings:
+    """Retrieves the most recently loaded run settings. Loads the settings from the run-settings.yaml file if no
+    settings have been loaded yet.
+
+    Args:
+        listener (callable, optional): A function that should be called when new run settings are loaded. This value
+        can be passed by modules and objects that use the run settings during their initialization phase. Defaults to None.
+
+    Returns:
+        RunSettings: settings object
+    """
+    if not _RUN_SETTINGS:
+        load_run_settings()
+    if listener:
+        _RUN_SETTINGS_LISTENERS.add(listener)
+
+    return _RUN_SETTINGS
+
+
+def load_run_settings(notation: dict[str, str] = None) -> RunSettings:
     """Retrieves the run settings from the run settings yaml file, enriched with information
        from the data information yaml file.
+
+    Args:
+        notation (dict[str, str], optional): A dict {'piece': <composition>, 'part': <part>} that defines a
+        composition/part combination in the data.yaml file. Defaults to the values in the run-settings.yaml file.
 
     Returns:
         RunSettings: settings object
@@ -151,70 +138,108 @@ def get_run_settings(notation: dict[str, str] = None) -> RunSettings:
     run_settings_dict = read_settings(RUN_SETTINGSFILE)
     data_dict = read_settings(DATA_INFOFILE)
 
-    # YAML fieldnames
-    NOTATION = "notation"
-    MIDI = "midi"
-    SAMPLES = "samples"
-    INSTRUMENTS = "instruments"
-    FONT = "font"
-    SOUNDFONT = "soundfont"
-    OPTIONS = "options"
-    COMPOSITION = "composition"
-    FILE = "file"
-    PART = "part"
-    LOOP = "loop"
-    FULL = "full"
-    INSTRUMENTGROUP = "instrumentgroup"
-    MIDIVERSION = "midiversion"
-    FONTVERSION = "fontversion"
-
-    if notation:
-        run_settings_dict[NOTATION] = notation
-
     settings_dict = dict()
 
-    composition = data_dict[NOTATION][COMPOSITION][run_settings_dict[NOTATION][COMPOSITION]]
-    settings_dict[NOTATION] = get_settings_fields(
-        RunSettings.NotationInfo, data_dict[NOTATION] | composition | run_settings_dict[NOTATION]
-    )
-    settings_dict[NOTATION][FILE] = composition[PART][run_settings_dict[NOTATION][PART]]
-    # Only 'full' composition will be extended with 'attenuation time'.
-    settings_dict[NOTATION][LOOP] = run_settings_dict[NOTATION][PART] != FULL
+    # Run Options
+    settings_dict[Yaml.OPTIONS] = get_settings_fields(RunSettings.Options, run_settings_dict[Yaml.OPTIONS])
 
-    midiversion = data_dict[MIDI][MIDIVERSION][run_settings_dict[MIDI][MIDIVERSION]]
-    settings_dict[MIDI] = get_settings_fields(
-        RunSettings.MidiInfo, data_dict[MIDI] | run_settings_dict[MIDI] | midiversion
+    # MIDI info
+    midiversion = data_dict[Yaml.MIDI][Yaml.MIDIVERSIONS][run_settings_dict[Yaml.MIDI][Yaml.MIDIVERSION]]
+    settings_dict[Yaml.MIDI] = get_settings_fields(
+        RunSettings.MidiInfo, data_dict[Yaml.MIDI] | run_settings_dict[Yaml.MIDI] | midiversion
     )
 
-    samples = data_dict[SAMPLES][INSTRUMENTGROUP][run_settings_dict[SAMPLES][INSTRUMENTGROUP]]
-    settings_dict[SAMPLES] = get_settings_fields(
-        RunSettings.SampleInfo, samples | run_settings_dict[SAMPLES] | data_dict[SAMPLES]
+    # # Sample info
+    # samples = data_dict[Yaml.SAMPLES][Yaml.INSTRUMENTGROUPS][run_settings_dict[Yaml.SAMPLES][Yaml.INSTRUMENTGROUP]]
+    # settings_dict[Yaml.SAMPLES] = get_settings_fields(
+    #     RunSettings.SampleInfo, samples | run_settings_dict[Yaml.SAMPLES] | data_dict[Yaml.SAMPLES]
+    # )
+
+    # # Soundfont info
+    # settings_dict[Yaml.SOUNDFONT] = get_settings_fields(
+    #     RunSettings.SoundfontInfo, data_dict[Yaml.SOUNDFONTS] | run_settings_dict[Yaml.SOUNDFONT]
+    # )
+
+    settings_dict[Yaml.MIDIPLAYER] = get_settings_fields(RunSettings.MidiPlayerInfo, data_dict[Yaml.MIDIPLAYER])
+
+    # NOTATION INFORMATION
+
+    if notation:
+        run_settings_dict[Yaml.NOTATION] = notation
+
+    notation = (
+        data_dict[Yaml.NOTATIONS][Yaml.DEFAULTS]
+        | data_dict[Yaml.NOTATIONS][run_settings_dict[Yaml.NOTATION][Yaml.COMPOSITION]]
+    )
+    notation[Yaml.PART] = data_dict[Yaml.NOTATIONS][run_settings_dict[Yaml.NOTATION][Yaml.COMPOSITION]][Yaml.PART][
+        run_settings_dict[Yaml.NOTATION][Yaml.PART]
+    ]
+
+    settings_dict[Yaml.NOTATION] = get_settings_fields(
+        RunSettings.NotationInfo,
+        notation,
     )
 
-    instruments = data_dict[INSTRUMENTS][INSTRUMENTGROUP][composition[INSTRUMENTGROUP]]
-    settings_dict[INSTRUMENTS] = get_settings_fields(
+    instruments = data_dict[Yaml.INSTRUMENTS][Yaml.INSTRUMENTGROUPS][notation[Yaml.INSTRUMENTGROUP]]
+    settings_dict[Yaml.INSTRUMENTS] = get_settings_fields(
         RunSettings.InstrumentInfo,
-        data_dict[INSTRUMENTS]
-        | data_dict[NOTATION][COMPOSITION][run_settings_dict[NOTATION][COMPOSITION]]
-        | instruments,
+        notation | data_dict[Yaml.INSTRUMENTS] | instruments,
     )
 
-    font = data_dict[FONT][FONTVERSION][composition[FONTVERSION]] | {FONTVERSION: composition[FONTVERSION]}
-    settings_dict[FONT] = get_settings_fields(RunSettings.FontInfo, data_dict[FONT] | font)
-
-    settings_dict[SOUNDFONT] = get_settings_fields(
-        RunSettings.SoundfontInfo, data_dict[SOUNDFONT] | run_settings_dict[SOUNDFONT]
-    )
-
-    settings_dict[OPTIONS] = get_settings_fields(RunSettings.Options, run_settings_dict[OPTIONS])
+    font = data_dict[Yaml.FONTS][Yaml.FONTVERSIONS][notation[Yaml.FONTVERSION]] | {
+        Yaml.FONTVERSION: notation[Yaml.FONTVERSION]
+    }
+    settings_dict[Yaml.FONT] = get_settings_fields(RunSettings.FontInfo, data_dict[Yaml.FONTS] | font)
 
     settings_dict = post_process(settings_dict)
+    settings_dict[Yaml.DATA] = read_data(settings_dict)
 
-    return RunSettings.model_validate(settings_dict)
+    global _RUN_SETTINGS
+    _RUN_SETTINGS = RunSettings.model_validate(settings_dict)
+
+    for listener in _RUN_SETTINGS_LISTENERS:
+        listener(_RUN_SETTINGS)
+    return get_run_settings()
+
+
+def get_all_notation_parts(include_tests: bool = False) -> dict[str, str]:
+    data_dict = read_settings(DATA_INFOFILE)
+    return [
+        {Yaml.COMPOSITION: n, Yaml.PART: p}
+        for n in data_dict[Yaml.NOTATIONS].keys()
+        if not n.startswith("default") and (include_tests or not n.startswith("test"))
+        for p in data_dict[Yaml.NOTATIONS][n][Yaml.PART].keys()
+    ]
+
+
+def get_midiplayer_content() -> Content:
+    run_settings = _RUN_SETTINGS
+    datafolder = run_settings.midiplayer.folder
+    contentfile = run_settings.midiplayer.contentfile
+    with open(os.path.join(datafolder, contentfile), "r") as contentfile:
+        playercontent = contentfile.read()
+    return Content.model_validate_json(playercontent)
+
+
+def save_midiplayer_content(playercontent: Content, filename: str = None):
+    run_settings = _RUN_SETTINGS
+    datafolder = run_settings.midiplayer.folder
+    contentfile = filename or run_settings.midiplayer.contentfile
+    contentfilepath = os.path.join(datafolder, contentfile)
+    tempfilepath = os.path.join(datafolder, "_" + contentfile)
+    try:
+        with open(tempfilepath, "w") as outfile:
+            jsonised = pretty_compact_json(playercontent.model_dump())
+            outfile.write(jsonised)
+    except Exception as e:
+        os.remove(tempfilepath)
+        logger.error(e)
+    else:
+        os.remove(contentfilepath)
+        os.rename(tempfilepath, contentfilepath)
 
 
 if __name__ == "__main__":
     # For testing
-    settings = get_run_settings()
-    print(settings.soundfont)
-    print(settings.soundfont.sf_filepath_list)
+    notations = get_all_notation_parts()
+    print(notations)

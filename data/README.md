@@ -95,3 +95,6 @@ This folder contains the audio sample files listed in the Midinotes file.
 ## soundfont
 
 This is an output folder for the soundfont file generator.
+
+## content.json
+This file contains information for the online midi player. It should be updated each time a new MIDI file has been created (set update_content_json_file run setting to `true`)
