@@ -155,15 +155,28 @@ class RunSettings(BaseModel):
             return os.path.join(self.midiplayer_folder, self.midi_out_file)
 
     class MidiInfo(BaseModel):
+        # Implementation of tremolo notes. First two parameters are in 1/base_note_time. E.g. if base_note_time=24, then 24 is a standard note duration.
+        class TremoloInfo(BaseModel):
+            notes_per_quarternote: int  # should be a divisor of base_note_time
+            accelerating_pattern: list[
+                int
+            ]  # relative duration of the notes. Even number so that alternating note patterns end on the second note
+            accelerating_velocity: list[
+                int
+            ]  # MIDI velocity value (0-127) for each note. Same number of values as accelerating_pattern.
+
         midiversion: str
         folder: str
         midi_definition_file: str
         presets_file: str
-        PPQ: int  # pulses per quarternote
+        PPQ: int  # pulses (ticks) per quarternote
+        base_note_time: int  # ticks
+        base_notes_per_beat: int
         dynamics: dict[DynamicLevel, int] = Field(default_factory=dict)
         default_dynamics: DynamicLevel
         silence_seconds_before_start: int  # silence before first note
         silence_seconds_after_end: int  # silence after last note
+        tremolo: TremoloInfo
 
         @property
         def notes_filepath(self):
@@ -199,6 +212,29 @@ class RunSettings(BaseModel):
         @property
         def filepath(self):
             return os.path.join(self.folder, self.file)
+
+    class GrammarInfo(BaseModel):
+        folder: str
+        notationfile: str
+        metadatafile: str
+        fontfile: str
+        picklefile: str
+
+        @property
+        def notation_filepath(self) -> str:
+            return os.path.normpath(os.path.abspath(os.path.join(os.path.expanduser(self.folder), self.notationfile)))
+
+        @property
+        def pickle_filepath(self) -> str:
+            return os.path.normpath(os.path.abspath(os.path.join(os.path.expanduser(self.folder), self.picklefile)))
+
+        @property
+        def metadata_filepath(self) -> str:
+            return os.path.normpath(os.path.abspath(os.path.join(os.path.expanduser(self.folder), self.metadatafile)))
+
+        @property
+        def font_filepath(self) -> str:
+            return os.path.normpath(os.path.abspath(os.path.join(os.path.expanduser(self.folder), self.fontfile)))
 
     class SoundfontInfo(BaseModel):
         folder: str
@@ -260,4 +296,5 @@ class RunSettings(BaseModel):
     notation: NotationInfo | None = None
     instruments: InstrumentInfo | None = None
     font: FontInfo | None = None
+    grammars: GrammarInfo | None = None
     data: Data

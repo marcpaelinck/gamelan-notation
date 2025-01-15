@@ -14,8 +14,6 @@ from src.settings.utils import pretty_compact_json
 
 logger = get_logger(__name__)
 
-BASE_NOTE_TIME = 24
-BASE_NOTES_PER_BEAT = 4
 _RUN_SETTINGS: RunSettings = None
 # List of functions that should be called when new run settings are loaded
 _RUN_SETTINGS_LISTENERS: set[callable] = set()
@@ -191,6 +189,9 @@ def load_run_settings(notation: dict[str, str] = None) -> RunSettings:
     }
     settings_dict[Yaml.FONT] = get_settings_fields(RunSettings.FontInfo, data_dict[Yaml.FONTS] | font)
 
+    fontgrammar = data_dict[Yaml.GRAMMARS][Yaml.FONTVERSIONS][notation[Yaml.FONTVERSION]]
+    settings_dict[Yaml.GRAMMARS] = get_settings_fields(RunSettings.GrammarInfo, data_dict[Yaml.GRAMMARS] | fontgrammar)
+
     settings_dict = post_process(settings_dict)
     settings_dict[Yaml.DATA] = read_data(settings_dict)
 
@@ -241,5 +242,5 @@ def save_midiplayer_content(playercontent: Content, filename: str = None):
 
 if __name__ == "__main__":
     # For testing
-    notations = get_all_notation_parts()
-    print(notations)
+    settings = get_run_settings()
+    print(settings.midi)

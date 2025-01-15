@@ -22,6 +22,7 @@ pyyaml = "^6.0.2"
 pyautogui = "^0.9.54"
 deadcode = "^2.4.1"
 regex = "^2024.11.6"
+tatsu = "^5.13.1"
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra -q"

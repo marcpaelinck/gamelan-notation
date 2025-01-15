@@ -1782,6 +1782,21 @@ pure-eval = "*"
 tests = ["cython", "littleutils", "pygments", "pytest", "typeguard"]
 
 [[package]]
+name = "tatsu"
+version = "5.13.1"
+description = "TatSu takes a grammar in a variation of EBNF as input, and outputs a memoizing PEG/Packrat parser in Python."
+optional = false
+python-versions = ">=3.10"
+files = [
+    {file = "TatSu-5.13.1-py3-none-any.whl", hash = "sha256:941e12df8798f444957600346c52a5ff3455f485de5b4570a3a71a00ed896a14"},
+    {file = "tatsu-5.13.1.tar.gz", hash = "sha256:df8c216eecd09af9b5b308624f1bfda1e4b5af3d3df1bdc4f331a1e8ea6bc012"},
+]
+
+[package.extras]
+colorization = ["colorama"]
+parproc = ["rich"]
+
+[[package]]
 name = "tomli"
 version = "2.2.1"
 description = "A lil' TOML parser"
@@ -1904,4 +1919,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "d6de29eb81fe0936c69207e086916149aa30b9f3987d156b9db3ec8f1ef410c4"
+content-hash = "40bf3874fa17f9f3ba32e84c90bc87e647abd97e7588a7a7672cc390859ca39e"

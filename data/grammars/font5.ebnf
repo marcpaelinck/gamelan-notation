@@ -1,0 +1,26 @@
+(*
+THIS GRAMMAR IS NOT BEING USED: IT IS TOO RUNTIME-INTENSIVE
+
+@@grammar::FONT
+
+@@whitespace :: None
+
+start = beat $ ;
+*)
+beat = notes:{valid_combination} ;
+
+valid_combination = (pitched_note | unpitched_note | grace_note | tremolo_note | rest);
+
+(* Rests may only be followed by a duration modifier *)
+rest = /[\.-][_=]{0,1}/ ;
+(* Same for unpitched notes, but excluding octavation symbols [,<] *)
+unpitched_note = /[\(\)\*089GPTtxy](?![\/\?_=]*[\/\?][\/\?_=]*[\/\?])(?![\/\?_=]*[_=][\/\?_=]*[_=])[\/\?_=]{0,2}/ ;
+(* The lookaheads in the following expression ensure that at most one symbol from each modifier pairs [,<], [/?] and [_=] occur after a note *)
+pitched_note = /[abeiorsu](?![,<\/\?_=]*[,<][,<\/\?_=]*[,<])(?![,<\/\?_=]*[\/\?][,<\/\?_=]*[\/\?])(?![,<\/\?_=]*[_=][,<\/\?_=]*[_=])[,<\/\?_=]{0,3}/ ;
+(* Grace notes should be followed by an unpitched note or a strike symbol *)
+grace_note = /[ABEIOSUX](?=[abeiosux])/ ;
+(* Tremolo note may be applied to any symbol *)
+tremolo_note = /[abeiorsu\(\)\*089GPTtxy][:;]/ ;
+
+
+

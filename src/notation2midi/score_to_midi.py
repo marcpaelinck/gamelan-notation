@@ -168,14 +168,19 @@ class MidiGenerator(ParserModel):
         self.score.midifile_duration = int(midifile.length * 1000)
 
         if self.run_settings.options.notation_to_midi.save_midifile:
-            if self.run_settings.options.notation_to_midi.update_midiplayer_content:
+            is_test_file = self.run_settings.notation.part.file.lower().startswith(
+                "test"
+            ) or self.run_settings.notation.folder.lower().endswith("test")
+            if self.run_settings.options.notation_to_midi.update_midiplayer_content and not is_test_file:
+                # Test files should not be saved to the midiplayer folder
                 outfilepath = self.run_settings.notation.midi_out_filepath_midiplayer
             else:
                 outfilepath = self.run_settings.notation.midi_out_filepath
             midifile.save(outfilepath)
             self.logger.info(f"File saved as {outfilepath}")
 
-            if self.run_settings.options.notation_to_midi.update_midiplayer_content:
+            if self.run_settings.options.notation_to_midi.update_midiplayer_content and not is_test_file:
+                # Test files should never be logged in the midiplayer content file
                 self.update_midiplayer_content()
 
         self.logger.info("=====================================")

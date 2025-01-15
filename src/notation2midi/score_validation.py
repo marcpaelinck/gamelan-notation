@@ -91,7 +91,8 @@ class ScoreValidator(ParserModel):
                     for position, notes in unequal_lengths.items():
                         filler = Note.get_whole_rest_note(position, Stroke.EXTENSION)
                         uncorrected_position = {position: sum(note.total_duration for note in notes)}
-                        if position in self.POSITIONS_AUTOCORRECT_UNEQUAL_STAVES:
+                        # Empty staves will always be corrected.
+                        if position in self.POSITIONS_AUTOCORRECT_UNEQUAL_STAVES or not notes:
                             stave_duration = sum(note.total_duration for note in notes)
                             # Add rests of duration 1 to match the integer part of the beat's duration
                             if int(beat.duration - stave_duration) >= 1:

@@ -11,9 +11,9 @@ from src.common.constants import (
     DEFAULT,
     Duration,
     NotationDict,
+    ParserTag,
     Pitch,
     Position,
-    SpecialTags,
     Stroke,
     Velocity,
 )
@@ -70,7 +70,7 @@ class DictToScoreConverter(ParserModel):
             p
             for gongan_id, gongan in notation_dict.items()
             if gongan_id > 0
-            for stave_id, staves in gongan.items()
+            for stave_id, staves in gongan[ParserTag.BEATS].items()
             if isinstance(stave_id, int) and stave_id > 0
             for p in staves.keys()
         ]
@@ -90,7 +90,7 @@ class DictToScoreConverter(ParserModel):
             last_beat = last_gongan.beats[-1]
             new_beat = Beat(
                 id=1,
-                gongan_id=last_gongan.id + 1,
+                gongan_id=int(last_gongan.id) + 1,
                 bpm_start={DEFAULT: last_beat.bpm_end[-1]},
                 bpm_end={DEFAULT: last_beat.bpm_end[-1]},
                 # velocity_start and velocity_end are dict[pass, dict[Position, Velocity]]
@@ -463,8 +463,8 @@ class DictToScoreConverter(ParserModel):
             if self.curr_gongan_id < 0:
                 # Skip the gongan holding the global (score-wide) metadata items
                 continue
-            for self.curr_beat_id, beat_info in gongan_info.items():
-                if isinstance(self.curr_beat_id, SpecialTags):
+            for self.curr_beat_id, beat_info in gongan_info[ParserTag.BEATS].items():
+                if isinstance(self.curr_beat_id, ParserTag):
                     continue
                 # create the staves (regular and exceptions)
                 # TODO merge Beat.staves and Beat.exceptions and use pass=-1 for default stave. Similar to Beat.tempo_changes.
@@ -479,8 +479,8 @@ class DictToScoreConverter(ParserModel):
                 # Create the beat and add it to the list of beats
                 staves = {position: staves[DEFAULT] for position, staves in beat_info.items() if position in Position}
                 new_beat = Beat(
-                    id=self.curr_beat_id,
-                    gongan_id=self.curr_gongan_id,
+                    id=int(self.curr_beat_id),
+                    gongan_id=int(self.curr_gongan_id),
                     staves=staves,
                     exceptions=exceptions,
                     bpm_start={
@@ -515,9 +515,9 @@ class DictToScoreConverter(ParserModel):
                     id=int(self.curr_gongan_id),
                     beats=beats,
                     beat_duration=mode(beat.duration for beat in beats),  # most occuring duration
-                    metadata=gongan_info.get(SpecialTags.METADATA, [])
-                    + self.notation.notation_dict[DEFAULT][SpecialTags.METADATA],
-                    comments=gongan_info.get(SpecialTags.COMMENT, []),
+                    metadata=gongan_info.get(ParserTag.METADATA, [])
+                    + self.notation.notation_dict[DEFAULT][ParserTag.METADATA],
+                    comments=gongan_info.get(ParserTag.COMMENT, []),
                 )
                 self.score.gongans.append(gongan)
                 beats = []

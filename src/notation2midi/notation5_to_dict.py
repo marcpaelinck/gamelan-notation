@@ -9,15 +9,15 @@ from src.common.constants import (
     NotationDict,
     NotationFont,
     Octave,
+    ParserTag,
     Pitch,
     Position,
-    SpecialTags,
     Stroke,
 )
 from src.common.metadata_classes import MetaData, Scope
 from src.notation2midi.classes import ParserModel
 from src.settings.classes import RunSettings
-from src.settings.settings import BASE_NOTE_TIME, get_run_settings
+from src.settings.settings import get_run_settings
 
 # ==================== BALI MUSIC 5 FONT =====================================
 
@@ -26,12 +26,6 @@ class Notation5Parser(ParserModel):
     run_settings: RunSettings
     notation_lines: list[str]
     curr_position: int
-
-    TREMOLO_NR_OF_NOTES_PER_QUARTERNOTE: int = 3  # should be a divisor of BASE_NOTE_TIME
-    # Next values are in 1/BASE_NOTE_TIME. E.g. if BASE_NOTE_TIME=24, then 24 is a standard note duration.
-    # Should also be an even number so that alternating note patterns end on the second note.
-    TREMOLO_ACCELERATING_PATTERN: list[int] = [48, 40, 32, 26, 22, 18, 14, 10, 10, 10, 10, 10]
-    TREMOLO_ACCELERATING_VELOCITY: list[int] = [100] * (len(TREMOLO_ACCELERATING_PATTERN) - 5) + [90, 80, 70, 60, 50]
 
     def __init__(self, run_settings: RunSettings):
         super().__init__(self.ParserType.NOTATIONPARSER, run_settings)
@@ -81,14 +75,16 @@ class Notation5Parser(ParserModel):
 
         if notes[0].stroke is Stroke.TREMOLO:
             note = notes[0]
-            nr_of_notes = round(note.duration * self.TREMOLO_NR_OF_NOTES_PER_QUARTERNOTE)
+            nr_of_notes = round(note.duration * self.run_settings.midi.tremolo.notes_per_quarternote)
             duration = note.duration / nr_of_notes
             for _ in range(nr_of_notes):
                 tremolo_notes.append(note.model_copy(update={"duration": duration}))
         elif notes[0].stroke is Stroke.TREMOLO_ACCELERATING:
-            durations = [i / BASE_NOTE_TIME for i in self.TREMOLO_ACCELERATING_PATTERN]
-            note_idx = 0
-            for duration, velocity in zip(durations, self.TREMOLO_ACCELERATING_VELOCITY):
+            durations = [
+                i / self.run_settings.midi.base_note_time for i in self.run_settings.midi.tremolo.accelerating_pattern
+            ]
+            note_idx = 0  # Index of the next note to select from the `notes` list
+            for duration, velocity in zip(durations, self.run_settings.midi.tremolo.accelerating_velocity):
                 tremolo_notes.append(notes[note_idx].model_copy(update={"duration": duration, "velocity": velocity}))
                 note_idx = (note_idx + 1) % len(notes)
         else:
@@ -128,13 +124,13 @@ class Notation5Parser(ParserModel):
 
         return notes
 
-    def _parse_special_tag(self, tag: SpecialTags, content: str) -> list[str | MetaData]:
+    def _parse_special_tag(self, tag: ParserTag, content: str) -> list[str | MetaData]:
 
         # Check the tag. Return comments without further processing.
         match tag:
-            case SpecialTags.COMMENT:
+            case ParserTag.COMMENT:
                 return content
-            case SpecialTags.METADATA:
+            case ParserTag.METADATA:
                 pass
             case _:
                 self.logerror("Unrecognized tag {tag}")
@@ -202,9 +198,9 @@ class Notation5Parser(ParserModel):
             notation_dict (NotationDict): The notation
         """
         for self.curr_gongan_id, beat_dict in notation_dict.items():
-            for self.curr_beat_id, staves in beat_dict.items():
-                if not isinstance(self.curr_beat_id, int):
-                    continue
+            for self.curr_beat_id, staves in beat_dict[ParserTag.BEATS].items():
+                # if not isinstance(self.curr_beat_id, int):
+                #     continue
                 for position, stave in staves.items():
                     for pass_, notes in stave.items():
                         for note, nextnote in zip(notes.copy(), notes.copy()[1:]):
@@ -219,8 +215,10 @@ class Notation5Parser(ParserModel):
             NotationDict: A dict notation[gongan_id][beat_id][position][passes] that has been validated on notation syntaxis.
             The dict can be further processed into a Score object model.
         """
-        notation_dict = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
-        notation_dict[DEFAULT][SpecialTags.METADATA] = list()  # Will contain metadata having scope==Scope.SCORE
+        notation_dict = defaultdict(
+            lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
+        )
+        notation_dict[DEFAULT][ParserTag.METADATA] = list()  # Will contain metadata having scope==Scope.SCORE
         new_gongan = True
         self.curr_gongan_id = 0
         prev_staves = defaultdict(list)
@@ -241,16 +239,16 @@ class Notation5Parser(ParserModel):
                     if new_gongan:
                         self.curr_gongan_id += 1
                         # Metadata and comments are stored on gongan level
-                        notation_dict[self.curr_gongan_id][SpecialTags.METADATA] = []
-                        notation_dict[self.curr_gongan_id][SpecialTags.COMMENT] = []
+                        notation_dict[self.curr_gongan_id][ParserTag.METADATA] = []
+                        notation_dict[self.curr_gongan_id][ParserTag.COMMENT] = []
                         new_gongan = False
 
             # Process metadata and notation
             match tag:
-                case SpecialTags.METADATA | SpecialTags.COMMENT:
+                case ParserTag.METADATA | ParserTag.COMMENT:
                     parsed = self._parse_special_tag(tag, content=line[1])
                     if isinstance(parsed, MetaData) and parsed.data.scope == Scope.SCORE:
-                        notation_dict[DEFAULT][SpecialTags.METADATA].append(parsed)
+                        notation_dict[DEFAULT][ParserTag.METADATA].append(parsed)
                     else:
                         notation_dict[self.curr_gongan_id][tag].append(parsed)
 
@@ -279,9 +277,9 @@ class Notation5Parser(ParserModel):
                                     new_stave = self._parse_stave(
                                         stave=line[self.curr_beat_id], position=self.curr_position
                                     )
-                                    notation_dict[self.curr_gongan_id][self.curr_beat_id][self.curr_position][
-                                        pass_
-                                    ] = new_stave
+                                    notation_dict[self.curr_gongan_id][ParserTag.BEATS][self.curr_beat_id][
+                                        self.curr_position
+                                    ][pass_] = new_stave
                                     if pass_ == DEFAULT:
                                         prev_staves[self.curr_position] = notation_dict[self.curr_gongan_id][
                                             self.curr_beat_id
@@ -291,7 +289,7 @@ class Notation5Parser(ParserModel):
                                 else:
                                     # Create an empty beat. This  ensures a correct ordering of the beats.
                                     # (notation_dict is a defaultdict)
-                                    notation_dict[self.curr_gongan_id][self.curr_beat_id]
+                                    notation_dict[self.curr_gongan_id][ParserTag.BEATS][self.curr_beat_id]
 
         # Set the octave of each grace note to minimize the 'distance' to the following note
         self._update_grace_notes(notation_dict)
@@ -319,3 +317,4 @@ if __name__ == "__main__":
     run_settings = get_run_settings()
     parser = Notation5Parser(run_settings)
     notation = parser.parse_notation()
+    x = 1

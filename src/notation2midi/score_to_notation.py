@@ -4,7 +4,7 @@ from os import path
 import pandas as pd
 
 from src.common.classes import Gongan, Note, Score
-from src.common.constants import NotationFont, Pitch, Position, SpecialTags
+from src.common.constants import NotationFont, ParserTag, Pitch, Position
 from src.settings.constants import InstrumentFields
 
 
@@ -79,9 +79,9 @@ def gongan_to_records(gongan: Gongan, skipemptylines: bool = True) -> list[dict[
         try_to_aggregate(REYONG_24, "REYONG_24")
 
     result = (
-        [{InstrumentFields.POSITION: SpecialTags.COMMENT, 1: comment} for comment in gongan.comments]
+        [{InstrumentFields.POSITION: ParserTag.COMMENT, 1: comment} for comment in gongan.comments]
         + [
-            {InstrumentFields.POSITION: SpecialTags.METADATA, 1: metadata.data.model_dump_notation()}
+            {InstrumentFields.POSITION: ParserTag.METADATA, 1: metadata.data.model_dump_notation()}
             for metadata in gongan.metadata
         ]
         + [

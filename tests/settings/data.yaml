@@ -19,6 +19,8 @@ midi:
         p: 45
         pp: 30
     default_dynamics: mf
+    silence_seconds_before_start: 3 
+    silence_seconds_after_end: 10
     midiversions:
         GONG_KEBYAR1:
             comment: two presets (melodic and percussion)
@@ -47,6 +49,13 @@ fonts:
             file: balimusic4font.tsv
         BaliMusic5:
             file: balimusic5font.tsv
+grammars:
+    folder: ./data/grammars
+    mainfile: notation.ebnf
+    metadatafile: metadata.ebnf
+    fontversions:
+        BaliMusic5: 
+            fontfile: font5.ebnf
 samples:
     folder: ./data/samples
     instrumentgroups:

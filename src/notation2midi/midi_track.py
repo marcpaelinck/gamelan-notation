@@ -15,7 +15,6 @@ from src.common.constants import (
 )
 from src.common.logger import get_logger
 from src.settings.classes import RunSettings
-from src.settings.settings import BASE_NOTE_TIME, BASE_NOTES_PER_BEAT
 
 logger = get_logger(__name__)
 
@@ -28,6 +27,7 @@ class TimeUnit(Enum):
 
 class MidiTrackX(MidiTrack):
     name: str
+    run_settings: RunSettings
     position: Position
     instrumenttype: InstrumentType
     channel: int
@@ -62,6 +62,7 @@ class MidiTrackX(MidiTrack):
     def __init__(self, position: Position, preset: Preset, run_settings: RunSettings):
         super().__init__()
         self.name = position.value
+        self.run_settings = run_settings
         self.position = position
         self.animate_helpinghand = position in run_settings.midiplayer.helpinghand
         self.channel = preset.channel
@@ -118,13 +119,11 @@ class MidiTrackX(MidiTrack):
         if new_bpm != self.current_bpm:
             if debug:
                 logger.info(f"                 setting metamessage with new tempo {new_bpm}")
-            # self.append(MetaMessage("set_tempo", tempo=bpm2tempo(new_bpm), time=self.time_since_last_note_end))
             self.append(
                 MetaMessage(
                     "set_tempo", tempo=bpm2tempo(new_bpm), time=(self.current_ticktime - self.ticktime_last_message)
                 )
             )
-            # self.ticktime_since_last_note_end = 0
             self.current_bpm = new_bpm
 
     def update_dynamics(self, new_velocity):
@@ -134,9 +133,9 @@ class MidiTrackX(MidiTrack):
         match unit:
             case TimeUnit.SECOND:
                 beats = round(self.current_bpm * value / 60)
-                return beats * BASE_NOTE_TIME * BASE_NOTES_PER_BEAT
+                return beats * self.run_settings.midi.base_note_time * self.run_settings.midi.base_notes_per_beat
             case TimeUnit.NOTE:
-                return round(value * BASE_NOTE_TIME)
+                return round(value * self.run_settings.midi.base_note_time)
             case TimeUnit.TICK:
                 return value
             case _:
@@ -158,14 +157,13 @@ class MidiTrackX(MidiTrack):
     def marker(self, message: str) -> None:
         self.append(MetaMessage("marker", text=message))
 
-    def _process_grace_note(self) -> int:
+    def _grace_note_duration(self) -> int:
         """A grace note uses half of the duration of the previous note or rest,
-        with a maximum of 0.5 units. This method modifies the last
-        note_off message or the time_since_last_noteoff accordingly.
+        with a maximum of 0.5 units.
         Returns:
             int: Duration for the grace note (MIDI value)
         """
-        MAX_DURATION = int(0.5 * BASE_NOTE_TIME)
+        MAX_DURATION = int(0.5 * self.run_settings.midi.base_note_time)
         tick_duration = min(int((self.current_ticktime - self.ticktime_last_message) / 2), MAX_DURATION)
         return tick_duration
 
@@ -227,7 +225,9 @@ class MidiTrackX(MidiTrack):
             for count, midivalue in enumerate(note.midinote):
                 if note.stroke is Stroke.GRACE_NOTE:
                     # Use part of the duration of the previous note or rest (max 1/2 unit).
-                    grace_tick_duration = self._process_grace_note()
+                    # Remark that the noteoff message of the preceding note has not been saved yet
+                    # if the grace note immediately follows it.
+                    grace_tick_duration = self._grace_note_duration()
                 else:
                     grace_tick_duration = 0
 
@@ -278,15 +278,9 @@ class MidiTrackX(MidiTrack):
             # Increment time since last note ended
             self.append_all_and_clear(self.last_noteoff_msgs)
             self.increase_current_time(note.rest_after, unit=TimeUnit.NOTE)
-            # self.current_ticktime += duration
-            # self.ticktime_since_last_note_end += round(note.rest_after * BASE_NOTE_TIME)
         elif note.stroke is Stroke.EXTENSION:
             # Extension of note duration: add duration to last note
             # If a SILENCE occurred previously, treat the EXTENSION as a SILENCE
-            # if self.last_noteoff_msgs and self.ticktime_since_last_note_end == 0:
             self.increase_current_time(note.duration, unit=TimeUnit.NOTE)
-            # self.last_noteoff_msg.time += round(note.duration * BASE_NOTE_TIME)
-        # else:
-        #     self.ticktime_since_last_note_end += round(note.duration * BASE_NOTE_TIME)
         else:
             raise ValueError(f"Unexpected note value {note.pitch} {note.octave} {note.stroke}")
