@@ -128,7 +128,7 @@ class Notation5Parser(ParserModel):
 
         # Check the tag. Return comments without further processing.
         match tag:
-            case ParserTag.COMMENT:
+            case ParserTag.COMMENTS:
                 return content
             case ParserTag.METADATA:
                 pass
@@ -240,12 +240,12 @@ class Notation5Parser(ParserModel):
                         self.curr_gongan_id += 1
                         # Metadata and comments are stored on gongan level
                         notation_dict[self.curr_gongan_id][ParserTag.METADATA] = []
-                        notation_dict[self.curr_gongan_id][ParserTag.COMMENT] = []
+                        notation_dict[self.curr_gongan_id][ParserTag.COMMENTS] = []
                         new_gongan = False
 
             # Process metadata and notation
             match tag:
-                case ParserTag.METADATA | ParserTag.COMMENT:
+                case ParserTag.METADATA | ParserTag.COMMENTS:
                     parsed = self._parse_special_tag(tag, content=line[1])
                     if isinstance(parsed, MetaData) and parsed.data.scope == Scope.SCORE:
                         notation_dict[DEFAULT][ParserTag.METADATA].append(parsed)

@@ -27,7 +27,7 @@ class ParserTag(StrEnum):
     UNBOUND = "unbound"
     GONGANS = "gongans"
     METADATA = "metadata"
-    COMMENT = "comment"
+    COMMENTS = "comments"
     TAG = "tag"
     POSITION = "position"
     BEATS = "beats"

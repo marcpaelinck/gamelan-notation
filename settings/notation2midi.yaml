@@ -18,4 +18,4 @@ options:
     save_midifile : true
     comment1: If update_midiplayer_content==true, MIDI file is saved in midiplayer folder and content.json file is updated.
     comment2: This setting is ignored if the notation file's name starts with "test" (case-insensitive).
-    update_midiplayer_content: false
+    update_midiplayer_content: true

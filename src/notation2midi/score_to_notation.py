@@ -79,7 +79,7 @@ def gongan_to_records(gongan: Gongan, skipemptylines: bool = True) -> list[dict[
         try_to_aggregate(REYONG_24, "REYONG_24")
 
     result = (
-        [{InstrumentFields.POSITION: ParserTag.COMMENT, 1: comment} for comment in gongan.comments]
+        [{InstrumentFields.POSITION: ParserTag.COMMENTS, 1: comment} for comment in gongan.comments]
         + [
             {InstrumentFields.POSITION: ParserTag.METADATA, 1: metadata.data.model_dump_notation()}
             for metadata in gongan.metadata

@@ -517,7 +517,7 @@ class DictToScoreConverter(ParserModel):
                     beat_duration=mode(beat.duration for beat in beats),  # most occuring duration
                     metadata=gongan_info.get(ParserTag.METADATA, [])
                     + self.notation.notation_dict[DEFAULT][ParserTag.METADATA],
-                    comments=gongan_info.get(ParserTag.COMMENT, []),
+                    comments=gongan_info.get(ParserTag.COMMENTS, []),
                 )
                 self.score.gongans.append(gongan)
                 beats = []

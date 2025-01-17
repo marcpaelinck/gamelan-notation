@@ -3,6 +3,8 @@ import filecmp
 import os
 from glob import glob
 
+from src.tools.print_midi_file import to_text_multiple_files
+
 
 def list_files(directory):
     return [os.path.join(directory, f) for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
@@ -36,12 +38,18 @@ def compare_directories(dir1, dir2, filter="*.txt"):
     return differences
 
 
-def main():
-    path_old = "./data/notation/_parserold"
-    path_new = "./data/notation/_parsernew"
-    differences = compare_directories(path_old, path_new)
+def compare_all(dir_old, dir_new):
+    # 1. convert midi files to text files
+    files = []
+    for dir in [dir_old, dir_new]:
+        files.append(set([os.path.basename(path) for path in glob(os.path.join(dir, "*.mid"))]))
+    filelist = files[0].intersection(files[1])
+    to_text_multiple_files(filelist, [dir_old, dir_new])
 
-    with open(os.path.join(path_old, "comparison.txt"), "w") as outfile:
+    # 2. compare the text files
+    differences = compare_directories(dir_old, dir_new, "*.txt")
+
+    with open(os.path.join(dir_old, "comparison.txt"), "w") as outfile:
         if differences:
             for file, diff in differences.items():
                 outfile.write(f"Differences in {file}:")
@@ -52,4 +60,20 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    dir_old = "./data/notation/_parserold"
+    dir_new = "./data/notation/_parsernew"
+    compare_all(dir_old, dir_new)
+    # files = [
+    #     "Bapang Selisir_entire piece_GAMELAN1.mid",
+    #     "Cendrawasih_entire piece_GAMELAN1.mid",
+    #     "Gilak Deng_entire piece_GAMELAN1.mid",
+    #     "Godek Miring_entire piece_GAMELAN1.mid",
+    #     "Legong Mahawidya_entire piece_GAMELAN1.mid",
+    #     "Lengker_entire piece_GAMELAN1.mid",
+    #     "Margapati_entire piece_GAMELAN1.mid",
+    #     "Pendet_entire piece_GAMELAN1.mid",
+    #     "Rejang Dewa_entire piece_GAMELAN1.mid",
+    #     "Sekar Gendot_entire piece_GAMELAN1.mid",
+    #     "Sinom Ladrang (GK)_entire piece_GAMELAN1.mid",
+    #     "Sinom Ladrang_entire piece_GAMELAN1.mid",
+    # ]

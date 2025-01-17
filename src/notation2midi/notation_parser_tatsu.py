@@ -252,7 +252,7 @@ class Notation5TatsuParser(ParserModel):
         notation_dict = {
             gongan_id: {
                 key: [element[key] for element in gongan if key.value in element.keys()]
-                for key in [ParserTag.COMMENT, ParserTag.METADATA, ParserTag.STAVES]
+                for key in [ParserTag.COMMENTS, ParserTag.METADATA, ParserTag.STAVES]
             }
             for gongan_id, gongan in notation_dict.items()
         }

@@ -9,9 +9,9 @@ start
     ;
 
 nobrace = /[^\{\}]+/ ;
-eol = /\n|\r\n/ ;
+eol = /\n/ | /\r\n/ | $ ;
 tab = /\t/ ;
-emptyline = {tab} ( eol | eol $ | $);
+emptyline = {tab} eol;
 nonspacechars = /[^\s]*/ ;
 anychar = /.+/ ;
 fontchars = /[\(\)\*,-\.\/089:;ABEGIOPSTUXabeinorstuxy<=\?_]*/ ;
@@ -39,11 +39,11 @@ unbound_line = metadata:metadata_line | comments:comment_line;
 gongan_line = metadata:metadata_line | staves:stave_line | comments:comment_line;
 
 (* metadata is defined in metadata.ebnf *)
-metadata_line = {"metadata"} tab "{" @:metadata "}" {tab} (eol | $) ;
+metadata_line = {"metadata"} tab "{" @:metadata "}" {tab} eol ;
 
-comment_line = "comment" ~ tab @:anychar (eol | $) ;
+comment_line = (("comment" tab) | ({tab} "#")) ~ @:anychar eol ;
 
-stave_line = position:tag beats:{beat_with_tab} {tab} (eol | $)  ;
+stave_line = position:tag beats:{beat_with_tab} {tab} eol ;
 
 (* position tag may be anything except 'comment' or 'metadata' (no check on value currently) 
    and can be optionally followed by a pass indicator (colon followed by digit(s).
