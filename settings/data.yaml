@@ -80,7 +80,7 @@ soundfonts:
     folder: ./data/soundfont
     path_to_viena_app: C:/Program Files/Viena/Viena64.exe
 midiplayer:
-    folder: ./data/midiplayer
+    folder: ./data/notation/_parsernew
     contentfile: content.json
     helpinghand: [CALUNG, JEGOGAN, PEMADE_POLOS, PEMADE_SANGSIH, KANTILAN_POLOS, KANTILAN_SANGSIH] # Animate panggul.
 notations:
@@ -153,7 +153,7 @@ notations:
                 name: pengawak
                 file: Godek Miring font5_pengawak.tsv
                 loop: true
-    test-legongmahawidya:
+    legongmahawidya:
         title: Legong Mahawidya
         subfolder: legong mahawidya
         beat_at_end: false

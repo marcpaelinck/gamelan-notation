@@ -6,10 +6,10 @@ from tatsu import compile
 from tatsu.model import ParseModel
 from tatsu.util import asjson
 
-from src.common.classes import InstrumentTag, NamedIntID, Notation, Note
+from src.common.classes import InstrumentTag, Notation, Note
 from src.common.constants import NotationDict, ParserTag, Position, Stroke
-from src.common.metadata_classes import MetaData
-from src.notation2midi.classes import ParserModel
+from src.common.metadata_classes import MetaData, Scope
+from src.notation2midi.classes import NamedIntID, ParserModel
 from src.notation2midi.special_notes_treatment import (
     generate_tremolo,
     get_nearest_note,
@@ -18,12 +18,35 @@ from src.notation2midi.special_notes_treatment import (
 from src.settings.classes import RunSettings
 from src.settings.settings import get_run_settings
 
+"""
+Structure returned:
+
+{   SCORE LEVEL(-1):    {   METADATA:   [{metadata item}, ...],
+                            COMMENTS:   ['comment', ...],
+                        }
+    GONGAN(1):          {   METADATA:   [{metadata item}, ...],
+                            COMMENTS:   ['comment', ...],
+                            BEAT(1):    {   UGAL:   {   DEFAULT PASS(-1):   [Note(...), Note(...), ...],
+                                                        PASS(1):            [Note(...), Note(...), ...], }}]
+                                                    },
+                                            CALUNG: { ...
+                                                    },
+                                            ...        
+                                        },
+                            BEAT(2):    {...
+                                        },
+                            ...
+                        },
+    GONGAN(2):          { ...
+                        },
+    ...
+}
+"""
+
 
 # The following classes display meaningful names for the IDs
-# which will be used as key values in the output dict structure
-class PassID(NamedIntID):
-    name = "PASS"
-    default = "DEFAULT PASS"
+# which will be used as key values in the output dict structure.
+# Mostly useful for debugging purposes.
 
 
 class GonganID(NamedIntID):
@@ -33,7 +56,11 @@ class GonganID(NamedIntID):
 
 class BeatID(NamedIntID):
     name = "BEAT"
-    default = "DEFAULT BEAT"  # should remain unused
+
+
+class PassID(NamedIntID):
+    name = "PASS"
+    default = "DEFAULT PASS"
 
 
 class Notation5TatsuParser(ParserModel):
@@ -153,6 +180,7 @@ class Notation5TatsuParser(ParserModel):
                     if stave[ParserTag.POSITION] == position
                 }
                 for position in positions
+                if any(stave for stave in staves)
             }
             for beat_seq in range(beat_count)
         }
@@ -173,32 +201,57 @@ class Notation5TatsuParser(ParserModel):
                     for pass_, notes in stave.items():
                         update_grace_notes_octaves(notes=notes, group=self.run_settings.instruments.instrumentgroup)
 
-    def parse_notation(self, notationpath: str | None = None) -> NotationDict:
-        if not notationpath:
+    def parse_notation(self, notation: str | None = None) -> NotationDict:
+        if notation:
+            self.loginfo(f"Parsing notation from string")
+        else:
             notationpath = self.run_settings.notation.filepath
-        self.loginfo(f"Parsing file {notationpath}")
-
-        # Parse the notation using the ebnf grammar.
-        try:
-            self.loginfo(f"Using {self.model_source}.")
+            self.loginfo(f"Parsing file {notationpath}")
             with open(notationpath, "r") as notationfile:
                 notation = notationfile.read()
-            ast = self.grammar_model.parse(notation)
-        except Exception as e:
-            print(e)
-            return None
+
+        # Parse the notation using the ebnf grammar.
+        self.loginfo(f"Using {self.model_source}.")
+        ast = None
+        line_offset = 0
+        while not ast:
+            try:
+                ast = self.grammar_model.parse(notation)
+            except Exception as e:
+                parsed_text = e.args[0].original_text[: e.pos + 1]
+                self.curr_line_nr = parsed_text.count("\n") + line_offset + 1
+                start_curr_line = parsed_text.rfind("\n") + 1  # rfind returns -1 if not found
+                start_next_line = e.args[0].original_text[start_curr_line:].find("\n") + 1
+                char = parsed_text[e.pos]
+                char_pos = e.pos - start_curr_line + 1
+                self.logerror(
+                    f"Unexpected character `{char}` at position {char_pos}. {e.message}. Ignoring the rest of the line."
+                )
+                if e.pos == 0 or start_next_line < 0:
+                    # No progress or nothing to do
+                    return None
+                else:
+                    line_offset = self.curr_line_nr
+                    notation = e.args[0].original_text[e.pos + 1 + start_next_line :]
+
+        if self.has_errors:
+            self.logerror("Program halted.")
+            exit()
+
         notation_dict = asjson(ast)
 
         # Convert the gongan structure into a dict {id: gongan}
         # The sum function concatenates the final gongan to the list of gongans (final gongan is defined separately in the grammar)
         notation_dict = {GonganID(-1): notation_dict[ParserTag.UNBOUND]} | {
-            GonganID(count + 1): gongan for count, gongan in enumerate(sum(notation_dict[ParserTag.GONGANS][0], []))
+            GonganID(count + 1): gongan
+            for count, gongan in enumerate(notation_dict[ParserTag.GONGANS])
+            # GonganID(count + 1): gongan for count, gongan in enumerate(sum(notation_dict[ParserTag.GONGANS][0], []))
         }
 
-        # group items by category: comment, metadata and staves.
+        # group items by category: comment, metadata and staves
         notation_dict = {
             gongan_id: {
-                key: [e[key] for e in gongan if key.value in e.keys()]
+                key: [element[key] for element in gongan if key.value in element.keys()]
                 for key in [ParserTag.COMMENT, ParserTag.METADATA, ParserTag.STAVES]
             }
             for gongan_id, gongan in notation_dict.items()
@@ -206,10 +259,20 @@ class Notation5TatsuParser(ParserModel):
 
         # Flatten the metadata items, create MetaData and Note objects
         for gongan in notation_dict.values():
+            # Remove empty staves so that they can be recognized as 'missing staves' by the dict to score parser.
+            gongan[ParserTag.STAVES] = [
+                stave for stave in gongan.get(ParserTag.STAVES, {}) if any((beat for beat in stave["beats"]))
+            ]
+
             # Parse the metadata into MetaData objects
             gongan[ParserTag.METADATA] = [
                 MetaData(data=self._flatten_meta(meta)) for meta in gongan[ParserTag.METADATA]
             ]
+            for metadata in gongan[ParserTag.METADATA]:
+                if metadata.data.scope == Scope.SCORE:
+                    gongan[ParserTag.METADATA].remove(metadata)
+                    notation_dict[GonganID.default_value][ParserTag.METADATA].append(metadata)
+
             # Explode staves with an instrument tag that represents multiple instruments
             self._explode_tags(gongan[ParserTag.STAVES])
             for stave in gongan[ParserTag.STAVES]:
@@ -221,8 +284,12 @@ class Notation5TatsuParser(ParserModel):
             # Transpose the gongan from stave-oriented to beat-oriented
             gongan[ParserTag.BEATS] = self._staves_to_beats(gongan[ParserTag.STAVES])
             del gongan[ParserTag.STAVES]
-
+            # any(any(not beat for beat in stave) for stave in  gongan[ParserTag.BEATS])
         self._update_grace_notes(notation_dict)
+
+        if self.has_errors:
+            self.logerror("Program halted.")
+            exit()
 
         notation = Notation(notation_dict=notation_dict, settings=self.run_settings)
 

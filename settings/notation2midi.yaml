@@ -4,7 +4,7 @@
 midi:
   midiversion: GAMELAN1
 notation:
-  composition: cendrawasih
+  composition: sekargendot
   part: full
 options:
   comment: Option autocorrect should be set in the input files. Default should be false.

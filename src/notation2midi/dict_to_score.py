@@ -370,7 +370,7 @@ class DictToScoreConverter(ParserModel):
             Position.KEMPLI, pitch=Pitch.STRIKE, octave=None, stroke=Stroke.MUTED, duration=1, rest_after=0
         )
 
-        if missing_positions := (all_instruments - set(beat.staves.keys())):
+        if missing_positions := (all_instruments - set(pos for pos in beat.staves.keys() if beat.staves[pos])):
             staves = self._create_rest_staves(
                 prev_beat=prevbeat, positions=missing_positions, duration=beat.duration, force_silence=force_silence
             )
@@ -551,7 +551,7 @@ class DictToScoreConverter(ParserModel):
         self.logger.info(f"input file: {self.run_settings.notation.part.file}")
         self._create_score_object_model()
         if self.has_errors:
-            self.logger.info("Program halted.")
+            self.logerror("Program halted.")
             exit()
 
         return self.score

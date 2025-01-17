@@ -5,7 +5,7 @@ Tests for the Tatsu based notation parser
 import pytest
 
 from src.common.classes import Position
-from src.common.constants import DynamicLevel
+from src.common.constants import DynamicLevel, ParserTag
 from src.common.metadata_classes import (
     DynamicsMeta,
     GonganMeta,
@@ -24,10 +24,7 @@ from src.common.metadata_classes import (
     ValidationProperty,
     WaitMeta,
 )
-from src.notation2midi.notation_parser_tatsu import (
-    _create_notation_grammar_model,
-    _parse_notation,
-)
+from src.notation2midi.notation_parser_tatsu import Notation5TatsuParser
 from src.settings.settings import get_run_settings
 
 grammar_header = """
@@ -38,14 +35,9 @@ start  = "{"  @:metadata "}"  $  ;
 
 
 @pytest.fixture
-def notation_grammar_model():
+def parser():
     settings = get_run_settings()
-    # path = os.path.join(settings.grammars.folder, settings.grammars.notation_filepath)
-    # with open(path, "r") as grammarfile:
-    #     grammar = grammarfile.read()
-    # grammar = grammar_header + grammar
-    # model = compile(grammar)
-    return _create_notation_grammar_model(settings)
+    return Notation5TatsuParser(settings)
 
 
 # [notation, expected_parsed_value]
@@ -277,6 +269,7 @@ metadata = [
 
 
 @pytest.mark.parametrize("metanotation, expected", metadata)
-def test_parse_metadata(metanotation, expected, notation_grammar_model):
-    parsed = _parse_notation("metadata\t" + metanotation + "\n", notation_grammar_model)
-    assert parsed["gongans"][0]["metadata"][0].data == expected
+def test_parse_metadata(metanotation, expected, parser):
+    gongan = "ugal\t\n"  # need to append dummy gongan to create valid notation
+    notation = parser.parse_notation("metadata\t" + metanotation + "\n\n" + gongan)
+    assert notation.notation_dict[-1][ParserTag.METADATA][0].data == expected

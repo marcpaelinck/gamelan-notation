@@ -11,7 +11,7 @@ start
 nobrace = /[^\{\}]+/ ;
 eol = /\n|\r\n/ ;
 tab = /\t/ ;
-emptyline = /\t*(\n|\r\n)/;
+emptyline = {tab} ( eol | eol $ | $);
 nonspacechars = /[^\s]*/ ;
 anychar = /.+/ ;
 fontchars = /[\(\)\*,-\.\/089:;ABEGIOPSTUXabeinorstuxy<=\?_]*/ ;
@@ -29,22 +29,16 @@ unbound_elements =  @:{unbound_line}+
                     {emptyline}+
                     ;
 
-gongan = {regular_gongan} final_gongan ;
-
-regular_gongan = @:{gongan_line}+
-                 {emptyline}+
+gongan = @:{gongan_line}+
+         ({emptyline}+ | {emptyline}* $)
                  ;
-
-final_gongan =  @+:{gongan_line}+
-                {emptyline}*
-                ;
 
 unbound_line = metadata:metadata_line | comments:comment_line;
 
 (* using plurals 'staves' and 'comments' because they will be grouped during post-processing *)
 gongan_line = metadata:metadata_line | staves:stave_line | comments:comment_line;
 
-(* metadata is defined in metadata.ebnf*)
+(* metadata is defined in metadata.ebnf *)
 metadata_line = {"metadata"} tab "{" @:metadata "}" {tab} (eol | $) ;
 
 comment_line = "comment" ~ tab @:anychar (eol | $) ;
@@ -54,7 +48,7 @@ stave_line = position:tag beats:{beat_with_tab} {tab} (eol | $)  ;
 (* position tag may be anything except 'comment' or 'metadata' (no check on value currently) 
    and can be optionally followed by a pass indicator (colon followed by digit(s).
    If no pass value is encountered the default -1 is returned                          *)
-tag = tag:/(?!comment|metadata)\w[\w\- ]*/ pass:(/:(\d+)/ | `-1`);
+tag = tag:/(?!comment|metadata)\w[\w\- \/]*/ pass:(/:(\d+)/ | `-1`);
 
 (* beat is defined in font5.metadata *)
 beat_with_tab = tab @:fontchars ;

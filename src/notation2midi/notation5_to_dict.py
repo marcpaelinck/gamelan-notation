@@ -295,7 +295,7 @@ class Notation5Parser(ParserModel):
         self._update_grace_notes(notation_dict)
 
         if self.has_errors:
-            self.logger.error("Program halted.")
+            self.logerror("Program halted.")
             exit()
 
         notation = Notation(notation_dict=notation_dict, settings=self.run_settings)

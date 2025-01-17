@@ -59,30 +59,6 @@ class TimingData:
     beats_per_gongan: int
 
 
-class NamedIntID(int):
-    # To be used by notation parser, for better readability of output dict.
-    # The class formats int values with meaningful names.
-    name = "NamedID"
-    default = "DEFAULT"
-    default_value = -1
-    nbr_format = "d"
-
-    def __init__(self, value: int):
-        if isinstance(value, str) and value.isnumeric():
-            self.value = int(value)
-        elif isinstance(value, int):
-            self.value = value
-        else:
-            raise Exception(f"illegal value {value}.")
-        if value >= 0:
-            self.repr = self.name + f"({{value:{self.nbr_format}}})".format(value=self.value)
-        else:
-            self.repr = self.default + f"({{value:{self.nbr_format}}})".format(value=self.value)
-
-    def __repr__(self):
-        return self.repr
-
-
 class NotationModel(BaseModel):
     # Class model containing common utilities.
 

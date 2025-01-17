@@ -10,7 +10,11 @@ instruments:
             tags_file: instrumenttags.tsv
 midi:
     folder: ./data/midi
+    comment1: PPQ and base_note_time in MIDI ticks. Beat is MIDI beat, not kempli beat.
+    comment2: beat indication (BPM) in notation should be expressed in MIDI beats.
     PPQ: 96
+    base_note_time: 24
+    base_notes_per_beat: 4
     dynamics:
         ff: 127
         f: 105
@@ -21,6 +25,14 @@ midi:
     default_dynamics: mf
     silence_seconds_before_start: 3 
     silence_seconds_after_end: 10
+    tremolo:
+        comment1: Implementation of tremolo notes. First two parameters are in 1/base_note_time. E.g. if base_note_time=24, then 24 is a standard note duration.
+        comment2: notes_per_quarternote -  should be a divisor of base_note_time
+        comment3: accelerating_pattern - relative duration of the notes. Even number so that alternating note patterns end on the second note
+        comment4: accelerating_velocity - MIDI velocity value (0-127) for each note. Same number of values as accelerating_pattern.
+        notes_per_quarternote: 3
+        accelerating_pattern: [48, 40, 32, 26, 22, 18, 14, 10, 10, 10, 10, 10]
+        accelerating_velocity: [100, 100, 100, 100, 100, 100, 100, 90, 80, 70, 60, 50]
     midiversions:
         GONG_KEBYAR1:
             comment: two presets (melodic and percussion)
@@ -51,8 +63,9 @@ fonts:
             file: balimusic5font.tsv
 grammars:
     folder: ./data/grammars
-    mainfile: notation.ebnf
+    notationfile: notation.ebnf
     metadatafile: metadata.ebnf
+    picklefile: notation_model.pickle
     fontversions:
         BaliMusic5: 
             fontfile: font5.ebnf
@@ -69,6 +82,7 @@ soundfonts:
 midiplayer:
     folder: ./data/midiplayer
     contentfile: content.json
+    helpinghand: [CALUNG, JEGOGAN, PEMADE_POLOS, PEMADE_SANGSIH, KANTILAN_POLOS, KANTILAN_SANGSIH] # Animate panggul.
 notations:
     # `beat_at_end` indicates whether the notation has the gir at the end of each gongan (Balinese concept) or at the beginning.
     # the entries under the 'files' label will be referred to as 'part'.

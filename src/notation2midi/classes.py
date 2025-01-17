@@ -10,6 +10,31 @@ from src.common.logger import get_logger
 from src.settings.classes import RunSettings
 
 
+class NamedIntID(int):
+    # To be used by notation parser, for better readability of the output dict.
+    # The class formats int values with meaningful names.
+    # When subclassing this class, change the `name`and optionally the `default` value.
+    name = "NamedID"
+    default = "DEFAULT"
+    default_value = -1
+    nbr_format = "d"
+
+    def __init__(self, value: int):
+        if isinstance(value, str) and value.isnumeric():
+            self.value = int(value)
+        elif isinstance(value, int):
+            self.value = value
+        else:
+            raise Exception(f"illegal value {value}.")
+        if value >= 0:
+            self.repr = self.name + f"({{value:{self.nbr_format}}})".format(value=self.value)
+        else:
+            self.repr = self.default + f"({{value:{self.nbr_format}}})".format(value=self.value)
+
+    def __repr__(self):
+        return self.repr
+
+
 class ParserModel:
     # Base class for the classes that each perform a step of the conversion
     # from notation to MIDI output. It provides a uniform logging format.

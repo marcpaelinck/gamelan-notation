@@ -127,7 +127,7 @@ def load_run_settings(notation: dict[str, str] = None) -> RunSettings:
        from the data information yaml file.
 
     Args:
-        notation (dict[str, str], optional): A dict {'piece': <composition>, 'part': <part>} that defines a
+        notation (dict[str, str], optional): A dict {'composition': <composition>, 'part': <part>} that defines a
         composition/part combination in the data.yaml file. Defaults to the values in the run-settings.yaml file.
 
     Returns:
