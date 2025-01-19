@@ -20,19 +20,18 @@ def multiple_notations_to_midi(notations: list[str, str]):
 if __name__ == "__main__":
 
     notations = [
-        {Yaml.COMPOSITION: "cendrawasih", Yaml.PART: "full"},
-        {Yaml.COMPOSITION: "sinomladrang-sp", Yaml.PART: "full"},
-        {Yaml.COMPOSITION: "sinomladrang-gk", Yaml.PART: "full"},
-        {Yaml.COMPOSITION: "lengker", Yaml.PART: "full"},
-        {Yaml.COMPOSITION: "gilakdeng", Yaml.PART: "full"},
-        {Yaml.COMPOSITION: "legongmahawidya", Yaml.PART: "full"},
         {Yaml.COMPOSITION: "bapangselisir", Yaml.PART: "full"},
+        {Yaml.COMPOSITION: "cendrawasih", Yaml.PART: "full"},
+        {Yaml.COMPOSITION: "gilakdeng", Yaml.PART: "full"},
         {Yaml.COMPOSITION: "godekmiring", Yaml.PART: "full"},
+        {Yaml.COMPOSITION: "legongmahawidya", Yaml.PART: "full"},
+        {Yaml.COMPOSITION: "lengker", Yaml.PART: "full"},
         {Yaml.COMPOSITION: "margapati", Yaml.PART: "full"},
         {Yaml.COMPOSITION: "pendet", Yaml.PART: "full"},
         {Yaml.COMPOSITION: "rejangdewa", Yaml.PART: "full"},
         {Yaml.COMPOSITION: "sekargendot", Yaml.PART: "full"},
-        {Yaml.COMPOSITION: "rejangdewa", Yaml.PART: "full"},
+        {Yaml.COMPOSITION: "sinomladrang-gk", Yaml.PART: "full"},
+        {Yaml.COMPOSITION: "sinomladrang-sp", Yaml.PART: "full"},
     ]
     # notations = get_all_notation_parts()
 

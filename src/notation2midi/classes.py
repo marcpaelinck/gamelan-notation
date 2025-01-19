@@ -68,10 +68,6 @@ class ParserModel:
     def log(self, err_msg: str, level: int = logging.ERROR) -> str:
         extra_spaces = " " * (7 - len(logging.getLevelName(level)))
         prefix = f"{extra_spaces}{self.f(self.curr_gongan_id,2)}-{self.f(self.curr_beat_id,2)} |{self.f(self.curr_line_nr,4)}| "
-        if level > logging.INFO and not self.log_msgs[level]:
-            self.logger.log(
-                level, f"{logging.getLevelName(level)}S ENCOUNTERED WHILE {self.parser_type.value.upper()}:"
-            )
         msg = prefix + err_msg
         self.logger.log(level, msg)
         if level > logging.INFO:
@@ -87,8 +83,8 @@ class ParserModel:
         self.log(msg, level=logging.INFO)
 
     """Use the following generators to iterate through gongans and beats if you 
-    want to use the logging methods of this class. This will ensure that the the 
-    logging is prefixed with the correct gongan and beat ids.
+    want to use the logging methods of this class. This will ensure that the 
+    logging is prefixed with the correct gongan id, beat id and line number.
     """
 
     def gongan_iterator(self, object: Any):
@@ -105,6 +101,13 @@ class ParserModel:
         for beat in object.beats:
             self.curr_beat_id = beat.id
             yield beat
+
+    def pass_iterator(self, object: Any):
+        if not hasattr(object, "passes"):
+            raise Exception("base object has no attribute `passes`")
+        for _, pass_seq in object.passes.items():
+            self.curr_line_nr = pass_seq.line
+            yield pass_seq
 
     @property
     def has_errors(self):

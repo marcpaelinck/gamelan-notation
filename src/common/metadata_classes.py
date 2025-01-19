@@ -32,7 +32,7 @@ class MetaDataSwitch(NotationEnum):
 
 class ValidationProperty(NotationEnum):
     BEAT_DURATION = "beat-duration"
-    STAVE_LENGTH = "stave-length"
+    MEASURE_LENGTH = "measure-length"
     INSTRUMENT_RANGE = "instrument-range"
     KEMPYUNG = "kempyung"
 
@@ -68,6 +68,7 @@ TAG_TO_POSITION = tag_to_position_dict()
 class MetaDataBaseModel(BaseModel):
     metatype: Literal[""]
     scope: Optional[Scope] = Scope.GONGAN
+    line: int = None
     _processingorder_ = 99
 
     @classmethod

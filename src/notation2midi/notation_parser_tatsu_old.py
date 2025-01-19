@@ -1,62 +1,3 @@
-"""
-Parses the notation into a dict structure.
-The parser uses the Tatsu library in combination with a Parser Expression Grammar (PEG).
-The grammar used can be found in ./data/grammars.
-PEG: https://en.wikipedia.org/wiki/Parsing_expression_grammar
-Tatsu: https://tatsu.readthedocs.io/en/stable/intro.html
-
-The following structure is returned:
-
-<score> :: { <gongan id>: int -> <gongan> }
-<gongan> :: { METADATA -> [ <metadata>: MetaData ], COMMENTS -> [ <comment>: str ], BEATS -> <beats> }
-<beats> :: { <beat id>: int -> <beat> }
-<beat> :: { <position>: Position -> <measure>: Measure(position: Position, passes: <passes>) }
-<passes> :: { <pass id>: int ->  <note list>: Measure.Pass(pass_seq: int, line: int, notes: <notes>) }
-<notes>: [ <note>: Note ]
-
-<gongan id>, <beat id> and <pass id> are cast into a NamedIntID class, which is an int subclass that
-formats the values with a label: LABEL(<value>). This makes the structure more legible and makes debugging easier.
-
-METADATA, COMMENTS, BEATS: ParserTag
-
-Example:
-
-{   SCORE LEVEL(-1):    {   METADATA:   [MetaData(...), ...],
-                            COMMENTS:   ['comment 1', ...],
-                            BEATS:      [],  # no beats on score level
-                        }
-    GONGAN(1):          {   METADATA:   [MetaData(...), ...],
-                            COMMENTS:   ['comment 2', ...],
-                            BEATS       {   
-                                BEAT(1):    {   
-                                    UGAL: Measure(
-                                            position=KANTILAN_SANGSIH, 
-                                            passes={
-                                                DEFAULT PASS(-1): 
-                                                    Measure.Pass(
-                                                        pass_seq=DEFAULT PASS(-1), 
-                                                        line=9, 
-                                                        notes=[Note(...), Note(...), ...]
-                                                    ),
-                                                PASS(1):
-                                                    ...
-                                            }
-                                    },
-                                    CALUNG: { ...
-                                    },
-                                        ...        
-                                },
-                                BEAT(2):    {...
-                                },
-                            }
-                            ...
-                        },
-    GONGAN(2):          { ...
-                        },
-    ...
-}
-"""
-
 import copy
 import pickle
 from collections import ChainMap
@@ -65,7 +6,7 @@ from tatsu import compile
 from tatsu.model import ParseModel
 from tatsu.util import asjson
 
-from src.common.classes import InstrumentTag, Measure, Notation, Note
+from src.common.classes import InstrumentTag, Notation, Note
 from src.common.constants import NotationDict, ParserTag, Position, Stroke
 from src.common.metadata_classes import MetaData, Scope
 from src.notation2midi.classes import NamedIntID, ParserModel
@@ -76,6 +17,32 @@ from src.notation2midi.special_notes_treatment import (
 )
 from src.settings.classes import RunSettings
 from src.settings.settings import get_run_settings
+
+"""
+Structure returned:
+
+{   SCORE LEVEL(-1):    {   METADATA:   [{metadata item}, ...],
+                            COMMENTS:   ['comment', ...],
+                        }
+    GONGAN(1):          {   METADATA:   [{metadata item}, ...],
+                            COMMENTS:   ['comment', ...],
+                            BEAT(1):    {   UGAL:   {   DEFAULT PASS(-1):   [Note(...), Note(...), ...],
+                                                        PASS(1):            [Note(...), Note(...), ...], }}]
+                                                    },
+                                            CALUNG: { ...
+                                                    },
+                                            ...        
+                                        },
+                            BEAT(2):    {...
+                                        },
+                            ...
+                        },
+    GONGAN(2):          { ...
+                        },
+    ...
+}
+"""
+
 
 # The following classes display meaningful names for the IDs
 # which will be used as key values in the output dict structure.
@@ -96,7 +63,7 @@ class PassID(NamedIntID):
     default = "DEFAULT PASS"
 
 
-class NotationTatsuParser(ParserModel):
+class Notation5TatsuParser(ParserModel):
     run_settings: RunSettings
     grammar_model: str
     model_source: str
@@ -178,14 +145,14 @@ class NotationTatsuParser(ParserModel):
         additional_staves = []
         for stave in staves:
             positions = InstrumentTag.get_positions(stave[ParserTag.POSITION][ParserTag.TAG])
-            pass_seq = PassID(int(stave[ParserTag.POSITION][ParserTag.PASS]))
+            pass_ = PassID(int(stave[ParserTag.POSITION][ParserTag.PASS]))
             stave[ParserTag.POSITION] = positions[0]
-            stave[ParserTag.PASS] = pass_seq
+            stave[ParserTag.PASS] = pass_
             if len(positions) > 1:
                 for position in positions[1:]:
                     newstave = copy.deepcopy(stave)
                     newstave[ParserTag.POSITION] = position
-                    newstave[ParserTag.PASS] = pass_seq
+                    newstave[ParserTag.PASS] = pass_
                     additional_staves.append(newstave)
         staves.extend(additional_staves)
 
@@ -205,22 +172,13 @@ class NotationTatsuParser(ParserModel):
         positions = {stave[ParserTag.POSITION] for stave in staves}
         beats = {
             BeatID(beat_seq + 1): {
-                position: Measure(
-                    position=position,
-                    passes={
-                        stave[ParserTag.PASS]: (
-                            Measure.Pass(
-                                seq=stave[ParserTag.PASS],
-                                line=stave[ParserTag.LINE],
-                                notes=(
-                                    stave[ParserTag.BEATS][beat_seq] if beat_seq < len(stave[ParserTag.BEATS]) else []
-                                ),
-                            )
-                        )
-                        for stave in staves
-                        if stave[ParserTag.POSITION] == position
-                    },
-                )
+                position: {
+                    stave[ParserTag.PASS]: (
+                        stave[ParserTag.BEATS][beat_seq] if beat_seq < len(stave[ParserTag.BEATS]) else []
+                    )
+                    for stave in staves
+                    if stave[ParserTag.POSITION] == position
+                }
                 for position in positions
                 if any(stave for stave in staves)
             }
@@ -236,14 +194,12 @@ class NotationTatsuParser(ParserModel):
         """
 
         for self.curr_gongan_id, beat_dict in notation_dict.items():
-            for self.curr_beat_id, measures in beat_dict[ParserTag.BEATS].items():
+            for self.curr_beat_id, staves in beat_dict[ParserTag.BEATS].items():
                 # if not isinstance(self.curr_beat_id, int):
                 #     continue
-                for position, measure in measures.items():
-                    for pass_seq, notelist in measure.passes.items():
-                        update_grace_notes_octaves(
-                            notes=notelist.notes, group=self.run_settings.instruments.instrumentgroup
-                        )
+                for position, stave in staves.items():
+                    for pass_, notes in stave.items():
+                        update_grace_notes_octaves(notes=notes, group=self.run_settings.instruments.instrumentgroup)
 
     def parse_notation(self, notation: str | None = None) -> NotationDict:
         if notation:
@@ -293,18 +249,9 @@ class NotationTatsuParser(ParserModel):
         }
 
         # group items by category: comment, metadata and staves
-        # Add line number to MetaData and Stave dicts
         notation_dict = {
             gongan_id: {
-                key: [
-                    (
-                        element[key]
-                        if key is ParserTag.COMMENTS
-                        else element[key] | {ParserTag.LINE: element[ParserTag.PARSEINFO][ParserTag.ENDLINE]}
-                    )
-                    for element in gongan
-                    if key.value in element.keys()
-                ]
+                key: [element[key] for element in gongan if key.value in element.keys()]
                 for key in [ParserTag.COMMENTS, ParserTag.METADATA, ParserTag.STAVES]
             }
             for gongan_id, gongan in notation_dict.items()
@@ -337,6 +284,7 @@ class NotationTatsuParser(ParserModel):
             # Transpose the gongan from stave-oriented to beat-oriented
             gongan[ParserTag.BEATS] = self._staves_to_beats(gongan[ParserTag.STAVES])
             del gongan[ParserTag.STAVES]
+            # any(any(not beat for beat in stave) for stave in  gongan[ParserTag.BEATS])
         self._update_grace_notes(notation_dict)
 
         if self.has_errors:
@@ -350,6 +298,6 @@ class NotationTatsuParser(ParserModel):
 
 if __name__ == "__main__":
     settings = get_run_settings()
-    parser = NotationTatsuParser(settings)
+    parser = Notation5TatsuParser(settings)
     notation_dict = parser.parse_notation()
     print(notation_dict)

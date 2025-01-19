@@ -7,7 +7,7 @@ logger = get_logger(__name__)
 
 BPM = int
 Velocity = int
-Pass = int
+PassSequence = int
 Duration = int
 BeatId = str
 Octave = int
@@ -33,6 +33,9 @@ class ParserTag(StrEnum):
     BEATS = "beats"
     STAVES = "staves"
     PASS = "pass"
+    LINE = "line"
+    PARSEINFO = "parseinfo"
+    ENDLINE = "endline"
 
 
 class NotationEnum(StrEnum):

@@ -1,7 +1,7 @@
 import pytest
 
-from src.common.classes import Beat, Gongan, Note, Score
-from src.common.constants import Pitch, Position, Stroke
+from src.common.classes import Beat, Gongan, Measure, Note, Score
+from src.common.constants import DEFAULT, Pitch, Position, Stroke
 from src.common.metadata_classes import GonganType
 from src.notation2midi.score_validation import ScoreValidator
 from src.settings.constants import Yaml
@@ -28,31 +28,47 @@ def sample_gk_score():
                 velocities_start=[],
                 velocities_end=[],
                 duration=10,
-                staves={
-                    (P := Position.PEMADE_POLOS): [
-                        note(P, Pitch.DONG, 0),
-                        note(P, Pitch.DENG, 0),
-                        note(P, Pitch.DUNG, 0),
-                        note(P, Pitch.DANG, 0),
-                        note(P, Pitch.DING, 1),
-                        note(P, Pitch.DONG, 1),
-                        note(P, Pitch.DENG, 1),
-                        note(P, Pitch.DUNG, 1),
-                        note(P, Pitch.DANG, 1),
-                        note(P, Pitch.DING, 2),
-                    ],
-                    (S := Position.PEMADE_SANGSIH): [
-                        note(P, Pitch.DONG, 0),
-                        note(P, Pitch.DENG, 0),
-                        note(P, Pitch.DUNG, 0),
-                        note(P, Pitch.DANG, 0),
-                        note(P, Pitch.DING, 1),
-                        note(P, Pitch.DONG, 1),
-                        note(P, Pitch.DENG, 1),
-                        note(P, Pitch.DUNG, 1),
-                        note(P, Pitch.DANG, 1),
-                        note(P, Pitch.DING, 2),
-                    ],
+                measures={
+                    (P := Position.PEMADE_POLOS): Measure(
+                        position=P,
+                        passes={
+                            DEFAULT: Measure.Pass(
+                                seq=DEFAULT,
+                                notes=[
+                                    note(P, Pitch.DONG, 0),
+                                    note(P, Pitch.DENG, 0),
+                                    note(P, Pitch.DUNG, 0),
+                                    note(P, Pitch.DANG, 0),
+                                    note(P, Pitch.DING, 1),
+                                    note(P, Pitch.DONG, 1),
+                                    note(P, Pitch.DENG, 1),
+                                    note(P, Pitch.DUNG, 1),
+                                    note(P, Pitch.DANG, 1),
+                                    note(P, Pitch.DING, 2),
+                                ],
+                            )
+                        },
+                    ),
+                    (S := Position.PEMADE_SANGSIH): Measure(
+                        position=S,
+                        passes={
+                            DEFAULT: Measure.Pass(
+                                seq=DEFAULT,
+                                notes=[
+                                    note(S, Pitch.DONG, 0),
+                                    note(S, Pitch.DENG, 0),
+                                    note(S, Pitch.DUNG, 0),
+                                    note(S, Pitch.DANG, 0),
+                                    note(S, Pitch.DING, 1),
+                                    note(S, Pitch.DONG, 1),
+                                    note(S, Pitch.DENG, 1),
+                                    note(S, Pitch.DUNG, 1),
+                                    note(S, Pitch.DANG, 1),
+                                    note(S, Pitch.DING, 2),
+                                ],
+                            )
+                        },
+                    ),
                 },
                 validation_ignore=[],
             )

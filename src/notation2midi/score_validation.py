@@ -4,6 +4,7 @@ from typing import Any
 
 from src.common.classes import Beat, Gongan, Note, Score
 from src.common.constants import (
+    DEFAULT,
     BeatId,
     Duration,
     InstrumentGroup,
@@ -19,7 +20,7 @@ from src.notation2midi.classes import ParserModel
 
 class ScoreValidator(ParserModel):
 
-    POSITIONS_AUTOCORRECT_UNEQUAL_STAVES = [
+    POSITIONS_AUTOCORRECT_UNEQUAL_MEASURES = [
         Position.UGAL,
         Position.CALUNG,
         Position.JEGOGAN,
@@ -57,14 +58,14 @@ class ScoreValidator(ParserModel):
                 invalids.append((beat.full_id, beat.duration))
         return invalids, corrected, ignored
 
-    def _unequal_stave_lengths(
+    def _unequal_measure_lengths(
         self, gongan: Gongan, beat_at_end: bool, autocorrect: bool
     ) -> tuple[list[tuple[BeatId, Duration]]]:
-        """Checks that the stave lengths of the individual instrument in each beat of the given gongan are all equal.
+        """Checks that the measure lengths of the individual instrument in each beat of the given gongan are all equal.
 
         Args:
             gongan (Gongan): the gongan to check
-            autocorrect (bool): if True, an attempt will be made to correct the stave lengths of specific instruments (pokok, gongs and kempli)
+            autocorrect (bool): if True, an attempt will be made to correct the measure lengths of specific instruments (pokok, gongs and kempli)
                         In most scores, the notation of these instruments is simplified by omitting dashes (extensions) after each long note.
             filler (Note): Note representing the extension of the preceding note with duration 1 (a dash in the notation)
 
@@ -76,14 +77,14 @@ class ScoreValidator(ParserModel):
         ignored = []
 
         for beat in self.beat_iterator(gongan):
-            if ValidationProperty.STAVE_LENGTH in beat.validation_ignore:
+            if ValidationProperty.MEASURE_LENGTH in beat.validation_ignore:
                 ignored.append(f"BEAT {beat.full_id} skipped due to override")
                 continue
-            # Check if the length of all staves in a beat are equal.
+            # Check if the length of all measures in a beat are equal.
             unequal_lengths = {
-                position: notes
-                for position, notes in beat.staves.items()
-                if sum(note.total_duration for note in notes) != beat.duration
+                position: measure.passes[DEFAULT].notes
+                for position, measure in beat.measures.items()
+                if sum(note.total_duration for note in measure.passes[DEFAULT].notes) != beat.duration
             }
             if unequal_lengths:
                 if autocorrect:
@@ -91,11 +92,11 @@ class ScoreValidator(ParserModel):
                     for position, notes in unequal_lengths.items():
                         filler = Note.get_whole_rest_note(position, Stroke.EXTENSION)
                         uncorrected_position = {position: sum(note.total_duration for note in notes)}
-                        # Empty staves will always be corrected.
-                        if position in self.POSITIONS_AUTOCORRECT_UNEQUAL_STAVES or not notes:
-                            stave_duration = sum(note.total_duration for note in notes)
+                        # Empty measures will always be corrected.
+                        if position in self.POSITIONS_AUTOCORRECT_UNEQUAL_MEASURES or not notes:
+                            measure_duration = sum(note.total_duration for note in notes)
                             # Add rests of duration 1 to match the integer part of the beat's duration
-                            if int(beat.duration - stave_duration) >= 1:
+                            if int(beat.duration - measure_duration) >= 1:
                                 fill_content = [filler.model_copy() for count in range(int(beat.duration - len(notes)))]
                                 if beat_at_end:
                                     fill_content.extend(notes)
@@ -103,11 +104,11 @@ class ScoreValidator(ParserModel):
                                     notes.extend(fill_content)
                                 else:
                                     notes.extend(fill_content)
-                                stave_duration = sum(note.total_duration for note in notes)
+                                measure_duration = sum(note.total_duration for note in notes)
                             # Add an extra rest for any fractional part of the beat's duration
-                            if stave_duration < beat.duration:
+                            if measure_duration < beat.duration:
                                 attr = "duration" if filler.stroke == Stroke.EXTENSION else "rest_after"
-                                notes.append(filler.model_copy(update={attr: beat.duration - stave_duration}))
+                                notes.append(filler.model_copy(update={attr: beat.duration - measure_duration}))
                             if sum(note.total_duration for note in notes) == beat.duration:
                                 # store the original (incorrect) value
                                 corrected_positions |= uncorrected_position
@@ -115,9 +116,9 @@ class ScoreValidator(ParserModel):
                         corrected.append({"BEAT " + beat.full_id: beat.duration} | corrected_positions)
 
                 unequal_lengths = {
-                    position: notes
-                    for position, notes in beat.staves.items()
-                    if sum(note.total_duration for note in notes) != beat.duration
+                    position: measure.passes[DEFAULT].notes
+                    for position, measure in beat.measures.items()
+                    if sum(note.total_duration for note in measure.passes[DEFAULT].notes) != beat.duration
                 }
                 if unequal_lengths:
                     invalids.append(
@@ -144,10 +145,10 @@ class ScoreValidator(ParserModel):
             if ValidationProperty.INSTRUMENT_RANGE in beat.validation_ignore:
                 ignored.append(f"BEAT {beat.full_id} skipped due to override")
                 continue
-            for position, notes in beat.staves.items():
+            for position, measure in beat.measures.items():
                 instr_range = Note.get_all_p_o_s(position)
                 badnotes = list()
-                for note in notes:
+                for note in measure.passes[DEFAULT].notes:
                     if note.pitch is not Pitch.NONE and (note.pitch, note.octave, note.stroke) not in instr_range:
                         badnotes.append((note.pitch, note.octave, note.stroke))
                 if badnotes:
@@ -180,7 +181,12 @@ class ScoreValidator(ParserModel):
         # TODO: currently only works for gong kebyar, not for semar pagulingan
 
         def note_pairs(beat: Beat, pair: list[InstrumentType]):
-            return list(zip([n for n in beat.staves[pair[0]]], [n for n in beat.staves[pair[1]]]))
+            return list(
+                zip(
+                    [n for n in beat.measures[pair[0]].passes[DEFAULT].notes],
+                    [n for n in beat.measures[pair[1]].passes[DEFAULT].notes],
+                )
+            )
 
         invalids = []
         corrected = []
@@ -195,7 +201,7 @@ class ScoreValidator(ParserModel):
                 ]
                 kempyung_dict = self._get_kempyung_dict(instrumentrange)
                 # check if both instruments occur in the beat
-                if all(instrument in beat.staves.keys() for instrument in (polos, sangsih)):
+                if all(instrument in beat.measures.keys() for instrument in (polos, sangsih)):
                     # check each kempyung note
                     notepairs = note_pairs(beat, (polos, sangsih))
                     incorrect_detected = False
@@ -207,7 +213,7 @@ class ScoreValidator(ParserModel):
                         and polos.rest_after == sangsih.rest_after
                         for polos, sangsih in notepairs
                     ):
-                        orig_sangsih_str = "".join((n.symbol for n in beat.staves[sangsih]))
+                        orig_sangsih_str = "".join((n.symbol for n in beat.get_notes(sangsih, DEFAULT)))
                         # Check for incorrect sangsih values.
                         # When autocorrecting, run the code a second time to check for remaining errors.
                         iterations = [1, 2] if autocorrect else [1]
@@ -237,7 +243,7 @@ class ScoreValidator(ParserModel):
                                             self.logerror(
                                                 f"Trying to create an incorrect combination {sangsih} {correct_note} OCT{correct_octave} {sangsihnote.stroke} duration={sangsihnote.duration} rest_after{sangsihnote.rest_after} while correcting kempyung."
                                             )
-                                        beat.staves[sangsih][seq] = correct_sangsih
+                                        beat.get_notes(sangsih, DEFAULT)[seq] = correct_sangsih
                                         autocorrected = True
                                     elif iteration == iterations[-1]:
                                         # Last iterations
@@ -245,12 +251,14 @@ class ScoreValidator(ParserModel):
 
                     if incorrect_detected:
                         invalids.append(
-                            f"BEAT {beat.full_id}: {(polos, sangsih)[0].instrumenttype} P=[{''.join((n.symbol for n in beat.staves[(polos, sangsih)[0]]))}] S=[{orig_sangsih_str}]"
+                            f"BEAT {beat.full_id}: {(polos, sangsih)[0].instrumenttype} P=[{''.join((n.symbol for n in beat.measures[(polos, sangsih)[0]].passes[DEFAULT].notes))}] S=[{orig_sangsih_str}]"
                         )
                     if autocorrected:
-                        corrected_sangsih_str = "".join((n.symbol for n in beat.staves[(polos, sangsih)[1]]))
+                        corrected_sangsih_str = "".join(
+                            (n.symbol for n in beat.measures[(polos, sangsih)[1]].passes[DEFAULT].notes)
+                        )
                         corrected.append(
-                            f"BEAT {beat.full_id}: {(polos, sangsih)[0].instrumenttype} P=[{''.join((n.symbol for n in beat.staves[(polos, sangsih)[0]]))}] S=[{orig_sangsih_str}] -> S=[{corrected_sangsih_str}]"
+                            f"BEAT {beat.full_id}: {(polos, sangsih)[0].instrumenttype} P=[{''.join((n.symbol for n in beat.measures[(polos, sangsih)[0]].passes[DEFAULT].notes))}] S=[{orig_sangsih_str}] -> S=[{corrected_sangsih_str}]"
                         )
         return invalids, corrected, ignored
 
@@ -270,9 +278,9 @@ class ScoreValidator(ParserModel):
         ignored_beat_lengths = []
         remaining_bad_beat_lengths = []
 
-        corrected_stave_lengths = []
-        ignored_stave_lengths = []
-        remaining_bad_stave_lengths = []
+        corrected_measure_lengths = []
+        ignored_measure_lengths = []
+        remaining_bad_measure_lengths = []
 
         corrected_note_out_of_range = []
         ignored_note_out_of_range = []
@@ -303,14 +311,14 @@ class ScoreValidator(ParserModel):
             corrected_beat_lengths.extend(corrected)
             ignored_beat_lengths.extend(ignored)
 
-            invalids, corrected, ignored = self._unequal_stave_lengths(
+            invalids, corrected, ignored = self._unequal_measure_lengths(
                 gongan,
                 beat_at_end=self.score.settings.notation.beat_at_end,
                 autocorrect=autocorrect,
             )
-            remaining_bad_stave_lengths.extend(invalids)
-            corrected_stave_lengths.extend(corrected)
-            ignored_stave_lengths.extend(ignored)
+            remaining_bad_measure_lengths.extend(invalids)
+            corrected_measure_lengths.extend(corrected)
+            ignored_measure_lengths.extend(ignored)
 
             invalids, corrected, ignored = self._out_of_range(gongan, autocorrect=autocorrect)
             remaining_note_out_of_range.extend(invalids)
@@ -343,10 +351,10 @@ class ScoreValidator(ParserModel):
 
         log_results("INCORRECT BEAT LENGTHS", corrected_beat_lengths, ignored_beat_lengths, remaining_bad_beat_lengths)
         log_results(
-            "BEATS WITH UNEQUAL STAVE LENGTHS",
-            corrected_stave_lengths,
-            ignored_stave_lengths,
-            remaining_bad_stave_lengths,
+            "BEATS WITH UNEQUAL MEASURE LENGTHS",
+            corrected_measure_lengths,
+            ignored_measure_lengths,
+            remaining_bad_measure_lengths,
         )
         log_results(
             "BEATS WITH NOTES OUT OF INSTRUMENT RANGE",

@@ -4,7 +4,7 @@ import pprint
 from mido import MidiFile
 
 from src.common.classes import Beat, Preset, Score
-from src.common.constants import Pitch, Position
+from src.common.constants import DEFAULT, Pitch, Position
 from src.common.metadata_classes import PartMeta
 from src.notation2midi.classes import ParserModel
 from src.notation2midi.midi_track import MidiTrackX, TimeUnit
@@ -61,7 +61,7 @@ class MidiGenerator(ParserModel):
 
         def store_part_info(beat: Beat):
             # current_time_in_millis might be incorrect if the beat consists of only silences.
-            if all(note.pitch == Pitch.NONE for note in beat.staves[position]):
+            if all(note.pitch == Pitch.NONE for note in beat.get_notes(position, DEFAULT)):
                 return
             gongan = self.score.gongans[beat.gongan_seq]
             if partinfo := gongan.get_metadata(PartMeta):
@@ -91,8 +91,13 @@ class MidiGenerator(ParserModel):
             if new_velocity := beat.get_changed_value(track.current_velocity, position, Beat.Change.Type.DYNAMICS):
                 track.update_dynamics(new_velocity or beat.get_velocity_start(position))
 
-            # Process individual notes. Check if there is an alternative stave for the current pass
-            for note in beat.exceptions.get((position, beat._pass_), beat.staves.get(position, [])):
+            # Process individual notes.
+            try:
+                pass_ = beat.measures[position].passes.get(beat._pass_, beat.measures[position].passes[DEFAULT])
+            except:
+                self.logerror(f"No score found for {position} in beat {beat.full_id}. Program halted.")
+                exit()
+            for note in pass_.notes:
                 track.add_note(note)
             if beat.repeat and beat.repeat._countdown > 0:
                 beat.repeat._countdown -= 1

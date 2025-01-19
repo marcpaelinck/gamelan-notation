@@ -1,3 +1,10 @@
+"""
+Compares MIDI files contained in two folders and outputs the differences in a file. Only files with the same name are compared.
+The comparison is performed by first creating a text (.txt) version of all .mid files which contains a readable version
+of the MIDI messages, and then comparing these text files.
+The output is stored in the first of the two folders.
+"""
+
 import difflib
 import filecmp
 import os
@@ -34,6 +41,8 @@ def compare_directories(dir1, dir2, filter="*.txt"):
 
         if not filecmp.cmp(file1, file2, shallow=False):
             differences[file] = compare_files(file1, file2)
+        else:
+            differences[file] = " No differences"
 
     return differences
 
@@ -44,7 +53,8 @@ def compare_all(dir_old, dir_new):
     for dir in [dir_old, dir_new]:
         files.append(set([os.path.basename(path) for path in glob(os.path.join(dir, "*.mid"))]))
     filelist = files[0].intersection(files[1])
-    to_text_multiple_files(filelist, [dir_old, dir_new])
+    # to_text_multiple_files(filelist, [dir_old, dir_new])
+    to_text_multiple_files(filelist, [dir_new])
 
     # 2. compare the text files
     differences = compare_directories(dir_old, dir_new, "*.txt")
@@ -55,6 +65,7 @@ def compare_all(dir_old, dir_new):
                 outfile.write(f"Differences in {file}:")
                 for line in diff:
                     outfile.write(line)
+                outfile.write("\n")
         else:
             outfile.write("No differences found.")
 
@@ -63,17 +74,3 @@ if __name__ == "__main__":
     dir_old = "./data/notation/_parserold"
     dir_new = "./data/notation/_parsernew"
     compare_all(dir_old, dir_new)
-    # files = [
-    #     "Bapang Selisir_entire piece_GAMELAN1.mid",
-    #     "Cendrawasih_entire piece_GAMELAN1.mid",
-    #     "Gilak Deng_entire piece_GAMELAN1.mid",
-    #     "Godek Miring_entire piece_GAMELAN1.mid",
-    #     "Legong Mahawidya_entire piece_GAMELAN1.mid",
-    #     "Lengker_entire piece_GAMELAN1.mid",
-    #     "Margapati_entire piece_GAMELAN1.mid",
-    #     "Pendet_entire piece_GAMELAN1.mid",
-    #     "Rejang Dewa_entire piece_GAMELAN1.mid",
-    #     "Sekar Gendot_entire piece_GAMELAN1.mid",
-    #     "Sinom Ladrang (GK)_entire piece_GAMELAN1.mid",
-    #     "Sinom Ladrang_entire piece_GAMELAN1.mid",
-    # ]
