@@ -3,10 +3,10 @@ import csv
 import pandas as pd
 import pytest
 
-from src.common.classes import Beat, Gongan, Note
-from src.common.constants import InstrumentType, Position
+from src.common.classes import Beat, Gongan, Measure, Note
+from src.common.constants import DEFAULT, InstrumentType, Position
 from src.notation2midi.notation5_to_dict import Notation5Parser
-from src.notation2midi.score_to_notation import gongan_to_records, stave_to_string
+from src.notation2midi.score_to_notation import gongan_to_records, notelist_to_string
 from src.settings.constants import InstrumentFields
 from src.settings.settings import get_run_settings
 
@@ -42,8 +42,8 @@ data1 = [
 
 
 @pytest.mark.parametrize("char_list, expected", data1)
-def test_stave_to_string(char_list, expected):
-    assert stave_to_string(char_list) == expected
+def test_notelist_to_string(char_list, expected):
+    assert notelist_to_string(char_list) == expected
 
 
 data2 = [
@@ -59,9 +59,12 @@ data2 = [
                     velocities_start={},
                     velocities_end={},
                     duration=2,
-                    staves={
-                        instr: [getchar(c) for c in staves[idx]]
-                        for instr, staves in {
+                    measures={
+                        instr: Measure(
+                            position=instr,
+                            passes={DEFAULT: Measure.Pass(seq=DEFAULT, notes=[getchar(c) for c in notelists[idx]])},
+                        )
+                        for instr, notelists in {
                             Position.PEMADE_POLOS: ["a,a,", "oo", "ii", "ee", "oo", "ee", "ii", "oo"],
                             Position.PEMADE_SANGSIH: ["ee", "aa", "uu", "i<i<", "aa", "i<i<", "uu", "aa"],
                         }.items()

@@ -1,0 +1,84 @@
+(*
+@@grammar::METADATA
+
+start
+    =
+    "{"
+    @:metadata 
+    "}"
+    $
+    ;
+*)
+metadata
+    =
+    @:(dynamicsmeta |
+        gonganmeta |
+        gotometa |
+        kemplimeta |
+        labelmeta |
+        octavatemeta |
+        partmeta |
+        repeatmeta |
+        sequencemeta |
+        suppressmeta |
+        tempometa |
+        validationmeta |
+        waitmeta)
+  ;
+
+dynamicsmeta = metatype:'DYNAMICS' {'value' '='} value:strvalue parameters:dynamicsmetaparameters ;
+dynamicsmetaparameters ={[','] @:(beat_count_parm | first_beat_parm | passes_parm | positions_parm)} ;
+
+gonganmeta = metatype:'GONGAN' {('type'|'value') '='} type:strvalue ;
+    
+gotometa = metatype:'GOTO' {('label'|'value') '='} label:strvalue parameters:gotometaparameters ;
+gotometaparameters = parameters:{[','] @:(from_beat_parm | passes_parm)} ;
+    
+kemplimeta = metatype:'KEMPLI' {('status'|'value') '='} status:strvalue parameters:kemplimetaparameters ;
+kemplimetaparameters = {[','] @:(beats_parm | scope_parm)} ;
+
+labelmeta = metatype:'LABEL' {('name'|'value') '='} name:strvalue parameters:labelmetaparameters ;
+labelmetaparameters = {[','] @:beat_parm} ;
+    
+octavatemeta = metatype:'OCTAVATE' {('instrument'|'value') '='} instrument:strvalue parameters:octavatemetaparameters ;
+octavatemetaparameters = {[','] @:(octaves_parm | scope_parm)} ;
+
+partmeta = metatype:'PART' {('name'|'value') '='} name:strvalue ;
+    
+repeatmeta = metatype:'REPEAT' {('count'|'value') '='} count:intvalue ;
+    
+sequencemeta = metatype:'SEQUENCE' {'value' '='} value:strlistvalue ;
+    
+suppressmeta = metatype:'SUPPRESS' {('positions'|'value') '='} positions:strlistvalue  parameters:suppressmetaparameters ;
+suppressmetaparameters = {[','] @:(beats_parm | passes_parm)} ;
+
+tempometa = metatype:'TEMPO' {'value' '='} value:intvalue  parameters:tempometaparameters ;
+tempometaparameters = {[','] @:(beat_count_parm | first_beat_parm | passes_parm)} ;
+
+validationmeta = metatype:'VALIDATION' {('ignore'|'value') '='} (ignore:strlistvalue | ignore+:strvalue) parameters:validationmetaparameters ;
+validationmetaparameters = {[','] @:(beats_parm | scope_parm)} ;
+
+waitmeta = metatype:'WAIT' {('seconds'|'value') '='} seconds:floatvalue parameters:waitmetaparameters ;
+waitmetaparameters = {[','] @:after_parm};
+
+after_parm = 'after' '=' after:boolvalue;
+beat_count_parm = 'beat_count' '=' beat_count:intvalue;
+beat_parm = 'beat' '=' beat:intvalue;
+beats_parm = ('beat' | 'beats') '=' (beats+:intvalue | beats:intlistvalue);
+first_beat_parm = 'first_beat' '=' first_beat:intvalue;
+from_beat_parm = 'from_beat' '=' from_beat:intvalue;
+octaves_parm = 'octaves' '=' octaves:intvalue;
+passes_parm = ('pass' | 'passes') '=' (passes+:intvalue | passes:intlistvalue);
+positions_parm = ('position' | 'positions') '=' (positions+:strvalue | positions:strlistvalue);
+scope_parm = 'scope' '=' scope:strvalue;
+
+strvalue = (nqstrvalue | sqstrvalue | dqstrvalue) ;
+nqstrvalue = /[a-zA-Z_][\w\-]*/ ;      (* unquoted string *)
+sqstrvalue = /'([a-zA-Z_][\w\- ]*)'/ ; (* single-quoted string *)
+dqstrvalue = /"([a-zA-Z_][\w\- ]*)"/ ; (* double-quoted string *)
+numvalue = intvalue | floatvalue ;
+intvalue = /\d+/ ;
+floatvalue = /\d+\.*\d*/ ;
+boolvalue = 'true' | 'false' ;
+strlistvalue = '[' @+:strvalue {',' @+:strvalue}* ']' ;
+intlistvalue = '[' @+:intvalue {',' @+:intvalue}* ']' ;

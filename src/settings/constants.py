@@ -97,6 +97,7 @@ class Yaml(SStrEnum):
     FONT = "font"
     FONTVERSIONS = "fontversions"
     FONTVERSION = "fontversion"
+    GRAMMARS = "grammars"
     SOUNDFONTS = "soundfonts"
     SOUNDFONT = "soundfont"
     OPTIONS = "options"

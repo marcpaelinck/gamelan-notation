@@ -6,13 +6,12 @@
 
 from statistics import mode
 
-from src.common.classes import Beat, Gongan, Measure, Notation, Note, Score
+from src.common.classes import Beat, Gongan, Notation, Note, Score
 from src.common.constants import (
     DEFAULT,
     Duration,
     NotationDict,
     ParserTag,
-    PassSequence,
     Pitch,
     Position,
     Stroke,
@@ -45,7 +44,7 @@ class DictToScoreConverter(ParserModel):
     notation: Notation = None
     score: Score = None
 
-    POSITIONS_EXPAND_MEASURES = [
+    POSITIONS_EXPAND_STAVES = [
         Position.UGAL,
         Position.CALUNG,
         Position.JEGOGAN,
@@ -71,9 +70,9 @@ class DictToScoreConverter(ParserModel):
             p
             for gongan_id, gongan in notation_dict.items()
             if gongan_id > 0
-            for beat_id, measures in gongan[ParserTag.BEATS].items()
-            if isinstance(beat_id, int) and beat_id > 0
-            for p in measures.keys()
+            for stave_id, staves in gongan[ParserTag.BEATS].items()
+            if isinstance(stave_id, int) and stave_id > 0
+            for p in staves.keys()
         ]
         return set(all_instruments)
 
@@ -101,42 +100,36 @@ class DictToScoreConverter(ParserModel):
                 prev=last_beat,
             )
             last_beat.next = new_beat
-            for position in last_beat.measures.keys():
-                new_beat.measures[position] = Measure.new(position=position, notes=[])
-                new_gongan.beats.append(new_beat)
+            for position, notes in last_beat.staves.items():
+                new_beat.staves[position] = []
+            new_gongan.beats.append(new_beat)
 
         # Iterate through the beats starting from the end.
         # Move the end note of each instrument in the previous beat to the start of the current beat.
-        # TODO WARNING: Only the default passes are shifted. Shifting other passes correctly would make this
-        # method much more complicated and error prone due to possible unexpected effects of GOTO and LABEL
-        # metadata. Therefore notation with kempli beat the end should be avoided.
         beat = self.score.gongans[-1].beats[-1]
         while beat.prev:
-            for position, measure in beat.prev.measures.items():
-                if notes := measure.passes[DEFAULT].notes:  # only consider default pass.
+            for position, notes in beat.prev.staves.items():
+                if notes:
                     # move notes with a total of 1 duration unit
                     notes_to_move = []
                     while notes and sum((note.total_duration for note in notes_to_move), 0) < 1:
                         notes_to_move.insert(0, notes.pop())
-                    if not position in beat.measures:
-                        beat.measures[position] = Measure.new(position=position, notes=[])
-                    beat.get_pass(position, DEFAULT).notes[0:0] = notes_to_move  # insert at beginning
+                    if not position in beat.staves:
+                        beat.staves[position] = []
+                    beat.staves[position][0:0] = notes_to_move  # insert at beginning
             # update beat and gongan duration values
-            beat.duration = mode(
-                sum(note.total_duration for note in measure.passes[DEFAULT].notes)
-                for measure in list(beat.measures.values())
-            )
+            beat.duration = mode(sum(note.total_duration for note in notes) for notes in list(beat.staves.values()))
             gongan = self.score.gongans[beat.gongan_seq]
             gongan.beat_duration = mode(beat.duration for beat in gongan.beats)
             beat = beat.prev
 
         # Add a rest at the beginning of the first beat
-        for position, measure in self.score.gongans[0].beats[0].measures.items():
-            measure.passes[DEFAULT].notes.insert(0, Note.get_whole_rest_note(position, Stroke.SILENCE))
+        for position, notes in self.score.gongans[0].beats[0].staves.items():
+            notes.insert(0, Note.get_whole_rest_note(position, Stroke.SILENCE))
 
-    def _create_rest_notes(self, position: Position, resttype: Stroke, duration: float) -> list[Note]:
-        """Creates a measure with rests of the given type for the given duration.
-        If the duration is non-integer, the stameasureve will also contain half and/or quarter rests.
+    def _create_rest_stave(self, position: Position, resttype: Stroke, duration: float) -> list[Note]:
+        """Creates a stave with rests of the given type for the given duration.
+        If the duration is non-integer, the stave will also contain half and/or quarter rests.
 
         Args:
             resttype (Stroke): the type of rest (SILENCE or EXTENSION)
@@ -158,38 +151,17 @@ class DictToScoreConverter(ParserModel):
 
         return notes
 
-    def _create_rest_measure(
-        self, position: Position, resttype: Stroke, duration: float, pass_seq: PassSequence = DEFAULT
-    ) -> Measure:
-        notes = self._create_rest_notes(position=position, resttype=resttype, duration=duration)
-        return Measure.new(position=position, notes=notes, pass_seq=pass_seq)
-
-    def _create_rest_measures(
-        self,
-        prev_beat: Beat,
-        positions: list[Position],
-        duration: Duration,
-        force_silence: list[Position] = [],
-        pass_seq: PassSequence = DEFAULT,
+    def _create_rest_staves(
+        self, prev_beat: Beat, positions: list[Position], duration: Duration, force_silence: list[Position] = []
     ):
         silence = Stroke.SILENCE
         extension = Stroke.EXTENSION
-        prevstrokes = {
-            # We select the default pass because pass_seq might not be the corresponding sequence in prev_beat
-            # as a consequence of the flow of the score that will be created in a later stage.
-            pos: (prev_beat.get_notes(pos, DEFAULT)[-1].stroke if prev_beat else silence)
-            for pos in positions
-        }
+        prevstrokes = {pos: (prev_beat.staves[pos][-1].stroke if prev_beat else silence) for pos in positions}
         resttypes = {
             pos: silence if prevstroke is silence or pos in force_silence else extension
             for pos, prevstroke in prevstrokes.items()
         }
-        return {
-            position: self._create_rest_measure(
-                position=position, resttype=resttypes[position], duration=duration, pass_seq=pass_seq
-            )
-            for position in positions
-        }
+        return {position: self._create_rest_stave(position, resttypes[position], duration) for position in positions}
 
     def _apply_metadata(self, metadata: list[MetaData], gongan: Gongan) -> None:
         """Processes the metadata of a gongan into the object model.
@@ -206,7 +178,6 @@ class DictToScoreConverter(ParserModel):
 
         haslabel = False  # Will be set to true if the gongan has a metadata Label tag.
         for meta in sorted(metadata, key=lambda x: x.data._processingorder_):
-            self.curr_line_nr = meta.data.line
             match meta.data:
                 case GonganMeta():
                     # TODO: how to safely synchronize all instruments starting from next regular gongan?
@@ -240,25 +211,24 @@ class DictToScoreConverter(ParserModel):
                         process_goto(gongan_, goto)
                 case OctavateMeta():
                     for beat in gongan.beats:
-                        if meta.data.instrument in beat.measures.keys():
-                            for pass_ in self.pass_iterator(beat.measures[meta.data.instrument]):
-                                for idx in range(len(notes := pass_.notes)):
-                                    note: Note = notes[idx]
-                                    if note.octave != None:
-                                        note = Note.get_note(
-                                            note.position,
-                                            note.pitch,
-                                            note.octave + meta.data.octaves,
-                                            note.stroke,
-                                            note.duration,
-                                            note.rest_after,
+                        if meta.data.instrument in beat.staves:
+                            for idx in range(len(stave := beat.staves[meta.data.instrument])):
+                                note = stave[idx]
+                                if note.octave != None:
+                                    note = Note.get_note(
+                                        note.position,
+                                        note.pitch,
+                                        note.octave + meta.data.octaves,
+                                        note.stroke,
+                                        note.duration,
+                                        note.rest_after,
+                                    )
+                                    if note:
+                                        stave[idx] = note
+                                    else:
+                                        self.logerror(
+                                            f"could not octavate note {stave[idx].pitch}{stave[idx].octave} with {meta.data.octaves} octave for {meta.data.instrument}."
                                         )
-                                        if note:
-                                            notes[idx] = note
-                                        else:
-                                            self.logerror(
-                                                f"could not octavate note {notes[idx].pitch}{notes[idx].octave} with {meta.data.octaves} octave for {meta.data.instrument}."
-                                            )
                 case PartMeta():
                     pass
                 case RepeatMeta():
@@ -270,22 +240,19 @@ class DictToScoreConverter(ParserModel):
                     self.score.flowinfo.sequences.append((gongan, meta.data))
                 case SuppressMeta():
                     # Silences the given positions for the given beats and passes.
-                    # This is done by adding pass(es) with SILENCE Notes.
+                    # This is done by adding "silence" staves to the `exception` list of the beat.
                     for beat in gongan.beats:
-                        # If no beats are given, default is all beats
+                        # Default is all beats
                         if beat.id in meta.data.beats or not meta.data.beats:
                             for position in meta.data.positions:
-                                if not position in beat.measures.keys():
-                                    self.logwarning(
-                                        f"Position {position} of {SuppressMeta.metatype} instruction not in gongan."
-                                    )
-                                    continue
-                                line = beat.measures[position].passes[DEFAULT].line
-                                for pass_seq in meta.data.passes:
-                                    notes = self._create_rest_notes(position, Stroke.EXTENSION, beat.duration)
-                                    beat.measures[position].passes[pass_seq] = Measure.Pass(
-                                        seq=pass_seq, line=line, notes=notes
-                                    )
+                                beat.exceptions.update(
+                                    {
+                                        (position, pass_): self._create_rest_stave(
+                                            position, Stroke.EXTENSION, beat.duration
+                                        )
+                                        for pass_ in meta.data.passes
+                                    }
+                                )
                 case TempoMeta() | DynamicsMeta():
                     changetype = (
                         Beat.Change.Type.TEMPO if isinstance(meta.data, TempoMeta) else Beat.Change.Type.DYNAMICS
@@ -301,12 +268,12 @@ class DictToScoreConverter(ParserModel):
                         beat = gongan.beats[meta.data.first_beat_seq]
                         beat.changes[changetype].update(
                             {
-                                pass_seq: Beat.Change(
+                                pass_: Beat.Change(
                                     new_value=meta.data.value,
                                     positions=meta.data.positions if changetype == Beat.Change.Type.DYNAMICS else [],
                                     incremental=False,
                                 )
-                                for pass_seq in meta.data.passes
+                                for pass_ in meta.data.passes
                             }
                         )
                     else:
@@ -320,7 +287,7 @@ class DictToScoreConverter(ParserModel):
                                 break
                             beat.changes[changetype].update(
                                 {
-                                    pass_seq: Beat.Change(
+                                    pass_: Beat.Change(
                                         new_value=meta.data.value,
                                         steps=steps,
                                         positions=(
@@ -328,7 +295,7 @@ class DictToScoreConverter(ParserModel):
                                         ),
                                         incremental=True,
                                     )
-                                    for pass_seq in meta.data.passes
+                                    for pass_ in meta.data.passes
                                 }
                             )
                             steps -= 1
@@ -355,8 +322,8 @@ class DictToScoreConverter(ParserModel):
                     if lastbeat.next:
                         lastbeat.next.prev = newbeat
                         lastbeat.next = newbeat
-                    newbeat.measures = self._create_rest_measures(
-                        prev_beat=lastbeat, positions=list(lastbeat.measures.keys()), duration=duration
+                    newbeat.staves = self._create_rest_staves(
+                        prev_beat=lastbeat, positions=lastbeat.staves.keys(), duration=duration
                     )
                     gongan.beats.append(newbeat)
                 case _:
@@ -380,10 +347,10 @@ class DictToScoreConverter(ParserModel):
                 from_beat.goto[pass_nr] = to_beat
                 gongan = self.score.gongans[to_beat.gongan_seq]
 
-    def _create_missing_measures(
+    def _create_missing_staves(
         self, beat: Beat, prevbeat: Beat, add_kempli: bool = True, force_silence=[]
-    ) -> dict[Position, Measure]:
-        """Returns measures for missing positions, containing rests (silence) for the duration of the given beat.
+    ) -> dict[Position, list[Note]]:
+        """Returns staves for missing positions, containing rests (silence) for the duration of the given beat.
         This ensures that positions that do not occur in all the gongans will remain in sync.
 
         Args:
@@ -391,7 +358,7 @@ class DictToScoreConverter(ParserModel):
             all_positions (set[Position]): List of all the positions that occur in the notation.
 
         Returns:
-            dict[Position, Measure]: A dict with the generated measures.
+            dict[Position, list[Note]]: A dict with the generated staves.
         """
 
         all_instruments = (
@@ -402,68 +369,54 @@ class DictToScoreConverter(ParserModel):
         KEMPLI_BEAT = Note.get_note(
             Position.KEMPLI, pitch=Pitch.STRIKE, octave=None, stroke=Stroke.MUTED, duration=1, rest_after=0
         )
-        # add rests to existing but empty measures
-        for position, measure in beat.measures.items():
-            for pass_seq, pass_ in measure.passes.items():
-                if not pass_.notes:
-                    resttype = (
-                        Stroke.SILENCE
-                        if position in force_silence
-                        or prevbeat.get_notes(position, DEFAULT)[-1].stroke is Stroke.SILENCE
-                        else Stroke.EXTENSION
-                    )
-                    pass_.notes = self._create_rest_notes(position=position, resttype=resttype, duration=beat.duration)
-        # add measures for missing positions
-        if missing_positions := (all_instruments - set(pos for pos in beat.measures.keys() if beat.measures[pos])):
-            measures = self._create_rest_measures(
+
+        if missing_positions := (all_instruments - set(pos for pos in beat.staves.keys() if beat.staves[pos])):
+            staves = self._create_rest_staves(
                 prev_beat=prevbeat, positions=missing_positions, duration=beat.duration, force_silence=force_silence
             )
 
             # Add a kempli beat, except if a metadata label indicates otherwise or if the kempli part was already given in the original score
-            if Position.KEMPLI in measures.keys():  # and has_kempli_beat(gongan):
+            if Position.KEMPLI in staves.keys():  # and has_kempli_beat(gongan):
                 if beat.has_kempli_beat:
-                    rests = self._create_rest_notes(Position.KEMPLI, Stroke.EXTENSION, beat.duration - 1)
-                    measures[Position.KEMPLI] = Measure.new(position=Position.KEMPLI, notes=[KEMPLI_BEAT] + rests)
+                    rests = self._create_rest_stave(Position.KEMPLI, Stroke.EXTENSION, beat.duration - 1)
+                    staves[Position.KEMPLI] = [KEMPLI_BEAT] + rests
                 else:
-                    measures[Position.KEMPLI] = self._create_rest_measure(
-                        Position.KEMPLI, Stroke.EXTENSION, beat.duration
-                    )
+                    all_rests = self._create_rest_stave(Position.KEMPLI, Stroke.EXTENSION, beat.duration)
+                    staves[Position.KEMPLI] = all_rests
 
-            return measures
+            return staves
         else:
             return dict()
 
-    def _add_missing_measures(self, add_kempli: bool = True):
+    def _add_missing_staves(self, add_kempli: bool = True):
         prev_beat = None
         for gongan in self.gongan_iterator(self.score):
-            gongan_missing_instr = [pos for pos in Position if all(pos not in beat.measures for beat in gongan.beats)]
+            gongan_missing_instr = [pos for pos in Position if all(pos not in beat.staves for beat in gongan.beats)]
             for beat in self.beat_iterator(gongan):
                 # Not all positions occur in each gongan.
-                # Therefore we need to add blank measure (all rests) for missing positions.
+                # Therefore we need to add blank staves (all rests) for missing positions.
                 # If an instrument is missing in the entire gongan, the last beat should consist
                 # of silences (.) rather than note extensions (-). This avoids unexpected results when the next beat
                 # is repeated and the kempli beat is at the end of the beat.
                 force_silence = gongan_missing_instr if beat == gongan.beats[-1] else []
-                missing_measures = self._create_missing_measures(
-                    beat, prev_beat, add_kempli, force_silence=force_silence
-                )
-                beat.measures.update(missing_measures)
+                missing_staves = self._create_missing_staves(beat, prev_beat, add_kempli, force_silence=force_silence)
+                beat.staves.update(missing_staves)
                 # Update all positions of the score
-                self.score.instrument_positions.update({pos for pos in missing_measures})
+                self.score.instrument_positions.update({pos for pos in missing_staves})
                 prev_beat = beat
 
-    def _extend_measure(self, position: Position, notes: list[Note], duration: float):
-        """Extend a measure with EXTENSION notes so that its length matches the required duration.
+    def _extend_stave(self, position: Position, notes: list[Note], duration: float):
+        """Extend a stave with EXTENSION notes so that its length matches the required duration.
 
         Args:
-            position (Position): instrument position
-            notes (list[Note]): the measure content that should be extended
+            position (Position): instrument position of the stave
+            notes (list[Note]): the stave content
             duration (float): target duration
         """
         filler = Note.get_whole_rest_note(position, Stroke.EXTENSION)
-        measure_duration = sum(note.total_duration for note in notes)
+        stave_duration = sum(note.total_duration for note in notes)
         # Add rests of duration 1 to match the integer part of the beat's duration
-        if int(duration - measure_duration) >= 1:
+        if int(duration - stave_duration) >= 1:
             fill_content = [filler.model_copy() for count in range(int(duration - len(notes)))]
             if self.score.settings.notation.beat_at_end:
                 fill_content.extend(notes)
@@ -471,24 +424,27 @@ class DictToScoreConverter(ParserModel):
                 notes.extend(fill_content)
             else:
                 notes.extend(fill_content)
-            measure_duration = sum(note.total_duration for note in notes)
+            stave_duration = sum(note.total_duration for note in notes)
         # Add an extra rest for any fractional part of the beat's duration
-        if measure_duration < duration:
+        if stave_duration < duration:
             attr = "duration" if filler.stroke == Stroke.EXTENSION else "rest_after"
-            notes.append(filler.model_copy(update={attr: duration - measure_duration}))
+            notes.append(filler.model_copy(update={attr: duration - stave_duration}))
 
-    def _complement_shorthand_pokok_measures(self):
-        """Adds EXTENSION notes to pokok measures that only contain one note (shorthand notation)"""
+    def _complement_shorthand_pokok_staves(self):
+        """Adds EXTENSION notes to pokok staves that only contain one note (shorthand notation)
+
+        Args:
+            gongan_iterator (Generator): iterates through all gongans
+        """
 
         for gongan in self.gongan_iterator(self.score):
             for beat in self.beat_iterator(gongan):
-                for position, measure in beat.measures.items():
-                    for pass_ in self.pass_iterator(measure):
-                        if (
-                            position in self.POSITIONS_EXPAND_MEASURES
-                            and sum(note.total_duration for note in pass_.notes) != beat.duration
-                        ):
-                            self._extend_measure(position=position, notes=pass_.notes, duration=beat.duration)
+                for position, notes in beat.staves.items():
+                    if (
+                        position in self.POSITIONS_EXPAND_STAVES
+                        and sum(note.total_duration for note in notes) != beat.duration
+                    ):
+                        self._extend_stave(position=position, notes=notes, duration=beat.duration)
 
     def _create_score_object_model(self) -> Score:
         """Creates an object model of the notation. The method aggregates each note and the corresponding diacritics
@@ -507,12 +463,26 @@ class DictToScoreConverter(ParserModel):
             if self.curr_gongan_id < 0:
                 # Skip the gongan holding the global (score-wide) metadata items
                 continue
-            for self.curr_beat_id, measures in gongan_info[ParserTag.BEATS].items():
+            for self.curr_beat_id, beat_info in gongan_info[ParserTag.BEATS].items():
+                if isinstance(self.curr_beat_id, ParserTag):
+                    continue
+                # create the staves (regular and exceptions)
+                # TODO merge Beat.staves and Beat.exceptions and use pass=-1 for default stave. Similar to Beat.tempo_changes.
+                exceptions = {
+                    (position, pass_): stave
+                    for position, staves in beat_info.items()
+                    if position in Position
+                    for pass_, stave in staves.items()
+                    if pass_ > 0
+                }
+
                 # Create the beat and add it to the list of beats
+                staves = {position: staves[DEFAULT] for position, staves in beat_info.items() if position in Position}
                 new_beat = Beat(
                     id=int(self.curr_beat_id),
                     gongan_id=int(self.curr_gongan_id),
-                    measures=measures,
+                    staves=staves,
+                    exceptions=exceptions,
                     bpm_start={
                         DEFAULT: (bpm := self.score.gongans[-1].beats[-1].bpm_end[-1] if self.score.gongans else 0)
                     },
@@ -530,10 +500,7 @@ class DictToScoreConverter(ParserModel):
                     velocities_end={DEFAULT: vel.copy()},
                     # TODO Shouldn't we use mode instead of max? Makes a difference for error logging.
                     # Answer: not here, because at this stage, pokok positions with length 1 haven't been extended yet.
-                    duration=max(
-                        sum(note.total_duration for note in measure.passes[DEFAULT].notes)
-                        for measure in measures.values()
-                    ),
+                    duration=max(sum(note.total_duration for note in notes) for notes in list(staves.values())),
                 )
                 prev_beat = beats[-1] if beats else self.score.gongans[-1].beats[-1] if self.score.gongans else None
                 # Update the `next` pointer of the previous beat.
@@ -557,14 +524,14 @@ class DictToScoreConverter(ParserModel):
 
         # Add extension notes to pokok notation having only one note per beat
         try:
-            self._complement_shorthand_pokok_measures()
+            self._complement_shorthand_pokok_staves()
         except Exception as error:
             self.logerror(str(error))
 
-        # Add blank measures for all other omitted instruments
-        self._add_missing_measures(add_kempli=False)
+        # Add blank staves for all other omitted instruments
+        self._add_missing_staves(add_kempli=False)
         if self.run_settings.notation.beat_at_end:
-            # This enables correct processing of metadata
+            # This simplifies the addition of missing staves and correct processing of metadata
             self._move_beat_to_start()
         for gongan in self.gongan_iterator(self.score):
             # TODO temporary fix. Create generators to iterate through gongans, beats and positions
@@ -574,7 +541,7 @@ class DictToScoreConverter(ParserModel):
         # Process the sequences metadata
         self._process_sequences()
         # Add kempli beats
-        self._add_missing_measures(add_kempli=True)
+        self._add_missing_staves(add_kempli=True)
 
     def create_score(self):
         """This method does all the work.

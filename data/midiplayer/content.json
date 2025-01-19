@@ -99,9 +99,9 @@
                 }, 
                 {"title": "Legong Mahawidya", "instrumentgroup": "GONG_KEBYAR", "display": true, "parts": [
                                 {"part": "entire piece", "file": "Legong Mahawidya_entire piece_GAMELAN1.mid", "loop": false, "markers": {
-                                                "kawitan": 0.03152356157689424, 
-                                                "pengawak": 0.472727042944165, 
-                                                "pengecet": 0.9552443781647836
+                                                "kawitan": 0.022028584465476383, 
+                                                "pengawak": 0.330340452464711, 
+                                                "pengecet": 0.6675223362133679
                                         }
                                 }
                         ]

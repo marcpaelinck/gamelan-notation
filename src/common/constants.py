@@ -7,7 +7,7 @@ logger = get_logger(__name__)
 
 BPM = int
 Velocity = int
-Pass = int
+PassSequence = int
 Duration = int
 BeatId = str
 Octave = int
@@ -21,11 +21,21 @@ ErrorMessage = str
 DEFAULT = -1
 
 
-class SpecialTags(StrEnum):
+class ParserTag(StrEnum):
     # Putting constants in a class enables them to be used in a `match`statement
     # See e.g. https://github.com/microsoft/pylance-release/issues/4309
+    UNBOUND = "unbound"
+    GONGANS = "gongans"
     METADATA = "metadata"
-    COMMENT = "comment"
+    COMMENTS = "comments"
+    TAG = "tag"
+    POSITION = "position"
+    BEATS = "beats"
+    STAVES = "staves"
+    PASS = "pass"
+    LINE = "line"
+    PARSEINFO = "parseinfo"
+    ENDLINE = "endline"
 
 
 class NotationEnum(StrEnum):

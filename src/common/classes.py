@@ -23,7 +23,7 @@ from src.common.constants import (
     Modifier,
     NotationDict,
     Octave,
-    Pass,
+    PassSequence,
     Pitch,
     Position,
     Stroke,
@@ -377,6 +377,26 @@ class MidiNote(NotationModel):
 #
 
 
+@dataclass
+class Measure:
+    @dataclass
+    class Pass:
+        seq: int
+        line: int | None = None  # input line
+        notes: list[Note] = field(default_factory=list)
+
+    position: Position
+    passes: dict[PassSequence, Pass] = field(default_factory=dict)
+
+    @classmethod
+    def new(cls, position: Position, notes: list[Note], pass_seq: int = DEFAULT, line: int | None = None):
+        # Shorthand method to create a Measure object
+        return Measure(
+            position=position,
+            passes={pass_seq: Measure.Pass(seq=pass_seq, line=line, notes=notes)},
+        )
+
+
 # Note: Beat is intentionally not a Pydantic subclass because
 # it points to itself through the `next`, `prev` and `goto` fields,
 # which would otherwise cause an "Infinite recursion" error.
@@ -411,24 +431,22 @@ class Beat:
 
     id: int
     gongan_id: int
-    bpm_start: dict[Pass, BPM]  # tempo at beginning of beat (can vary per pass)
-    bpm_end: dict[Pass, BPM]  # tempo at end of beat (can vary per pass)
-    velocities_start: dict[Pass, dict[Position, Velocity]]  # Same for velocity, specified per position
-    velocities_end: dict[Pass, dict[Position, Velocity]]
+    bpm_start: dict[PassSequence, BPM]  # tempo at beginning of beat (can vary per pass)
+    bpm_end: dict[PassSequence, BPM]  # tempo at end of beat (can vary per pass)
+    velocities_start: dict[PassSequence, dict[Position, Velocity]]  # Same for velocity, specified per position
+    velocities_end: dict[PassSequence, dict[Position, Velocity]]
     duration: float
-    changes: dict[Change.Type, dict[Pass, Change]] = field(default_factory=lambda: defaultdict(dict))
-    staves: dict[Position, list[Note]] = field(default_factory=dict)
-    # Exceptions contains alternative staves for specific passes.
-    exceptions: dict[(Position, Pass), list[Note]] = field(default_factory=dict)
+    changes: dict[Change.Type, dict[PassSequence, Change]] = field(default_factory=lambda: defaultdict(dict))
+    measures: dict[Position, Measure] = field(default_factory=dict)
     prev: "Beat" = field(default=None, repr=False)  # previous beat in the score
     next: "Beat" = field(default=None, repr=False)  # next beat in the score
-    goto: dict[Pass, "Beat"] = field(
+    goto: dict[PassSequence, "Beat"] = field(
         default_factory=dict
     )  # next beat to be played according to the flow (GOTO metadata)
     has_kempli_beat: bool = True
     repeat: Repeat = None
     validation_ignore: list[ValidationProperty] = field(default_factory=list)
-    _pass_: Pass = 0  # Counts the number of times the beat is passed during generation of MIDI file.
+    _pass_: PassSequence = 0  # Counts the number of times the beat is passed during generation of MIDI file.
 
     @computed_field
     @property
@@ -441,8 +459,8 @@ class Beat:
         # Returns the pythonic sequence id (numbered from 0)
         return self.gongan_id - 1
 
-    def next_beat_in_flow(self, pass_=None):
-        return self.goto.get(pass_ or self._pass_, self.next)
+    def next_beat_in_flow(self, pass_seq=None):
+        return self.goto.get(pass_seq or self._pass_, self.next)
 
     def get_bpm_start(self):
         return self.bpm_start.get(self._pass_, self.bpm_start.get(DEFAULT, None))
@@ -469,6 +487,21 @@ class Beat:
                 return change.new_value
         return None
 
+    def get_pass(self, position: Position, pass_seq: int = DEFAULT):
+        # Convenience function for a much-used query.
+        # Especially useful for list comprehensions
+        if not position in self.measures.keys():
+            return None
+        else:
+            return self.measures[position].passes[pass_seq]
+
+    def get_notes(self, position: Position, pass_seq: int = DEFAULT, none=None):
+        # Convenience function for a much-used query.
+        # Especially useful for list comprehensions
+        if pass_ := self.get_pass(position=position, pass_seq=pass_seq):
+            return pass_.notes
+        return none
+
 
 @dataclass
 class Gongan:
@@ -481,7 +514,7 @@ class Gongan:
     gongantype: GonganType = GonganType.REGULAR
     metadata: list[MetaData] = field(default_factory=list)
     comments: list[str] = field(default_factory=list)
-    _pass_: Pass = 0  # Counts the number of times the gongan is passed during generation of MIDI file.
+    _pass_: PassSequence = 0  # Counts the number of times the gongan is passed during generation of MIDI file.
 
     def get_metadata(self, cls: MetaDataType):
         return next((meta.data for meta in self.metadata if isinstance(meta.data, cls)), None)
