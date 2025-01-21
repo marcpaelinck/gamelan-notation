@@ -1,7 +1,9 @@
 # Ignore subfolders of data/samples and data/notation folders,  but not files
 data/samples/*/
-data/notation/*/
-!data/notation/test
+data/notation/*
+!data/notation/test/
+data/notation/test/*
+!data/notation/test/*.tsv
 data/midiplayer/*
 notebooks/*
 __pycache__
