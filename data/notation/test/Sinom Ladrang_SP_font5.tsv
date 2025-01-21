@@ -1,0 +1,178 @@
+metadata	{GONGAN type=gineman}								
+metadata	{TEMPO value=45}
+calung	o-------
+jegog	o-------
+
+metadata	{GONGAN type=gineman}								
+trompong	o/.o/.o:---i_a,---o-i-a,_a,/i_a,----o-i-e:o:e/....a,-i_	o--------
+calung		o
+jegog		o
+
+metadata	{GONGAN type=gineman}								
+trompong	o/o------o/o--i_a,--o-ia,_a,/i_a,---u,-ia,u,_u,/a,_u,--a,_u,_e,/u_,	e,-----
+calung		e
+jegog		e
+
+metadata	{GONGAN type=gineman}								
+trompong	u,-e,-a,:u,:a,/....o,e,_	u,-------a,-i-o-e-u/e_u---u_e/u_e---oeu_u/e_	u------------
+calung		u	u
+jegog		u	u
+metadata	{GOTO label=PENGAWAK_2}
+
+comment	GONGAN 5
+comment	pengawak
+metadata	{TEMPO value=50}
+metadata	{TEMPO value=60, passes=[3]}
+metadata	{TEMPO value=50, passes=[3], first_beat=8, beat_count=1}
+metadata	{LABEL name=PENGAWAK}
+metadata	{LABEL name=PENGAWAK_2, beat=2}
+trompong	u-------	--------	u-a-u-e-	uue-Ua--a	u---u-ue	uueua-u-	e---uueu	a--ueuaa
+gangsa	u-------	--------	--------	--------	--------	--------	--------	--------
+calung	u				u			
+jegog	u
+kendang	9-------	9--8*8*9	(8*9(9((	-9-(9(9-	(8*8*-8*	-8*9(8*8	*9((-9-9	-((9(-9(
+gong	G							
+
+trompong	u-------	u---u-ue	uueua-u-	e---uueu	a---a-ue	o----ia,i	o----e-e/	e---u-e-
+gangsa p	uu/u.u.u.	u.u.u.u.	u.u.ue/e.	e.e.ea/a.	a.a.ao/o.	o.o.o.o.	o.o.oe/e.	e.e.eo/o.
+gangsa s	uu/ua.a.a	.a.a.a.a	.a.a.e/eu	.u.u.a/as	.s.s.o/oe	.e.e.e.e	.e.e.e/eu	.u.u.o/oe
+calung	u	u---u---	u---a---	e---u---	a	o---i---	o	e---u-e-
+jegog	u				a			
+kendang	-9-8*-8-	*-*-8-*-	-8*8*-8*	-8*8*9(9	(-9--8*9	(8*9(9((	-9-9-(-(	-9-((9(9
+gong								
+
+metadata	{TEMPO value=65, passes=[3], beat_count=7}
+trompong	o-------	o---a,u,a,i	o---e-u-	e-o-i-a,-	u,---u-u.	u-a-u-eu	a---u--u	e--eoeuu
+gangsa p	o.o.o.o.	o.o.o.o.	o.o..e/e.	e.e.eu/u.	u.u.u.u.	u.u.ua/a.	a.a.au/u.	u.u.ue/e.
+gangsa s	.e.e.e.e	.e.e.e.e	.e.e.e/eu	.u.u.u/ua	.a.a.a.a	.a.a.a/as	.s.s.u/ua	.a.a.e/eu
+calung	o	o	o---e-u-	e-o-i-a-	u	u-o-e-u-	a	e---o-u-
+jegog	o				u			
+kendang	(--8*-8-	*-*-8-*-	-8*8*-8*	-8*8*-8-	*-8-*-(-	9-(-(-9-	9-(-(-9-	(-9-(-(-
+gong								
+
+metadata	{TEMPO value=47, passes=[1,2], first_beat=5, beat_count=3}
+metadata	{TEMPO value=90, passes=[3], beat_count=7}
+trompong	e---e-ee/	e-u-a-sa	u--eo-e-	u-o-eoue	o---o-oo/	oeu-euoe	u-a-u-ee/	e-u-a-sa
+gangsa p	e.e.e.e.	e.e.eu/u.	u.u.ue/e.	e.e.eo/o.	o.o.o.o.	o.o.ou/u.	u.u.ue/e.	e.e.eu/u.
+gangsa s	.u.u.u.u	.u.u.u/ua	.a.a.e/eu	.u.u.o/oe	.e.e.e.e	.e.e.u/ua	.a.a.e/eu	.u.u.u/ua
+calung	e	e	u	u---u-e-	o	o	u	e---a---
+jegog	e				o			
+kendang	9-(-9---	(-9-(-((	-9-9-(-(	-9-((9(9	(8*8*8*8	**-00000	09((-9-9	-((9(9((
+gong								
+metadata	{GOTO label=PENGAWAK, passes=[1,2]}				
+
+comment	pengecet
+metadata	{TEMPO value=90}
+metadata	{TEMPO value=95, passes=[3]}
+metadata	{LABEL name=PENGECET}
+metadata	{SUPPRESS passes=[1], positions=["gangsa p", "gangsa s"], beats=[2,3,4,5,6,7,8]}
+trompong	u---	--a-	u-e-	u-a-	--u-	--a-	u-e-	u-a-
+gangsa p	.oe.	eo.e	.oe.	eo.e	.oe.	eo.e	.oe.	eo.e
+gangsa s	ua.u	.au.	ua.u	.au.	ua.u	.au.	ua.u	.au.
+calung	u---	--a-	u-e-	u-a-	--u-	--a-	u-e-	u-a-
+jegog	u							
+kendang	-8*8	**8*	8**8	*9(-	-8*9	(9((	9--9	-(-(
+gong	G							
+
+comment	GONGAN 10
+metadata	{SUPPRESS passes=[1], positions=["gangsa p", "gangsa s"]}
+trompong	--u-	--a-	u-e-	u-a-	u-e-	o---	i-o-	a,-i-
+gangsa p	.oe.	eo.e	.oe.	eo.e	.o.e	oo.o	.eoo	.o.e
+gangsa s	ua.u	.au.	ua.u	.au.	uau.	aa.a	u.aa	.au.
+calung	--u-	--a-	u-e-	u-a-	u-e-	o---	o---	----
+jegog								
+kendang	-9(9	(-9-	(--9	-(-(	-99(	98*8	*-00	-9--
+gong								
+
+metadata	{SUPPRESS passes=[1], positions=["gangsa p", "gangsa s"]}
+trompong	o--o	o-o-	o-e-	o-i-	o-i-	a,---	i-o-	e-u-
+gangsa p	o.oe	.o.e	o.oe	.o.e	o.oe	.o.e	.o.i	o.io
+gangsa s	aua.	uau.	aua.	uau.	aua.	uau.	a.eu	.eu.
+calung	o---	--i-	o-e-	o-i-	o-i-	a---	i-o-	e-u-
+jegog	o							
+kendang	-8*8	**8*	8**8	*9(-	-8*9	(9((	9--9	-(-(
+gong	T							
+								
+metadata	{SUPPRESS passes=[1], positions=["gangsa p", "gangsa s"]}
+trompong	e---	u-e-	u---	a---	u-e-	o---	i-o-	a,-i-
+gangsa p	.i.o	i.io	.e.o	e.oe	.o.e	oo.o	.eoo	.o.e
+gangsa s	eue.	ueu.	e.ua	.ua.	uau.	aa.a	u.aa	.au.
+calung	e---	u-e-	u---	a---	u-e-	o---	i---	o---
+jegog	e				u			
+kendang	-9(9	(-9-	(--9	-(-(	-99(	98*8	*-00	-9--
+gong								
+
+trompong	o---	--e-	u-e-	o-i-	--o-	--e-	u-e-	o-i-
+gangsa p	o.oe	.o.e	o.oe	.o.e	o.oe	.o.e	o.oe	.o.e
+gangsa s	aua.	uau.	aua.	uau.	aua.	uau.	aua.	uau.
+calung	o---	--e-	u-e-	o-i-	--o-	--e-	u-e-	o-i-
+jegog	o							
+kendang	-8*8	**8*	8**8	*9(-	-8*9	(9((	9--9	-(-(
+gong	G							
+
+trompong	--o-	--e-	u-e-	o-i-	o-e-	u---	e-o-	i-a,-
+gangsa p	o.oe	.o.e	o.oe	.o.e	o.oe	.oe.	eo.e	o.oe
+gangsa s	aua.	uau.	aua.	uau.	aua.	ua.u	.au.	aua.
+calung	--o-	--e-	u-e-	o-i-	o-e-	u---	e-o-	i-a-
+jegog								
+kendang	-9(9	(-9-	(--9	-(-(	-99(	9-(9	-((9	(9(9
+gong								
+
+comment	GONGAN 15
+trompong	u,--u	u-u-	u-a-	u-e-	u---	e-o-	e---	u---
+gangsa p	.oe.	eo.e	.oe.	eo.e	.oe.	eo.e	.u.e	u.eu
+gangsa s	ua.u	.au.	ua.u	.au.	ua.u	.au.	u.as	.as.
+calung	u--u	u-u-	u-a-	u-e-	u---	e-o-	e---	u---
+jegog	u							
+kendang	(-9-	(-9-	(-99	9-9-	9*8(	9-(9	-((9	(9(9
+gong								
+metadata	{GOTO label=D, passes=[3]}					
+
+trompong	a--a	a-a-	a-s-	a-u-	a-u-	e---	u-o-	e-u-
+gangsa p	.eu.	ue.u	.eu.	ue.u	.eu.	ue.u	.o.i	o.io
+gangsa s	as.a	.sa.	as.a	.sa.	as.a	.sa.	e.eu	.eu.
+calung	a--a	a-a-	a-i-	a-u-	a-u-	e---	u-o-	e-u-
+kendang	(8*9	(8*9	(*8(	9000	08*(	9-(9	-((-	9---
+jegog	a							
+gong								
+
+metadata	{TEMPO value=95, passes=[2], first_beat=3, beat_count=5}
+trompong	e---	u-e-	u---	e---	o-o-	Eu---	e-u-	a-e-
+gangsa p	.i.o	i.io	.eoo	.o.e	o.oe	.oe.	eo.e	o.oe
+gangsa s	eue.	ueu.	e.aa	.au.	aua.	ua.u	.au.	aua.
+calung	e---	u-e-	u---	e---	o-oe	u---	e-u-	a-e-
+jegog	e				o			
+kendang	--((	-9-(	-9-(	-(((	(*8(	9---	-9(-	9(9(
+gong								
+metadata	{GOTO label=PENGECET, passes=[1,2]}
+
+comment	pengecet end of last pass
+metadata	{LABEL name=D}
+metadata	{TEMPO value=70, first_beat=3, beat_count=5}
+trompong	a--a	a-a-	a-s-	a-u-	a--e	e-e-	--o-	e-u-
+gangsa p	.eu.	ue.u	.eu.	ue.u	...e	e-e-	----	----
+gangsa s	as.a	.sa.	as.a	.sa.	a--s	s-s-	----	----
+calung	a--a	a-a-	a-i-	a-u-	a-u-	e---	u-o-	e-u-
+jegog	a							
+kendang	(*8(	9---	(*8(	9---	---9	9-9-	(-9-	*-(-
+gong								
+
+metadata	{TEMPO value=60, beat_count=5}
+trompong	e---	u-e-	u---	e---	o-o-	Eu---	e-u-	a-e-
+gangsa p	----	----	----	----	o.oe	.oe.	eo.e	o.oe
+gangsa s	----	----	----	----	aua.	ua.u	.au.	aua.
+calung	e---	u-e-	u---	e---	o-oe	u---	e-u-	a-e-
+kendang	(-9-	(9((	-9--	-9--	-*8(	9-(9	-((9	(9((
+jegog	e				o			
+gong								
+
+comment	GONGAN 20
+metadata	{GONGAN type=gineman}							
+metadata	{VALIDATION ignore=[kempyung]}							
+trompong	u:
+gangsa p	u:
+gangsa s	i:
+calung	u
+jegog	u
+kendang	9:
+gong	G

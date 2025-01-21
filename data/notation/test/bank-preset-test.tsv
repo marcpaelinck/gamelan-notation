@@ -1,0 +1,20 @@
+metadata	{TEMPO bpm=120}								
+ugal	u---	a---	u---	i<---	a---	i<---	a---	u-e-	
+gangsa p	ua.u	.au.	u.ai<	.ai<.	ai<.a	.i<a.	a.ua	.ua.	
+gangsa s	.oe.	eo.e	.u.e	u.eu	.eu.	ue.u	.e.o	e.oe	
+calung	u		u		a		a		
+jegog	u				a				
+									
+metadata	{TEMPO value=100, first_beat=1, beat_count=3}								
+gangsa p	e,---	----	----	----	----	----	----	----
+gangsa s	i---	----	----	----	----	----	----	----
+reyong1	b--u,	a,-u,-	e,e,-u,	a,-u,-	e,-u,a,	.u,a,.	.a,i.	.io.	
+reyong2	b--i	o-i-	ee-i	o-i-	e-o.	io.i	oe.o	eu.e	
+reyong3	b--u	a-i<-	i<i<-u	a-i<-	i<-ua	.ua.	.ai<.	.i<o<.	
+reyong4	b--u<	o<-u<-	e<e<-u<	o<-u<-	e<-o<.	i<o<.i<	o<e<.o<	e<u<.e<	
+calung	e---	----	----	----	----	----	----	----
+jegog	e---	----	----	----	----	----	----	----	
+									
+gangsa p	----	----	----	----	----	----	----	----
+gong	G	P	T	P	G	P	T	P	
+									
