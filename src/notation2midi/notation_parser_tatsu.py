@@ -142,7 +142,7 @@ class NotationTatsuParser(ParserModel):
         )
         return flattened_dict
 
-    def _parse_stave(self, stave: str, position: Position) -> list[Note]:
+    def _parse_stave(self, measure: str, position: Position) -> list[Note]:
         """Parses the notation of a stave to note objects
 
         Args:
@@ -153,12 +153,12 @@ class NotationTatsuParser(ParserModel):
         """
         notes = []  # will contain the Note objects
         tremolo_notes = []
-        note_chars = stave
+        note_chars = measure
         while note_chars:
             # try parsing the next note
             next_note = Note.parse_next_note(note_chars, position)
             if not next_note:
-                self.logerror(f" {position.value} {stave} has invalid {note_chars[0]}")
+                self.logerror(f" {position.value} {measure} has invalid {note_chars[0]}")
                 note_chars = note_chars[1:]
             else:
                 if istremolo := (next_note.stroke in (Stroke.TREMOLO, Stroke.TREMOLO_ACCELERATING)):
@@ -240,9 +240,9 @@ class NotationTatsuParser(ParserModel):
                 # if not isinstance(self.curr_beat_id, int):
                 #     continue
                 for position, measure in measures.items():
-                    for pass_seq, notelist in measure.passes.items():
+                    for pass_seq, pass_ in measure.passes.items():
                         update_grace_notes_octaves(
-                            notes=notelist.notes, group=self.run_settings.instruments.instrumentgroup
+                            notes=pass_.notes, group=self.run_settings.instruments.instrumentgroup
                         )
 
     def parse_notation(self, notation: str | None = None) -> NotationDict:
@@ -311,7 +311,7 @@ class NotationTatsuParser(ParserModel):
         }
 
         # Flatten the metadata items, create MetaData and Note objects
-        for gongan in notation_dict.values():
+        for self.curr_gongan_id, gongan in notation_dict.items():
             # Remove empty staves so that they can be recognized as 'missing staves' by the dict to score parser.
             gongan[ParserTag.STAVES] = [
                 stave for stave in gongan.get(ParserTag.STAVES, {}) if any((beat for beat in stave["beats"]))
@@ -329,11 +329,14 @@ class NotationTatsuParser(ParserModel):
             # Explode staves with an instrument tag that represents multiple instruments
             self._explode_tags(gongan[ParserTag.STAVES])
             for stave in gongan[ParserTag.STAVES]:
+                self.curr_line_nr = stave[ParserTag.LINE]
                 del stave[ParserTag.STAVES]  # remove superfluous key
                 # Parse the beats into Note objects
-                stave[ParserTag.BEATS] = [
-                    self._parse_stave(beat, stave[ParserTag.POSITION]) for beat in stave[ParserTag.BEATS]
-                ]
+                parsed_beats = []
+                for self.curr_beat_id, measure in enumerate(stave[ParserTag.BEATS], start=1):
+                    parsed_beats.append(self._parse_stave(measure, stave[ParserTag.POSITION]))
+                stave[ParserTag.BEATS] = parsed_beats
+
             # Transpose the gongan from stave-oriented to beat-oriented
             gongan[ParserTag.BEATS] = self._staves_to_beats(gongan[ParserTag.STAVES])
             del gongan[ParserTag.STAVES]

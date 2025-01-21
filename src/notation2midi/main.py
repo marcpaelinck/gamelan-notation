@@ -31,9 +31,9 @@ def notation_to_midi(run_settings: RunSettings):
         if score:
             score = ScoreValidator(score).validate_score()
         if score:
-            MidiGenerator(score).create_midifile()
+            success = MidiGenerator(score).create_midifile()
 
-    if run_settings.options.notation_to_midi.save_corrected_to_file:
+    if success and run_settings.options.notation_to_midi.save_corrected_to_file:
         score_to_notation_file(score)
 
 

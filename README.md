@@ -169,3 +169,12 @@ Terminology:
 Zones and splits can contain parameters (usually called `generators`) that can alter the sound of the audio samples. E.g. Velocity Range, Attenuation, Tuning, Volume envelopes for attack, sustain and decay. The zone parameters act as multiplicators for the corresponding split parameters. Presets can share zones and can each have a separate set of generator values for the same zone (instrument). So the same instrument may sound differently depending on which preset is selected.
 
 
+# Versions
+## version 1.3
+- New notation parser based on Parser Expression Grammar (PEG). Uses Tatsu library (https://tatsu.readthedocs.io/en/stable/).
+- Simplified metadata syntax.
+  - tag `metadata` can be omitted.
+  - first/main attribute can be given as positional argument, e.g. {TEMPO 80}.
+  - arguments can be space-separated (comma no longer compulsory)
+- Simplified example syntax: a `#` sign can be used instead of the `comment` tag to define a comment.
+- Introduced `Measure` object, which takes the place of the `stave` concept. `stave` is now used for an entire notation line (notes for one position over the entire gongan). In other words: a measure is the intersection of a stave and a beat.

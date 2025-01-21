@@ -80,7 +80,7 @@ soundfonts:
     folder: ./data/soundfont
     path_to_viena_app: C:/Program Files/Viena/Viena64.exe
 midiplayer:
-    folder: ./data/notation/_parsernew
+    folder: ./data/midiplayer
     contentfile: content.json
     helpinghand: [CALUNG, JEGOGAN, PEMADE_POLOS, PEMADE_SANGSIH, KANTILAN_POLOS, KANTILAN_SANGSIH] # Animate panggul.
 notations:

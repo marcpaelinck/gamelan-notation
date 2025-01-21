@@ -156,13 +156,14 @@ class MidiGenerator(ParserModel):
         self.loginfo(f"Added time markers to part {part.part}")
         save_midiplayer_content(content)
 
-    def create_midifile(self):
+    def create_midifile(self) -> bool:
         """Generates the MIDI content and saves it to file.
 
         Return:
             int: Total duration in milliseconds
 
         """
+        # TODO Error handling and return False if error occurred
         midifile = MidiFile(ticks_per_beat=self.run_settings.midi.PPQ, type=1)
 
         for position in sorted(self.score.instrument_positions, key=lambda x: x.sequence):
@@ -189,6 +190,7 @@ class MidiGenerator(ParserModel):
                 self.update_midiplayer_content()
 
         self.logger.info("=====================================")
+        return True
 
 
 if __name__ == "__main__":
