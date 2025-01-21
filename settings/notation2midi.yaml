@@ -4,8 +4,8 @@
 midi:
   midiversion: GAMELAN1
 notation:
-  composition: legongmahawidya
-  part: full
+  composition: test-gk
+  part: cendrawasih
 options:
   comment: Option autocorrect should be set in the input files. Default should be false.
   debug_logging: false
@@ -18,4 +18,4 @@ options:
     save_midifile : true
     comment1: If update_midiplayer_content==true, MIDI file is saved in midiplayer folder and content.json file is updated.
     comment2: This setting is ignored if the notation file's name starts with "test" (case-insensitive).
-    update_midiplayer_content: true
+    update_midiplayer_content: false

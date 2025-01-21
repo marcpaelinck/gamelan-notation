@@ -280,7 +280,7 @@ notations:
                 loop: false
             cendrawasih:
                 name: Cendrawasih
-                file: Cendrawasih_font5.tsv
+                file: Cendrawasih_complete_font5.tsv
                 loop: false
             various:
                 name: Various notes

@@ -255,6 +255,12 @@ class NotationTatsuParser(ParserModel):
                 notation = notationfile.read()
 
         # Parse the notation using the ebnf grammar.
+        # In case of an error, the current line will be skipped and the parser will be called again
+        # on the remaining lines to log possible additional errors. In that case the value of ast
+        # will be incomplete, therefore the program will halt after parsing the remainder of the file.
+        # Note: the -> `skip to` in combination with ^`` alert grammar statement does not work as expected.
+        #        The alert is not added to the node's parseinfo list but becomes part of the parsed expression.
+        #        This method also misses the accuracy of the parser's error messages.
         self.loginfo(f"Using {self.model_source}.")
         ast = None
         line_offset = 0
@@ -263,20 +269,24 @@ class NotationTatsuParser(ParserModel):
                 ast = self.grammar_model.parse(notation)
             except Exception as e:
                 parsed_text = e.args[0].original_text[: e.pos + 1]
+                char = parsed_text[e.pos]
+                if char == "\n":
+                    parsed_text = parsed_text[:-1]
                 self.curr_line_nr = parsed_text.count("\n") + line_offset + 1
                 start_curr_line = parsed_text.rfind("\n") + 1  # rfind returns -1 if not found
-                start_next_line = e.args[0].original_text[start_curr_line:].find("\n") + 1
-                char = parsed_text[e.pos]
+                chars_to_next_line = e.args[0].original_text[start_curr_line:].find("\n") + 1
                 char_pos = e.pos - start_curr_line + 1
+                char = char.replace("\n", "end of line").replace("\t", "tab")
                 self.logerror(
-                    f"Unexpected character `{char}` at position {char_pos}. {e.message}. Ignoring the rest of the line."
+                    f"Unexpected `{char}` at position {char_pos}. {e.message}. Ignoring the rest of the line."
                 )
-                if e.pos == 0 or start_next_line < 0:
+                if e.pos == 0 or chars_to_next_line < 0:
                     # No progress or nothing to do
-                    return None
+                    break
                 else:
                     line_offset = self.curr_line_nr
-                    notation = e.args[0].original_text[e.pos + 1 + start_next_line :]
+                    notation = e.args[0].original_text[start_curr_line + chars_to_next_line :]
+                    x = 1
 
         if self.has_errors:
             self.logerror("Program halted.")
