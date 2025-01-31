@@ -4,14 +4,15 @@
 midi:
   midiversion: GAMELAN1
 notation:
-  composition: test-gk
-  part: cendrawasih
+  composition: pendet
+  part: full
 options:
   comment: Option autocorrect should be set in the input files. Default should be false.
   debug_logging: false
   validate_settings : true
   notation_to_midi:
     run: true
+    integration_test: false
     detailed_validation_logging : false
     autocorrect : true
     save_corrected_to_file : false

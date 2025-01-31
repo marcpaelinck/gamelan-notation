@@ -1,7 +1,6 @@
 from enum import StrEnum
 
 SETTINGSFOLDER = "./settings"
-DATAFOLDER = "./data"
 RUN_SETTINGSFILE = "notation2midi.yaml"
 DATA_INFOFILE = "data.yaml"
 
@@ -59,9 +58,11 @@ class NoteFields(SStrEnum):
 
 # instruments.tsv
 class InstrumentFields(SStrEnum):
-    POSITION = "position"
-    INSTRUMENT = "instrument"
     GROUP = "group"
+    INSTRUMENT = "instrument"
+    POSITION = "position"
+    POSITION_RANGE = "position_range"
+    EXTENDED_POSITION_RANGE = "extended_position_range"
 
 
 # instrumenttags.tsv
@@ -69,6 +70,17 @@ class InstrumentTagFields(SStrEnum):
     TAG = "tag"
     INFILE = "infile"
     POSITIONS = "positions"
+
+
+# rules.tsv
+class RuleFields(SStrEnum):
+    GROUP = "group"
+    RULETYPE = "ruletype"
+    POSITIONS = "positions"
+    PARAMETER1 = "parameter1"
+    VALUE1 = "value1"
+    PARAMETER2 = "parameter2"
+    VALUE2 = "value2"
 
 
 class PresetsFields(SStrEnum):
@@ -106,3 +118,4 @@ class Yaml(SStrEnum):
     INSTRUMENTGROUPS = "instrumentgroups"
     INSTRUMENTGROUP = "instrumentgroup"
     MIDIPLAYER = "midiplayer"
+    INTEGRATIONTEST = "integration_test"

@@ -5,9 +5,9 @@ from itertools import batched, pairwise
 
 from mido import MidiFile
 
-from src.common.classes import TimedMessage, TimingData
 from src.common.constants import FROM_PIANO, MIDI_TO_COURIER, VALID_MIDI_MESSAGE_TYPES
 from src.common.logger import get_logger
+from src.midi2notation.classes import TimedMessage, TimingData
 
 logger = get_logger(__name__)
 

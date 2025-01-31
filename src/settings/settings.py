@@ -24,6 +24,7 @@ DATA = {
     "font": {"category": "font", "folder": "folder", "filename": "file"},
     "instruments": {"category": "instruments", "folder": "folder", "filename": "instruments_file"},
     "instrument_tags": {"category": "instruments", "folder": "folder", "filename": "tags_file"},
+    "rules": {"category": "instruments", "folder": "folder", "filename": "rules_file"},
     "midinotes": {"category": "midi", "folder": "folder", "filename": "midi_definition_file"},
     "presets": {"category": "midi", "folder": "folder", "filename": "presets_file"},
 }
@@ -46,12 +47,19 @@ def post_process(subdict: dict[str, Any], run_settings_dict: dict[str, Any] = No
             subdict[key] = post_process(value, run_settings_dict or subdict)
         elif isinstance(value, str):
             # Only implemented for key: str items. Does not operate on list structures (yet)
-            while found := re.search(r"\$\{([\w\.]+)\}", value):
-                keys = found.group(1).split(".")
+            while found := re.search(r"\$\{(?P<item>[\w\.]+)\}", value):
+                keys = found.group("item").split(".")
                 item = run_settings_dict
                 for key1 in keys:
                     item = item[key1]
-                value = value.replace(found.group(0), item)
+                if found.group(0) == value:
+                    # Value is a reference to a key value.
+                    value = item
+                    break
+                else:
+                    # Value is a string containing one or more ${...} references.
+                    # Substitute the sub-expression in the string.
+                    value = value.replace(found.group(0), item)
                 i = 1
             subdict[key] = value
     return subdict
@@ -178,21 +186,36 @@ def load_run_settings(notation: dict[str, str] = None) -> RunSettings:
         notation,
     )
 
+    # INSTRUMENT INFORMATION
+
     instruments = data_dict[Yaml.INSTRUMENTS][Yaml.INSTRUMENTGROUPS][notation[Yaml.INSTRUMENTGROUP]]
     settings_dict[Yaml.INSTRUMENTS] = get_settings_fields(
         RunSettings.InstrumentInfo,
         notation | data_dict[Yaml.INSTRUMENTS] | instruments,
     )
 
+    # FONT INFORMATION
+
     font = data_dict[Yaml.FONTS][Yaml.FONTVERSIONS][notation[Yaml.FONTVERSION]] | {
         Yaml.FONTVERSION: notation[Yaml.FONTVERSION]
     }
     settings_dict[Yaml.FONT] = get_settings_fields(RunSettings.FontInfo, data_dict[Yaml.FONTS] | font)
 
+    # GRAMMAR INFORMATION
+
     fontgrammar = data_dict[Yaml.GRAMMARS][Yaml.FONTVERSIONS][notation[Yaml.FONTVERSION]]
     settings_dict[Yaml.GRAMMARS] = get_settings_fields(RunSettings.GrammarInfo, data_dict[Yaml.GRAMMARS] | fontgrammar)
 
+    # INTEGRATION TEST INFORMATION
+
+    settings_dict[Yaml.INTEGRATIONTEST] = get_settings_fields(
+        RunSettings.IntegrationTestInfo, data_dict[Yaml.INTEGRATIONTEST]
+    )
+
     settings_dict = post_process(settings_dict)
+
+    # DATA FILES
+
     settings_dict[Yaml.DATA] = read_data(settings_dict)
 
     global _RUN_SETTINGS
@@ -243,4 +266,6 @@ def save_midiplayer_content(playercontent: Content, filename: str = None):
 if __name__ == "__main__":
     # For testing
     settings = get_run_settings()
-    print(settings.midi)
+    print(settings.notation)
+    print(settings.notation.filepath)
+    print(settings.notation.midi_out_filepath)

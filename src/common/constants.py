@@ -1,4 +1,4 @@
-from enum import StrEnum
+from enum import Flag, StrEnum
 from typing import Any
 
 from src.common.logger import get_logger
@@ -21,6 +21,11 @@ ErrorMessage = str
 DEFAULT = -1
 
 
+class ParamValue(Flag):
+    DEFAULT = True
+    MISSING = False
+
+
 class ParserTag(StrEnum):
     # Putting constants in a class enables them to be used in a `match`statement
     # See e.g. https://github.com/microsoft/pylance-release/issues/4309
@@ -33,6 +38,7 @@ class ParserTag(StrEnum):
     BEATS = "beats"
     STAVES = "staves"
     PASS = "pass"
+    ALL_POSITIONS = "all_positions"
     LINE = "line"
     PARSEINFO = "parseinfo"
     ENDLINE = "endline"
@@ -46,10 +52,10 @@ class NotationEnum(StrEnum):
     def __str__(self):
         return self.name
 
-    @classmethod
-    def from_value(cls, value):
-        enum = next((el for el in cls if value in [el.name, el.value]), None)
-        return enum
+    # @classmethod
+    # def from_value(cls, value):
+    #     enum = next((el for el in cls if value in [el.name, el.value]), None)
+    #     return enum
 
     @property
     def sequence(self):
@@ -91,6 +97,26 @@ class InstrumentType(NotationEnum):
     TROMPONG = "TROMPONG"
     GENDERWAYANG = "GENDERWAYANG"
     SULING = "SULING"
+
+
+class RuleType(NotationEnum):
+    KEMPYUNG = "KEMPYUNG"
+    UNISONO = "UNISONO"
+
+
+class RuleParameter(NotationEnum):
+    NOTE_PAIRS = "NOTE_PAIRS"
+    SHARED_BY = "SHARED_BY"
+    TRANSFORM = "TRANSFORM"
+
+
+class RuleValue(NotationEnum):
+    ANY = "ANY"
+    SAME_TONE = "SAME_TONE"
+    SAME_PITCH = "SAME_PITCH"
+    SAME_PITCH_EXTENDED_RANGE = "SAME_PITCH_EXTENDED_RANGE"
+    EXACT_KEMPYUNG = "EXACT_KEMPYUNG"
+    KEMPYUNG = "KEMPYUNG"
 
 
 class Position(NotationEnum):
@@ -164,6 +190,9 @@ class Pitch(NotationEnum):
     @property
     def index(self):
         return list(Pitch).index(self)
+
+    def _todict():
+        return {key: val for key, val in Pitch.__members__.items()}
 
 
 class Stroke(NotationEnum):

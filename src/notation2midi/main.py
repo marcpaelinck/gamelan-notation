@@ -37,13 +37,25 @@ def notation_to_midi(run_settings: RunSettings):
         score_to_notation_file(score)
 
 
+def multiple_notations_to_midi(notations: list[str, str]):
+    """Creates multiple notations
+
+    Args:
+        notations (list[tuple[str, str]]): list of (composition, part) pairs
+    """
+    for notation in notations:
+        run_settings = load_and_validate_run_settings(notation)
+        notation_to_midi(run_settings)
+
+
 def single_run():
     run_settings = load_and_validate_run_settings()
     notation_to_midi(run_settings)
 
 
 if __name__ == "__main__":
-    get_run_settings()
-    single_run()
-
-# multiple_notations_to_midi(notations)
+    run_settings = get_run_settings()
+    if run_settings.options.notation_to_midi.integration_test:
+        multiple_notations_to_midi(run_settings.integration_test.notations)
+    else:
+        single_run()

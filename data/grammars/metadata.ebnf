@@ -15,6 +15,7 @@ metadata
         gonganmeta |
         gotometa |
         kemplimeta |
+        autokempyungmeta |
         labelmeta |
         octavatemeta |
         partmeta |
@@ -36,6 +37,9 @@ gotometaparameters = parameters:{[','] @:(from_beat_parm | passes_parm)} ;
     
 kemplimeta = metatype:'KEMPLI' {('status'|'value') '='} status:strvalue parameters:kemplimetaparameters ;
 kemplimetaparameters = {[','] @:(beats_parm | scope_parm)} ;
+
+autokempyungmeta = metatype:'AUTOKEMPYUNG' {('status'|'value') '='} status:strvalue parameters:autokempyungmetaparameters ;
+autokempyungmetaparameters = {[','] @:(scope_parm)} ;
 
 labelmeta = metatype:'LABEL' {('name'|'value') '='} name:strvalue parameters:labelmetaparameters ;
 labelmetaparameters = {[','] @:beat_parm} ;

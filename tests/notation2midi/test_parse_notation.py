@@ -290,3 +290,30 @@ def test_parse_metadata(metanotation, expected, parser):
     gongan = "ugal\t\n"  # need to append dummy gongan to create valid notation
     notation = parser.parse_notation("metadata\t" + metanotation + "\n\n" + gongan)
     assert notation.notation_dict[-1][ParserTag.METADATA][0].data == expected
+
+
+# Tests for range_str_to_list
+
+correct_ranges = [
+    ("1", [1]),
+    ("1-3", [1, 2, 3]),
+    ("3-4", [3, 4]),
+    ("3,4", [3, 4]),
+]
+
+bad_ranges = ["1,2,", "realbad", "1-", "-1", "-", ",", "1-4-"]
+
+
+@pytest.mark.parametrize("rangestr, expected", correct_ranges)
+# Tests the conversion of optional range indicators following the position name in the score
+def test_range_str_to_list(rangestr, expected, run_settings):
+    parser = NotationTatsuParser(run_settings=run_settings)
+    assert parser._passes_str_to_list(rangestr) == expected
+
+
+@pytest.mark.parametrize("rangestr", bad_ranges)
+# Test that invalid values cause a ValueError to be raised
+def test_range_str_to_list_exception(rangestr, run_settings):
+    with pytest.raises(ValueError):
+        parser = NotationTatsuParser(run_settings=run_settings)
+        parser._passes_str_to_list(rangestr)

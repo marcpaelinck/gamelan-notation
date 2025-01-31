@@ -5,9 +5,11 @@ instruments:
         GONG_KEBYAR: 
             instruments_file: instruments.tsv
             tags_file: instrumenttags.tsv
+            rules_file: rules.tsv
         SEMAR_PAGULINGAN: 
             instruments_file: instruments.tsv
             tags_file: instrumenttags.tsv
+            rules_file: rules.tsv
 midi:
     folder: ./data/midi
     comment1: PPQ and base_note_time in MIDI ticks. Beat is MIDI beat, not kempli beat.
@@ -93,6 +95,9 @@ notations:
     defaults:
         folder: ./data/notation
         midiplayer_folder: ${midiplayer.folder}
+        integration_test_subfolder_in: ${integration_test.inputfolder}
+        integration_test_subfolder_out: ${integration_test.outputfolder}
+        is_integration_test: ${options.notation_to_midi.integration_test}
         beat_at_end: false
         autocorrect_kempyung : true
         fontversion: BaliMusic5
@@ -282,9 +287,9 @@ notations:
                 name: Cendrawasih
                 file: Cendrawasih_complete_font5.tsv
                 loop: false
-            various:
-                name: Various notes
-                file: Test various notes_font5.tsv
+            reyong_13_12:
+                name: reyong 1-3, 2-4
+                file: reyong13_24_test.tsv
                 loop: false
     test-sp:
         title: Test Semar Pagulingan
@@ -296,3 +301,31 @@ notations:
                 name: Sinom Ladrang
                 file: Sinom Ladrang_SP_font5.tsv
                 loop: false
+integration_test:
+    inputfolder: _integration_test/notations
+    outputfolder: _integration_test/output
+    notations:
+        - composition: bapangselisir
+          part: full
+        - composition: cendrawasih
+          part: full
+        - composition: gilakdeng
+          part: full
+        - composition: godekmiring
+          part: full
+        - composition: legongmahawidya
+          part: full
+        - composition: lengker
+          part: full
+        - composition: margapati
+          part: full
+        - composition: pendet
+          part: full
+        - composition: rejangdewa
+          part: full
+        - composition: sekargendot
+          part: full
+        - composition: sinomladrang-gk
+          part: full
+        - composition: sinomladrang-sp
+          part: full

@@ -230,7 +230,7 @@ def create_note_records(run_settings: RunSettings) -> list[AnyNote]:
     # note equivalent. The remaining MIDI notes need to be matched with a combination of symbols:
     # a 'pitch' symbol followed by one or more modifier symbols.
     # This process will also create octavated versions of grace notes. Though these should not occur in
-    # the notation, they will be needd later when the correct octave of grace notes is determined.
+    # the notation, they will be needed later when the correct octave of grace notes is determined.
     for record in midi_notes:
         # If the record has a symbol value, it was matched with a single-character note, and
         # we can immediately create a Note instance from it.

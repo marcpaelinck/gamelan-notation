@@ -15,10 +15,13 @@ from src.common.constants import (
     PassSequence,
     Pitch,
     Position,
+    RuleType,
+    RuleValue,
     Stroke,
     Velocity,
 )
 from src.common.metadata_classes import (
+    AutoKempyungMeta,
     DynamicsMeta,
     GonganMeta,
     GonganType,
@@ -191,6 +194,17 @@ class DictToScoreConverter(ParserModel):
             for position in positions
         }
 
+    def _reverse_kempyung(self, beat: Beat):
+        # Only applies to PEMADE_SANGSIH and KANTILAN_SANGSIH.
+        # Polos part is expected to be available.
+        for measure in beat.measures.values():
+            for pass_ in measure.passes.values():
+                if pass_.ruletype == RuleType.UNISONO:
+                    pass_.notes = [
+                        note.get_kempyung(inverse=True) if note.inference_rule == RuleValue.EXACT_KEMPYUNG else note
+                        for note in pass_.notes
+                    ]
+
     def _apply_metadata(self, metadata: list[MetaData], gongan: Gongan) -> None:
         """Processes the metadata of a gongan into the object model.
 
@@ -230,6 +244,12 @@ class DictToScoreConverter(ParserModel):
                             # Default is all beats
                             if beat.id in meta.data.beats or not meta.data.beats:
                                 beat.has_kempli_beat = False
+                case AutoKempyungMeta():
+                    if meta.data.status == MetaDataSwitch.ON:
+                        # Nothing to do, kempyung is default
+                        continue
+                    for beat in gongan.beats:
+                        self._reverse_kempyung(beat)
                 case LabelMeta():
                     # Add the label to flowinfo
                     haslabel = True
@@ -381,7 +401,7 @@ class DictToScoreConverter(ParserModel):
                 gongan = self.score.gongans[to_beat.gongan_seq]
 
     def _create_missing_measures(
-        self, beat: Beat, prevbeat: Beat, add_kempli: bool = True, force_silence=[]
+        self, beat: Beat, prevbeat: Beat, all_instruments: list[Position], force_silence=[]
     ) -> dict[Position, Measure]:
         """Returns measures for missing positions, containing rests (silence) for the duration of the given beat.
         This ensures that positions that do not occur in all the gongans will remain in sync.
@@ -394,11 +414,7 @@ class DictToScoreConverter(ParserModel):
             dict[Position, Measure]: A dict with the generated measures.
         """
 
-        all_instruments = (
-            self.score.instrument_positions | {Position.KEMPLI} if add_kempli else self.score.instrument_positions
-        )
         # a kempli beat is a muted stroke
-        # Note: these two line are BaliMusic5 font exclusive!
         KEMPLI_BEAT = Note.get_note(
             Position.KEMPLI, pitch=Pitch.STRIKE, octave=None, stroke=Stroke.MUTED, duration=1, rest_after=0
         )
@@ -436,7 +452,12 @@ class DictToScoreConverter(ParserModel):
     def _add_missing_measures(self, add_kempli: bool = True):
         prev_beat = None
         for gongan in self.gongan_iterator(self.score):
-            gongan_missing_instr = [pos for pos in Position if all(pos not in beat.measures for beat in gongan.beats)]
+            all_instruments = self.score.instrument_positions | (
+                {Position.KEMPLI} if add_kempli else self.score.instrument_positions
+            )
+            gongan_missing_instr = [
+                pos for pos in all_instruments if all(pos not in beat.measures for beat in gongan.beats)
+            ]
             for beat in self.beat_iterator(gongan):
                 # Not all positions occur in each gongan.
                 # Therefore we need to add blank measure (all rests) for missing positions.
@@ -445,7 +466,7 @@ class DictToScoreConverter(ParserModel):
                 # is repeated and the kempli beat is at the end of the beat.
                 force_silence = gongan_missing_instr if beat == gongan.beats[-1] else []
                 missing_measures = self._create_missing_measures(
-                    beat, prev_beat, add_kempli, force_silence=force_silence
+                    beat, prev_beat, all_instruments, force_silence=force_silence
                 )
                 beat.measures.update(missing_measures)
                 # Update all positions of the score

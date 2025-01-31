@@ -58,7 +58,9 @@ Example:
 """
 
 import copy
+import json
 import pickle
+import re
 from collections import ChainMap
 
 from tatsu import compile
@@ -66,12 +68,18 @@ from tatsu.model import ParseModel
 from tatsu.util import asjson
 
 from src.common.classes import InstrumentTag, Measure, Notation, Note
-from src.common.constants import NotationDict, ParserTag, Position, Stroke
+from src.common.constants import (
+    InstrumentType,
+    NotationDict,
+    ParserTag,
+    Position,
+    RuleType,
+    Stroke,
+)
 from src.common.metadata_classes import MetaData, Scope
 from src.notation2midi.classes import NamedIntID, ParserModel
 from src.notation2midi.special_notes_treatment import (
     generate_tremolo,
-    get_nearest_note,
     update_grace_notes_octaves,
 )
 from src.settings.classes import RunSettings
@@ -105,6 +113,12 @@ class NotationTatsuParser(ParserModel):
         super().__init__(self.ParserType.NOTATIONPARSER, run_settings)
         self.run_settings = run_settings
         self.grammar_model = self._create_notation_grammar_model(self.run_settings, from_pickle=False, pickle_it=False)
+
+    @classmethod
+    def unoctavated(cls, note_chars: str) -> str:
+        """returns a note symbol with octavation characters removed."""
+        # TODO: make this more generic
+        return note_chars.replace(",", "").replace("<", "")
 
     def _create_notation_grammar_model(
         self, settings: RunSettings, from_pickle: bool = False, pickle_it: bool = False
@@ -142,30 +156,41 @@ class NotationTatsuParser(ParserModel):
         )
         return flattened_dict
 
-    def _parse_stave(self, measure: str, position: Position) -> list[Note]:
+    def _parse_measure(self, measure: str, position: Position, all_positions: list[Position]) -> list[Note]:
         """Parses the notation of a stave to note objects
+           If the stave stands for multiple reyong positions, the notation is transformed to match
+           each position separately. There are two possible cases:
+            - REYONG_1 and REYONG_3 are combined: the notation is expected to represent the REYONG_1 part
+              and the score is octavated for the REYONG_3 position.
+            - REYONG_2 and REYONG_4: similar case. The notation should represent the REYONG_2 part.
+            - All reyong positions: the notation is expected to represent the REYONG_1 part.
+              In this case the kempyung equivalent of the notation will be determined for REYONG_2
+              and REYONG_4 within their respective range.
 
         Args:
             stave (str): one stave of notation
             position (Position):
+            multiple_positions (list[Position]): List of all positions for this stave.
 
         Returns: str | None: _description_
         """
         notes = []  # will contain the Note objects
         tremolo_notes = []
         note_chars = measure
-        while note_chars:
+        for note_sequence, note_chars in enumerate(measure, start=1):
             # try parsing the next note
-            next_note = Note.parse_next_note(note_chars, position)
+            # next_note = Note.parse_next_note(note_chars, position)
+            last_note = note_sequence == len(measure)
+            next_note = Note.parse(note_chars, position, all_positions)
             if not next_note:
-                self.logerror(f" {position.value} {measure} has invalid {note_chars[0]}")
+                self.logerror(f"Could not parse {note_chars[0]} from {measure} for {position.value}")
                 note_chars = note_chars[1:]
             else:
                 if istremolo := (next_note.stroke in (Stroke.TREMOLO, Stroke.TREMOLO_ACCELERATING)):
                     tremolo_notes.append(next_note)
-                if len(tremolo_notes) == 2 or (
-                    tremolo_notes and (not istremolo or len(note_chars) == len(next_note.symbol))
-                ):
+                if len(tremolo_notes) == 2 or (tremolo_notes and (not istremolo or last_note)):
+                    # Max. 2 notes may be combined in a tremolo. Generate the tremolo notes if max has been
+                    # reached, or if no tremolo note follows the last saved tremolo note.
                     notes.extend(generate_tremolo(tremolo_notes, self.run_settings.midi, self.logerror))
                     tremolo_notes.clear()
                 if not istremolo:
@@ -174,20 +199,48 @@ class NotationTatsuParser(ParserModel):
 
         return notes
 
-    def _explode_tags(self, staves: list[dict]) -> list[dict]:
+    def _replace_tags_with_positions(self, staves: list[dict]) -> None:
         additional_staves = []
         for stave in staves:
-            positions = InstrumentTag.get_positions(stave[ParserTag.POSITION][ParserTag.TAG])
-            pass_seq = PassID(int(stave[ParserTag.POSITION][ParserTag.PASS]))
+            tag = stave[ParserTag.POSITION][ParserTag.TAG]
+            positions = stave[ParserTag.ALL_POSITIONS] = InstrumentTag.get_positions(tag)
+            pass_sequence = PassID(int(stave[ParserTag.POSITION][ParserTag.PASS]))
             stave[ParserTag.POSITION] = positions[0]
-            stave[ParserTag.PASS] = pass_seq
-            if len(positions) > 1:
-                for position in positions[1:]:
-                    newstave = copy.deepcopy(stave)
-                    newstave[ParserTag.POSITION] = position
-                    newstave[ParserTag.PASS] = pass_seq
-                    additional_staves.append(newstave)
+            stave[ParserTag.PASS] = pass_sequence
+            for position in stave[ParserTag.ALL_POSITIONS][1:]:
+                # Create a copy of the stave for each additional position
+                newstave = copy.deepcopy(stave)
+                newstave[ParserTag.POSITION] = position
+                newstave[ParserTag.PASS] = pass_sequence
+                additional_staves.append(newstave)
         staves.extend(additional_staves)
+
+    def _passes_str_to_list(self, rangestr: str) -> list[int]:
+        """Converts a pass indicator following a position tag to a list of passes.
+            A colon (:) separates the position tag and the pass indicator.
+            The indicator has one of the following formats:
+            <pass>[,<pass>...]
+            <firstpass>-<lastpass>
+            where <pass>, <firstpass> and <lastpass> are single digits.
+            e.g.:
+            gangsa p:2,3
+            reyong:1-3
+
+        Args:
+            rangestr (str): the pass range indicator, in the prescribed format.
+
+        Raises:
+            ValueError: string does not have the expected format.
+
+        Returns:
+            list[int]: a list of passes (passes are numbered from 1)
+        """
+        if not re.match(r"^(\d-\d|(\d,)*\d)$", rangestr):
+            raise ValueError(f"Invalid value for passes: {rangestr}")
+        if re.match(r"^\d-\d$", rangestr):
+            return list(range(int(rangestr[0]), int(rangestr[2]) + 1))
+        else:
+            return list(json.loads(f"[{rangestr}]"))
 
     def _staves_to_beats(self, staves: list[dict]) -> list[dict]:
         """Transposes the stave -> beats structure of a gongan to beat -> staves
@@ -215,6 +268,7 @@ class NotationTatsuParser(ParserModel):
                                 notes=(
                                     stave[ParserTag.BEATS][beat_seq] if beat_seq < len(stave[ParserTag.BEATS]) else []
                                 ),
+                                ruletype=RuleType.UNISONO if len(stave[ParserTag.ALL_POSITIONS]) > 1 else None,
                             )
                         )
                         for stave in staves
@@ -336,15 +390,18 @@ class NotationTatsuParser(ParserModel):
                     gongan[ParserTag.METADATA].remove(metadata)
                     notation_dict[GonganID.default_value][ParserTag.METADATA].append(metadata)
 
-            # Explode staves with an instrument tag that represents multiple instruments
-            self._explode_tags(gongan[ParserTag.STAVES])
+            # Look up the Position value for the 'free style' tags.
+            # If the tag stands for multiple posiitions, create a copy of the stave for each position.
+            self._replace_tags_with_positions(gongan[ParserTag.STAVES])
             for stave in gongan[ParserTag.STAVES]:
                 self.curr_line_nr = stave[ParserTag.LINE]
                 del stave[ParserTag.STAVES]  # remove superfluous key
                 # Parse the beats into Note objects
                 parsed_beats = []
                 for self.curr_beat_id, measure in enumerate(stave[ParserTag.BEATS], start=1):
-                    parsed_beats.append(self._parse_stave(measure, stave[ParserTag.POSITION]))
+                    parsed_beats.append(
+                        self._parse_measure(measure, stave[ParserTag.POSITION], stave[ParserTag.ALL_POSITIONS])
+                    )
                 stave[ParserTag.BEATS] = parsed_beats
 
             # Transpose the gongan from stave-oriented to beat-oriented

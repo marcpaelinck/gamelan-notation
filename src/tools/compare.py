@@ -87,14 +87,14 @@ def compare_all(dir_old, dir_new):
     for dir in [dir_old, dir_new]:
         files.append(set([os.path.basename(path) for path in glob(os.path.join(dir, "*.mid"))]))
     filelist = files[0].intersection(files[1])
-    # to_text_multiple_files(filelist, [dir_old, dir_new])
-    to_text_multiple_files(filelist, [dir_new])
+    to_text_multiple_files(filelist, [dir_old, dir_new])
+    # to_text_multiple_files(filelist, [dir_new])
 
     # 2. compare the text files
     differences = compare_directories(dir_old, dir_new, "*.txt")
 
     # 3. save report to file
-    with open(os.path.join(dir_old, "comparison.txt"), "w") as outfile:
+    with open(os.path.join(dir_new, "comparison.txt"), "w") as outfile:
         if differences:
             for file, diff in differences.items():
                 outfile.write(f"Differences in {file}:")
@@ -106,8 +106,9 @@ def compare_all(dir_old, dir_new):
 
 
 if __name__ == "__main__":
-    # dir_old = "./data/notation/_parserold"
-    # dir_new = "./data/notation/_parsernew"
-    file_old = "Cendrawasih_entire piece_GAMELAN1.mid"
-    file_new = "Test Gong Kebyar_Cendrawasih_GAMELAN1.mid"
-    compare_files("./data/notation/test", file_old, file_new)
+    dir_old = "./data/notation/_integration_test/reference"
+    dir_new = "./data/notation/_integration_test/output"
+    compare_all(dir_old, dir_new)
+    # file_old = "Cendrawasih_entire piece_GAMELAN1.mid"
+    # file_new = "Test Gong Kebyar_Cendrawasih_GAMELAN1.mid"
+    # compare_files("./data/notation/test", file_old, file_new)

@@ -21,7 +21,8 @@
     },
     "[tsv]": {
         "editor.detectIndentation": false,
-        "editor.insertSpaces": false
+        "editor.insertSpaces": false,
+        "editor.inlayHints.maximumLength": 0
     },
     "python.analysis.extraPaths": [
         "./src/common"

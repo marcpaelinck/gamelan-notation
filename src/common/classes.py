@@ -1,9 +1,10 @@
 import json
+import math
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
-from typing import ClassVar, Optional
+from typing import Any, ClassVar, Optional
 
 from pydantic import (
     BaseModel,
@@ -23,9 +24,13 @@ from src.common.constants import (
     Modifier,
     NotationDict,
     Octave,
+    ParamValue,
     PassSequence,
     Pitch,
     Position,
+    RuleParameter,
+    RuleType,
+    RuleValue,
     Stroke,
     Velocity,
 )
@@ -38,25 +43,14 @@ from src.common.metadata_classes import (
     ValidationProperty,
 )
 from src.settings.classes import RunSettings
-from src.settings.constants import FontFields, PresetsFields
-from src.settings.font_to_valid_notes import get_font_characters, get_note_records
+from src.settings.constants import (
+    FontFields,
+    InstrumentFields,
+    PresetsFields,
+    RuleFields,
+)
+from src.settings.font_to_valid_notes import get_note_records
 from src.settings.settings import get_run_settings
-
-
-@dataclass
-class TimedMessage:
-    time: int
-    type: str
-    note: str = "."
-    cumtime: int = -1
-    duration: int = -1
-
-
-@dataclass
-class TimingData:
-    unit_duration: int
-    units_per_beat: int
-    beats_per_gongan: int
 
 
 class NotationModel(BaseModel):
@@ -86,12 +80,332 @@ class NotationModel(BaseModel):
             raise ValueError(f"Could not convert value {value} to a list of {el_type}")
 
 
+@dataclass(frozen=True)
+class Tone:
+    # A tone is a combination of a pitch and an octave.
+    pitch: Pitch
+    octave: int
+    inference_rule: RuleValue | None = None
+
+    _MELODIC_PITCHES: ClassVar[dict[str, int]] = [
+        Pitch.DING,
+        Pitch.DONG,
+        Pitch.DENG,
+        Pitch.DEUNG,
+        Pitch.DUNG,
+        Pitch.DANG,
+        Pitch.DAING,
+    ]
+
+    @property
+    def key(self):
+        return self.pitch.index + self.octave * 10
+
+    def is_melodic(self):
+        return self.pitch in Tone._MELODIC_PITCHES
+
+
+class Instrument(NotationModel):
+    @dataclass(frozen=True)
+    class Rule:
+        ruletype: RuleType
+        positions: Position
+        parameters: dict[RuleParameter, Any]
+
+    _POS_TO_INSTR: ClassVar[dict[Position, "Instrument"]]
+    _RULES: ClassVar[dict[Position, dict[RuleType, list[Rule]]]]
+    _MAX_RANGE: list[Tone]
+
+    group: InstrumentGroup
+    positions: list[Position]
+    instrumenttype: InstrumentType
+    position_ranges: dict[Position, list[Tone]] = field(default_factory=lambda: defaultdict(list))
+    extended_position_ranges: dict[Position, list[Tone]] = field(default_factory=lambda: defaultdict(list))
+    instrument_range: list[Tone] = field(default_factory=list)
+
+    @classmethod
+    def get_instrument(cls, position: Position) -> "Instrument":
+        return cls._POS_TO_INSTR[position]
+
+    @classmethod
+    def get_range(cls, position: Position, extended: bool = False) -> list[Tone]:
+        return (
+            cls._POS_TO_INSTR[position].extended_position_ranges[position]
+            if extended
+            else cls._POS_TO_INSTR[position].position_ranges[position]
+        )
+
+    @classmethod
+    def get_tones_within_range(
+        cls, tone: Tone, position: Position, extended_range: bool = False, match_octave=False
+    ) -> Tone | None:
+        # The list is sorted by absolute distance to tone.octave in sequence 0, +1, -1, +2, -2
+        return sorted(
+            [
+                t
+                for t in Instrument.get_range(position, extended=extended_range)
+                if t.pitch == tone.pitch and (t.octave == tone.octave or not match_octave)
+            ],
+            key=lambda x: abs(x.octave - tone.octave - 0.1),
+        )
+
+    @classmethod
+    def interval(cls, tone1: Tone, tone2: Tone) -> int:
+        """Returns the difference between the indices of the tones in their natural sorting order.
+
+        Args:
+            tone1 (Tone): _description_
+            tone2 (Tone): _description_
+
+        Raises:
+            Exception: if either tone is not within the instrument group's range.
+
+        Returns:
+            int: the interval
+        """
+        if not (tone1 in cls._MAX_RANGE and tone2 in cls._MAX_RANGE):
+            raise Exception(f"{tone1} and/or {tone2} not within the orchestra's range.")
+        return cls._MAX_RANGE.index(tone2) - cls._MAX_RANGE.index(tone1)
+
+    @classmethod
+    def get_kempyung_pitch(cls, position, pitch: Pitch, inverse: bool = False) -> Pitch | None:
+        return next(
+            (
+                (p if inverse else k)
+                for p, k in cls._RULES[position][RuleType.KEMPYUNG][0].parameters[RuleParameter.NOTE_PAIRS]
+                if (k if inverse else p) is pitch
+            ),
+            None,
+        )
+
+    @classmethod
+    def get_kempyung_tones_within_range(
+        cls, tone: Tone, position, extended_range: bool = False, exact_octave_match: bool = True, inverse: bool = False
+    ) -> list[Tone]:
+        """Returns all the tones with the kempyung pitch of the given tone and which lie in
+        the position's range.
+
+        Args:
+            tone (Tone): reference tone.
+            position (_type_): position which determines the range.
+            extended_range (bool, optional): if True, the extended range should be used, otherwise the 'regular' range. Defaults to False.
+            exact_octave_match (bool, optional): If True, returns only the tone that lies within an octave above the reference note. Defaults to True.
+            inverse (bool, optional): Return the inverse kempyung (the tone for which the given tone is a kempyung tone)
+
+        Returns:
+            list[Tone]: a list of kempyung tones or an empty list if none found.
+        """
+        kempyung_pitch = cls.get_kempyung_pitch(position, tone.pitch, inverse)
+        # List possible octaves, looking at octaves equal or highter than the reference tone first
+        try_octaves = [tone.octave, tone.octave + 1, tone.octave + 2, tone.octave - 1, tone.octave - 2]
+        oct_interval = Instrument.interval(Tone(Pitch.DONG, 0), Tone(Pitch.DONG, 1))
+        inv = -1 if inverse else 1
+        k_list = [
+            Tone(kempyung_pitch, octave)
+            for octave in try_octaves
+            if Tone(kempyung_pitch, octave) in Instrument.get_range(position, extended_range)
+            and (
+                not exact_octave_match
+                or 0 < inv * Instrument.interval(tone, Tone(kempyung_pitch, octave)) < oct_interval
+            )
+        ]
+        # Put kempyung tones that are higher than the reference tone first.
+        return sorted(
+            k_list, key=lambda x: [0, 1, 2, -1, -2].index(math.floor(Instrument.interval(tone, x) / oct_interval))
+        )
+
+    def _merge(self, other: "Instrument") -> "Instrument":
+        if not other:
+            return self
+        # Merge the data of two Instrument objects.
+        self.positions += other.positions
+        self.position_ranges = self.position_ranges | other.position_ranges
+        self.extended_position_ranges = self.extended_position_ranges | other.extended_position_ranges
+        self.instrument_range = sorted(list(set(self.instrument_range + other.instrument_range)), key=lambda x: x.key)
+        return self
+
+    @classmethod
+    def get_shared_notation_rule(cls, position: Position, unisono_positions: set[Position]) -> Rule:
+        rules = cls._RULES.get(position, {}).get(
+            RuleType.UNISONO, None
+        )  # or cls._RULES.get(RuleValue.ANY, {}).get(RuleType.SHARED_NOTATION, None)
+        if rules:
+            rule = next(
+                (rule for rule in rules if set(rule.parameters[RuleParameter.SHARED_BY]) == unisono_positions),
+                None,
+            ) or next((rule for rule in rules if rule.parameters[RuleParameter.SHARED_BY] == RuleValue.ANY), None)
+            if rule:
+                return rule.parameters[RuleParameter.TRANSFORM]
+        return None
+
+    @classmethod
+    def cast_to_position(cls, tone: Tone, position: Position, unisono_positions: set[Position]) -> Tone | None:
+        """Returns the equivalent tone for `position`, given that the same notation is common for `unisono_positions`.
+        This method uses instrument rules that describe how to interpret a 'unisono' notation line that is
+        preceded with a 'multiple instrument' tag such as 'gangsa', 'gangsa p', 'reyong', 'ugal/ga', or 'ug/ga/rey'.
+
+        Args:
+            tone (Tone): original 'unisono' tone parsed from the notation.
+            position (Position): position for which the rule should apply.
+            unisono_positions (set[Position]): positions that share the same notation.
+
+        Raises:
+            Exception: no unisono rule found for the position.
+
+        Returns:
+            Tone | None: the tone, cast to the position.
+        """
+        # Rules only apply to melodic pitches.
+        if not tone.is_melodic():
+            return tone
+
+        rule = Instrument.get_shared_notation_rule(position, set(unisono_positions))
+        if not rule:
+            raise Exception(f"No unisono rule found for {position}.")
+
+        for action in rule:
+            match action:
+                case RuleValue.SAME_TONE:
+                    # retain pitch and octave
+                    tones = cls.get_tones_within_range(tone, position, extended_range=False, match_octave=True)
+                case RuleValue.SAME_PITCH:
+                    # retain pitch, select octave within instrument's range
+                    tones = cls.get_tones_within_range(tone, position, extended_range=False, match_octave=False)
+                case RuleValue.SAME_PITCH_EXTENDED_RANGE:
+                    # retain pitch, select octave within instrument's extended range
+                    tones = cls.get_tones_within_range(tone, position, extended_range=True, match_octave=False)
+                case RuleValue.EXACT_KEMPYUNG:
+                    # select kempyung tone that lies immediately above the given tone
+                    tones = cls.get_kempyung_tones_within_range(
+                        tone, position, extended_range=False, exact_octave_match=True
+                    )
+                case RuleValue.KEMPYUNG:
+                    # select kempyung pitch that lies within instrument's range
+                    tones = cls.get_kempyung_tones_within_range(
+                        tone, position, extended_range=False, exact_octave_match=False
+                    )
+            if tones:
+                return Tone(pitch=tones[0].pitch, octave=tones[0].octave, inference_rule=action)
+
+        return None
+
+    @classmethod
+    def _parse_range(cls, note_range: str) -> list[Tone]:
+        return sorted(
+            [Tone(*t) for t in note_range],
+            key=lambda x: x.key,
+        )
+
+    @classmethod
+    def _init_pos_to_instr(cls, run_settings: RunSettings):
+        """Creates the _POS_TO_INSTR lookup dict."""
+        # Field definition
+        POSITIONS = InstrumentFields.POSITION + "s"
+        POSITION_RANGES = InstrumentFields.POSITION_RANGE + "s"
+        EXTENDED_POSITION_RANGES = InstrumentFields.EXTENDED_POSITION_RANGE + "s"
+        INSTRUMENT_RANGE = "INSTRUMENT_RANGE"
+
+        # First create a dict with all instruments to merge multiple data records for the same instrument type.
+        instr_dict: dict[InstrumentType, Instrument] = defaultdict(lambda: None)
+        all_tones = set()
+
+        for row in run_settings.data.instruments:
+            if (InstrumentGroup[row["group"]]) != run_settings.instruments.instrumentgroup:
+                continue
+            # Create an Instrument object for the current data record, which contains data for a single instrument position.
+            locals = (
+                InstrumentGroup._member_map_ | InstrumentType._member_map_ | Position._member_map_ | Pitch._member_map_
+            )
+            record = {key: eval(row[key] or "[]", locals) for key in row.keys()}
+            record[POSITIONS] = [position := record[InstrumentFields.POSITION]]
+            record[POSITION_RANGES] = {position: cls._parse_range(record[InstrumentFields.POSITION_RANGE])}
+            record[EXTENDED_POSITION_RANGES] = {
+                position: cls._parse_range(record[InstrumentFields.EXTENDED_POSITION_RANGE])
+                or record[POSITION_RANGES][position]
+            }
+            record[INSTRUMENT_RANGE] = record[EXTENDED_POSITION_RANGES][position]
+            all_tones.update(set(record[INSTRUMENT_RANGE]))
+            instrument = Instrument.model_validate(record)
+            instr_dict[instrument.instrumenttype] = instrument._merge(instr_dict[instrument.instrumenttype])
+
+        # Invert the dict
+        cls._POS_TO_INSTR = {pos: instr for instr in instr_dict.values() for pos in instr.positions}
+        cls._MAX_RANGE = sorted(list(all_tones), key=lambda x: x.key)
+
+    @classmethod
+    def _init_rules(cls, run_settings: RunSettings):
+        """Creates the _RULES_DICT."""
+        cls._RULES = defaultdict(lambda: defaultdict(list))
+        for row in run_settings.data.rules:
+            if (InstrumentGroup[row["group"]]) != run_settings.instruments.instrumentgroup:
+                continue
+            # Create an Instrument object for the current data record, which contains data for a single instrument position.
+            locals = (
+                InstrumentGroup._member_map_
+                | Position._member_map_
+                | Pitch._member_map_
+                | RuleType._member_map_
+                | RuleParameter._member_map_
+                | RuleValue._member_map_
+            )
+            record = {key: eval(row[key] or "None", locals) for key in row.keys()}
+            for position in (
+                Position
+                # [pos for pos in Position if not cls._RULES[pos]]
+                if record["positions"] == RuleValue.ANY
+                else record["positions"]
+            ):
+                # Replace a generic rule (= valid for any position) with a specific one.
+                rulelist: list[cls.Rule] = cls._RULES[position][record[RuleFields.RULETYPE]]
+                ruletype = record[RuleFields.RULETYPE]
+                generic_rule = next(
+                    (r for r in rulelist if r.ruletype == ruletype and r.positions == RuleValue.ANY),
+                    None,
+                )
+                if generic_rule:
+                    rulelist.remove(generic_rule)
+                rulelist.append(
+                    cls.Rule(
+                        ruletype=record[RuleFields.RULETYPE],
+                        positions=record[RuleFields.POSITIONS],
+                        parameters={
+                            record[parm]: record[val]
+                            for parm, val in [
+                                (RuleFields.PARAMETER1, RuleFields.VALUE1),
+                                (RuleFields.PARAMETER2, RuleFields.VALUE2),
+                            ]
+                            if record[parm]
+                        },
+                    )
+                )
+
+    @classmethod
+    def _initialize(cls, run_settings: RunSettings):
+        print(
+            f"INITIALIZING INSTRUMENT CLASS FOR COMPOSITION {run_settings.notation.title} - {run_settings.notation.part.name}"
+        )
+        cls._init_pos_to_instr(run_settings)
+        cls._init_rules(run_settings)
+        x = 1
+
+    @classmethod
+    def _build_class(cls):
+        run_settings = get_run_settings(cls._initialize)
+        cls._initialize(run_settings)
+
+
+# # INITIALIZE THE Instrument CLASS WITH LIST OF VALID NOTES AND CORRESPONDING LOOKUPS
+# ##############################################################################
+Instrument._build_class()
+# ##############################################################################
+
+
 class Note(NotationModel):
     # config revalidate_instances forces validation when using model_copy
     model_config = ConfigDict(extra="ignore", frozen=True, revalidate_instances="always")
 
     _VALIDNOTES: ClassVar[list["Note"]]
-    _SYMBOL_TO_NOTE: ClassVar[dict[str, "Note"]]
+    _SYMBOL_TO_NOTE: ClassVar[dict[(Position, str), "Note"]]
     _POS_P_O_S_D_R_TO_NOTE: ClassVar[dict[tuple[Position, Pitch, Octave, Stroke, Duration, Duration], "Note"]]
     _FONT_SORTING_ORDER: ClassVar[dict[str, int]]
 
@@ -108,10 +422,14 @@ class Note(NotationModel):
     midinote: tuple[int, ...] = (127,)  # 0..128, used when generating MIDI output.
     rootnote: str = ""
     sample: str = ""  # file name of the (mp3) sample.
+    inference_rule: RuleValue | None = None
 
     @property
     def total_duration(self):
         return self.duration + self.rest_after
+
+    def is_melodic(self):
+        return self.to_tone().is_melodic()
 
     @field_validator("octave", mode="before")
     @classmethod
@@ -153,6 +471,33 @@ class Note(NotationModel):
             return note.model_copy()
         return None
 
+    def copy_with_changes(
+        self,
+        symbol: str | ParamValue = ParamValue.MISSING,
+        position: Position | ParamValue = ParamValue.MISSING,
+        pitch: Pitch | ParamValue = ParamValue.MISSING,
+        octave: int | ParamValue = ParamValue.MISSING,
+        stroke: Stroke | ParamValue = ParamValue.MISSING,
+        duration: float | ParamValue = ParamValue.MISSING,
+        rest_after: float | ParamValue = ParamValue.MISSING,
+        inference_rule: RuleValue | ParamValue = ParamValue.MISSING,
+    ) -> Optional["Note"]:
+        # Returns a note with the same attributes as the input note, except for the given parameters.
+        # Uses ParamValue as default value to enable passing None values.
+        note_record = (
+            position if position is not ParamValue.MISSING else self.position,
+            pitch if pitch is not ParamValue.MISSING else self.pitch,
+            octave if octave is not ParamValue.MISSING else self.octave,
+            stroke if stroke is not ParamValue.MISSING else self.stroke,
+            duration if duration is not ParamValue.MISSING else self.duration,
+            rest_after if rest_after is not ParamValue.MISSING else self.rest_after,
+        )
+        note: Note = self._POS_P_O_S_D_R_TO_NOTE.get(note_record, None)
+        if note:
+            inference_rule if inference_rule is not ParamValue.MISSING else self.inference_rule,
+            return note.model_copy(update={"symbol": symbol or self.symbol, "inference_rule": inference_rule})
+        return None
+
     @classmethod
     def get_whole_rest_note(cls, position: Position, resttype: Stroke):
         return cls.get_note(
@@ -164,36 +509,73 @@ class Note(NotationModel):
         return set((tup[1], tup[2], tup[3]) for tup in cls._POS_P_O_S_D_R_TO_NOTE.keys() if tup[0] == position)
 
     @classmethod
-    def note_from_symbol(cls, symbol: str):
-        note = cls._SYMBOL_TO_NOTE.get(symbol, None)
-        if note:
-            return note.model_copy()
-        return None
-
-    @classmethod
     def sorted_chars(cls, chars: str) -> str:
         return "".join(sorted(chars, key=lambda c: cls._FONT_SORTING_ORDER.get(c, 99)))
 
+    def to_tone(self) -> Tone:
+        return Tone(self.pitch, self.octave)
+
     @classmethod
-    def parse_next_note(cls, notation: str, position: Position) -> Optional["Note"]:
-        """Parses the first note from the notation.
-        Args: notation (str): a notation string
-        Returns: tuple[Optional["Note"], str]: The note
+    def parse(
+        cls,
+        symbol: str,
+        position: Position,
+        unisono_positions: list[Position],
+    ) -> "Note":
+        """Parses the given notation symbol to a matching note within the position's range.
+        In case multiple positions share the same notation (unisono), this method determines
+        the note based on rules (e.g. octavation or kempyung).
+        Args:
+            symbol (str): notation characters.
+            position (Position): position to match.
+            unisono_positions (list[Position]): positions that share the same notation.
+
+        Returns:
+            Note: _description_
         """
-        max_length = min(max(*{len(sym) for _, sym in cls._SYMBOL_TO_NOTE.keys()}), len(notation))
-        note = None
-        for charcount in range(max_length, 0, -1):
-            note = cls._SYMBOL_TO_NOTE.get((position, cls.sorted_chars(notation[:charcount])), None)
-            if note:
-                return note.model_copy()
-        return None
+        normalized_symbol = cls.sorted_chars(symbol)
+
+        if len(unisono_positions) == 1:
+            # Notation for single position
+            if position in unisono_positions:
+                return cls._SYMBOL_TO_NOTE[position, normalized_symbol]
+            else:
+                raise Exception(f"{position} not in list {unisono_positions}")
+
+        # The notation is for multiple positions. Determine pitch and octave using the 'unisono rules'.
+
+        # Create a Tone object from the the symbol by finding any matching note (disregarding the position)
+        reference_note = next((note for note in cls._VALIDNOTES if note.symbol == normalized_symbol), None)
+        if not reference_note:
+            return None
+        reference_tone = reference_note.to_tone()
+        tone = Instrument.cast_to_position(reference_tone, position, set(unisono_positions))
+
+        # Return the matching note within the position's range
+        return (
+            reference_note.copy_with_changes(
+                position=position, pitch=tone.pitch, octave=tone.octave, inference_rule=tone.inference_rule
+            )
+            if tone
+            else None
+        )
+
+    def get_kempyung(self, extended_range=False, exact_octave_match=True, inverse: bool = False) -> "Note":
+        k_list = Instrument.get_kempyung_tones_within_range(
+            Tone(self.pitch, self.octave),
+            self.position,
+            extended_range,
+            exact_octave_match=exact_octave_match,
+            inverse=inverse,
+        )
+        return self.copy_with_changes(pitch=k_list[0].pitch, octave=k_list[0].octave) if k_list else None
 
     @classmethod
     def _set_up_dicts(cls, run_settings: RunSettings):
         print(
             f"INITIALIZING NOTE CLASS FOR COMPOSITION {run_settings.notation.title} - {run_settings.notation.part.name}"
         )
-        font = get_font_characters(run_settings)
+        font = run_settings.data.font
         mod_list = list(Modifier)
         cls._FONT_SORTING_ORDER = {sym[FontFields.SYMBOL]: mod_list.index(sym[FontFields.MODIFIER]) for sym in font}
 
@@ -304,11 +686,12 @@ Preset._build_class()
 
 
 class InstrumentTag(NotationModel):
-    _TAG_TO_POSITION_LIST: ClassVar[dict[str, list[Position]]]
 
     tag: str
     positions: list[Position]
-    infile: str = ""
+    autocorrect: bool = False  # Indicates that parser should try to octavate to match the position's range.
+
+    _TAG_TO_INSTRUMENTTAG_LIST: ClassVar[dict[str, "InstrumentTag"]]
 
     @field_validator("positions", mode="before")
     @classmethod
@@ -316,8 +699,9 @@ class InstrumentTag(NotationModel):
         return cls.to_list(value, Position)
 
     @classmethod
-    def _create_tag_to_position_dict(cls, run_settings: RunSettings) -> dict[str, list[Position]]:
-        """Creates a dict that maps 'free format' position tags to a list of InstumentPosition values
+    def _create_tag_to_record_dict(cls, run_settings: RunSettings) -> dict[str, list[Position]]:
+        """Creates a dict that maps 'free format' position tags to a record containing the corresponding
+        InstumentPosition values
         Args:  run_settings (RunSettings):
         Returns (dict[str, list[Position]]):
         """
@@ -327,18 +711,18 @@ class InstrumentTag(NotationModel):
             for instr in InstrumentType
         ]
         tag_obj_list += [InstrumentTag(tag=pos, positions=[pos]) for pos in Position]
-        lookup_dict = {t.tag: t.positions for t in tag_obj_list}
+        lookup_dict = {t.tag: t for t in tag_obj_list}
 
-        cls._TAG_TO_POSITION_LIST = lookup_dict
+        cls._TAG_TO_INSTRUMENTTAG_LIST = lookup_dict
 
     @classmethod
     def get_positions(cls, tag: str) -> list[Position]:
-        return cls._TAG_TO_POSITION_LIST.get(tag, None)
+        return cls._TAG_TO_INSTRUMENTTAG_LIST.get(tag, None).positions
 
     @classmethod
     def _build_class(cls):
-        settings = get_run_settings(cls._create_tag_to_position_dict)
-        cls._create_tag_to_position_dict(settings)
+        settings = get_run_settings(cls._create_tag_to_record_dict)
+        cls._create_tag_to_record_dict(settings)
 
 
 # INITIALIZE THE InstrumentTag CLASS TO GENERATE THE TAG_TO_POSITION_LIST LOOKUP DICT
@@ -384,6 +768,7 @@ class Measure:
         seq: int
         line: int | None = None  # input line
         notes: list[Note] = field(default_factory=list)
+        ruletype: RuleType | None = None
 
     position: Position
     passes: dict[PassSequence, Pass] = field(default_factory=dict)
@@ -427,6 +812,7 @@ class Beat:
         _countdown: int = 0
 
         def reset(self):
+            # Resets the repeat countdown counter
             self._countdown = self.iterations
 
     id: int
@@ -463,9 +849,11 @@ class Beat:
         return self.goto.get(pass_seq or self._pass_, self.next)
 
     def get_bpm_start(self):
+        # Return tempo at start of beat for the current pass.
         return self.bpm_start.get(self._pass_, self.bpm_start.get(DEFAULT, None))
 
     def get_velocity_start(self, position):
+        # Return velocity at start of beat for the current pass.
         velocities_start = self.velocities_start.get(self._pass_, self.velocities_start.get(DEFAULT, None))
         # NOTE intentionally causing Exception if position not in velocities_start
         return velocities_start[position]

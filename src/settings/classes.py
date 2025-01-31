@@ -133,6 +133,9 @@ class RunSettings(BaseModel):
         folder: str
         subfolder: str
         midiplayer_folder: str
+        integration_test_subfolder_in: str
+        integration_test_subfolder_out: str
+        is_integration_test: bool
         part: "RunSettings.NotationPart"
         midi_out_file: str
         beat_at_end: bool
@@ -140,15 +143,21 @@ class RunSettings(BaseModel):
 
         @property
         def subfolderpath(self):
-            return os.path.join(self.folder, self.subfolder)
+            return os.path.join(
+                self.folder, self.integration_test_subfolder_in if self.is_integration_test else self.subfolder
+            )
 
         @property
         def filepath(self):
-            return os.path.join(self.folder, self.subfolder, self.part.file)
+            return os.path.join(self.subfolderpath, self.part.file)
 
         @property
         def midi_out_filepath(self):
-            return os.path.join(self.folder, self.subfolder, self.midi_out_file)
+            return os.path.join(
+                self.folder,
+                self.integration_test_subfolder_out if self.is_integration_test else self.subfolder,
+                self.midi_out_file,
+            )
 
         @property
         def midi_out_filepath_midiplayer(self):
@@ -195,6 +204,7 @@ class RunSettings(BaseModel):
         folder: str
         instruments_file: str
         tags_file: str
+        rules_file: str
 
         @property
         def instr_filepath(self):
@@ -212,6 +222,11 @@ class RunSettings(BaseModel):
         @property
         def filepath(self):
             return os.path.join(self.folder, self.file)
+
+    class IntegrationTestInfo(BaseModel):
+        inputfolder: str
+        outputfolder: str
+        notations: list[dict[str, str]]
 
     class GrammarInfo(BaseModel):
         folder: str
@@ -269,6 +284,7 @@ class RunSettings(BaseModel):
             save_corrected_to_file: bool
             save_midifile: bool
             update_midiplayer_content: bool
+            integration_test: bool
 
         class SoundfontOptions(BaseModel):
             run: bool
@@ -284,6 +300,7 @@ class RunSettings(BaseModel):
         font: list[dict[str, str | None]] | None
         instruments: list[dict[str, str | None]] | None
         instrument_tags: list[dict[str, str | None]] | None
+        rules: list[dict[str, str | None]] | None
         midinotes: list[dict[str, str | None]] | None
         presets: list[dict[str, str | None]] | None
 
@@ -297,4 +314,5 @@ class RunSettings(BaseModel):
     instruments: InstrumentInfo | None = None
     font: FontInfo | None = None
     grammars: GrammarInfo | None = None
+    integration_test: IntegrationTestInfo | None = None
     data: Data

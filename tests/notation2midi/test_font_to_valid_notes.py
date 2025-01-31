@@ -10,16 +10,6 @@ from src.settings.constants import NoteFields, Yaml
 from src.settings.font_to_valid_notes import get_note_records
 from src.settings.settings import load_run_settings
 
-
-@pytest.fixture(scope="module")
-# Monkeypatch version for module scope.
-# Source: https://stackoverflow.com/questions/53963822/python-monkeypatch-setattr-with-pytest-fixture-at-module-scope
-def monkeymodule():
-    mpatch = MonkeyPatch()
-    yield mpatch
-    mpatch.undo()
-
-
 FIELDS_IN_TUPLE = (
     NoteFields.POSITION,
     NoteFields.PITCH,
@@ -39,9 +29,9 @@ def to_tuple(note_records: list[dict[str, Any]]) -> list[tuple[Any]]:
 def valid_notes(monkeymodule) -> tuple[list[NoteRecord]]:
     # Creates a list of valid notes for Semar Pagulingan and for Gong Kebyar
     monkeymodule.setattr(src.settings.settings, "SETTINGSFOLDER", "./tests/settings")
-    settings = load_run_settings({Yaml.COMPOSITION: "sinomladrang-sp", Yaml.PART: "full"})
+    settings = load_run_settings({Yaml.COMPOSITION: "test-semarpagulingan", Yaml.PART: "full"})
     notes_sp = get_note_records(settings)
-    settings = load_run_settings({Yaml.COMPOSITION: "sinomladrang-gk", Yaml.PART: "full"})
+    settings = load_run_settings({Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART: "full"})
     notes_gk = get_note_records(settings)
     return notes_sp, notes_gk
 

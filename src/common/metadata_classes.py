@@ -49,7 +49,7 @@ def tag_to_position_dict() -> dict[str, list[Position]]:
     """
     TAG = InstrumentTagFields.TAG
     POS = InstrumentTagFields.POSITIONS
-    locals_ = {"None": None} | {x.value: x for x in Position}
+    locals_ = {"None": None} | Position._member_map_
     format = lambda val: eval("None" if val == "" else val, locals_)
     run_settings = get_run_settings()
     tag_rec_list = [record | {POS: format(record[POS])} for record in run_settings.data.instrument_tags]
@@ -130,20 +130,31 @@ class GradualChangeMetadata(MetaDataBaseModel):
 
 # THE METADATA CLASSES
 
+# Reusable validators:
+
+
+def normalize_positions(cls, data: list[str]) -> list[Position]:
+    try:
+        return sum((TAG_TO_POSITION[pos] for pos in data), [])
+    except:
+        raise ValueError(f"Unrecognized instrument position in {data}.")
+
 
 class DynamicsMeta(GradualChangeMetadata):
     metatype: Literal["DYNAMICS"]
     # Currently, an empty list stands for all positions.
     positions: list[Position] = field(default_factory=list)
 
-    @field_validator("positions", mode="before")
-    @classmethod
-    # Converts 'free format' position tags to Position values.
-    def normalize_positions(cls, data: list[str]) -> list[Position]:
-        try:
-            return sum((TAG_TO_POSITION[pos] for pos in data), [])
-        except:
-            raise ValueError(f"Unrecognized instrument position in {data}.")
+    # validators
+    _normalize_position_list: classmethod = field_validator("positions", mode="before")(normalize_positions)
+    # @field_validator("positions", mode="before")
+    # @classmethod
+    # # Converts 'free format' position tags to Position values.
+    # def normalize_positions(cls, data: list[str]) -> list[Position]:
+    #     try:
+    #         return sum((TAG_TO_POSITION[pos] for pos in data), [])
+    #     except:
+    #         raise ValueError(f"Unrecognized instrument position in {data}.")
 
     @field_validator("value", mode="before")
     @classmethod
@@ -179,6 +190,12 @@ class KempliMeta(MetaDataBaseModel):
     metatype: Literal["KEMPLI"]
     status: MetaDataSwitch
     beats: Optional[list[int]] = field(default_factory=list)
+    scope: Optional[Scope] = Scope.GONGAN
+
+
+class AutoKempyungMeta(MetaDataBaseModel):
+    metatype: Literal["AUTOKEMPYUNG"]
+    status: MetaDataSwitch
     scope: Optional[Scope] = Scope.GONGAN
 
 
@@ -231,14 +248,17 @@ class SuppressMeta(MetaDataBaseModel):
     passes: Optional[list[int]] = field(default_factory=list)
     beats: list[int] = field(default_factory=list)
 
-    @field_validator("positions", mode="before")
-    @classmethod
-    # Converts 'free format' position tags to Position values.
-    def normalize_positions(cls, data: list[str]) -> list[Position]:
-        try:
-            return sum((TAG_TO_POSITION[pos] for pos in data), [])
-        except:
-            raise ValueError(f"Unrecognized instrument position in {data}.")
+    # validators
+    _normalize_position_list: classmethod = field_validator("positions", mode="before")(normalize_positions)
+
+    # @field_validator("positions", mode="before")
+    # @classmethod
+    # # Converts 'free format' position tags to Position values.
+    # def normalize_positions(cls, data: list[str]) -> list[Position]:
+    #     try:
+    #         return sum((TAG_TO_POSITION[pos] for pos in data), [])
+    #     except:
+    #         raise ValueError(f"Unrecognized instrument position in {data}.")
 
 
 class TempoMeta(GradualChangeMetadata):
@@ -263,6 +283,7 @@ MetaDataType = Union[
     GonganMeta,
     GoToMeta,
     KempliMeta,
+    AutoKempyungMeta,
     LabelMeta,
     OctavateMeta,
     PartMeta,

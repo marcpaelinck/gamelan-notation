@@ -34,6 +34,7 @@ The font definition files contains the following columns:
 Instrument description consists of two files. 
 - **Instruments file**: a list of all instruments in the orchestra (orchestra is the same as instrument group).
 - **Tag file**: a list of tags or labels used in the notation file to denote the instruments with the corresponding instrument positions as listed in the Instruments file. This allows to process existing notation files without the need to rename the instrument tags.
+- **Rules file**: Generic description of rules. The tabe currently contains two types of rules. The kempyung equivalent for each note, and a rule indicating how a notation line should be applied to each instrument in case a tag represents more than one instrument.
 
 The term *position* denotes either the physical position on a single instrument that is played by more than one player (reyong), or one of multiple parts played on the same instrument type (polos, sangsih)
 
@@ -42,6 +43,8 @@ The term *position* denotes either the physical position on a single instrument 
 | `group`\* | Orchestra type, e.g. GONG_KEBYAR, SEMAR_PAGULINGAN. |
 | `position`\* | The position as described above. e.g. PEMADE_POLOS, REYONG_1. Each row should contain exactly one position. |
 | `instrument`\* | Name of the instrument, e.g. GANGSA, KENDANG. |
+| `position_range` | The range of the position. For most instruments this value corresponds with the instrument's range. For the reyong it is the range of three chimes that corresponds with each position. For the gender it is the range of the left hand, which corresponds with the notes in the notation. |
+| `extended_position_range` | For most instruments this is the same as the `position_range`. For the reyong it is the maximum range of a position, spanning five chimes. For the gender it is the entire instrument's range. |
 
 | **Tag file** |  |
 | ------ | --------- |
@@ -52,6 +55,22 @@ The term *position* denotes either the physical position on a single instrument 
 \* See corresponding `Enum` classes in `src/constants/metadata_classes.py` for possible values.
 
 It is OK to include multiple tags for the same position(s). Each tag should occur in a separate row.
+
+| **Rules file** |  |
+| ------ | --------- |
+| `group` | Orchestra type, e.g. GONG_KEBYAR, SEMAR_PAGULINGAN. |
+| `ruletype` | The name of the rule. |
+| `positions` | List of positions for which the rule applies. Has value ANY if it applies to all instruments. If a specific (list of) position(s) is given, this will overrule any row with the `positions` value `ANY`. Be aware that in that case, the `ANY` row will be completely replaced for the given combination of positions. In other words, the `ANY` row will not be available as a fall-back for cases that are not included in the more specific row(s). |
+| `parameter1`, `value`, ...| Parameter-value pairs for the rule |
+
+There are currently two rules:
+
+| **rule** | **parameter1** | **value1** | **parameter2** | **value2** | **description** |
+| -------- | -------------- | ---------- | -------------- | ---------- | --------------- |
+| `KEMPYUNG` | `NOTE_PAIRS` | list[Pitch, Pitch] | | | Lists the kempyung equivalent for each pitch (see `font` and `midi` sections for an explanation of pitch).
+| `SHARED_NOTATION` |  `SHARED_BY` | list[Position] or ANY |  `TRANSFORM` | list of transformation instructions | Rule that should be applied when an instrument tag represents multiple instruments. The first parameter gives the combination of instruments that share the same notation. The `TRANSFORM` parameter indicates how the notation should be interpreted for each position in the `positions` column. `SAME_PITCH`: use the same pitch within the `position_range`, if possible with the same octave\*\* otherwise an octave higher or lower. `SAME_PITCH_EXTENDED_RANGE`: idem but use the `extended_position_range`. `KEMPYUNG`: use the kempyung equivalent of the notes in the notation, within the `position_range`. if `TRANSFORM` contains more than one value, the first possible transformation is applied. E.g. in case of a reyong position, the value [`SAME_PITCH`, `KEMPYUNG`] indicates that the same pitch should be selected if it is present in the `position_range`, otherwise the kempyung equivalent should be selected. 
+
+\*\* The octave indicator is always relative to an instrument's range.
 
 
 ## midi
