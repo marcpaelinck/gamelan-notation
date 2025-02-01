@@ -110,6 +110,9 @@ Terminology:
 |         | label      | Existing LABEL *name* parameter.   | PENGECET|         |  |
 |         | from_beat  | int                                | 4       | last    | The beat after which to go to the labelled beat. Beats are numbered from 1. Default is the last beat of the gongan. |
 |         | passes     | list of integer values             | [1,2,3] | all     | Passes for which the GOTO will be active. If no passes are given, the GOTO will always be active |
+| AUTOKEMPYUNG||||| Suppresses automatic translation to kempyung for sangsih gangsa in case of common notation (e.g. same notation for all gangsa positions). |
+|         | status     |*on* or *off*                       |*off*    |           | Should always be *off*. *on* will have no effect. |
+|         | scope      | *GONGAN* or* SCORE*                | GONGAN  | GONGAN    | The scope for which to suppress the validation. |
 | KEMPLI  ||||| Suppresses the kempli in a *regular* gongan. |
 |         | status     |*on* or *off*                       |*off*    |           | Usually *off* will be selected. *on* would only have effect in a *gineman* or *kebyar* gongan. |
 |         | beats      | list of integer values             |[5, 6]   | all beats | The beats for which the kempli should be silenced. |
