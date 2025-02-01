@@ -231,7 +231,7 @@ class Instrument(NotationModel):
         )  # or cls._RULES.get(RuleValue.ANY, {}).get(RuleType.SHARED_NOTATION, None)
         if rules:
             rule = next(
-                (rule for rule in rules if set(rule.parameters[RuleParameter.SHARED_BY]) == unisono_positions),
+                (rule for rule in rules if set(rule.parameters[RuleParameter.SHARED_BY]) == set(unisono_positions)),
                 None,
             ) or next((rule for rule in rules if rule.parameters[RuleParameter.SHARED_BY] == RuleValue.ANY), None)
             if rule:
