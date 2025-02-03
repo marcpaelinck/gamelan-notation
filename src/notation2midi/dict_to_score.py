@@ -183,6 +183,8 @@ class DictToScoreConverter(ParserModel):
             pos: (prev_beat.get_notes(pos, DEFAULT)[-1].stroke if prev_beat else silence)
             for pos in positions
         }
+        # Remark: the resttype is EXTENSION if the previous stroke is MUTED or ABBREVIATED.
+        # This will avoid undesired muting when a GOTO points to this measure.
         resttypes = {
             pos: silence if prevstroke is silence or pos in force_silence else extension
             for pos, prevstroke in prevstrokes.items()
