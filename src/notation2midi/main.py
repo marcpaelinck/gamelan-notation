@@ -7,7 +7,8 @@ from src.notation2midi.notation_parser_tatsu import NotationTatsuParser
 from src.notation2midi.score_to_midi import MidiGenerator
 from src.notation2midi.score_to_notation import score_to_notation_file
 from src.notation2midi.score_validation import ScoreValidator
-from src.settings.classes import RunSettings
+from src.settings.classes import RunSettings, RunType
+from src.settings.constants import Yaml
 from src.settings.settings import get_run_settings, load_run_settings
 from src.settings.settings_validation import validate_input_data
 
@@ -37,15 +38,23 @@ def notation_to_midi(run_settings: RunSettings):
         score_to_notation_file(score)
 
 
-def multiple_notations_to_midi(notations: list[str, str]):
+def multiple_notations_to_midi(run_settings: RunSettings):
     """Creates multiple notations
 
     Args:
         notations (list[tuple[str, str]]): list of (composition, part) pairs
     """
-    for notation in notations:
-        run_settings = load_and_validate_run_settings(notation)
-        notation_to_midi(run_settings)
+    for notation_key, notation_info in run_settings.notations.items():
+        if run_settings.options.notation_to_midi.runtype in notation_info.include_in_run_types:
+            for part_key, part_info in notation_info.parts.items():
+                if (
+                    part_key == notation_info.run_test_part
+                    or run_settings.options.notation_to_midi.runtype != RunType.RUN_TEST
+                ):
+                    run_settings = load_and_validate_run_settings(
+                        {Yaml.COMPOSITION: notation_key, Yaml.PART_ID: part_key}
+                    )
+                    notation_to_midi(run_settings)
 
 
 def single_run():
@@ -55,7 +64,7 @@ def single_run():
 
 if __name__ == "__main__":
     run_settings = get_run_settings()
-    if run_settings.options.notation_to_midi.integration_test:
-        multiple_notations_to_midi(run_settings.integration_test.notations)
+    if run_settings.options.notation_to_midi.runtype in [RunType.RUN_ALL, RunType.RUN_TEST]:
+        multiple_notations_to_midi(run_settings)
     else:
         single_run()

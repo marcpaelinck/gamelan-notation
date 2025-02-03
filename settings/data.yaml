@@ -84,49 +84,61 @@ soundfonts:
 midiplayer:
     folder: ./data/midiplayer
     contentfile: content.json
-    helpinghand: [CALUNG, JEGOGAN, PEMADE_POLOS, PEMADE_SANGSIH, KANTILAN_POLOS, KANTILAN_SANGSIH] # Animate panggul.
+    helpinghand: [CALUNG, JEGOGAN, PEMADE_POLOS, PEMADE_SANGSIH, KANTILAN_POLOS, KANTILAN_SANGSIH, UGAL] # Animate panggul.
 notations:
     # `beat_at_end` indicates whether the notation has the gir at the end of each gongan (Balinese concept) or at the beginning.
     # `beat_at_end` notation will be converted to beat at beginning.
     # ${midi.midiversion} will resolve to the value that is set in run-settings.yaml
-    # ${notation.part} will resolve to the label of the selected part.
+    # ${notation.par_id} will resolve to the label of the selected part.
     # If `loop`==false, the last note of each instrument will be extended for a natural fade out.
     # Otherwise the midi file will end abruptly to allow looping.
     defaults:
-        folder: ./data/notation
-        midiplayer_folder: ${midiplayer.folder}
-        integration_test_subfolder_in: ${integration_test.inputfolder}
-        integration_test_subfolder_out: ${integration_test.outputfolder}
-        is_integration_test: ${options.notation_to_midi.integration_test}
+        run_type: ${options.notation_to_midi.runtype}
+        include_in_run_types: [RUN_SINGLE, RUN_ALL, RUN_TEST]
+        run_test_part: full
+        production: true
+        folders:
+            RUN_SINGLE:
+                folder_in: ./data/notation/${notation.subfolder}
+                folder_out: ./data/notation/${notation.subfolder}
+            RUN_SINGLE_PRODUCTION:
+                folder_in: ./data/notation/${notation.subfolder}
+                folder_out:  ${midiplayer.folder}
+            RUN_ALL:
+                folder_in: ./data/notation/${notation.subfolder}
+                folder_out: ${midiplayer.folder}
+            RUN_TEST:
+                folder_in: ./data/notation/_integration_test/notations
+                folder_out: ./data/notation/_integration_test/output
         beat_at_end: false
         autocorrect_kempyung : true
         fontversion: BaliMusic5
         instrumentgroup: GONG_KEBYAR
-        midi_out_file: ${notation.title}_${notation.part.name}_${midi.midiversion}.mid
-    cendrawasih:
-        title: Cendrawasih
-        subfolder: cendrawasih
-        beat_at_end: false
-        part:
-            full:
-                name: entire piece
-                file: Cendrawasih_complete_font5.tsv
-                loop: false
+        midi_out_file: ${notation.title}_${notation.part_id}_${midi.midiversion}.mid
     bapangselisir:
         title: Bapang Selisir
         subfolder: bapang selisir
         instrumentgroup: SEMAR_PAGULINGAN
         beat_at_end: false
-        part:
+        parts:
             full:
                 name: entire piece
                 file: Bapang Selisir_font5.tsv
+                loop: false
+    cendrawasih:
+        title: Cendrawasih
+        subfolder: cendrawasih
+        beat_at_end: false
+        parts:
+            full:
+                name: entire piece
+                file: Cendrawasih_complete_font5.tsv
                 loop: false
     gilakdeng:
         title: Gilak Deng
         subfolder: gilak deng
         beat_at_end: false
-        part:
+        parts:
             full:
                 name: entire piece
                 file: Gilak Deng.tsv
@@ -137,7 +149,7 @@ notations:
         instrumentgroup: SEMAR_PAGULINGAN
         beat_at_end: false
         autocorrect_kempyung : false
-        part:
+        parts:
             full:
                 name: entire piece
                 file: Godek Miring font5.tsv
@@ -162,7 +174,7 @@ notations:
         title: Legong Mahawidya
         subfolder: legong mahawidya
         beat_at_end: false
-        part:
+        parts:
             full:
                 name: entire piece
                 file: Legong Mahawidya_font5.tsv
@@ -173,7 +185,7 @@ notations:
         beat_at_end: false
         autocorrect_kempyung : false
         instrumentgroup: SEMAR_PAGULINGAN
-        part:
+        parts:
             full:
                 name: entire piece
                 file: Lengker Ubud font5.tsv
@@ -194,7 +206,7 @@ notations:
         title: Margapati
         subfolder: margapati
         beat_at_end: false
-        part:
+        parts:
             full:
                 name: entire piece
                 file: Margapati_font5.tsv
@@ -203,7 +215,7 @@ notations:
         title: Pendet
         subfolder: pendet
         beat_at_end: true
-        part:
+        parts:
             full:
                 name: entire piece
                 file: pendet_font5_beat_at_end.tsv
@@ -211,7 +223,7 @@ notations:
     rejangdewa:
         title: Rejang Dewa
         subfolder: rejang dewa
-        part:
+        parts:
             full:
                 name: entire piece
                 file: rejang dewa_font5.tsv
@@ -240,7 +252,7 @@ notations:
         instrumentgroup: SEMAR_PAGULINGAN
         beat_at_end: false
         autocorrect_kempyung : true
-        part:
+        parts:
             full:
                 name: entire piece
                 file: Sekar Gendot font5.tsv
@@ -250,7 +262,7 @@ notations:
         subfolder: sinom ladrang
         instrumentgroup: SEMAR_PAGULINGAN
         beat_at_end: false
-        part:
+        parts:
             full:
                 name: entire piece
                 file: Sinom Ladrang_SP_font5.tsv
@@ -268,17 +280,19 @@ notations:
         subfolder: sinom ladrang
         beat_at_end: false
         instrumentgroup: GONG_KEBYAR
-        part:
+        parts:
             full:
                 name: entire piece
                 file: Sinom Ladrang_GK_ubit4_font5.tsv
                 loop: false
     test-gk:
+        production: false
+        include_in_run_types: [RUN_SINGLE]
         title: Test Gong Kebyar
         subfolder: test
         beat_at_end: false            
         instrumentgroup: GONG_KEBYAR
-        part:
+        parts:
             gendinganak2:
                 name: gending anak-anak
                 file: Gending Anak-Anak.tsv
@@ -292,40 +306,14 @@ notations:
                 file: reyong13_24_test.tsv
                 loop: false
     test-sp:
+        production: false
+        include_in_run_types: [RUN_SINGLE]
         title: Test Semar Pagulingan
         subfolder: test
         beat_at_end: false            
         instrumentgroup: SEMAR_PAGULINGAN
-        part:
+        parts:
             sinomladrang:
                 name: Sinom Ladrang
                 file: Sinom Ladrang_SP_font5.tsv
                 loop: false
-integration_test:
-    inputfolder: _integration_test/notations
-    outputfolder: _integration_test/output
-    notations:
-        - composition: bapangselisir
-          part: full
-        - composition: cendrawasih
-          part: full
-        - composition: gilakdeng
-          part: full
-        - composition: godekmiring
-          part: full
-        - composition: legongmahawidya
-          part: full
-        - composition: lengker
-          part: full
-        - composition: margapati
-          part: full
-        - composition: pendet
-          part: full
-        - composition: rejangdewa
-          part: full
-        - composition: sekargendot
-          part: full
-        - composition: sinomladrang-gk
-          part: full
-        - composition: sinomladrang-sp
-          part: full

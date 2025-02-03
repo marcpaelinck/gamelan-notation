@@ -112,7 +112,7 @@ class DictToScoreConverter(ParserModel):
         # Move the end note of each instrument in the previous beat to the start of the current beat.
         # TODO WARNING: Only the default passes are shifted. Shifting other passes correctly would make this
         # method much more complicated and error prone due to possible unexpected effects of GOTO and LABEL
-        # metadata. Therefore notation with kempli beat the end should be avoided.
+        # metadata. Therefore notation with kempli beat at the end should be avoided.
         beat = self.score.gongans[-1].beats[-1]
         while beat.prev:
             for position, measure in beat.prev.measures.items():
@@ -404,14 +404,14 @@ class DictToScoreConverter(ParserModel):
         self, beat: Beat, prevbeat: Beat, all_instruments: list[Position], force_silence=[]
     ) -> dict[Position, Measure]:
         """Returns measures for missing positions, containing rests (silence) for the duration of the given beat.
-        This ensures that positions that do not occur in all the gongans will remain in sync.
+                This ensures that positions that do not occur in all the gongans will remain in sync.
+        2
+                Args:
+                    beat (Beat): The beat that should be complemented.
+                    all_positions (set[Position]): List of all the positions that occur in the notation.
 
-        Args:
-            beat (Beat): The beat that should be complemented.
-            all_positions (set[Position]): List of all the positions that occur in the notation.
-
-        Returns:
-            dict[Position, Measure]: A dict with the generated measures.
+                Returns:
+                    dict[Position, Measure]: A dict with the generated measures.
         """
 
         # a kempli beat is a muted stroke
@@ -612,4 +612,4 @@ class DictToScoreConverter(ParserModel):
 
 
 if __name__ == "__main__":
-    ...
+    pass

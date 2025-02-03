@@ -5,7 +5,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from src.common.logger import get_logger
 from src.settings.classes import Content, RunSettings
@@ -114,6 +114,9 @@ def read_data(settings_dict: dict) -> dict[str, list[dict[str, str]]]:
 def get_run_settings(listener: callable = None) -> RunSettings:
     """Retrieves the most recently loaded run settings. Loads the settings from the run-settings.yaml file if no
     settings have been loaded yet.
+    Be aware that the run settings are loaded at the first import of src.common.classes. If you need to load settings
+    from another location than the default folder set in src.settings.constants, (e.g. for unit tests), you will need
+    to call load_run_settings after having changed the folder.
 
     Args:
         listener (callable, optional): A function that should be called when new run settings are loaded. This value
@@ -170,16 +173,19 @@ def load_run_settings(notation: dict[str, str] = None) -> RunSettings:
 
     # NOTATION INFORMATION
 
+    # Add the list of all notations and update each entry with the default settings
+    settings_dict[Yaml.NOTATIONS] = data_dict[Yaml.NOTATIONS]
+    for key, notation_entry in settings_dict[Yaml.NOTATIONS].items():
+        if key == Yaml.DEFAULTS:
+            continue
+        settings_dict[Yaml.NOTATIONS][key] = data_dict[Yaml.NOTATIONS][Yaml.DEFAULTS] | notation_entry
+    del settings_dict[Yaml.NOTATIONS][Yaml.DEFAULTS]
+
     if notation:
         run_settings_dict[Yaml.NOTATION] = notation
 
-    notation = (
-        data_dict[Yaml.NOTATIONS][Yaml.DEFAULTS]
-        | data_dict[Yaml.NOTATIONS][run_settings_dict[Yaml.NOTATION][Yaml.COMPOSITION]]
-    )
-    notation[Yaml.PART] = data_dict[Yaml.NOTATIONS][run_settings_dict[Yaml.NOTATION][Yaml.COMPOSITION]][Yaml.PART][
-        run_settings_dict[Yaml.NOTATION][Yaml.PART]
-    ]
+    notation = data_dict[Yaml.NOTATIONS][run_settings_dict[Yaml.NOTATION][Yaml.COMPOSITION]]
+    notation[Yaml.PART_ID] = run_settings_dict[Yaml.NOTATION][Yaml.PART_ID]
 
     settings_dict[Yaml.NOTATION] = get_settings_fields(
         RunSettings.NotationInfo,
@@ -206,11 +212,13 @@ def load_run_settings(notation: dict[str, str] = None) -> RunSettings:
     fontgrammar = data_dict[Yaml.GRAMMARS][Yaml.FONTVERSIONS][notation[Yaml.FONTVERSION]]
     settings_dict[Yaml.GRAMMARS] = get_settings_fields(RunSettings.GrammarInfo, data_dict[Yaml.GRAMMARS] | fontgrammar)
 
-    # INTEGRATION TEST INFORMATION
+    # # MULTIPLE RUNS INTEGRATION TEST INFORMATION
 
-    settings_dict[Yaml.INTEGRATIONTEST] = get_settings_fields(
-        RunSettings.IntegrationTestInfo, data_dict[Yaml.INTEGRATIONTEST]
-    )
+    # run_option = run_settings_dict[Yaml.OPTIONS][Yaml.NOTATION_TO_MIDI][Yaml.RUNTYPE]
+    # if run_option != Yaml.RUN_SINGLE:
+    #     settings_dict[Yaml.MULTIPLE_RUNS] = get_settings_fields(
+    #         RunSettings.MultipleRunsInfo, data_dict[Yaml.MULTIPLE_RUNS][run_option]
+    #     )
 
     settings_dict = post_process(settings_dict)
 
@@ -219,7 +227,13 @@ def load_run_settings(notation: dict[str, str] = None) -> RunSettings:
     settings_dict[Yaml.DATA] = read_data(settings_dict)
 
     global _RUN_SETTINGS
-    _RUN_SETTINGS = RunSettings.model_validate(settings_dict)
+    try:
+        _RUN_SETTINGS = RunSettings.model_validate(settings_dict)
+    except ValidationError as e:
+        # Aggregate errors by variable
+        errors = {err["input"]: err["msg"] for err in e.errors()}
+        logger.error(errors)
+        exit()
 
     for listener in _RUN_SETTINGS_LISTENERS:
         listener(_RUN_SETTINGS)
@@ -229,10 +243,10 @@ def load_run_settings(notation: dict[str, str] = None) -> RunSettings:
 def get_all_notation_parts(include_tests: bool = False) -> dict[str, str]:
     data_dict = read_settings(DATA_INFOFILE)
     return [
-        {Yaml.COMPOSITION: n, Yaml.PART: p}
+        {Yaml.COMPOSITION: n, Yaml.PART_ID: p}
         for n in data_dict[Yaml.NOTATIONS].keys()
         if not n.startswith("default") and (include_tests or not n.startswith("test"))
-        for p in data_dict[Yaml.NOTATIONS][n][Yaml.PART].keys()
+        for p in data_dict[Yaml.NOTATIONS][n][Yaml.PART_ID].keys()
     ]
 
 
@@ -267,5 +281,5 @@ if __name__ == "__main__":
     # For testing
     settings = get_run_settings()
     print(settings.notation)
-    print(settings.notation.filepath)
+    print(settings.notation.notation_filepath)
     print(settings.notation.midi_out_filepath)

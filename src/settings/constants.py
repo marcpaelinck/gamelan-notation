@@ -95,7 +95,7 @@ class PresetsFields(SStrEnum):
 
 class Yaml(SStrEnum):
 
-    # YAML fieldnames
+    # YAML fieldnames and (enum) values
     NOTATIONS = "notations"
     NOTATION = "notation"
     DATA = "data"
@@ -113,9 +113,16 @@ class Yaml(SStrEnum):
     SOUNDFONTS = "soundfonts"
     SOUNDFONT = "soundfont"
     OPTIONS = "options"
+    NOTATION_TO_MIDI = "notation_to_midi"
+    RUNTYPE = "runtype"
     COMPOSITION = "composition"
     PART = "part"
+    PART_ID = "part_id"
     INSTRUMENTGROUPS = "instrumentgroups"
     INSTRUMENTGROUP = "instrumentgroup"
     MIDIPLAYER = "midiplayer"
-    INTEGRATIONTEST = "integration_test"
+    MULTIPLE_RUNS = "multiple_runs"
+    # Enum values
+    RUN_SINGLE = "RUN_SINGLE"
+    RUN_INTEGRATIONTEST = "RUN_INTEGRATIONTEST"
+    RUN_ALL = "RUN_ALL"

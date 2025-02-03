@@ -1,10 +1,9 @@
 from collections import defaultdict
 from typing import Any
+from unittest.mock import patch
 
 import pytest
-from _pytest.monkeypatch import MonkeyPatch
 
-import src.settings.settings
 from src.common.constants import InstrumentGroup, NoteRecord, Pitch, Position, Stroke
 from src.settings.constants import NoteFields, Yaml
 from src.settings.font_to_valid_notes import get_note_records
@@ -26,12 +25,12 @@ def to_tuple(note_records: list[dict[str, Any]]) -> list[tuple[Any]]:
 
 
 @pytest.fixture(scope="module")
-def valid_notes(monkeymodule) -> tuple[list[NoteRecord]]:
+@patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
+def valid_notes() -> tuple[list[NoteRecord]]:
     # Creates a list of valid notes for Semar Pagulingan and for Gong Kebyar
-    monkeymodule.setattr(src.settings.settings, "SETTINGSFOLDER", "./tests/settings")
-    settings = load_run_settings({Yaml.COMPOSITION: "test-semarpagulingan", Yaml.PART: "full"})
+    settings = load_run_settings({Yaml.COMPOSITION: "test-semarpagulingan", Yaml.PART_ID: "full"})
     notes_sp = get_note_records(settings)
-    settings = load_run_settings({Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART: "full"})
+    settings = load_run_settings({Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART_ID: "full"})
     notes_gk = get_note_records(settings)
     return notes_sp, notes_gk
 

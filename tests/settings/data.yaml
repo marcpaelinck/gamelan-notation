@@ -84,7 +84,7 @@ soundfonts:
 midiplayer:
     folder: ./data/midiplayer
     contentfile: content.json
-    helpinghand: [CALUNG, JEGOGAN, PEMADE_POLOS, PEMADE_SANGSIH, KANTILAN_POLOS, KANTILAN_SANGSIH] # Animate panggul.
+    helpinghand: [CALUNG, JEGOGAN, PEMADE_POLOS, PEMADE_SANGSIH, KANTILAN_POLOS, KANTILAN_SANGSIH, UGAL] # Animate panggul.
 notations:
     # `beat_at_end` indicates whether the notation has the gir at the end of each gongan (Balinese concept) or at the beginning.
     # the entries under the 'files' label will be referred to as 'part'.
@@ -93,22 +93,34 @@ notations:
     # If `loop`==false, the last note of each instrument will be extended for a natural fade out.
     # Otherwise the midi file will end abruptly to allow looping.
     defaults:
-        folder: ./tests/data/notation
-        midiplayer_folder: ${midiplayer.folder}
-        integration_test_subfolder_in: ${integration_test.inputfolder}
-        integration_test_subfolder_out: ${integration_test.outputfolder}
-        is_integration_test: ${options.notation_to_midi.integration_test}
+        run_type: ${options.notation_to_midi.runtype}
+        include_in_run_types: [RUN_SINGLE, RUN_ALL, RUN_TEST]
+        run_test_part: full
+        production: true
+        folders:
+            RUN_SINGLE:
+                folder_in: ./tests/data/notation/${notation.subfolder}
+                folder_out: ./tests/data/notation/${notation.subfolder}
+            RUN_SINGLE_PRODUCTION:
+                folder_in: ./tests/data/notation/${notation.subfolder}
+                folder_out:  /tests/${midiplayer.folder}
+            RUN_ALL:
+                folder_in: ./data/notation/${notation.subfolder}
+                folder_out: ${midiplayer.folder}
+            RUN_TEST:
+                folder_in: ./tests/data/notation/_integration_test/notations
+                folder_out: ./tests/data/notation/_integration_test/output
         beat_at_end: false
         autocorrect_kempyung : true
         fontversion: BaliMusic5
         instrumentgroup: GONG_KEBYAR
-        midi_out_file: ${notation.title}_${notation.part.name}_${midi.midiversion}.mid
+        midi_out_file: ${notation.title}_${notation.part_id}_${midi.midiversion}.mid
     test-semarpagulingan:
         title: Sinom Ladrang
         subfolder: sinom ladrang
         instrumentgroup: SEMAR_PAGULINGAN
         beat_at_end: false
-        part:
+        parts:
             full:
                 name: entire piece
                 file: Sinom Ladrang_SP_font5.tsv
@@ -118,10 +130,20 @@ notations:
         subfolder: sinom ladrang
         beat_at_end: false
         instrumentgroup: GONG_KEBYAR
-        part:
+        parts:
             full:
                 name: entire piece
                 file: Sinom Ladrang_GK_ubit4_font5.tsv
+                loop: false
+    test_beat_at_end:
+        title: Pendet
+        subfolder: pendet
+        beat_at_end: true
+        instrumentgroup: GONG_KEBYAR
+        parts:
+            full:
+                name: entire piece
+                file: pendet_font5_beat_at_end.tsv
                 loop: false
 integration_test:
     inputfolder: _integration_test/notations

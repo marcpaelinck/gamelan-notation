@@ -22,3 +22,7 @@ def to_text_multiple_files(files: list[str], folders: list[str]):
     for file in files:
         for folder in folders:
             to_text(folder, file)
+
+
+if __name__ == "__main__":
+    to_text("./data/midiplayer/", "Cendrawasih_full_GAMELAN1.mid")

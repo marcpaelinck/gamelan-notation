@@ -1,4 +1,5 @@
 import os
+from enum import Enum, StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -121,6 +122,13 @@ class Content(BaseModel):
 # RUN SETTINGS
 
 
+class RunType(StrEnum):
+    RUN_SINGLE = "RUN_SINGLE"
+    RUN_SINGLE_PRODUCTION = "RUN_SINGLE_PRODUCTION"
+    RUN_ALL = "RUN_ALL"
+    RUN_TEST = "RUN_TEST"
+
+
 class RunSettings(BaseModel):
     class NotationPart(BaseModel):
         name: str
@@ -128,40 +136,36 @@ class RunSettings(BaseModel):
         loop: bool
 
     class NotationInfo(BaseModel):
+        class FolderInfo(BaseModel):
+            folder_in: str
+            folder_out: str
+
         title: str
         instrumentgroup: InstrumentGroup
-        folder: str
-        subfolder: str
-        midiplayer_folder: str
-        integration_test_subfolder_in: str
-        integration_test_subfolder_out: str
-        is_integration_test: bool
-        part: "RunSettings.NotationPart"
         midi_out_file: str
+        run_type: RunType
+        folders: dict[RunType, FolderInfo] = Field(default_factory=dict)
+        subfolder: str
+        part_id: str = ""
+        parts: dict[str, "RunSettings.NotationPart"] = Field(default_factory=dict)
         beat_at_end: bool
         autocorrect_kempyung: bool
+        # run types that should include this composition
+        include_in_run_types: list[RunType] = Field(default_factory=list)
+        run_test_part: str  # part key of part to included in the integration test.
+        production: bool  # resulting MIDI file fit to save to production environment?
 
         @property
-        def subfolderpath(self):
-            return os.path.join(
-                self.folder, self.integration_test_subfolder_in if self.is_integration_test else self.subfolder
-            )
+        def part(self):
+            return self.parts[self.part_id] if self.part_id in self.parts.keys() else None
 
         @property
-        def filepath(self):
-            return os.path.join(self.subfolderpath, self.part.file)
+        def notation_filepath(self):
+            return os.path.join(self.folders[self.run_type].folder_in, self.parts[self.part_id].file)
 
         @property
         def midi_out_filepath(self):
-            return os.path.join(
-                self.folder,
-                self.integration_test_subfolder_out if self.is_integration_test else self.subfolder,
-                self.midi_out_file,
-            )
-
-        @property
-        def midi_out_filepath_midiplayer(self):
-            return os.path.join(self.midiplayer_folder, self.midi_out_file)
+            return os.path.join(self.folders[self.run_type].folder_out, self.midi_out_file)
 
     class MidiInfo(BaseModel):
         # Implementation of tremolo notes. First two parameters are in 1/base_note_time. E.g. if base_note_time=24, then 24 is a standard note duration.
@@ -223,9 +227,10 @@ class RunSettings(BaseModel):
         def filepath(self):
             return os.path.join(self.folder, self.file)
 
-    class IntegrationTestInfo(BaseModel):
-        inputfolder: str
-        outputfolder: str
+    class MultipleRunsInfo(BaseModel):
+        folder_in: str
+        folder_out: str
+        runtype: RunType
         notations: list[dict[str, str]]
 
     class GrammarInfo(BaseModel):
@@ -278,13 +283,15 @@ class RunSettings(BaseModel):
 
     class Options(BaseModel):
         class NotationToMidiOptions(BaseModel):
-            run: bool
+            runtype: RunType
             detailed_validation_logging: bool
             autocorrect: bool
             save_corrected_to_file: bool
             save_midifile: bool
-            update_midiplayer_content: bool
-            integration_test: bool
+
+            @property
+            def update_midiplayer_content(self) -> bool:
+                return self.runtype in [RunType.RUN_ALL, RunType.RUN_SINGLE_PRODUCTION]
 
         class SoundfontOptions(BaseModel):
             run: bool
@@ -310,9 +317,10 @@ class RunSettings(BaseModel):
     midiplayer: MidiPlayerInfo | None = None
     soundfont: SoundfontInfo | None = None
     samples: SampleInfo | None = None
+    notations: dict[str, NotationInfo] = Field(default_factory=dict)
     notation: NotationInfo | None = None
+    multiple_runs: MultipleRunsInfo | None = None
     instruments: InstrumentInfo | None = None
     font: FontInfo | None = None
     grammars: GrammarInfo | None = None
-    integration_test: IntegrationTestInfo | None = None
     data: Data

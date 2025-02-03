@@ -1,5 +1,6 @@
 group	position	instrumenttype	position_range	extended_position_range
 GONG_KEBYAR	UGAL	UGAL	[(DONG, 0), (DENG, 0), (DUNG, 0), (DANG, 0), (DING, 1), (DONG, 1), (DENG, 1), (DUNG, 1), (DANG, 1), (DING, 2)]	
+GONG_KEBYAR	GENDERRAMBAT	GENDERRAMBAT	[(DONG, 0), (DENG, 0), (DUNG, 0), (DANG, 0), (DING, 1), (DONG, 1), (DENG, 1), (DUNG, 1), (DANG, 1)]	
 GONG_KEBYAR	TROMPONG	TROMPONG	[(DANG, 0), (DING, 1), (DONG, 1), (DENG, 1), (DUNG, 1), (DANG, 1), (DING, 2), (DONG, 2), (DENG, 2), (DUNG, 2)]	
 GONG_KEBYAR	PEMADE_POLOS	PEMADE	[(DONG, 0), (DENG, 0), (DUNG, 0), (DANG, 0), (DING, 1), (DONG, 1), (DENG, 1), (DUNG, 1), (DANG, 1), (DING, 2)]	
 GONG_KEBYAR	PEMADE_SANGSIH	PEMADE	[(DONG, 0), (DENG, 0), (DUNG, 0), (DANG, 0), (DING, 1), (DONG, 1), (DENG, 1), (DUNG, 1), (DANG, 1), (DING, 2)]	

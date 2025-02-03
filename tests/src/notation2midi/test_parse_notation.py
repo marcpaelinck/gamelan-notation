@@ -2,6 +2,8 @@
 Tests for the Tatsu based notation parser
 """
 
+from unittest.mock import patch
+
 import pytest
 
 from src.common.classes import Position
@@ -35,6 +37,7 @@ start  = "{"  @:metadata "}"  $  ;
 
 
 @pytest.fixture
+@patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
 def parser():
     settings = get_run_settings()
     return NotationTatsuParser(settings)
@@ -306,14 +309,12 @@ bad_ranges = ["1,2,", "realbad", "1-", "-1", "-", ",", "1-4-"]
 
 @pytest.mark.parametrize("rangestr, expected", correct_ranges)
 # Tests the conversion of optional range indicators following the position name in the score
-def test_range_str_to_list(rangestr, expected, run_settings):
-    parser = NotationTatsuParser(run_settings=run_settings)
+def test_range_str_to_list(rangestr, expected, parser):
     assert parser._passes_str_to_list(rangestr) == expected
 
 
 @pytest.mark.parametrize("rangestr", bad_ranges)
 # Test that invalid values cause a ValueError to be raised
-def test_range_str_to_list_exception(rangestr, run_settings):
+def test_range_str_to_list_exception(rangestr, parser):
     with pytest.raises(ValueError):
-        parser = NotationTatsuParser(run_settings=run_settings)
         parser._passes_str_to_list(rangestr)

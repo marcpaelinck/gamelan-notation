@@ -141,7 +141,7 @@ class NotationTatsuParser(ParserModel):
 
     def _import_notation(self, settings: RunSettings):
         # Read and parse the notation file
-        with open(settings.notation.filepath, "r") as notationfile:
+        with open(settings.notation.notation_filepath, "r") as notationfile:
             notation = notationfile.read()
         return notation
 
@@ -303,7 +303,7 @@ class NotationTatsuParser(ParserModel):
         if notation:
             self.loginfo(f"Parsing notation from string")
         else:
-            notationpath = self.run_settings.notation.filepath
+            notationpath = self.run_settings.notation.notation_filepath
             self.loginfo(f"Parsing file {notationpath}")
             with open(notationpath, "r") as notationfile:
                 notation = notationfile.read()

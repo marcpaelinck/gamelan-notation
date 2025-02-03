@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 
 from src.common.classes import Beat, Gongan, Measure, Note, Score
@@ -13,9 +15,10 @@ def note(position: Position, pitch: Pitch, octave: int):
 
 
 @pytest.fixture
+@patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
 def sample_gk_score():
     # Create a sample gongan with one incorrect beat (PEMADE and SANGSIH are the same) and one correct beat
-    settings = load_run_settings({Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART: "full"})
+    settings = load_run_settings({Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART_ID: "full"})
     gongan = Gongan(
         id=1,
         gongantype=GonganType.REGULAR,

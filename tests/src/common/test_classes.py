@@ -1,8 +1,10 @@
+import unittest
 from itertools import product
+from unittest.mock import patch
 
 import pytest
 
-import src.settings.settings as settings
+import src.settings.settings
 from src.common.classes import Instrument, Note, Tone
 from src.common.constants import (
     Pitch,
@@ -13,28 +15,18 @@ from src.common.constants import (
     Stroke,
 )
 from src.settings.constants import Yaml
-from src.settings.settings import load_run_settings
 
 
-def monkeymodule():
-    mpatch = pytest.MonkeyPatch()
-    mpatch.setattr(settings, "SETTINGSFOLDER", "./tests/settings")
-    yield mpatch
-    mpatch.undo()
+@patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
+def load_settings_sp():
+    # Create mock notation and converter for semar pagulingan score
+    src.settings.settings.load_run_settings(notation={Yaml.COMPOSITION: "test-semarpagulingan", Yaml.PART_ID: "full"})
 
 
-@pytest.fixture
-def settings_gk(monkeymodule):
-    # Returns run settings for Gong Kebyar
-    monkeymodule.setattr(settings, "SETTINGSFOLDER", "./tests/settings")
-    yield load_run_settings({Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART: "full"})
-
-
-@pytest.fixture
-def settings_sp(monkeymodule):
-    # Returns run settings for Semar Pagulingan
-    monkeymodule.setattr(settings, "SETTINGSFOLDER", "./tests/settings")
-    yield load_run_settings({Yaml.COMPOSITION: "test-semarpagulingan", Yaml.PART: "full"})
+@patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
+def load_settings_gk():
+    # Create mock notation and converter for gong kebyar score with beat at end
+    src.settings.settings.load_run_settings(notation={Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART_ID: "full"})
 
 
 tone_range_data = [
@@ -72,7 +64,8 @@ tone_range_data = [
 
 
 @pytest.mark.parametrize("tone, position, expected", tone_range_data)
-def test_get_tones_within_range(settings_gk, tone, position, expected):
+def test_get_tones_within_range(tone, position, expected):
+    load_settings_gk()
     for i, (extended_range, match_octave) in enumerate(product([True, False], [True, False])):
         assert Instrument.get_tones_within_range(tone, position, extended_range, match_octave) == expected[i]
 
@@ -142,7 +135,7 @@ kempyung_tone_data = [
 
 
 @pytest.mark.parametrize("tone, position, expected", kempyung_tone_data)
-def test_get_kempyung_tones(settings_gk, tone, position, expected):
+def test_get_kempyung_tones(tone, position, expected):
     for i, (extended_range, within_octave) in enumerate(product([True, False], [True, False])):
         assert Instrument.get_kempyung_tones_within_range(tone, position, extended_range, within_octave) == expected[i]
 
@@ -200,7 +193,7 @@ data_shared_notation_rule = [
 
 
 @pytest.mark.parametrize("position, all_positions, expected", data_shared_notation_rule)
-def test_shared_notation_rule(settings_gk, position, all_positions, expected):
+def test_shared_notation_rule(position, all_positions, expected):
     assert Instrument.get_shared_notation_rule(position, all_positions) == expected
 
 
@@ -270,6 +263,6 @@ data_shared_notation = [
 
 
 @pytest.mark.parametrize("tone, position, all_positions, expected", data_shared_notation)
-def test_apply_unisono_rule(settings_gk, tone, position, all_positions, expected):
+def test_apply_unisono_rule(tone, position, all_positions, expected):
     tone = Instrument.cast_to_position(tone, position, all_positions)
     assert tone == expected

@@ -1,12 +1,10 @@
 import csv
-import os
 
 import pandas as pd
 import pytest
 
 from src.common.classes import Beat, Gongan, Measure, Note
 from src.common.constants import DEFAULT, InstrumentType, Position
-from src.notation2midi.notation_parser_tatsu import NotationTatsuParser
 from src.notation2midi.score_to_notation import gongan_to_records, notelist_to_string
 from src.settings.constants import InstrumentFields
 
