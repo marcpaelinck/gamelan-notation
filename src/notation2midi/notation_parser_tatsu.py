@@ -362,7 +362,7 @@ class NotationTatsuParser(ParserModel):
             gongan_id: {
                 key: [
                     (
-                        element[key]
+                        element[key].rstrip("\t ")
                         if key is ParserTag.COMMENTS
                         else element[key] | {ParserTag.LINE: element[ParserTag.PARSEINFO][ParserTag.ENDLINE]}
                     )

@@ -2,7 +2,7 @@ import json
 import re
 from dataclasses import field
 from enum import StrEnum
-from typing import Any, Literal, Optional, Union
+from typing import Any, ClassVar, Literal, Optional, Union
 
 import regex
 from pydantic import BaseModel, Field, field_validator
@@ -71,6 +71,9 @@ class MetaDataBaseModel(BaseModel):
     line: int = None
     _processingorder_ = 99
 
+    # name of the paramater whose value may appear in the notation without specifying the parameter
+    DEFAULTPARAM: ClassVar[str]
+
     @classmethod
     def string_to_list(cls, value: str, el_type: type):
         """Tries to to parse a string or a list of strings. If el_type is None, returns a list of strings.
@@ -108,8 +111,12 @@ class MetaDataBaseModel(BaseModel):
 
     def model_dump_notation(self):
         json = self.model_dump(exclude_defaults=True)
+        del json["line"]
         del json["metatype"]
-        return f"{{{self.metatype} {', '.join([f'{key}={val}' for key, val in json.items()])}}}"
+        if self.DEFAULTPARAM:
+            defval = json[self.DEFAULTPARAM]
+            del json[self.DEFAULTPARAM]
+        return f"{{{self.metatype} {defval} {' '.join([f'{key}={val}' for key, val in json.items()])}}}".strip()
 
 
 class GradualChangeMetadata(MetaDataBaseModel):
@@ -144,6 +151,7 @@ class DynamicsMeta(GradualChangeMetadata):
     metatype: Literal["DYNAMICS"]
     # Currently, an empty list stands for all positions.
     positions: list[Position] = field(default_factory=list)
+    DEFAULTPARAM = "value"
 
     # validators
     _normalize_position_list: classmethod = field_validator("positions", mode="before")(normalize_positions)
@@ -172,6 +180,7 @@ class DynamicsMeta(GradualChangeMetadata):
 class GonganMeta(MetaDataBaseModel):
     metatype: Literal["GONGAN"]
     type: GonganType
+    DEFAULTPARAM = "type"
 
 
 class GoToMeta(MetaDataBaseModel):
@@ -179,6 +188,7 @@ class GoToMeta(MetaDataBaseModel):
     label: str
     from_beat: Optional[int] | None = None  # Beat number from which to goto. Default is last beat of the gongan.
     passes: Optional[list[int]] = field(default_factory=list)  # On which pass(es) should goto be performed?
+    DEFAULTPARAM = "label"
 
     @property
     def beat_seq(self) -> int:
@@ -191,12 +201,14 @@ class KempliMeta(MetaDataBaseModel):
     status: MetaDataSwitch
     beats: Optional[list[int]] = field(default_factory=list)
     scope: Optional[Scope] = Scope.GONGAN
+    DEFAULTPARAM = "status"
 
 
 class AutoKempyungMeta(MetaDataBaseModel):
     metatype: Literal["AUTOKEMPYUNG"]
     status: MetaDataSwitch
     scope: Optional[Scope] = Scope.GONGAN
+    DEFAULTPARAM = "status"
 
 
 class LabelMeta(MetaDataBaseModel):
@@ -205,6 +217,7 @@ class LabelMeta(MetaDataBaseModel):
     beat: Optional[int] = 1
     # Make sure that labels are processed before gotos in same gongan.
     _processingorder_ = 1
+    DEFAULTPARAM = "name"
 
     @property
     def beat_seq(self) -> int:
@@ -217,6 +230,7 @@ class OctavateMeta(MetaDataBaseModel):
     instrument: InstrumentType
     octaves: int
     scope: Optional[Scope] = Scope.GONGAN
+    DEFAULTPARAM = "instrument"
 
     @field_validator("instrument", mode="before")
     @classmethod
@@ -230,16 +244,19 @@ class OctavateMeta(MetaDataBaseModel):
 class PartMeta(MetaDataBaseModel):
     metatype: Literal["PART"]
     name: str
+    DEFAULTPARAM = "name"
 
 
 class RepeatMeta(MetaDataBaseModel):
     metatype: Literal["REPEAT"]
     count: int = 1
+    DEFAULTPARAM = "count"
 
 
 class SequenceMeta(MetaDataBaseModel):
     metatype: Literal["SEQUENCE"]
     value: list[str] = field(default_factory=list)
+    DEFAULTPARAM = "value"
 
 
 class SuppressMeta(MetaDataBaseModel):
@@ -247,6 +264,7 @@ class SuppressMeta(MetaDataBaseModel):
     positions: list[Position] = field(default_factory=list)
     passes: Optional[list[int]] = field(default_factory=list)
     beats: list[int] = field(default_factory=list)
+    DEFAULTPARAM = "positions"
 
     # validators
     _normalize_position_list: classmethod = field_validator("positions", mode="before")(normalize_positions)
@@ -263,6 +281,7 @@ class SuppressMeta(MetaDataBaseModel):
 
 class TempoMeta(GradualChangeMetadata):
     metatype: Literal["TEMPO"]
+    DEFAULTPARAM = "value"
 
 
 class ValidationMeta(MetaDataBaseModel):
@@ -270,12 +289,14 @@ class ValidationMeta(MetaDataBaseModel):
     beats: Optional[list[int]] = field(default_factory=list)
     ignore: list[ValidationProperty]
     scope: Optional[Scope] = Scope.GONGAN
+    DEFAULTPARAM = None
 
 
 class WaitMeta(MetaDataBaseModel):
     metatype: Literal["WAIT"]
     seconds: float = None
     after: bool = True
+    DEFAULTPARAM = None
 
 
 MetaDataType = Union[

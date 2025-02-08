@@ -24,6 +24,8 @@ deadcode = "^2.4.1"
 regex = "^2024.11.6"
 tatsu = "^5.13.1"
 vulture = "^2.14"
+python-docx = "^1.1.2"
+docx2pdf = "^0.1.8"
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra -q"

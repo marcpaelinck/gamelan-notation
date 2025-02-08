@@ -287,6 +287,7 @@ class RunSettings(BaseModel):
             detailed_validation_logging: bool
             autocorrect: bool
             save_corrected_to_file: bool
+            save_pdf_notation: bool
             save_midifile: bool
 
             @property

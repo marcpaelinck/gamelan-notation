@@ -6,6 +6,7 @@ from src.notation2midi.dict_to_score import DictToScoreConverter
 from src.notation2midi.notation_parser_tatsu import NotationTatsuParser
 from src.notation2midi.score_to_midi import MidiGenerator
 from src.notation2midi.score_to_notation import score_to_notation_file
+from src.notation2midi.score_to_pdf import ScoreToPDFConverter
 from src.notation2midi.score_validation import ScoreValidator
 from src.settings.classes import RunSettings, RunType
 from src.settings.constants import Yaml
@@ -36,6 +37,8 @@ def notation_to_midi(run_settings: RunSettings):
 
     if success and run_settings.options.notation_to_midi.save_corrected_to_file:
         score_to_notation_file(score)
+    if success and run_settings.options.notation_to_midi.save_pdf_notation:
+        ScoreToPDFConverter(score).save()
 
 
 def multiple_notations_to_midi(run_settings: RunSettings):

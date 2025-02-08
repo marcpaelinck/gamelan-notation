@@ -2,6 +2,8 @@
 
 All tabular data should be tab delimited.
 
+## Printing the notation with Notepad++ and fitting to page
+See https://superuser.com/questions/1165279/fitting-more-code-on-printed-page-in-notepad
 
 ## Font
 A Truetype font `Bali Music` is available to facilitate the notation of Balinese (gong kebyar) music. This font maps symbols that are specific for the notation of Balinese music to 'regular' letters and symbols. More specifically, it maps the symbols to unicode values. The font definition file defines this mapping.

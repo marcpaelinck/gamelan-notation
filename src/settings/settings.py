@@ -133,6 +133,15 @@ def get_run_settings(listener: callable = None) -> RunSettings:
     return _RUN_SETTINGS
 
 
+def validate_settings(data_dict: dict, run_settings_dict: dict) -> bool:
+    ok = True
+    composition = run_settings_dict[Yaml.NOTATION][Yaml.COMPOSITION]
+    if not data_dict[Yaml.NOTATIONS].get(composition, None):
+        logger.error(f"invalid composition name: {composition}")
+        ok = False
+    return ok
+
+
 def load_run_settings(notation: dict[str, str] = None) -> RunSettings:
     """Retrieves the run settings from the run settings yaml file, enriched with information
        from the data information yaml file.
@@ -146,6 +155,10 @@ def load_run_settings(notation: dict[str, str] = None) -> RunSettings:
     """
     run_settings_dict = read_settings(RUN_SETTINGSFILE)
     data_dict = read_settings(DATA_INFOFILE)
+
+    # Validate some manually set settings and abort if invalid
+    if not validate_settings(data_dict, run_settings_dict):
+        exit()
 
     settings_dict = dict()
 

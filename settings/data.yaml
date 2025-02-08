@@ -125,6 +125,16 @@ notations:
                 name: entire piece
                 file: Bapang Selisir_font5.tsv
                 loop: false
+    bapangselisir-gk:
+        title: Bapang Selisir (gong kebyar)
+        subfolder: bapang selisir
+        instrumentgroup: GONG_KEBYAR
+        beat_at_end: false
+        parts:
+            full:
+                name: entire piece
+                file: Bapang Selisir_font5_GK.tsv
+                loop: false
     cendrawasih:
         title: Cendrawasih
         subfolder: cendrawasih
@@ -202,6 +212,17 @@ notations:
                 name: pengawak
                 file: Lengker Ubud font5_pengawak.tsv
                 loop: true
+    lengker-gk:
+        title: Lengker (gong kebyar)
+        subfolder: lengker
+        beat_at_end: false
+        autocorrect_kempyung : false
+        instrumentgroup: GONG_KEBYAR
+        parts:
+            full:
+                name: entire piece
+                file: Lengker Ubud font5_GK.tsv
+                loop: false
     margapati:
         title: Margapati
         subfolder: margapati
@@ -251,11 +272,22 @@ notations:
         subfolder: sekar gendot
         instrumentgroup: SEMAR_PAGULINGAN
         beat_at_end: false
-        autocorrect_kempyung : true
+        autocorrect_kempyung : false
         parts:
             full:
                 name: entire piece
                 file: Sekar Gendot font5.tsv
+                loop: false
+    sekargendot-gk:
+        title: Sekar Gendot (gong kebyar)
+        subfolder: sekar gendot
+        instrumentgroup: GONG_KEBYAR
+        beat_at_end: false
+        autocorrect_kempyung : false
+        parts:
+            full:
+                name: entire piece
+                file: Sekar Gendot font5_GK.tsv
                 loop: false
     sinomladrang-sp:
         title: Sinom Ladrang
