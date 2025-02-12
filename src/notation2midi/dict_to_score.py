@@ -216,8 +216,7 @@ class DictToScoreConverter(ParserModel):
         """
 
         def process_goto(gongan: Gongan, goto: MetaData) -> None:
-            for rep in goto.data.passes or [p + 1 for p in range(10)]:
-                # Assuming 10 is larger than the max. number of passes.
+            for rep in goto.data.passes:
                 gongan.beats[goto.data.beat_seq].goto[rep] = self.score.flowinfo.labels[goto.data.label]
 
         haslabel = False  # Will be set to true if the gongan has a metadata Label tag.
@@ -284,9 +283,6 @@ class DictToScoreConverter(ParserModel):
                 case PartMeta():
                     pass
                 case RepeatMeta():
-                    # Special case of goto: from last back to first beat of the gongan.
-                    # for counter in range(meta.data.count):
-                    #     gongan.beats[-1].goto[counter + 1] = gongan.beats[0]
                     gongan.beats[-1].repeat = Beat.Repeat(goto=gongan.beats[0], iterations=meta.data.count)
                 case SequenceMeta():
                     self.score.flowinfo.sequences.append((gongan, meta.data))
@@ -375,8 +371,15 @@ class DictToScoreConverter(ParserModel):
                         validation_ignore=[ValidationProperty.BEAT_DURATION],
                     )
                     if lastbeat.next:
+                        # modify the default next and prev pointes
                         lastbeat.next.prev = newbeat
                         lastbeat.next = newbeat
+                        # move goto pointers to the end of the wait beat
+                        for rep, beat in lastbeat.goto.items():
+                            if rep in meta.passes:
+                                newbeat.goto[rep] = beat
+                                del lastbeat.goto[rep]
+                        lastbeat.goto = dict()
                     newbeat.measures = self._create_rest_measures(
                         prev_beat=lastbeat, positions=list(lastbeat.measures.keys()), duration=duration
                     )

@@ -26,6 +26,7 @@ tatsu = "^5.13.1"
 vulture = "^2.14"
 python-docx = "^1.1.2"
 docx2pdf = "^0.1.8"
+pillow = "^11.1.0"
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra -q"

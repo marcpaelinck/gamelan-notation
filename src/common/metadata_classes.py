@@ -5,7 +5,7 @@ from enum import StrEnum
 from typing import Any, ClassVar, Literal, Optional, Union
 
 import regex
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 from src.common.constants import (
     DEFAULT,
@@ -122,7 +122,7 @@ class MetaDataBaseModel(BaseModel):
 class GradualChangeMetadata(MetaDataBaseModel):
     # Generic class that represent a value that can gradually
     # change over a number of beats, such as tempo or dynamics.
-    value: int | DynamicLevel = None
+    value: int = None
     first_beat: Optional[int] = 1
     beat_count: Optional[int] = 0
     passes: Optional[list[int]] = field(
@@ -151,7 +151,8 @@ class DynamicsMeta(GradualChangeMetadata):
     metatype: Literal["DYNAMICS"]
     # Currently, an empty list stands for all positions.
     positions: list[Position] = field(default_factory=list)
-    DEFAULTPARAM = "value"
+    abbreviation: str = ""
+    DEFAULTPARAM = "abbreviation"
 
     # validators
     _normalize_position_list: classmethod = field_validator("positions", mode="before")(normalize_positions)
@@ -164,17 +165,19 @@ class DynamicsMeta(GradualChangeMetadata):
     #     except:
     #         raise ValueError(f"Unrecognized instrument position in {data}.")
 
-    @field_validator("value", mode="before")
+    @field_validator("abbreviation", mode="after")
     @classmethod
-    def set_value(cls, value: DynamicLevel):
-
+    def set_value_after(cls, abbr: int, valinfo: ValidationInfo):
+        # Set value to velocity.
+        # TODO: This is not very nice code but GradualChangeMetadata expects `value` to be an int.
+        # Is there a better way to do this?
         try:
             run_settingss = get_run_settings()
-            value = run_settingss.midi.dynamics[value]
+            valinfo.data["value"] = run_settingss.midi.dynamics[abbr]
         except:
             # Should not occur because the validator is called after resolving the other fields
-            raise Exception(f"illegal value for dynamics: {value}")
-        return value
+            raise Exception(f"illegal value for dynamics: {abbr}")
+        return abbr
 
 
 class GonganMeta(MetaDataBaseModel):
@@ -186,14 +189,14 @@ class GonganMeta(MetaDataBaseModel):
 class GoToMeta(MetaDataBaseModel):
     metatype: Literal["GOTO"]
     label: str
-    from_beat: Optional[int] | None = None  # Beat number from which to goto. Default is last beat of the gongan.
-    passes: Optional[list[int]] = field(default_factory=list)  # On which pass(es) should goto be performed?
+    from_beat: Optional[int] = -1  # Beat number from which to goto. Default is last beat of the gongan.
+    passes: Optional[list[int]] = [DEFAULT]  # On which pass(es) should goto be performed?
     DEFAULTPARAM = "label"
 
     @property
     def beat_seq(self) -> int:
         # Returns the pythonic sequence id (numbered from 0)
-        return self.from_beat - 1 if self.from_beat else -1
+        return self.from_beat - 1 if self.from_beat > 0 else -1
 
 
 class KempliMeta(MetaDataBaseModel):
@@ -296,6 +299,10 @@ class WaitMeta(MetaDataBaseModel):
     metatype: Literal["WAIT"]
     seconds: float = None
     after: bool = True
+    passes: Optional[list[int]] = field(
+        default_factory=lambda: list(range(99, -1))
+    )  # On which pass(es) should goto be performed? Default is all passes.
+    # TODO: devise a more elegant way to express this, e.g. with "ALL" value.
     DEFAULTPARAM = None
 
 

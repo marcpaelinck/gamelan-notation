@@ -105,7 +105,7 @@ class MidiGenerator(ParserModel):
             else:
                 if beat.repeat:
                     beat.repeat.reset()
-                beat = beat.goto.get(beat._pass_, beat.next)
+                beat = beat.goto.get(beat._pass_, beat.goto.get(DEFAULT, beat.next))
 
         track.finalize()
 

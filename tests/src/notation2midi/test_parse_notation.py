@@ -156,19 +156,19 @@ metadata = [
     ["{GONGAN kebyar}", GonganMeta(metatype="GONGAN", scope=Scope.GONGAN, line=1, type=GonganType.KEBYAR)],
     [
         "{GOTO label=D, passes=[3]}",
-        GoToMeta(metatype="GOTO", scope=Scope.GONGAN, line=1, label="D", from_beat=None, passes=[3]),
+        GoToMeta(metatype="GOTO", scope=Scope.GONGAN, line=1, label="D", from_beat=-1, passes=[3]),
     ],
     [
         "{GOTO label=KAWITAN_ANGSEL, passes=[2,4]}",
-        GoToMeta(metatype="GOTO", scope=Scope.GONGAN, line=1, label="KAWITAN_ANGSEL", from_beat=None, passes=[2, 4]),
+        GoToMeta(metatype="GOTO", scope=Scope.GONGAN, line=1, label="KAWITAN_ANGSEL", from_beat=-1, passes=[2, 4]),
     ],
     [
         "{GOTO label=END_PENGAWAK, passes=3}",
-        GoToMeta(metatype="GOTO", scope=Scope.GONGAN, line=1, label="END_PENGAWAK", from_beat=None, passes=[3]),
+        GoToMeta(metatype="GOTO", scope=Scope.GONGAN, line=1, label="END_PENGAWAK", from_beat=-1, passes=[3]),
     ],
     [
         "{GOTO PENGAWAK_ANGSEL2, passes=[6, 12]}",
-        GoToMeta(metatype="GOTO", scope=Scope.GONGAN, line=1, label="PENGAWAK_ANGSEL2", from_beat=None, passes=[6, 12]),
+        GoToMeta(metatype="GOTO", scope=Scope.GONGAN, line=1, label="PENGAWAK_ANGSEL2", from_beat=-1, passes=[6, 12]),
     ],
     [
         "{KEMPLI status=off, beats=[14,15,16]}",
