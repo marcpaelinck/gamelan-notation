@@ -27,7 +27,7 @@ metadata
         waitmeta)
   ;
 
-dynamicsmeta = metatype:'DYNAMICS' {'abbreviation' '='} abbreviation:strvalue parameters:dynamicsmetaparameters ;
+dynamicsmeta = metatype:'DYNAMICS' {'value' '='} abbreviation:strvalue parameters:dynamicsmetaparameters ;
 dynamicsmetaparameters ={[','] @:(beat_count_parm | first_beat_parm | passes_parm | positions_parm)} ;
 
 gonganmeta = metatype:'GONGAN' {('type'|'value') '='} type:strvalue ;

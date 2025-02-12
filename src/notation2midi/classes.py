@@ -45,6 +45,7 @@ class ParserModel:
         SCOREGENERATOR = "generating the score"
         VALIDATOR = "validating the score"
         MIDIGENERATOR = "generating the midi file"
+        SCORETOPDF = "saving notation to PDF file"
 
     parser_type: ParserType
     run_settings = None

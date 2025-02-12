@@ -26,8 +26,9 @@ from docx.text.paragraph import Paragraph
 from PIL import Image, ImageDraw, ImageFont
 
 from src.common.classes import Gongan, Note, Score
-from src.common.constants import DEFAULT, Position, Stroke
+from src.common.constants import DEFAULT, InstrumentType, Position, Stroke
 from src.common.metadata_classes import DynamicsMeta, MetaData, MetaDataBaseModel
+from src.notation2midi.classes import ParserModel
 from src.notation2midi.score_to_notation import aggregate_positions
 
 # The following functions save a human readable version of the score to a PDF file.
@@ -39,10 +40,25 @@ class MergeType(Enum):
 
 
 def textwidth(text: str, font: str, fontsize: int) -> Length:
+    # TODO: copy all the font files in the code.
+    # Will also require to instruct docx to use these files.
+    """Determine the width of a text for the given font and size.
+    Args:
+        text (str): Text to evaluate.
+        font (str): Font name.
+        fontsize (int): Font size in pt.
+    Raises:
+        FileNotFoundError: If the font file was not found.
+
+    Returns:
+        Length: _description_
+    """
     folders = ["C:\\Windows\\Fonts\\", "C:\\Users\\marcp\\AppData\\Local\\Microsoft\\Windows\\Fonts\\"]
+    # Font files lookup dict
     font_to_filename = {
         "Courier New": (folders[0], "cour.ttf"),
-        "Arial": (folders[0], "arial.ttf"),
+        # Use Arial Black which is slightly wider: ImageFont underestimates the width for Arial.
+        "Arial": (folders[0], "ariblk.ttf"),
         "Bali Music 5": (folders[1], "bali-music-5.ttf"),
     }
 
@@ -53,7 +69,7 @@ def textwidth(text: str, font: str, fontsize: int) -> Length:
     except:
         raise FileNotFoundError(f"Could not determine length of text={text} font={font} fontsize={fontsize}.")
 
-    # Create a dummy image and draw object to measure text
+    # Create a dummy image and draw object to determine text width
     img = Image.new("RGB", (1, 1))
     draw = ImageDraw.Draw(img)
     width_px = draw.textlength(text, font=imagefont, font_size=fontsize)
@@ -61,12 +77,13 @@ def textwidth(text: str, font: str, fontsize: int) -> Length:
     return width
 
 
-class ScoreToPDFConverter:
+class ScoreToPDFConverter(ParserModel):
     TAG_COLWIDTH = Cm(2.3)
     basicparastyle = None
     metadatastyle = None
 
     def __init__(self, score: Score, pickle: bool = True):
+        super().__init__(self.ParserType.NOTATIONPARSER, score.settings)
         self.doc: DocxDocument = Document("./data/doc_template/Template.docx")
         self.score = score
         self.pickle = pickle
@@ -177,7 +194,7 @@ class ScoreToPDFConverter:
         )
 
     def _edit_header(self):
-        last_modif_epoch = os.path.getmtime(self.score.settings.notation.notation_filepath)
+        last_modif_epoch = os.path.getmtime(self.run_settings.notation.notation_filepath)
         last_modif_date = datetime.fromtimestamp(last_modif_epoch).strftime("%d-%b-%Y")
         header_paragraph = self.doc.sections[0].header.paragraphs[0]
         title_run = next((run for run in header_paragraph.runs if run.text == "{title}"), None)
@@ -196,7 +213,9 @@ class ScoreToPDFConverter:
             nrchars = notes
         width_to_height_ratio = 8 / 12
         font_height = Pt(9)
-        return int(nrchars * font_height * width_to_height_ratio + cellborders)
+        width = int(nrchars * font_height * width_to_height_ratio + cellborders)
+        compare_width = textwidth("a" * nrchars, "Bali Music 5", 9) + cellborders
+        return width
 
     def _format_metadata_cells(self, row: _Row) -> None:
         for cell in row.cells:
@@ -223,6 +242,13 @@ class ScoreToPDFConverter:
             if cell.text.strip():
                 return False
         return True
+
+    def _to_aggregated_tags(self, positions: list[Position]) -> list[str]:
+        tags = set(pos.instrumenttype.lower() for pos in positions)
+        gangsa = {InstrumentType.PEMADE.lower(), InstrumentType.KANTILAN.lower()}
+        if gangsa.issubset(tags):
+            tags = tags.difference(gangsa).union({"gangsa"})
+        return tags
 
     def _new_metadata_row(self, table: Table, merged: list[int] = [], parastyle: ParagraphStyle = None) -> _Row:
         row = table.add_row()
@@ -305,7 +331,7 @@ class ScoreToPDFConverter:
             paragraph (Paragraph, optional): The paragraph to which the value should be written. Defaults to None.
             charstyle (CharacterStyle, optional): Character style for the added text. Defaults to `metadatastyle`.
         """
-        # If the metadata spans several beats, a tab character will be added after the value and a tab stop
+        # If the metadata spans several beats, a tab character will be added before or after the value and a tab stop
         # with preceding dashes will be added at the right-hand margin of the merged cell.
         charstyle = charstyle or self.defaultcharstyle
         tab = "\t" if meta.beat_count > 1 else ""
@@ -316,7 +342,8 @@ class ScoreToPDFConverter:
             value = f"faster{tab}" if meta.value > self.current_tempo else f"slower{tab}"
             self.current_tempo = meta.value
         elif meta.metatype == "DYNAMICS":
-            value = f"{tab}{meta.abbreviation}"
+            position_tags = self._to_aggregated_tags(meta.positions)
+            value = f"{tab}{", ".join(position_tags)}{": " if position_tags else ""}{meta.abbreviation}"
             self.current_dynamics = meta.value
         cellwidth = paragraph._parent.width
         # Add a tab with preceding dashes to the end of the merged cells (need to create style for this).
@@ -561,18 +588,28 @@ class ScoreToPDFConverter:
                 paragraph.add_run(self._measure_to_str(measure), self.notationstyle)
 
     def _create_table(self, gongan: Gongan) -> Table:
+        """Creates a table for the gongan. Column 1 will contain the position tags. The last column is an overflow
+           column for long metadata text values. Its width is maximized so that it extends to to the right margin.
+        Args:
+            gongan (Gongan): The gongan for which the table should be created.
+
+        Returns:
+            Table:
+        """
         staves = self._clean_staves(gongan)
         # The number of beats in the cleaned staves might be less than len(gongan.beats)
         beat_count = len(list(staves.values())[0])
-        colwidths = [
+        beat_colwidths = [
             max(self._bali_music_5_width(staves[position][i]) for position in staves.keys()) for i in range(beat_count)
         ]
-        colwidths = [self.TAG_COLWIDTH] + colwidths
-        table = self.doc.add_table(rows=0, cols=beat_count + 2, style=self.tablestyle)
+        colwidths = [self.TAG_COLWIDTH] + beat_colwidths + [Cm(0.1)]  # last column width will be set below.
+        table = self.doc.add_table(rows=0, cols=len(colwidths), style=self.tablestyle)
         table.autofit = False
         for i in range(len(colwidths)):
             table.columns[i].width = colwidths[i]
-        # print(f"gongan[{gongan.id}]: {[round(col.width/Cm(1), 2) for col in table.columns]}")
+        total_width = sum(colwidths)
+        section = self.doc.sections[0]
+        table.columns[i].width = max(0, section.page_width - section.left_margin - section.right_margin - total_width)
         return table
 
     def _convert_to_pdf(self) -> None:  # score_validation
@@ -603,6 +640,8 @@ class ScoreToPDFConverter:
         self._convert_to_pdf()
         self.doc.save(self.filepath)
         # docx2pdf.convert(self.filepath)
+        self.logger.info(f"Notation file saved as {self.filepath}")
+
         if self.pickle:
             with open(self.filepath.replace("docx", "pickle"), "wb") as picklefile:
                 pickle.dump(self.score, picklefile)
@@ -626,8 +665,12 @@ if __name__ == "__main__":
             "folder": r"C:\Users\marcp\Documents\administratie\_VRIJETIJD_REIZEN\Scripts-Programmas\PythonProjects\gamelan-notation\data\notation\sekar gendot",
             "filename": "Sekar Gendot_full_GAMELAN1.pickle",
         }
+        LENGKER = {
+            "folder": r"C:\Users\marcp\Documents\administratie\_VRIJETIJD_REIZEN\Scripts-Programmas\PythonProjects\gamelan-notation\data\notation\lengker",
+            "filename": "Lengker_full_GAMELAN1.pickle",
+        }
 
-    source = Source.SEKARGENDOT
+    source = Source.LENGKER
 
     path = os.path.join(source.value["folder"], source.value["filename"])
     with open(path, "rb") as picklefile:

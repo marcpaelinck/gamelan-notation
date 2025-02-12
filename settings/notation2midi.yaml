@@ -4,7 +4,7 @@
 midi:
   midiversion: GAMELAN1
 notation:
-  composition: sekargendot
+  composition: lengker
 
   part_id: full
 options:
@@ -18,7 +18,7 @@ options:
     detailed_validation_logging : false
     autocorrect : true
     save_corrected_to_file : false
-    save_pdf_notation: false
-    save_midifile : true
+    save_pdf_notation: true
+    save_midifile : false
     comment1: If update_midiplayer_content==true, MIDI file is saved in midiplayer folder and content.json file is updated.
     comment2: This setting is only effective if the runtype is RUN_ALL.
