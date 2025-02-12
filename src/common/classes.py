@@ -35,6 +35,7 @@ from src.common.constants import (
     Velocity,
 )
 from src.common.metadata_classes import (
+    FrequencyType,
     GonganType,
     GoToMeta,
     MetaData,
@@ -788,7 +789,6 @@ class Measure:
 # which would otherwise cause an "Infinite recursion" error.
 @dataclass
 class Beat:
-
     class Change(NotationModel):
         # NotationModel contains a method to translate a list-like string to an actual list.
         class Type(StrEnum):
@@ -800,6 +800,12 @@ class Beat:
         steps: int = 0
         incremental: bool = False
         positions: list[Position] = field(default_factory=list)
+
+    @dataclass
+    class GoTo:
+        beat: "Beat"
+        frequency: FrequencyType
+        passes: list[int]
 
     @dataclass
     class Repeat:
@@ -827,7 +833,11 @@ class Beat:
     measures: dict[Position, Measure] = field(default_factory=dict)
     prev: "Beat" = field(default=None, repr=False)  # previous beat in the score
     next: "Beat" = field(default=None, repr=False)  # next beat in the score
+    # TODO GOTO REMOVE
     goto: dict[PassSequence, "Beat"] = field(
+        default_factory=dict
+    )  # next beat to be played according to the flow (GOTO metadata)
+    goto_: dict[PassSequence, "Beat.GoTo"] = field(
         default_factory=dict
     )  # next beat to be played according to the flow (GOTO metadata)
     has_kempli_beat: bool = True
@@ -847,7 +857,7 @@ class Beat:
         return self.gongan_id - 1
 
     def next_beat_in_flow(self, pass_seq=None):
-        return self.goto.get(pass_seq or self._pass_, self.next)
+        return self.goto.get(pass_seq or self._pass_, self.goto.get(DEFAULT, self.next))  # TODO GOTO CHANGE
 
     def get_bpm_start(self):
         # Return tempo at start of beat for the current pass.

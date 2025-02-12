@@ -101,11 +101,13 @@ class MidiGenerator(ParserModel):
                 track.add_note(note)
             if beat.repeat and beat.repeat._countdown > 0:
                 beat.repeat._countdown -= 1
-                beat = beat.repeat.goto
+                beat = beat.repeat.goto  # TODO GOTO modify, also for freq type
             else:
                 if beat.repeat:
                     beat.repeat.reset()
-                beat = beat.goto.get(beat._pass_, beat.goto.get(DEFAULT, beat.next))
+                beat = beat.goto.get(
+                    beat._pass_, beat.goto.get(DEFAULT, beat.next)
+                )  # TODO GOTO modify, also for freq type
 
         track.finalize()
 

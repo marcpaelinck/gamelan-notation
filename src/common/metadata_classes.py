@@ -30,6 +30,11 @@ class MetaDataSwitch(NotationEnum):
     ON = "on"
 
 
+class FrequencyType(NotationEnum):
+    ONCE = "once"
+    ALWAYS = "always"
+
+
 class ValidationProperty(NotationEnum):
     BEAT_DURATION = "beat-duration"
     MEASURE_LENGTH = "measure-length"
@@ -191,6 +196,7 @@ class GoToMeta(MetaDataBaseModel):
     label: str
     from_beat: Optional[int] = -1  # Beat number from which to goto. Default is last beat of the gongan.
     passes: Optional[list[int]] = [DEFAULT]  # On which pass(es) should goto be performed?
+    frequency: FrequencyType = FrequencyType.ALWAYS
     DEFAULTPARAM = "label"
 
     @property
@@ -253,12 +259,14 @@ class PartMeta(MetaDataBaseModel):
 class RepeatMeta(MetaDataBaseModel):
     metatype: Literal["REPEAT"]
     count: int = 1
+    frequency: FrequencyType = FrequencyType.ALWAYS
     DEFAULTPARAM = "count"
 
 
 class SequenceMeta(MetaDataBaseModel):
     metatype: Literal["SEQUENCE"]
     value: list[str] = field(default_factory=list)
+    frequency: FrequencyType = FrequencyType.ALWAYS
     DEFAULTPARAM = "value"
 
 

@@ -217,7 +217,15 @@ class DictToScoreConverter(ParserModel):
 
         def process_goto(gongan: Gongan, goto: MetaData) -> None:
             for rep in goto.data.passes:
-                gongan.beats[goto.data.beat_seq].goto[rep] = self.score.flowinfo.labels[goto.data.label]
+                gongan.beats[goto.data.beat_seq].goto[rep] = self.score.flowinfo.labels[
+                    goto.data.label
+                ]  # TODO GOTO REMOVE
+                goto_item = Beat.GoTo(
+                    beat=self.score.flowinfo.labels[goto.data.label],
+                    passes=goto.data.passes,
+                    frequency=goto.data.frequency,
+                )
+                gongan.beats[goto.data.beat_seq].goto_[rep] = goto_item
 
         haslabel = False  # Will be set to true if the gongan has a metadata Label tag.
         for meta in sorted(metadata, key=lambda x: x.data._processingorder_):
@@ -375,11 +383,17 @@ class DictToScoreConverter(ParserModel):
                         lastbeat.next.prev = newbeat
                         lastbeat.next = newbeat
                         # move goto pointers to the end of the wait beat
+                        # TODO GOTO REMOVE next 5 lines
                         for rep, beat in lastbeat.goto.items():
                             if rep in meta.passes:
                                 newbeat.goto[rep] = beat
                                 del lastbeat.goto[rep]
                         lastbeat.goto = dict()
+                        for rep, goto in lastbeat.goto_.items():
+                            if rep in meta.passes:
+                                newbeat.goto_[rep] = goto
+                                del lastbeat.goto_[rep]
+                        lastbeat.goto_ = dict()
                     newbeat.measures = self._create_rest_measures(
                         prev_beat=lastbeat, positions=list(lastbeat.measures.keys()), duration=duration
                     )
@@ -401,8 +415,10 @@ class DictToScoreConverter(ParserModel):
             for label in sequence.value:
                 from_beat = gongan.beats[-1]  # Sequence always links last beat to first beat of next gongan in the list
                 to_beat = self.score.flowinfo.labels[label]
+                # TODO GOTO modify, also for frequency = ALWAYS
                 pass_nr = max([p for p in from_beat.goto.keys()] or [0]) + 1  # Select next available pass
-                from_beat.goto[pass_nr] = to_beat
+                from_beat.goto[pass_nr] = to_beat  # TODO GOTO delete
+                from_beat.goto_[pass_nr] = Beat.GoTo(beat=to_beat, passes=[pass_nr], frequency=sequence.frequency)
                 gongan = self.score.gongans[to_beat.gongan_seq]
 
     def _create_missing_measures(
