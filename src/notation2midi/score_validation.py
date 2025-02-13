@@ -262,6 +262,7 @@ class ScoreValidator(ParserModel):
                         )
         return invalids, corrected, ignored
 
+    @ParserModel.main
     def validate_score(
         self,
         # autocorrect: bool = False,

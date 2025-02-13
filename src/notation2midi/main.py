@@ -11,13 +11,13 @@ from src.notation2midi.score_validation import ScoreValidator
 from src.settings.classes import RunSettings, RunType
 from src.settings.constants import Yaml
 from src.settings.settings import get_run_settings, load_run_settings
-from src.settings.settings_validation import validate_input_data
+from src.settings.settings_validation import SettingsValidator
 
 
 def load_and_validate_run_settings(notation: dict[str, str] = None) -> RunSettings:
     run_settings = load_run_settings(notation)
     if run_settings.options.validate_settings:
-        validate_input_data(run_settings)
+        SettingsValidator(run_settings).validate_input_data()
     return run_settings
 
 
@@ -38,7 +38,7 @@ def notation_to_midi(run_settings: RunSettings):
     if success and run_settings.options.notation_to_midi.save_corrected_to_file:
         score_to_notation_file(score)
     if success and run_settings.options.notation_to_midi.save_pdf_notation:
-        ScoreToPDFConverter(score).save()
+        ScoreToPDFConverter(score).create_notation()
 
 
 def multiple_notations_to_midi(run_settings: RunSettings):

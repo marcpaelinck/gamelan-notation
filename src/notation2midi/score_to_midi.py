@@ -158,6 +158,7 @@ class MidiGenerator(ParserModel):
         self.loginfo(f"Added time markers to part {part.part}")
         save_midiplayer_content(content)
 
+    @ParserModel.main
     def create_midifile(self) -> bool:
         """Generates the MIDI content and saves it to file.
 
@@ -186,7 +187,6 @@ class MidiGenerator(ParserModel):
                 # Test files should never be logged in the midiplayer content file
                 self.update_midiplayer_content()
 
-        self.logger.info("=====================================")
         return True
 
 

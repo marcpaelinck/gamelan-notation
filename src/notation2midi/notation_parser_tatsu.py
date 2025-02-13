@@ -299,6 +299,7 @@ class NotationTatsuParser(ParserModel):
                             notes=pass_.notes, group=self.run_settings.instruments.instrumentgroup
                         )
 
+    @ParserModel.main
     def parse_notation(self, notation: str | None = None) -> NotationDict:
         if notation:
             self.loginfo(f"Parsing notation from string")

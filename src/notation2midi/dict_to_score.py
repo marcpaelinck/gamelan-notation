@@ -620,11 +620,12 @@ class DictToScoreConverter(ParserModel):
         # Add kempli beats
         self._add_missing_measures(add_kempli=True)
 
+    @ParserModel.main
     def create_score(self):
         """This method does all the work.
         All settings are read from the (YAML) settings files.
         """
-        self.logger.info("======== NOTATION TO MIDI CONVERSION ========")
+
         self.logger.info(f"input file: {self.run_settings.notation.part.file}")
         self._create_score_object_model()
         if self.has_errors:

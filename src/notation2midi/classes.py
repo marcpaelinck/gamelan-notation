@@ -3,7 +3,7 @@
 
 import logging
 from enum import StrEnum
-from typing import Any
+from typing import Any, Callable
 
 from src.common.constants import Position
 from src.common.logger import get_logger
@@ -41,11 +41,12 @@ class ParserModel:
     class ParserType(StrEnum):
         # Used by the logger to determine the source of a warning or error
         # message.
-        NOTATIONPARSER = "parsing the notation"
-        SCOREGENERATOR = "generating the score"
-        VALIDATOR = "validating the score"
-        MIDIGENERATOR = "generating the midi file"
-        SCORETOPDF = "saving notation to PDF file"
+        SETTINGSVALIDATOR = "VALIDATING RUN SETTINGS"
+        NOTATIONPARSER = "PARSING NOTATION TO DICT"
+        SCOREGENERATOR = "CONVERTING DICT TO SCORE"
+        VALIDATOR = "VALIDATING SCORE"
+        MIDIGENERATOR = "GENERATING MIDI FILE"
+        SCORETOPDF = "CONVERTING SCORE TO PDF NOTATION"
 
     parser_type: ParserType
     run_settings = None
@@ -60,6 +61,26 @@ class ParserModel:
         self.parser_type = parser_type
         self.run_settings = run_settings
         self.logger = get_logger(self.__class__.__name__)
+
+    def main(func: Callable):
+        # decorator for main parser function. Will print opening and closing logging.
+
+        def wrapper(*args, **kwargs):
+            self = args[0]
+            separator = "=" * int(50 - len(self.parser_type.value) // 2)
+            title = f"{separator} {self.parser_type.value} {separator}"
+            self.logger.info(title)
+
+            result = func(*args, **kwargs)
+
+            sep_length = len(title)
+            self.logger.info("=" * sep_length)
+            return result
+
+        return wrapper
+
+    def _close_logging(self):
+        self.logger.info("=" * 102)
 
     def f(self, val: int | None, pos: int):
         # Number formatting

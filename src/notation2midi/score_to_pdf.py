@@ -636,7 +636,8 @@ class ScoreToPDFConverter(ParserModel):
     def is_docfile_closed():
         return
 
-    def save(self):
+    @ParserModel.main
+    def create_notation(self):
         self._convert_to_pdf()
         self.doc.save(self.filepath)
         # docx2pdf.convert(self.filepath)
@@ -675,4 +676,4 @@ if __name__ == "__main__":
     path = os.path.join(source.value["folder"], source.value["filename"])
     with open(path, "rb") as picklefile:
         score = pickle.load(picklefile)
-        ScoreToPDFConverter(score, False).save()
+        ScoreToPDFConverter(score, False).create_notation()
