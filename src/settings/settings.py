@@ -9,7 +9,13 @@ from pydantic import BaseModel, ValidationError
 
 from src.common.logger import get_logger
 from src.settings.classes import Content, RunSettings
-from src.settings.constants import DATA_INFOFILE, RUN_SETTINGSFILE, SETTINGSFOLDER, Yaml
+from src.settings.constants import (
+    DATA_INFOFILE,
+    RUN_SETTINGSFILE,
+    SETTINGSFOLDER,
+    TEST_SETTINGSFOLDER,
+    Yaml,
+)
 from src.settings.utils import pretty_compact_json
 
 logger = get_logger(__name__)
@@ -69,7 +75,7 @@ def get_cwd():
     return os.getcwd()
 
 
-def read_settings(filename: str) -> dict:
+def read_settings(filename: str, is_test: bool = False) -> dict:
     """Retrieves settings from the given (YAML) file. The file should occur in SETTINGSFOLDER.
 
     Args:
@@ -78,7 +84,7 @@ def read_settings(filename: str) -> dict:
     Returns:
         dict: dict containing all the settings contained in the file.
     """
-    with open(os.path.join(SETTINGSFOLDER, filename), "r") as settingsfile:
+    with open(os.path.join(TEST_SETTINGSFOLDER if is_test else SETTINGSFOLDER, filename), "r") as settingsfile:
         return yaml.load(settingsfile, Loader=yaml.SafeLoader)
 
 
@@ -153,8 +159,12 @@ def load_run_settings(notation: dict[str, str] = None) -> RunSettings:
     Returns:
         RunSettings: settings object
     """
+    is_test = False
     run_settings_dict = read_settings(RUN_SETTINGSFILE)
-    data_dict = read_settings(DATA_INFOFILE)
+    if run_settings_dict["options"]["notation_to_midi"]["runtype"] == "RUN_TEST":
+        is_test = True
+        run_settings_dict = read_settings(RUN_SETTINGSFILE, is_test)
+    data_dict = read_settings(DATA_INFOFILE, is_test)
 
     # Validate some manually set settings and abort if invalid
     if not validate_settings(data_dict, run_settings_dict):

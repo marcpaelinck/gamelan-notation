@@ -496,7 +496,7 @@ class Note(NotationModel):
         )
         note: Note = self._POS_P_O_S_D_R_TO_NOTE.get(note_record, None)
         if note:
-            inference_rule if inference_rule is not ParamValue.MISSING else self.inference_rule,
+            inference_rule = inference_rule if inference_rule is not ParamValue.MISSING else self.inference_rule
             return note.model_copy(update={"symbol": symbol or self.symbol, "inference_rule": inference_rule})
         return None
 

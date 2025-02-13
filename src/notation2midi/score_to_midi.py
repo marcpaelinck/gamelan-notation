@@ -8,7 +8,7 @@ from src.common.constants import DEFAULT, Pitch, Position
 from src.common.metadata_classes import PartMeta
 from src.notation2midi.classes import ParserModel
 from src.notation2midi.midi_track import MidiTrackX, TimeUnit
-from src.settings.classes import Part, RunSettings, Song
+from src.settings.classes import Part, RunSettings, RunType, Song
 from src.settings.settings import (
     get_midiplayer_content,
     get_run_settings,
@@ -79,6 +79,9 @@ class MidiGenerator(ParserModel):
         reset_pass_counters()
         beat = self.score.gongans[0].beats[0]
         while beat:
+            # Add a marker with the beat full_id for easier debugging when running the integration test.
+            if self.run_settings.options.notation_to_midi.runtype == RunType.RUN_TEST:
+                track.marker(f"b_{beat.full_id}")
             # If a new part is encountered, store timestamp and name in the midiplayer_data section of the score
             store_part_info(beat)
             beat._pass_ += 1

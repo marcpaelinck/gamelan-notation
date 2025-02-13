@@ -4,7 +4,7 @@
 midi:
   midiversion: GAMELAN1
 notation:
-  composition: legongmahawidya
+  composition: gilakdeng
 
   part_id: full
 options:
@@ -14,11 +14,11 @@ options:
   notation_to_midi:
     comment1: possible `run` values are RUN_SINGLE, RUN_SINGLE_PRODUCTION (uses `notation` info above and `notations` in data.yaml),
     comment2: RUN_ALL or RUN_TEST (both use info from `multiple_runs` and `notations` in data.yaml).
-    runtype: RUN_SINGLE
+    runtype: RUN_TEST
     detailed_validation_logging : false
     autocorrect : true
     save_corrected_to_file : false
-    save_pdf_notation: true
+    save_pdf_notation: false
     save_midifile : true
     comment1: If update_midiplayer_content==true, MIDI file is saved in midiplayer folder and content.json file is updated.
     comment2: This setting is only effective if the runtype is RUN_ALL.

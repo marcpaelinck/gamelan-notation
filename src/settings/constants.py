@@ -1,6 +1,7 @@
 from enum import StrEnum
 
 SETTINGSFOLDER = "./settings"
+TEST_SETTINGSFOLDER = "./settings/test"
 RUN_SETTINGSFILE = "notation2midi.yaml"
 DATA_INFOFILE = "data.yaml"
 
@@ -124,5 +125,5 @@ class Yaml(SStrEnum):
     MULTIPLE_RUNS = "multiple_runs"
     # Enum values
     RUN_SINGLE = "RUN_SINGLE"
-    RUN_INTEGRATIONTEST = "RUN_INTEGRATIONTEST"
+    RUN_TEST = "RUN_TEST"
     RUN_ALL = "RUN_ALL"

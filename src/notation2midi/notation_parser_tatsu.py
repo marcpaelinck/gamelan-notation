@@ -306,8 +306,12 @@ class NotationTatsuParser(ParserModel):
         else:
             notationpath = self.run_settings.notation.notation_filepath
             self.loginfo(f"Parsing file {notationpath}")
-            with open(notationpath, "r") as notationfile:
-                notation = notationfile.read()
+            try:
+                with open(notationpath, "r") as notationfile:
+                    notation = notationfile.read()
+            except Exception as e:
+                self.logerror(str(e))
+                exit()
 
         # Parse the notation using the ebnf grammar.
         # In case of an error, the current line will be skipped and the parser will be called again

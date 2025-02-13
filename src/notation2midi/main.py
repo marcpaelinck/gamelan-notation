@@ -1,7 +1,7 @@
 """This module can be used to perform a complete run cycle (notation -> midi output).
 """
 
-from src.common.constants import NotationFont
+from src.common.constants import NotationFont, Position
 from src.notation2midi.dict_to_score import DictToScoreConverter
 from src.notation2midi.notation_parser_tatsu import NotationTatsuParser
 from src.notation2midi.score_to_midi import MidiGenerator
@@ -57,6 +57,22 @@ def multiple_notations_to_midi(run_settings: RunSettings):
                     run_settings = load_and_validate_run_settings(
                         {Yaml.COMPOSITION: notation_key, Yaml.PART_ID: part_key}
                     )
+                    # TODO: use separate settings files for integration test
+                    if run_settings.options.notation_to_midi.runtype == RunType.RUN_TEST:
+                        options = run_settings.options.notation_to_midi
+                        options.detailed_validation_logging = False
+                        options.autocorrect = True
+                        options.save_corrected_to_file = False
+                        options.save_pdf_notation = False
+                        options.save_midifile = True
+                        run_settings.midiplayer.helpinghand = [
+                            Position.CALUNG,
+                            Position.JEGOGAN,
+                            Position.PEMADE_POLOS,
+                            Position.PEMADE_SANGSIH,
+                            Position.KANTILAN_POLOS,
+                            Position.KANTILAN_SANGSIH,
+                        ]
                     notation_to_midi(run_settings)
 
 

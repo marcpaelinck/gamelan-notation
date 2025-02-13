@@ -19,10 +19,14 @@ def list_files(directory):
 
 def compare_two_files(file1, file2):
     with open(file1, "r") as f1, open(file2, "r") as f2:
-        f1_lines = f1.readlines()
-        f2_lines = f2.readlines()
+        # Remove additional marker messages that are added to the test output for easier location of differences
+        f1_lines = [line for line in f1.readlines() if not "MetaMessage('marker', text='b_" in line]
+        f2_lines = [line for line in f2.readlines() if not "MetaMessage('marker', text='b_" in line]
 
     diff = difflib.unified_diff(f1_lines, f2_lines, fromfile=file1, tofile=file2)
+    # TODO consuming the first line if there are differences
+    if not next(diff, None):
+        diff = ["No differences\n"]
     return list(diff)
 
 
@@ -97,7 +101,7 @@ def compare_all(dir_old, dir_new):
     with open(os.path.join(dir_new, "comparison.txt"), "w") as outfile:
         if differences:
             for file, diff in differences.items():
-                outfile.write(f"Differences in {file}:")
+                outfile.write(f"Differences in {file}:\n")
                 for line in diff:
                     outfile.write(line)
                 outfile.write("\n")
