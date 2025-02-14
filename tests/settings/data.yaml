@@ -85,6 +85,13 @@ midiplayer:
     folder: ./data/midiplayer
     contentfile: content.json
     helpinghand: [CALUNG, JEGOGAN, PEMADE_POLOS, PEMADE_SANGSIH, KANTILAN_POLOS, KANTILAN_SANGSIH] # Animate panggul.
+pdf_converter:
+    folder: ./settings/pdf_converter
+    docx_template: pdf_output_template.docx
+    fonts:
+        Courier New: COUR.TTF
+        Arial: ARIBLK.TTF
+        Bali Music 5: bali-music-5.ttf
 notations:
     # `beat_at_end` indicates whether the notation has the gir at the end of each gongan (Balinese concept) or at the beginning.
     # the entries under the 'files' label will be referred to as 'part'.

@@ -39,44 +39,6 @@ class MergeType(Enum):
     LAST_CELL = 2
 
 
-def textwidth(text: str, font: str, fontsize: int) -> Length:
-    # TODO: copy all the font files in the code.
-    # Will also require to instruct docx to use these files.
-    """Determine the width of a text for the given font and size.
-    Args:
-        text (str): Text to evaluate.
-        font (str): Font name.
-        fontsize (int): Font size in pt.
-    Raises:
-        FileNotFoundError: If the font file was not found.
-
-    Returns:
-        Length: _description_
-    """
-    folders = ["C:\\Windows\\Fonts\\", "C:\\Users\\marcp\\AppData\\Local\\Microsoft\\Windows\\Fonts\\"]
-    # Font files lookup dict
-    font_to_filename = {
-        "Courier New": (folders[0], "cour.ttf"),
-        # Use Arial Black which is slightly wider: ImageFont underestimates the width for Arial.
-        "Arial": (folders[0], "ariblk.ttf"),
-        "Bali Music 5": (folders[1], "bali-music-5.ttf"),
-    }
-
-    folder, filename = font_to_filename[font]
-    try:
-        fontfile = os.path.join(folder, filename)
-        imagefont = ImageFont.truetype(fontfile, fontsize)
-    except:
-        raise FileNotFoundError(f"Could not determine length of text={text} font={font} fontsize={fontsize}.")
-
-    # Create a dummy image and draw object to determine text width
-    img = Image.new("RGB", (1, 1))
-    draw = ImageDraw.Draw(img)
-    width_px = draw.textlength(text, font=imagefont, font_size=fontsize)
-    width = Inches(width_px / 72)
-    return width
-
-
 class ScoreToPDFConverter(ParserModel):
     TAG_COLWIDTH = Cm(2.3)
     basicparastyle = None
@@ -84,7 +46,8 @@ class ScoreToPDFConverter(ParserModel):
 
     def __init__(self, score: Score, pickle: bool = True):
         super().__init__(self.ParserType.NOTATIONPARSER, score.settings)
-        self.doc: DocxDocument = Document("./data/doc_template/Template.docx")
+        self.pdf_settings = self.run_settings.pdf_converter
+        self.doc: DocxDocument = Document(os.path.join(self.pdf_settings.folder, self.pdf_settings.docx_template))
         self.score = score
         self.pickle = pickle
         self._format_notation()
@@ -193,6 +156,33 @@ class ScoreToPDFConverter(ParserModel):
             "GamelanNotation", base=self.tablestyle, font="Bali Music 5", fsize=Pt(9)
         )
 
+    def textwidth(self, text: str, font: str, fontsize: int) -> Length:
+        # TODO: copy all the font files in the code.
+        # Will also require to instruct docx to use these files.
+        """Determine the width of a text for the given font and size.
+        Args:
+            text (str): Text to evaluate.
+            font (str): Font name.
+            fontsize (int): Font size in pt.
+        Raises:
+            FileNotFoundError: If the font file was not found.
+
+        Returns:
+            Length:
+        """
+        try:
+            fontfile = os.path.join(self.pdf_settings.folder, self.pdf_settings.fonts[font])
+            imagefont = ImageFont.truetype(fontfile, fontsize)
+        except:
+            raise FileNotFoundError(f"Could not determine length of text={text} font={font} fontsize={fontsize}.")
+
+        # Create a dummy image and draw object to determine text width
+        img = Image.new("RGB", (1, 1))
+        draw = ImageDraw.Draw(img)
+        width_px = draw.textlength(text, font=imagefont, font_size=fontsize)
+        width = Inches(width_px / 72)
+        return width
+
     def _edit_header(self):
         last_modif_epoch = os.path.getmtime(self.run_settings.notation.notation_filepath)
         last_modif_date = datetime.fromtimestamp(last_modif_epoch).strftime("%d-%b-%Y")
@@ -204,7 +194,6 @@ class ScoreToPDFConverter(ParserModel):
         if date_run:
             date_run.text = last_modif_date
 
-    @classmethod
     def _bali_music_5_width(self, notes: list[Note]) -> int:
         cellborders = Cm(0.2)
         if isinstance(notes, list):
@@ -214,7 +203,7 @@ class ScoreToPDFConverter(ParserModel):
         width_to_height_ratio = 8 / 12
         font_height = Pt(9)
         width = int(nrchars * font_height * width_to_height_ratio + cellborders)
-        compare_width = textwidth("a" * nrchars, "Bali Music 5", 9) + cellborders
+        compare_width = self.textwidth("a" * nrchars, "Bali Music 5", 9) + cellborders
         return width
 
     def _format_metadata_cells(self, row: _Row) -> None:
@@ -424,7 +413,7 @@ class ScoreToPDFConverter(ParserModel):
                         paragraph.add_run(f" (pass {','.join(str(p) for p in meta.passes)})", charstyle)
             # merge additional cells if necessary to accommondate the text width
             text_width = sum(
-                textwidth(
+                self.textwidth(
                     run.text,
                     run.style.font.name or paragraph.style.font.name,
                     run.style.font.size.pt or paragraph.style.font.size.pt,
@@ -433,7 +422,6 @@ class ScoreToPDFConverter(ParserModel):
             )
             delta = Cm(0.2)
             if (cwidth := paragraph._parent.width) < text_width + delta:
-                print(f"/{paragraph.text} ({Length(text_width).mm})/ doesn't fit in cell ({cwidth.mm})")
                 # if text is in the last gongan column: merge the cell with the overflow cell to the right
                 # Merge the cell with empty adjacent cells if possible until the required width is reached.
                 if paragraph.style.paragraph_format.alignment == WD_ALIGN_PARAGRAPH.RIGHT:
@@ -638,14 +626,14 @@ class ScoreToPDFConverter(ParserModel):
 
     @ParserModel.main
     def create_notation(self):
-        self._convert_to_pdf()
-        self.doc.save(self.filepath)
-        # docx2pdf.convert(self.filepath)
-        self.logger.info(f"Notation file saved as {self.filepath}")
-
         if self.pickle:
             with open(self.filepath.replace("docx", "pickle"), "wb") as picklefile:
                 pickle.dump(self.score, picklefile)
+
+        self._convert_to_pdf()
+        self.doc.save(self.filepath)
+        docx2pdf.convert(self.filepath)
+        self.logger.info(f"Notation file saved as {self.filepath}")
 
 
 if __name__ == "__main__":

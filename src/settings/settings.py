@@ -231,6 +231,10 @@ def load_run_settings(notation: dict[str, str] = None) -> RunSettings:
     fontgrammar = data_dict[Yaml.GRAMMARS][Yaml.FONTVERSIONS][notation[Yaml.FONTVERSION]]
     settings_dict[Yaml.GRAMMARS] = get_settings_fields(RunSettings.GrammarInfo, data_dict[Yaml.GRAMMARS] | fontgrammar)
 
+    # SETTINGS FOR THE PDF OUTPUT GENERATOR
+
+    settings_dict[Yaml.PDF_CONVERTER] = get_settings_fields(RunSettings.PdfConverterInfo, data_dict[Yaml.PDF_CONVERTER])
+
     # # MULTIPLE RUNS INTEGRATION TEST INFORMATION
 
     # run_option = run_settings_dict[Yaml.OPTIONS][Yaml.NOTATION_TO_MIDI][Yaml.RUNTYPE]
@@ -299,6 +303,4 @@ def save_midiplayer_content(playercontent: Content, filename: str = None):
 if __name__ == "__main__":
     # For testing
     settings = get_run_settings()
-    print(settings.notation)
-    print(settings.notation.notation_filepath)
-    print(settings.notation.midi_out_filepath)
+    print(settings.pdf_converter)

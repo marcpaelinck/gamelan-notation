@@ -279,6 +279,11 @@ class RunSettings(BaseModel):
         contentfile: str
         helpinghand: list[Position] = None
 
+    class PdfConverterInfo(BaseModel):
+        folder: str
+        docx_template: str
+        fonts: dict[str, str] = Field(default_factory=dict)
+
     class Options(BaseModel):
         class NotationToMidiOptions(BaseModel):
             runtype: RunType
@@ -323,4 +328,5 @@ class RunSettings(BaseModel):
     instruments: InstrumentInfo | None = None
     font: FontInfo | None = None
     grammars: GrammarInfo | None = None
+    pdf_converter: PdfConverterInfo | None = None
     data: Data

@@ -113,6 +113,7 @@ class Yaml(SStrEnum):
     GRAMMARS = "grammars"
     SOUNDFONTS = "soundfonts"
     SOUNDFONT = "soundfont"
+    PDF_CONVERTER = "pdf_converter"
     OPTIONS = "options"
     NOTATION_TO_MIDI = "notation_to_midi"
     RUNTYPE = "runtype"

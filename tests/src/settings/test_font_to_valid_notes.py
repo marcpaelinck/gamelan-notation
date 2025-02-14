@@ -106,11 +106,16 @@ VALID_STROKE_DURATION = {
 
 @pytest.mark.parametrize("combination", TRY_COMBINATIONS)
 def test_valid_notes(combination, valid_notes):
+    # combination contains all combinations of note attributes (fields)
+    # feature valid_notes returns two list of notes (semar_pegulingan, gong_kebyar)
+    # that have valid combination of attributes for the respective orchestra.
     position = combination[0]
     for instrumentgroup, valid_group_notes in [
         (InstrumentGroup.SEMAR_PAGULINGAN, valid_notes[0]),
         (InstrumentGroup.GONG_KEBYAR, valid_notes[1]),
     ]:
+        # convert valid notes to a list of tuples, each containing the note fields
+        # that should be validated. Check each tuple in TRY_COMBINATION against this list.
         validnotes = to_tuple(valid_group_notes)
         if (
             VALID_PITCH_OCTAVE[instrumentgroup][position]
