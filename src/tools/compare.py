@@ -10,7 +10,10 @@ import filecmp
 import os
 from glob import glob
 
+from src.common.logger import get_logger
 from src.tools.print_midi_file import to_text, to_text_multiple_files
+
+LOGGER = get_logger(__name__)
 
 
 def list_files(directory):
@@ -87,6 +90,7 @@ def compare_all(dir_old, dir_new):
         dir_new (_type_): Second folder
     """
     # 1. convert midi files to text files
+    LOGGER.info("Generating .TXT versions of each MIDI file")
     files = []
     for dir in [dir_old, dir_new]:
         files.append(set([os.path.basename(path) for path in glob(os.path.join(dir, "*.mid"))]))
@@ -95,6 +99,7 @@ def compare_all(dir_old, dir_new):
     # to_text_multiple_files(filelist, [dir_new])
 
     # 2. compare the text files
+    LOGGER.info("Generating differences report")
     differences = compare_directories(dir_old, dir_new, "*.txt")
 
     # 3. save report to file
