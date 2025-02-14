@@ -27,7 +27,7 @@ def create_symbol_to_note_lookup(fromfile: str) -> dict[str, Note]:
     return {note.symbol: note for note in balifont}
 
 
-SYMBOL_TO_NOTE_LOOKUP = create_symbol_to_note_lookup(fromfile="./data/font/balimusic5font.tsv")
+SYMBOL_TO_NOTE_LOOKUP = create_symbol_to_note_lookup(fromfile="./settings/font/balimusic5font.tsv")
 
 data1 = [
     ("iIoOeEuUaA", "iIoOeEuUaA"),
