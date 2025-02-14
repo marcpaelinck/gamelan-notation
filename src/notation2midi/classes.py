@@ -3,8 +3,9 @@
 
 import logging
 from enum import StrEnum
-from typing import Any, Callable
+from typing import Any, Callable, Generator
 
+from src.common.classes import Beat
 from src.common.constants import Position
 from src.common.logger import get_logger
 from src.settings.classes import RunSettings
@@ -117,7 +118,7 @@ class ParserModel:
             self.curr_beat_id = None
             yield gongan
 
-    def beat_iterator(self, object: Any):
+    def beat_iterator(self, object: Any) -> Generator[Beat, None, None]:
         if not hasattr(object, "beats"):
             raise Exception("base object has no attribute `beats`")
         for beat in object.beats:

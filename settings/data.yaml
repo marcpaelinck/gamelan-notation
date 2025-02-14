@@ -94,8 +94,7 @@ notations:
     # Otherwise the midi file will end abruptly to allow looping.
     defaults:
         run_type: ${options.notation_to_midi.runtype}
-        include_in_run_types: [RUN_SINGLE, RUN_ALL, RUN_TEST]
-        run_test_part: full
+        include_in_run_types: [RUN_SINGLE, RUN_ALL]
         production: true
         folders:
             RUN_SINGLE:
@@ -107,9 +106,6 @@ notations:
             RUN_ALL:
                 folder_in: ./data/notation/${notation.subfolder}
                 folder_out: ${midiplayer.folder}
-            RUN_TEST:
-                folder_in: ./data/notation/_integration_test/notations
-                folder_out: ./data/notation/_integration_test/output
         beat_at_end: false
         autocorrect_kempyung : true
         fontversion: BaliMusic5

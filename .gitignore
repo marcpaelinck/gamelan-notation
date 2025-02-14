@@ -8,3 +8,4 @@ data/midiplayer/*
 notebooks/*
 __pycache__
 .pytest_cache/*
+tests/data/notation/_integration_test/*/

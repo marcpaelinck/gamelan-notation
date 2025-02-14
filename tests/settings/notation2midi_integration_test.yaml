@@ -1,20 +1,21 @@
 ---
 # The settings below (except for options) refer to values in the data.yaml file.
-# The font selection is defined in the details of the selected notation component (see data.yaml file).
 midi:
   midiversion: GAMELAN1
 notation:
+  comment: "notation values are required but will not be used for integration test"
   composition: test-gongkebyar
   part_id: full
 options:
   debug_logging: false
   validate_settings : true
   notation_to_midi:
-    runtype: RUN_SINGLE
+    runtype: RUN_ALL
     detailed_validation_logging : false
     autocorrect : true
     save_corrected_to_file : false
     save_midifile : true
-    save_pdf_notation: true
+    save_pdf_notation: false
+    is_integration_test: true
 
     

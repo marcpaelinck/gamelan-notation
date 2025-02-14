@@ -50,30 +50,8 @@ def multiple_notations_to_midi(run_settings: RunSettings):
     for notation_key, notation_info in run_settings.notations.items():
         if run_settings.options.notation_to_midi.runtype in notation_info.include_in_run_types:
             for part_key, part_info in notation_info.parts.items():
-                if (
-                    part_key == notation_info.run_test_part
-                    or run_settings.options.notation_to_midi.runtype != RunType.RUN_TEST
-                ):
-                    run_settings = load_and_validate_run_settings(
-                        {Yaml.COMPOSITION: notation_key, Yaml.PART_ID: part_key}
-                    )
-                    # TODO: use separate settings files for integration test
-                    if run_settings.options.notation_to_midi.runtype == RunType.RUN_TEST:
-                        options = run_settings.options.notation_to_midi
-                        options.detailed_validation_logging = False
-                        options.autocorrect = True
-                        options.save_corrected_to_file = False
-                        options.save_pdf_notation = False
-                        options.save_midifile = True
-                        run_settings.midiplayer.helpinghand = [
-                            Position.CALUNG,
-                            Position.JEGOGAN,
-                            Position.PEMADE_POLOS,
-                            Position.PEMADE_SANGSIH,
-                            Position.KANTILAN_POLOS,
-                            Position.KANTILAN_SANGSIH,
-                        ]
-                    notation_to_midi(run_settings)
+                run_settings = load_and_validate_run_settings({Yaml.COMPOSITION: notation_key, Yaml.PART_ID: part_key})
+                notation_to_midi(run_settings)
 
 
 def single_run():
@@ -83,7 +61,7 @@ def single_run():
 
 if __name__ == "__main__":
     run_settings = get_run_settings()
-    if run_settings.options.notation_to_midi.runtype in [RunType.RUN_ALL, RunType.RUN_TEST]:
+    if run_settings.options.notation_to_midi.runtype is RunType.RUN_ALL:
         multiple_notations_to_midi(run_settings)
     else:
         single_run()

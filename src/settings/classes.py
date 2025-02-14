@@ -126,7 +126,6 @@ class RunType(StrEnum):
     RUN_SINGLE = "RUN_SINGLE"
     RUN_SINGLE_PRODUCTION = "RUN_SINGLE_PRODUCTION"
     RUN_ALL = "RUN_ALL"
-    RUN_TEST = "RUN_TEST"
 
 
 class RunSettings(BaseModel):
@@ -152,7 +151,6 @@ class RunSettings(BaseModel):
         autocorrect_kempyung: bool
         # run types that should include this composition
         include_in_run_types: list[RunType] = Field(default_factory=list)
-        run_test_part: str  # part key of part to included in the integration test.
         production: bool  # resulting MIDI file fit to save to production environment?
 
         @property
@@ -289,6 +287,7 @@ class RunSettings(BaseModel):
             save_corrected_to_file: bool
             save_pdf_notation: bool
             save_midifile: bool
+            is_integration_test: bool = False
 
             @property
             def update_midiplayer_content(self) -> bool:

@@ -14,7 +14,8 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "python.testing.pytestArgs": [
-        "--cache-clear"
+        "--cache-clear",
+        "-s"
     ],
     "files.associations": {
         "*.tsv": "tsv"

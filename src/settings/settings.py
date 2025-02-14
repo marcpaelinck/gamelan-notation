@@ -75,7 +75,7 @@ def get_cwd():
     return os.getcwd()
 
 
-def read_settings(filename: str, is_test: bool = False) -> dict:
+def read_settings(filename: str) -> dict:
     """Retrieves settings from the given (YAML) file. The file should occur in SETTINGSFOLDER.
 
     Args:
@@ -84,7 +84,7 @@ def read_settings(filename: str, is_test: bool = False) -> dict:
     Returns:
         dict: dict containing all the settings contained in the file.
     """
-    with open(os.path.join(TEST_SETTINGSFOLDER if is_test else SETTINGSFOLDER, filename), "r") as settingsfile:
+    with open(os.path.join(SETTINGSFOLDER, filename), "r") as settingsfile:
         return yaml.load(settingsfile, Loader=yaml.SafeLoader)
 
 
@@ -159,12 +159,8 @@ def load_run_settings(notation: dict[str, str] = None) -> RunSettings:
     Returns:
         RunSettings: settings object
     """
-    is_test = False
     run_settings_dict = read_settings(RUN_SETTINGSFILE)
-    if run_settings_dict["options"]["notation_to_midi"]["runtype"] == "RUN_TEST":
-        is_test = True
-        run_settings_dict = read_settings(RUN_SETTINGSFILE, is_test)
-    data_dict = read_settings(DATA_INFOFILE, is_test)
+    data_dict = read_settings(DATA_INFOFILE)
 
     # Validate some manually set settings and abort if invalid
     if not validate_settings(data_dict, run_settings_dict):

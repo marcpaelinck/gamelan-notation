@@ -80,7 +80,7 @@ class MidiGenerator(ParserModel):
         beat = self.score.gongans[0].beats[0]
         while beat:
             # Add a marker with the beat full_id for easier debugging when running the integration test.
-            if self.run_settings.options.notation_to_midi.runtype == RunType.RUN_TEST:
+            if self.run_settings.options.notation_to_midi.is_integration_test:
                 track.marker(f"b_{beat.full_id}")
             # If a new part is encountered, store timestamp and name in the midiplayer_data section of the score
             store_part_info(beat)
