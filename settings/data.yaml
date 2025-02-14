@@ -1,6 +1,6 @@
 # Describes the contents of the data folder.
 instruments: 
-    folder: ./data/instruments
+    folder: ./settings/instruments
     instrumentgroups:
         GONG_KEBYAR: 
             instruments_file: instruments.tsv
@@ -11,7 +11,7 @@ instruments:
             tags_file: instrumenttags.tsv
             rules_file: rules.tsv
 midi:
-    folder: ./data/midi
+    folder: ./settings/midi
     comment1: PPQ and base_note_time in MIDI ticks. Beat is MIDI beat, not kempli beat.
     comment2: beat indication (BPM) in notation should be expressed in MIDI beats.
     PPQ: 96
@@ -57,14 +57,14 @@ midi:
             midi_definition_file: gamelan_midinotes1.tsv
             presets_file: gamelan_presets1.tsv
 fonts:
-    folder: ./data/font
+    folder: ./settings/font
     fontversions:
         BaliMusic4: 
             file: balimusic4font.tsv
         BaliMusic5:
             file: balimusic5font.tsv
 grammars:
-    folder: ./data/grammars
+    folder: ./settings/grammars
     notationfile: notation.ebnf
     metadatafile: metadata.ebnf
     picklefile: notation_model.pickle

@@ -52,5 +52,5 @@ tag = tag:/(?!comment|metadata)\w[\w\- \/]*/ pass:(/:(\d+)/ | `-1`);
 (* beat is defined in font5.metadata *)
 beat_with_tab = tab @:{note};
 
-#include :: "./gamelan-notation/data/grammars/metadata.ebnf"
-#include :: "./gamelan-notation/data/grammars/font5.ebnf"
+#include :: "./gamelan-notation/settings/grammars/metadata.ebnf"
+#include :: "./gamelan-notation/settings/grammars/font5.ebnf"
