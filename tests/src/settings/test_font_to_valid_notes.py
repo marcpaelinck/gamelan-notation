@@ -1,10 +1,19 @@
 from collections import defaultdict
 from typing import Any
+from unittest import TestCase
 from unittest.mock import patch
 
 import pytest
 
-from src.common.constants import InstrumentGroup, NoteRecord, Pitch, Position, Stroke
+from src.common.classes import Tone
+from src.common.constants import (
+    InstrumentGroup,
+    InstrumentType,
+    NoteRecord,
+    Pitch,
+    Position,
+    Stroke,
+)
 from src.settings.constants import NoteFields, Yaml
 from src.settings.font_to_valid_notes import get_note_records
 from src.settings.settings import load_run_settings
@@ -19,140 +28,121 @@ FIELDS_IN_TUPLE = (
 )
 
 
-def to_tuple(note_records: list[dict[str, Any]]) -> list[tuple[Any]]:
-    # Create a tuple containing the note fields that we want to test.
-    return [tuple([note[field] for field in FIELDS_IN_TUPLE]) for note in note_records]
+class SettingsTester(TestCase):
 
+    def to_tuple(self, note_records: list[dict[str, Any]]) -> list[tuple[Any]]:
+        # Create a tuple containing the note fields that we want to test.
+        return [tuple([note[field] for field in FIELDS_IN_TUPLE]) for note in note_records]
 
-@pytest.fixture(scope="module")
-@patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
-def valid_notes() -> tuple[list[NoteRecord]]:
-    # Creates a list of valid notes for Semar Pagulingan and for Gong Kebyar
-    settings = load_run_settings({Yaml.COMPOSITION: "test-semarpagulingan", Yaml.PART_ID: "full"})
-    notes_sp = get_note_records(settings)
-    settings = load_run_settings({Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART_ID: "full"})
-    notes_gk = get_note_records(settings)
-    return notes_sp, notes_gk
+    @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
+    def valid_notes_sp(
+        self,
+    ) -> list[NoteRecord]:
+        # Creates a list of valid notes for Semar Pagulingan
+        settings = load_run_settings({Yaml.COMPOSITION: "test-semarpagulingan", Yaml.PART_ID: "full"})
+        notes_sp = get_note_records(settings)
+        return [{field.value: note[field] for field in FIELDS_IN_TUPLE} for note in notes_sp]
 
+    @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
+    def valid_notes_gk(
+        self,
+    ) -> list[NoteRecord]:
+        # Creates a list of valid notes for  Gong Kebyar
+        settings = load_run_settings({Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART_ID: "full"})
+        notes_gk = get_note_records(settings)
+        return [{field.value: note[field] for field in FIELDS_IN_TUPLE} for note in notes_gk]
 
-# Combinations that will be tested
-TRY_COMBINATIONS = [
-    tuple([position, pitch, octave, stroke, duration, rest_after])
-    for position in (Position.PEMADE_POLOS, Position.JEGOGAN, Position.REYONG_1)
-    for pitch in [Pitch.DING, Pitch.DAING, Pitch.STRIKE, Pitch.DAG, Pitch.DENGDING]
-    for octave in (1, 2)
-    for stroke in [Stroke.OPEN, Stroke.MUTED, Stroke.TREMOLO, Stroke.GRACE_NOTE]
-    for duration in (0.25, 1.0)
-    for rest_after in (0,)
-]
+    # Combinations that will be tested
+    def setUp(self):
+        self.TRY_COMBINATIONS = [
+            {
+                NoteFields.POSITION.value: position,
+                NoteFields.PITCH.value: pitch,
+                NoteFields.OCTAVE.value: octave,
+                NoteFields.STROKE.value: stroke,
+                NoteFields.DURATION.value: duration,
+                NoteFields.REST_AFTER.value: rest_after,
+            }
+            for position in (Position.PEMADE_POLOS, Position.JEGOGAN, Position.REYONG_1)
+            for pitch in [Pitch.DING, Pitch.DAING, Pitch.STRIKE, Pitch.DAG, Pitch.DENGDING]
+            for octave in (1, 2)
+            for stroke in [Stroke.OPEN, Stroke.MUTED, Stroke.TREMOLO, Stroke.GRACE_NOTE]
+            for duration in (0, 0.25, 1.0)
+            for rest_after in (0,)
+        ]
+        # fmt: off
+        self.VALID_PITCH_OCTAVE = {
+            InstrumentGroup.SEMAR_PAGULINGAN: {
+                Position.PEMADE_POLOS: [(Pitch.DING, 1), (Pitch.DONG, 1), (Pitch.DENG, 1), (Pitch.DEUNG, 1), (Pitch.DUNG, 1), (Pitch.DANG, 1), (Pitch.DAING, 1)],
+                Position.JEGOGAN: [(Pitch.DING, 1), (Pitch.DONG, 1), (Pitch.DENG, 1), (Pitch.DEUNG, 1), (Pitch.DUNG, 1), (Pitch.DANG, 1), (Pitch.DAING, 1)],
+                Position.REYONG_1: [],
+            },
+            InstrumentGroup.GONG_KEBYAR: {
+                Position.PEMADE_POLOS: [ (Pitch.DONG, 0), (Pitch.DENG, 0), (Pitch.DUNG, 0), (Pitch.DANG, 0), (Pitch.DING, 1), (Pitch.DONG, 1),  
+                                        (Pitch.DENG, 1), (Pitch.DUNG, 1), (Pitch.DANG, 1), (Pitch.DING, 2)],
+                Position.JEGOGAN: [(Pitch.DING, 1), (Pitch.DONG, 1), (Pitch.DENG, 1), (Pitch.DUNG, 1), (Pitch.DANG, 1)],
+                Position.REYONG_1: [(Pitch.DENG, 0), (Pitch.DUNG, 0), (Pitch.DANG, 0), (Pitch.DING, 1), (Pitch.DONG, 1), (Pitch.DENGDING, 0), (Pitch.STRIKE, None),
+                                    (Pitch.BYONG, None)],
+            },
+        }
+        self.VALID_STROKE_DURATION = {
+            InstrumentGroup.SEMAR_PAGULINGAN: {
+                Position.PEMADE_POLOS: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
+                                        (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
+                                        (Stroke.TREMOLO_ACCELERATING, 1.0), (Stroke.NOROT, 1.0), (Stroke.GRACE_NOTE, 0.0)],
+                Position.JEGOGAN: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
+                                   (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
+                                   (Stroke.TREMOLO_ACCELERATING, 1.0)],
+                Position.REYONG_1: [],
+            },
+            InstrumentGroup.GONG_KEBYAR: {
+                Position.PEMADE_POLOS: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
+                                        (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
+                                        (Stroke.TREMOLO_ACCELERATING, 1.0), (Stroke.NOROT, 1.0), (Stroke.GRACE_NOTE, 0.0)],
+                Position.JEGOGAN: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
+                                   (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
+                                   (Stroke.TREMOLO_ACCELERATING, 1.0)],
+                Position.REYONG_1: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
+                                    (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
+                                    (Stroke.TREMOLO_ACCELERATING, 1.0), (Stroke.GRACE_NOTE, 0.0)],
+            },
+        }
 
-# Valid combinations of pitch and octave
-# fmt: off
-VALID_PITCH_OCTAVE = {
-    InstrumentGroup.SEMAR_PAGULINGAN: {
-        Position.PEMADE_POLOS: (
-            [(Pitch.DING, Pitch.DONG, Pitch.DENG, Pitch.DEUNG, Pitch.DUNG, Pitch.DANG, Pitch.DAING), (1,)],
-        ),
-        Position.JEGOGAN: (
-            [(Pitch.DING, Pitch.DONG, Pitch.DENG, Pitch.DEUNG, Pitch.DUNG, Pitch.DANG, Pitch.DAING), (1,)],
-        ),
-        Position.REYONG_1: None,
-    },
-    InstrumentGroup.GONG_KEBYAR: {
-        Position.PEMADE_POLOS: [((Pitch.DING,), (1, 2)), 
-                                ((Pitch.DONG, Pitch.DENG, Pitch.DUNG, Pitch.DANG), (0, 1))],
-        Position.JEGOGAN: [((Pitch.DING, Pitch.DONG, Pitch.DENG, Pitch.DUNG, Pitch.DANG), (1,))],
-        Position.REYONG_1: [((Pitch.DENG, Pitch.DUNG, Pitch.DANG, Pitch.DENGDING, Pitch.STRIKE), (0,)), 
-                            ((Pitch.DING, Pitch.DONG,), (1,)),
-                            ((Pitch.STRIKE,), (None,)),],
-    },
-}
+    # fmt: on
 
-# Valid combinations of stroke and duration
-VALID_STROKE_DURATION = {
-    InstrumentGroup.SEMAR_PAGULINGAN: {
-        Position.PEMADE_POLOS: (
-            [(Stroke.OPEN, Stroke.ABBREVIATED, Stroke.MUTED), (0.25, 0.5, 1.0)],
-            [(Stroke.TREMOLO, Stroke.TREMOLO_ACCELERATING, Stroke.NOROT), (1.0,)],
-            [(Stroke.GRACE_NOTE,), (0.0,)],
-        ),
-        Position.JEGOGAN: (
-            [(Stroke.OPEN, Stroke.ABBREVIATED, Stroke.MUTED), (0.25, 0.5, 1.0)],
-            # See remark in font_to_valid_notes.py where tremolo notes are created.
-            [(Stroke.TREMOLO, Stroke.TREMOLO_ACCELERATING), (1.0,)],
-        ),
-        Position.REYONG_1:None,
-    },
-    InstrumentGroup.GONG_KEBYAR: {
-        Position.PEMADE_POLOS: (
-            [(Stroke.OPEN, Stroke.ABBREVIATED, Stroke.MUTED), (0.25, 0.5, 1.0)],
-            [(Stroke.TREMOLO, Stroke.TREMOLO_ACCELERATING, Stroke.NOROT), (1.0,)],
-            [(Stroke.GRACE_NOTE,), (0.0,)],
-        ),
-        Position.JEGOGAN: (
-            [(Stroke.OPEN, Stroke.ABBREVIATED, Stroke.MUTED), (0.25, 0.5, 1.0)],
-            # See remark in font_to_valid_notes.py where tremolo notes are created.
-            [(Stroke.TREMOLO, Stroke.TREMOLO_ACCELERATING), (1.0,)],
-        ),
-        Position.REYONG_1: (
-            [(Stroke.OPEN, Stroke.ABBREVIATED, Stroke.MUTED), (0.25, 0.5, 1.0)],
-            [(Stroke.TREMOLO, Stroke.TREMOLO_ACCELERATING), (1.0,)],
-            [(Stroke.GRACE_NOTE,), (0.0, None)],
-        ),
-    },
-}
-# fmt: on
+    def test_create_note_records(self):
+        # Validates the create_note_records function, which returns all valid note feature combinations.
+        # TRY_COMBINATIONS contains valid and invalid combinations of pitch, octave, stroke and duration.
+        # We test that only combinations that match VALID_PITCH_OCTAVE and VALID_STROKE_DURATION
+        # occur in validnotes, the return value of create_note_records.
+        for instrumentgroup, validnotes in [
+            (InstrumentGroup.SEMAR_PAGULINGAN, self.valid_notes_sp()),
+            (InstrumentGroup.GONG_KEBYAR, self.valid_notes_gk()),
+        ]:
+            for combination in self.TRY_COMBINATIONS:
+                position = combination[NoteFields.POSITION]
+                valid_PO = self.VALID_PITCH_OCTAVE.get(instrumentgroup, {}).get(position, None)
+                valid_SD = self.VALID_STROKE_DURATION.get(instrumentgroup, {}).get(position, None)
+                if (
+                    (valid_PO and valid_SD)
+                    and (combination[NoteFields.PITCH], combination[NoteFields.OCTAVE]) in valid_PO
+                    and (combination[NoteFields.STROKE], combination[NoteFields.DURATION]) in valid_SD
+                ):
+                    self.assertIn(combination, validnotes)
+                else:
+                    self.assertNotIn(combination, validnotes)
 
+    def test_unique_features(self):
+        for notelist in (self.valid_notes_sp(), self.valid_notes_gk()):
+            # Create a dict with the values FIELDS_IN_TUPLE as keys
+            # and check that all entries contain exactly one note record.
+            notedict = defaultdict(list)
+            for note in notelist:
+                notedict[tuple([note[field] for field in FIELDS_IN_TUPLE])].append(note)
+            for key in notedict.keys():
+                assert len(notedict[key]) == 1
 
-@pytest.mark.parametrize("combination", TRY_COMBINATIONS)
-def test_valid_notes(combination, valid_notes):
-    # combination contains all combinations of note attributes (fields)
-    # feature valid_notes returns two list of notes (semar_pegulingan, gong_kebyar)
-    # that have valid combination of attributes for the respective orchestra.
-    position = combination[0]
-    for instrumentgroup, valid_group_notes in [
-        (InstrumentGroup.SEMAR_PAGULINGAN, valid_notes[0]),
-        (InstrumentGroup.GONG_KEBYAR, valid_notes[1]),
-    ]:
-        # convert valid notes to a list of tuples, each containing the note fields
-        # that should be validated. Check each tuple in TRY_COMBINATION against this list.
-        validnotes = to_tuple(valid_group_notes)
-        if (
-            VALID_PITCH_OCTAVE[instrumentgroup][position]
-            and VALID_STROKE_DURATION[instrumentgroup][position]
-            and any(
-                combi
-                for combi in VALID_PITCH_OCTAVE[instrumentgroup][position]
-                if combination[1] in combi[0] and combination[2] in combi[1]
-            )
-            and any(
-                combi
-                for combi in VALID_STROKE_DURATION[instrumentgroup][position]
-                if combination[3] in combi[0] and combination[4] in combi[1]
-            )
-        ):
-            assert combination in validnotes
-        else:
-            assert combination not in validnotes
-
-
-def test_unique_features(valid_notes):
-    for notelist in valid_notes:
-        # Create a dict with the values FIELDS_IN_TUPLE as keys
-        # and check that all entries contain exactly one note record.
-        notedict = defaultdict(list)
-        for note in notelist:
-            notedict[tuple([note[field] for field in FIELDS_IN_TUPLE])].append(note)
-        for key in notedict.keys():
-            assert len(notedict[key]) == 1
-
-
-def print_test_data(data: tuple[Any], combinations: list[int]):
-    for nr, value in enumerate(data):
-        if nr in combinations:
-            print(f"{nr}: {value}")
-
-
-if __name__ == "__main__":
-    # Use to determine which test failed
-    print_test_data(TRY_COMBINATIONS, [300, 301, 302])
+    def print_test_data(self, combinations: list[int]):
+        for nr, value in enumerate(self.TRY_COMBINATIONS):
+            if nr in combinations:
+                print(f"{nr}: {value}")
