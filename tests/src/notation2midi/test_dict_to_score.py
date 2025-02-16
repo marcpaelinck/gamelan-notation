@@ -2,8 +2,6 @@ import unittest
 from enum import Enum, auto
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 import src.settings.settings
 from src.common.classes import Beat, Gongan, Measure, Notation, Note, Score
 from src.common.constants import (
@@ -314,7 +312,6 @@ class TestDictToScoreConverter(unittest.TestCase):
         (WaitMeta(metatype="WAIT", seconds=2)),
     ]
 
-    @pytest.mark.parametrize("metadata, expected", metadata)
     def test_apply_metadata(self):
         # Add test for _apply_metadata method
         beats = [

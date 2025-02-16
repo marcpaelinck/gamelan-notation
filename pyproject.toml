@@ -28,12 +28,10 @@ docx2pdf = "^0.1.8"
 pillow = "^11.1.0"
 
 reportlab = "^4.3.1"
+unittest-parametrize = "^1.6.0"
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra -q"
-testpaths = [
-    "tests",
-]
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"

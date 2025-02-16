@@ -4,7 +4,7 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Optional, Self
 
 from pydantic import (
     BaseModel,
@@ -165,7 +165,7 @@ class Instrument(NotationModel):
             int: the interval
         """
         if not (tone1 in cls._MAX_RANGE and tone2 in cls._MAX_RANGE):
-            raise Exception(f"{tone1} and/or {tone2} not within the orchestra's range.")
+            raise ValueError(f"{tone1} and/or {tone2} not within the orchestra's range.")
         return cls._MAX_RANGE.index(tone2) - cls._MAX_RANGE.index(tone1)
 
     @classmethod
@@ -262,7 +262,7 @@ class Instrument(NotationModel):
 
         rule = Instrument.get_shared_notation_rule(position, set(unisono_positions))
         if not rule:
-            raise Exception(f"No unisono rule found for {position}.")
+            raise ValueError(f"No unisono rule found for {position}.")
 
         for action in rule:
             match action:
@@ -405,9 +405,10 @@ class Note(NotationModel):
     # config revalidate_instances forces validation when using model_copy
     model_config = ConfigDict(extra="ignore", frozen=True, revalidate_instances="always")
 
+    _VALID_POS_P_O_S_D_R: ClassVar[list[tuple[Position, Pitch, Octave, Stroke, Duration, Duration]]]
     _VALIDNOTES: ClassVar[list["Note"]]
     _SYMBOL_TO_NOTE: ClassVar[dict[(Position, str), "Note"]]
-    _POS_P_O_S_D_R_TO_NOTE: ClassVar[dict[tuple[Position, Pitch, Octave, Stroke, Duration, Duration], "Note"]]
+    _POS_P_O_S_D_R_TO_NOTE: ClassVar[dict[tuple[Position, Pitch, Octave, Stroke, Duration, Duration], "Note"]] = None
     _FONT_SORTING_ORDER: ClassVar[dict[str, int]]
 
     instrumenttype: InstrumentType
@@ -441,23 +442,6 @@ class Note(NotationModel):
         return value
 
     @classmethod
-    @model_validator(mode="after")
-    def validate_note(self):
-        if (
-            self.position,
-            self.pitch,
-            self.octave,
-            self.stroke,
-            self.duration,
-            self.rest_after,
-        ) in self._POS_P_O_S_D_R_TO_NOTE:
-            return self
-        raise ValueError(
-            f"Invalid combination {self.pitch} OCT{self.octave} {self.stroke} "
-            f"{self.duration} {self.rest_after} for {self.position}"
-        )
-
-    @classmethod
     def get_note(
         cls,
         position: Position,
@@ -472,6 +456,28 @@ class Note(NotationModel):
         if note:
             return note.model_copy()
         return None
+
+    @classmethod
+    def is_valid_combi(
+        cls,
+        position: Position,
+        pitch: Pitch,
+        octave: int | None,
+        stroke: Stroke,
+        duration: float | None,
+        rest_after: float | None,
+    ) -> Optional["Note"]:
+        return (position, pitch, octave, stroke, duration, rest_after) in cls._VALID_POS_P_O_S_D_R
+
+    @model_validator(mode="after")
+    def validate_note(self) -> Self:
+        # No validation before lookups dicts have been initialized.
+        if self.is_valid_combi(self.position, self.pitch, self.octave, self.stroke, self.duration, self.rest_after):
+            return self
+        raise ValueError(
+            f"Invalid combination {self.pitch} OCT{self.octave} {self.stroke} "
+            f"{self.duration} {self.rest_after} for {self.position}"
+        )
 
     def model_copy_x(
         self,
@@ -542,7 +548,7 @@ class Note(NotationModel):
             if position in unisono_positions:
                 return cls._SYMBOL_TO_NOTE[position, normalized_symbol]
             else:
-                raise Exception(f"{position} not in list {unisono_positions}")
+                raise ValueError(f"{position} not in list {unisono_positions}")
 
         # The notation is for multiple positions. Determine pitch and octave using the 'unisono rules'.
 
@@ -582,6 +588,10 @@ class Note(NotationModel):
         cls._FONT_SORTING_ORDER = {sym[FontFields.SYMBOL]: mod_list.index(sym[FontFields.MODIFIER]) for sym in font}
 
         valid_records = get_note_records(run_settings)
+        cls._VALID_POS_P_O_S_D_R = [
+            tuple([rec[a] for a in ["position", "pitch", "octave", "stroke", "duration", "rest_after"]])
+            for rec in valid_records
+        ]
         cls._VALIDNOTES = [Note(**record) for record in valid_records]
         cls._SYMBOL_TO_NOTE = {(n.position, cls.sorted_chars(n.symbol)): n for n in cls._VALIDNOTES}
         cls._POS_P_O_S_D_R_TO_NOTE = {

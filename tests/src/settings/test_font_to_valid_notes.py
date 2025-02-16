@@ -1,11 +1,9 @@
+import sys
 from collections import defaultdict
 from typing import Any
 from unittest import TestCase
 from unittest.mock import patch
 
-import pytest
-
-from src.common.classes import Tone
 from src.common.constants import (
     InstrumentGroup,
     InstrumentType,

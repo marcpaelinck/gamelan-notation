@@ -2254,6 +2254,17 @@ files = [
 ]
 
 [[package]]
+name = "unittest-parametrize"
+version = "1.6.0"
+description = "Parametrize tests within unittest TestCases."
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "unittest_parametrize-1.6.0-py3-none-any.whl", hash = "sha256:fcbc0023304b08624b38a4762d25b691468d66f61fd5f11672b372ed71eee0e2"},
+    {file = "unittest_parametrize-1.6.0.tar.gz", hash = "sha256:d9d2209a265b61b310ce81c1890f0e3a2282025deae758773f04d5a692cf1a3f"},
+]
+
+[[package]]
 name = "vulture"
 version = "2.14"
 description = "Find dead code"
@@ -2278,4 +2289,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "3b42a6b9a6f95b992ac44fe06d96a634282300cdf333c61d5c5feb56c38d70ff"
+content-hash = "13696b92d6266d084c006e2d77642f3fd96afe20332d27d309521effd318f278"
