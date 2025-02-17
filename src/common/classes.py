@@ -411,7 +411,6 @@ class Note(NotationModel):
     _POS_P_O_S_D_R_TO_NOTE: ClassVar[dict[tuple[Position, Pitch, Octave, Stroke, Duration, Duration], "Note"]] = None
     _FONT_SORTING_ORDER: ClassVar[dict[str, int]]
 
-    instrumenttype: InstrumentType
     position: Position
     symbol: str
     pitch: Pitch

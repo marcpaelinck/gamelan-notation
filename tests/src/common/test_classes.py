@@ -20,87 +20,100 @@ from src.settings.settings import load_run_settings
 class ValidNoteTester(unittest.TestCase):
 
     @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
-    def load_settings_sp(self) -> list[NoteRecord]:
-        # Creates a list of valid notes for Semar Pagulingan
-        return load_run_settings({Yaml.COMPOSITION: "test-semarpagulingan", Yaml.PART_ID: "full"})
+    def load_settings(self, group: InstrumentGroup) -> dict:
+        if group is InstrumentGroup.GONG_KEBYAR:
+            composition = "test-gongkebyar"
+        elif group is InstrumentGroup.SEMAR_PAGULINGAN:
+            composition = "test-semarpagulingan"
+        else:
+            raise ValueError(f"invalid instrument group {group}")
+        return load_run_settings({Yaml.COMPOSITION: composition, Yaml.PART_ID: "full"})
 
-    @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
-    def load_settings_gk(self) -> list[NoteRecord]:
-        # Creates a list of valid notes for  Gong Kebyar
-        return load_run_settings({Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART_ID: "full"})
-
-    # Combinations that will be tested
-    def setUp(self):
-        self.TRY_COMBINATIONS = [
-            {
-                NoteFields.POSITION.value: position,
-                NoteFields.PITCH.value: pitch,
-                NoteFields.OCTAVE.value: octave,
-                NoteFields.STROKE.value: stroke,
-                NoteFields.DURATION.value: duration,
-                NoteFields.REST_AFTER.value: rest_after,
-            }
-            for position in (Position.PEMADE_POLOS, Position.JEGOGAN, Position.REYONG_1)
-            for pitch in [Pitch.DING, Pitch.DAING, Pitch.STRIKE, Pitch.DAG, Pitch.DENGDING]
-            for octave in (1, 2)
-            for stroke in [Stroke.OPEN, Stroke.MUTED, Stroke.TREMOLO, Stroke.GRACE_NOTE]
-            for duration in (0, 0.25, 1.0)
-            for rest_after in (0,)
-        ]
-        # fmt: off
-        self.VALID_PITCH_OCTAVE = {
-            InstrumentGroup.SEMAR_PAGULINGAN: {
-                Position.PEMADE_POLOS: [(Pitch.DING, 1), (Pitch.DONG, 1), (Pitch.DENG, 1), (Pitch.DEUNG, 1), (Pitch.DUNG, 1), (Pitch.DANG, 1), (Pitch.DAING, 1)],
-                Position.JEGOGAN: [(Pitch.DING, 1), (Pitch.DONG, 1), (Pitch.DENG, 1), (Pitch.DEUNG, 1), (Pitch.DUNG, 1), (Pitch.DANG, 1), (Pitch.DAING, 1)],
-                Position.REYONG_1: [],
-            },
-            InstrumentGroup.GONG_KEBYAR: {
-                Position.PEMADE_POLOS: [ (Pitch.DONG, 0), (Pitch.DENG, 0), (Pitch.DUNG, 0), (Pitch.DANG, 0), (Pitch.DING, 1), (Pitch.DONG, 1),  
-                                        (Pitch.DENG, 1), (Pitch.DUNG, 1), (Pitch.DANG, 1), (Pitch.DING, 2)],
-                Position.JEGOGAN: [(Pitch.DING, 1), (Pitch.DONG, 1), (Pitch.DENG, 1), (Pitch.DUNG, 1), (Pitch.DANG, 1)],
-                Position.REYONG_1: [(Pitch.DENG, 0), (Pitch.DUNG, 0), (Pitch.DANG, 0), (Pitch.DING, 1), (Pitch.DONG, 1), (Pitch.DENGDING, 0), (Pitch.STRIKE, None),
-                                    (Pitch.BYONG, None)],
-            },
+    # Combinations that will be tested (contains both valid and invalid combinations)
+    TRY_COMBINATIONS: list[dict[str, Any]] = [
+        {
+            NoteFields.POSITION.value: position,
+            NoteFields.PITCH.value: pitch,
+            NoteFields.OCTAVE.value: octave,
+            NoteFields.STROKE.value: stroke,
+            NoteFields.DURATION.value: duration,
+            NoteFields.REST_AFTER.value: rest_after,
         }
-        self.VALID_STROKE_DURATION = {
-            InstrumentGroup.SEMAR_PAGULINGAN: {
-                Position.PEMADE_POLOS: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
-                                        (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
-                                        (Stroke.TREMOLO_ACCELERATING, 1.0), (Stroke.NOROT, 1.0), (Stroke.GRACE_NOTE, 0.0)],
-                Position.JEGOGAN: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
-                                   (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
-                                   (Stroke.TREMOLO_ACCELERATING, 1.0)],
-                Position.REYONG_1: [],
-            },
-            InstrumentGroup.GONG_KEBYAR: {
-                Position.PEMADE_POLOS: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
-                                        (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
-                                        (Stroke.TREMOLO_ACCELERATING, 1.0), (Stroke.NOROT, 1.0), (Stroke.GRACE_NOTE, 0.0)],
-                Position.JEGOGAN: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
-                                   (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
-                                   (Stroke.TREMOLO_ACCELERATING, 1.0)],
-                Position.REYONG_1: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
+        for position in (Position.PEMADE_POLOS, Position.JEGOGAN, Position.REYONG_1)
+        for pitch in [Pitch.DING, Pitch.DAING, Pitch.STRIKE, Pitch.DAG, Pitch.DENGDING]
+        for octave in (1, 2)
+        for stroke in [Stroke.OPEN, Stroke.MUTED, Stroke.TREMOLO, Stroke.GRACE_NOTE]
+        for duration in (0, 0.25, 1.0)
+        for rest_after in (0,)
+    ]
+    # fmt: off
+    # Any combination of values from VALID_PITCH_OCTAVE and VALID_STROKE_DURATION for a given position is valid.
+    VALID_PITCH_OCTAVE = {
+        InstrumentGroup.SEMAR_PAGULINGAN: {
+            Position.PEMADE_POLOS: [(Pitch.DING, 1), (Pitch.DONG, 1), (Pitch.DENG, 1), (Pitch.DEUNG, 1), (Pitch.DUNG, 1), (Pitch.DANG, 1), (Pitch.DAING, 1)],
+            Position.JEGOGAN: [(Pitch.DING, 1), (Pitch.DONG, 1), (Pitch.DENG, 1), (Pitch.DEUNG, 1), (Pitch.DUNG, 1), (Pitch.DANG, 1), (Pitch.DAING, 1)],
+            Position.REYONG_1: [],
+        },
+        InstrumentGroup.GONG_KEBYAR: {
+            Position.PEMADE_POLOS: [ (Pitch.DONG, 0), (Pitch.DENG, 0), (Pitch.DUNG, 0), (Pitch.DANG, 0), (Pitch.DING, 1), (Pitch.DONG, 1),  
+                                    (Pitch.DENG, 1), (Pitch.DUNG, 1), (Pitch.DANG, 1), (Pitch.DING, 2)],
+            Position.JEGOGAN: [(Pitch.DING, 1), (Pitch.DONG, 1), (Pitch.DENG, 1), (Pitch.DUNG, 1), (Pitch.DANG, 1)],
+            Position.REYONG_1: [(Pitch.DENG, 0), (Pitch.DUNG, 0), (Pitch.DANG, 0), (Pitch.DING, 1), (Pitch.DONG, 1), (Pitch.DENGDING, 0), (Pitch.STRIKE, None),
+                                (Pitch.BYONG, None)],
+        },
+    }
+    VALID_STROKE_DURATION = {
+        InstrumentGroup.SEMAR_PAGULINGAN: {
+            Position.PEMADE_POLOS: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
                                     (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
-                                    (Stroke.TREMOLO_ACCELERATING, 1.0), (Stroke.GRACE_NOTE, 0.0)],
-            },
-        }
+                                    (Stroke.TREMOLO_ACCELERATING, 1.0), (Stroke.NOROT, 1.0), (Stroke.GRACE_NOTE, 0.0)],
+            Position.JEGOGAN: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
+                                (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
+                                (Stroke.TREMOLO_ACCELERATING, 1.0)],
+            Position.REYONG_1: [],
+        },
+        InstrumentGroup.GONG_KEBYAR: {
+            Position.PEMADE_POLOS: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
+                                    (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
+                                    (Stroke.TREMOLO_ACCELERATING, 1.0), (Stroke.NOROT, 1.0), (Stroke.GRACE_NOTE, 0.0)],
+            Position.JEGOGAN: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
+                                (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
+                                (Stroke.TREMOLO_ACCELERATING, 1.0)],
+            Position.REYONG_1: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
+                                (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
+                                (Stroke.TREMOLO_ACCELERATING, 1.0), (Stroke.GRACE_NOTE, 0.0)],
+        },
+    }
+
+    @classmethod
+    def is_valid_combination(cls, group: InstrumentGroup, combination: dict[str, Any]) -> bool:
+        """Determines the expected validity of a combination from TRY_COMBINATIONS by comparing its values 
+           with VALID_PITCH_OCTAVE and VALID_STROKE_DURATION.
+        Args:
+            group (InstrumentGroup): 
+            combination (dict[str, Any]): combination of pitch, octave, stroke, duration and rest_after, given as a record str->value
+        """
+        position = combination[NoteFields.POSITION.value]
+        return ((combination["pitch"], combination["octave"]) in cls.VALID_PITCH_OCTAVE[group][position]) and (
+                (combination["stroke"], combination["duration"]) in cls.VALID_STROKE_DURATION[group][position])
 
     def test_returns_only_valid_notes(self):
-        self.load_settings_gk()
-        note = Note.get_note(Position.JEGOGAN, Pitch.DING, 1, Stroke.OPEN, 1, 0)
-        self.assertIsNotNone(note)
-        self.assertRaises(
-            ValueError,
-            Note,
-            instrumenttype=InstrumentType.JEGOGAN,
-            position=Position.JEGOGAN,
-            symbol="x",
-            pitch=Pitch.STRIKE,
-            octave=None,
-            stroke=Stroke.OPEN,
-            duration=1,
-            rest_after=0,
-        )
+        """Tests each combination in TRY_COMBINATIONS. Check that only Note objects with valid combinations
+           of attributes can be created. Any invalid combination should raise an exception.
+        """
+        for group in [InstrumentGroup.GONG_KEBYAR, InstrumentGroup.SEMAR_PAGULINGAN]:
+            self.load_settings(group)
+            for combination in self.TRY_COMBINATIONS:
+                note = Note.get_note(**combination) # returns None for invalid combinations
+                with self.subTest(combination=combination):
+                    if self.is_valid_combination(group, combination):
+                        self.assertIsNotNone(note)
+                        try:
+                            self.assertIsNotNone(Note(symbol="", **combination))
+                        except ValueError:
+                            self.fail(f"Unexpected failure for a valid combination.")
+                    else:
+                        self.assertRaises(ValueError, Note, symbol="", **combination)
 
 
 class ToneTester(unittest.TestCase):
