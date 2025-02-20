@@ -84,7 +84,7 @@ soundfonts:
 midiplayer:
     folder: ./data/midiplayer
     contentfile: content.json
-    helpinghand: [CALUNG, JEGOGAN, PEMADE_POLOS, PEMADE_SANGSIH, KANTILAN_POLOS, KANTILAN_SANGSIH, UGAL] # Animate panggul.
+    helpinghand: [CALUNG, JEGOGAN, PEMADE_POLOS, PEMADE_SANGSIH, KANTILAN_POLOS, KANTILAN_SANGSIH] # Animate panggul.
 pdf_converter:
     folder: ./settings/pdf_converter
     docx_template: pdf_output_template.docx
@@ -193,8 +193,13 @@ notations:
                 name: entire piece SP
                 file: Legong Mahawidya_font5.tsv
                 loop: false
-            full_gk:
-                name: entire piece GK
+    legongmahawidya_gk:
+        title: Legong Mahawidya GK
+        subfolder: legong mahawidya
+        beat_at_end: false
+        parts:
+            full:
+                name: entire piece
                 file: Legong Mahawidya_font5_GK.tsv
                 loop: false
     lengker:

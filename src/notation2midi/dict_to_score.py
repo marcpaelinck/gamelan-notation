@@ -203,7 +203,7 @@ class DictToScoreConverter(ParserModel):
             for pass_ in measure.passes.values():
                 if pass_.ruletype == RuleType.UNISONO:
                     pass_.notes = [
-                        note.get_kempyung(inverse=True) if note.inference_rule == RuleValue.EXACT_KEMPYUNG else note
+                        (note.get_kempyung(inverse=True) if note.transformation == RuleValue.EXACT_KEMPYUNG else note)
                         for note in pass_.notes
                     ]
 

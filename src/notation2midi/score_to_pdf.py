@@ -45,7 +45,7 @@ class ScoreToPDFConverter(ParserModel):
     basicparastyle = None
     metadatastyle = None
 
-    def __init__(self, score: Score, pickle: bool = True):
+    def __init__(self, score: Score, pickle: bool = False):
         super().__init__(self.ParserType.SCORETOPDF, score.settings)
         self.pdf_settings = self.run_settings.pdf_converter
         self.doc: DocxDocument = Document(os.path.join(self.pdf_settings.folder, self.pdf_settings.docx_template))
@@ -611,7 +611,7 @@ class ScoreToPDFConverter(ParserModel):
         self._edit_header()
         # self.doc.add_heading(self.score.title)
         # self.doc.add_paragraph(style=self.separatorparastyle)
-        for gongan in self.score.gongans[:9]:
+        for gongan in self.score.gongans:
             staves = self._clean_staves(gongan)
             table = self._create_table(gongan)
             self._add_metadata_before_gongan(table, gongan)
