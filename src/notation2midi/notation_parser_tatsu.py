@@ -181,7 +181,10 @@ class NotationTatsuParser(ParserModel):
             # try parsing the next note
             # next_note = Note.parse_next_note(note_chars, position)
             last_note = note_sequence == len(measure)
-            next_note = Note.parse(note_chars, position, all_positions)
+            try:
+                next_note = Note.parse(note_chars, position, all_positions)
+            except ValueError as e:
+                self.logerror(str(e))
             if not next_note:
                 self.logerror(f"Could not parse {note_chars[0]} from {measure} for {position.value}")
                 note_chars = note_chars[1:]

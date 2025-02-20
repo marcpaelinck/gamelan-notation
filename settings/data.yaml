@@ -84,7 +84,7 @@ soundfonts:
 midiplayer:
     folder: ./data/midiplayer
     contentfile: content.json
-    helpinghand: [CALUNG, JEGOGAN, PEMADE_POLOS, PEMADE_SANGSIH, KANTILAN_POLOS, KANTILAN_SANGSIH] # Animate panggul.
+    helpinghand: [CALUNG, JEGOGAN, PEMADE_POLOS, PEMADE_SANGSIH, KANTILAN_POLOS, KANTILAN_SANGSIH, UGAL] # Animate panggul.
 pdf_converter:
     folder: ./settings/pdf_converter
     docx_template: pdf_output_template.docx
@@ -190,8 +190,12 @@ notations:
         beat_at_end: false
         parts:
             full:
-                name: entire piece
+                name: entire piece SP
                 file: Legong Mahawidya_font5.tsv
+                loop: false
+            full_gk:
+                name: entire piece GK
+                file: Legong Mahawidya_font5_GK.tsv
                 loop: false
     lengker:
         title: Lengker
@@ -245,6 +249,14 @@ notations:
             full:
                 name: entire piece
                 file: pendet_font5_beat_at_end.tsv
+                loop: false
+    puspamekar:
+        title: Puspa Mekar
+        subfolder: puspa mekar
+        parts:
+            full:
+                name: entire piece
+                file: Puspa Mekar.tsv
                 loop: false
     rejangdewa:
         title: Rejang Dewa

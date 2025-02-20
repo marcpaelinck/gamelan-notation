@@ -344,7 +344,7 @@ class ScoreValidator(ParserModel):
             self.loginfo(f"{title}: corrected {len(corrected)}, ignored {len(ignored)}, remaining: {len(remaining)}")
             if detailed_logging:
                 if corrected:
-                    self.loginfo(self.logger.info, "corrected:", corrected)
+                    self.loginfo(f"corrected:{corrected}")
                 if ignored:
                     log_list(self.logger.info, "ignored:", ignored)
             if remaining:

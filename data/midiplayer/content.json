@@ -134,6 +134,15 @@
                                         }
                                 }
                         ]
+                }, 
+                {"title": "Puspa Mekar", "instrumentgroup": "GONG_KEBYAR", "display": true, "parts": [
+                                {"part": "entire piece", "file": "Puspa Mekar_full_GAMELAN1.mid", "loop": false, "markers": {
+                                                "kawitan": 0.008289230218260678, 
+                                                "pengawak": 0.3178110264419729, 
+                                                "pengecet": 0.6505740037006824
+                                        }
+                                }
+                        ]
                 }], 
         "instrumentgroups": {
                 "GONG_KEBYAR": [

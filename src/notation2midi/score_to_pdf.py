@@ -1,5 +1,6 @@
 import os
 import pickle
+import time
 import typing
 from datetime import datetime
 from enum import Enum
@@ -45,7 +46,7 @@ class ScoreToPDFConverter(ParserModel):
     metadatastyle = None
 
     def __init__(self, score: Score, pickle: bool = True):
-        super().__init__(self.ParserType.NOTATIONPARSER, score.settings)
+        super().__init__(self.ParserType.SCORETOPDF, score.settings)
         self.pdf_settings = self.run_settings.pdf_converter
         self.doc: DocxDocument = Document(os.path.join(self.pdf_settings.folder, self.pdf_settings.docx_template))
         self.score = score
@@ -610,7 +611,7 @@ class ScoreToPDFConverter(ParserModel):
         self._edit_header()
         # self.doc.add_heading(self.score.title)
         # self.doc.add_paragraph(style=self.separatorparastyle)
-        for gongan in self.score.gongans:
+        for gongan in self.score.gongans[:9]:
             staves = self._clean_staves(gongan)
             table = self._create_table(gongan)
             self._add_metadata_before_gongan(table, gongan)
@@ -632,7 +633,7 @@ class ScoreToPDFConverter(ParserModel):
 
         self._convert_to_pdf()
         self.doc.save(self.filepath)
-        docx2pdf.convert(self.filepath)
+        docx2pdf.convert(self.filepath, self.filepath.replace("docx", "pdf"))
         self.logger.info(f"Notation file saved as {self.filepath}")
 
 
@@ -659,7 +660,7 @@ if __name__ == "__main__":
             "filename": "Lengker_full_GAMELAN1.pickle",
         }
 
-    source = Source.LENGKER
+    source = Source.LEGONGMAHAWIDYA
 
     path = os.path.join(source.value["folder"], source.value["filename"])
     with open(path, "rb") as picklefile:
