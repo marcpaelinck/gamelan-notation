@@ -3,7 +3,10 @@ from unittest.mock import patch
 
 from src.common.classes import Beat, Gongan, Measure, Note
 from src.common.constants import DEFAULT, Position
-from src.notation2midi.score_to_notation import gongan_to_records, notelist_to_string
+from src.notation2midi.score2notation.score_to_notation import (
+    gongan_to_records,
+    notelist_to_string,
+)
 from src.settings.constants import InstrumentFields, Yaml
 from src.settings.settings import load_run_settings
 

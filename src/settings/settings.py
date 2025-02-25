@@ -303,4 +303,4 @@ def save_midiplayer_content(playercontent: Content, filename: str = None):
 if __name__ == "__main__":
     # For testing
     settings = get_run_settings()
-    print(settings.pdf_converter)
+    print(settings.font)

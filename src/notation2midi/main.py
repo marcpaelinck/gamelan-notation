@@ -1,12 +1,12 @@
 """This module can be used to perform a complete run cycle (notation -> midi output).
 """
 
-from src.common.constants import NotationFont, Position
+from src.common.constants import NotationFont
 from src.notation2midi.dict_to_score import DictToScoreConverter
 from src.notation2midi.notation_parser_tatsu import NotationTatsuParser
+from src.notation2midi.score2notation.score_to_notation import score_to_notation_file
+from src.notation2midi.score2notation.score_to_pdf import ScoreToPDFConverter
 from src.notation2midi.score_to_midi import MidiGenerator
-from src.notation2midi.score_to_notation import score_to_notation_file
-from src.notation2midi.score_to_pdf import ScoreToPDFConverter
 from src.notation2midi.score_validation import ScoreValidator
 from src.settings.classes import RunSettings, RunType
 from src.settings.constants import Yaml
@@ -61,7 +61,7 @@ def single_run():
 
 if __name__ == "__main__":
     run_settings = get_run_settings()
-    if run_settings.options.notation_to_midi.runtype is RunType.RUN_ALL:
+    if run_settings.options.notation_to_midi.runtype in (RunType.RUN_ALL, RunType.RUN_ALL_PRODUCTION):
         multiple_notations_to_midi(run_settings)
     else:
         single_run()

@@ -30,7 +30,7 @@ from src.common.classes import Gongan, Note, Score
 from src.common.constants import DEFAULT, InstrumentType, Position, Stroke
 from src.common.metadata_classes import DynamicsMeta, MetaData, MetaDataBaseModel
 from src.notation2midi.classes import ParserModel
-from src.notation2midi.score_to_notation import aggregate_positions
+from src.notation2midi.score2notation.score_to_notation import aggregate_positions
 
 # The following functions save a human readable version of the score to a PDF file.
 

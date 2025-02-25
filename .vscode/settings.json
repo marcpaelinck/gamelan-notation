@@ -6,7 +6,7 @@
             "source.organizeImports": "explicit"
         },
       },
-    "isort.args": [
+      "isort.args": [
         "--profile",
         "black"
     ],

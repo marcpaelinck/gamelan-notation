@@ -61,8 +61,10 @@ fonts:
     fontversions:
         BaliMusic4: 
             file: balimusic4font.tsv
+            ttf_file: null
         BaliMusic5:
             file: balimusic5font.tsv
+            ttf_file: bali-music-5.ttf
 grammars:
     folder: ./settings/grammars
     notationfile: notation.ebnf
@@ -111,6 +113,9 @@ notations:
                 folder_in: ./data/notation/${notation.subfolder}
                 folder_out:  ${midiplayer.folder}
             RUN_ALL:
+                folder_in: ./data/notation/${notation.subfolder}
+                folder_out: ./data/notation/${notation.subfolder}
+            RUN_ALL_PRODUCTION:
                 folder_in: ./data/notation/${notation.subfolder}
                 folder_out: ${midiplayer.folder}
         beat_at_end: false

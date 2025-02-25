@@ -126,6 +126,7 @@ class RunType(StrEnum):
     RUN_SINGLE = "RUN_SINGLE"
     RUN_SINGLE_PRODUCTION = "RUN_SINGLE_PRODUCTION"
     RUN_ALL = "RUN_ALL"
+    RUN_ALL_PRODUCTION = "RUN_ALL_PRODUCTION"
 
 
 class RunSettings(BaseModel):
@@ -220,10 +221,15 @@ class RunSettings(BaseModel):
         fontversion: NotationFont
         folder: str
         file: str
+        ttf_file: str
 
         @property
         def filepath(self):
             return os.path.join(self.folder, self.file)
+
+        @property
+        def ttf_filepath(self):
+            return os.path.join(self.folder, self.ttf_file)
 
     class MultipleRunsInfo(BaseModel):
         folder_in: str
