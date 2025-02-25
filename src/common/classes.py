@@ -959,11 +959,12 @@ class Notation:
 
 @dataclass
 class Score:
-
     title: str
     settings: "RunSettings"
     instrument_positions: set[Position] = None
     gongans: list[Gongan] = field(default_factory=list)
+    global_metadata: list[MetaData] = field(default_factory=list)
+    global_comments: list[str] = field(default_factory=list)
     midi_notes_dict: dict[tuple[Position, Pitch, Octave, Stroke], MidiNote] = None
     flowinfo: FlowInfo = field(default_factory=FlowInfo)
     midifile_duration: int = None

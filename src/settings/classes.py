@@ -152,6 +152,7 @@ class RunSettings(BaseModel):
         autocorrect_kempyung: bool
         # run types that should include this composition
         include_in_run_types: list[RunType] = Field(default_factory=list)
+        generate_pdf_part_ids: list[str] = Field(default_factory=list)
         production: bool  # resulting MIDI file fit to save to production environment?
 
         @property

@@ -555,7 +555,8 @@ class DictToScoreConverter(ParserModel):
         for self.curr_gongan_id, gongan_info in self.notation.notation_dict.items():
             if self.curr_gongan_id < 0:
                 # Skip the gongan holding the global (score-wide) metadata items
-                continue
+                self.score.global_metadata = gongan_info.get(ParserTag.METADATA, [])
+                self.score.global_comments = gongan_info.get(ParserTag.COMMENTS, [])
             for self.curr_beat_id, measures in gongan_info[ParserTag.BEATS].items():
                 # Create the beat and add it to the list of beats
                 new_beat = Beat(

@@ -156,6 +156,8 @@ class ScoreToPDFConverter(ParserModel):
             if self.current_tempo == -1:
                 self.current_tempo = meta.value
                 return None
+            if meta.value == self.current_tempo:
+                return None
             value = "faster{dots}" if meta.value > self.current_tempo else "slower{dots}"
             self.current_tempo = meta.value
         elif meta.metatype == "DYNAMICS":
@@ -193,12 +195,13 @@ class ScoreToPDFConverter(ParserModel):
         Returns:
             TableContent:
         """
-        colwidths = table.colwidths
+        colwidths = table.colwidths[:-1]  # Available columns excluding the overflow column
+        all_colwidths = table.colwidths
         cellspans = []
         first_row = len(table.data)
 
         def span_width(col1: int, col2: int):
-            return sum(colwidths[c] for c in range(col1, col2 + 1))
+            return sum(table.colwidths[c] for c in range(col1, col2 + 1))
 
         def overlap(a: tuple[int], b: tuple[int]):
             # Span format is ('SPAN', (sc,sr), (ec,er))
@@ -208,9 +211,12 @@ class ScoreToPDFConverter(ParserModel):
         cell_alignment = "RIGHT" if parastyle.alignment in [TA_RIGHT, "RIGHT"] else "LEFT"
         for meta in metalist:
             parastyle = parastyle or self.template.basicparaStyle
+            # Determine the cell id that will contain the text
             cellnr_ = getattr(meta, cellnr) if isinstance(cellnr, str) else cellnr
             cellnr_ = len(colwidths) - 1 if cellnr_ < 0 else cellnr_
             if col_span:
+                # Determine the column range (for metadata that apply to multiple columns, such as TEMPO or DYNAMICS).
+                # `span` is either number of cells or last cell id, depending on spantype.
                 span = getattr(meta, col_span) if isinstance(col_span, str) else col_span
                 if spantype is SpanType.RANGE:
                     lastcellnr = len(colwidths) - 1 if span == -1 else cellnr_ if span == 0 else cellnr_ + span - 1
@@ -224,27 +230,28 @@ class ScoreToPDFConverter(ParserModel):
                 col_range = (cellnr_, cellnr_)
 
             formatter = formatter or self._default_formatter
-            value = formatter(value, meta, before=before, after=after)
-            if not value:
+            value_ = formatter(value, meta, before=before, after=after)
+            if not value_:
                 continue
+
+            # Add 'passes' information if available
             if "passes" in meta.model_fields:
                 if meta.passes:
                     if any(p for p in meta.passes if p > 0):
-                        value += f" (pass {','.join(str(p) for p in meta.passes)})"
-            # merge additional cells if necessary to accommondate the text width
-            textwidth = stringWidth(value.format(dots=""), parastyle.fontName, parastyle.fontSize)
+                        value_ += f" (pass {','.join(str(p) for p in meta.passes)})"
+            # merge additional free cells if necessary to accommondate the text width
+            textwidth = stringWidth(value_.format(dots=""), parastyle.fontName, parastyle.fontSize)
             delta = 0.2 * cm
             span_range = col_range
             if span_width(*col_range) < textwidth + delta:
-                # if text is in the last gongan column: merge the cell with the overflow cell to the right
                 # Merge the cell with empty adjacent cells if possible until the required width is reached.
+                # Use the overflow column if necessary. Expand to the left if the text should be right-aligned.
                 step = -1 if cell_alignment == "RIGHT" else 1
                 adjacent_cell = span_range[0] if cell_alignment == "RIGHT" else span_range[1]
                 while sum(
-                    colwidths[c] for c in range(min(adjacent_cell, cellnr_), max(adjacent_cell, cellnr_) + 1)
-                ) < textwidth + delta and 0 <= adjacent_cell + step < len(colwidths):
+                    all_colwidths[c] for c in range(min(adjacent_cell, cellnr_), max(adjacent_cell, cellnr_) + 1)
+                ) < textwidth + delta and 0 <= adjacent_cell + step < len(all_colwidths):
                     adjacent_cell += step
-                    # TODO: if the adjcell is the rightmost cell of the table, adjust the column width if needed
                 if adjacent_cell != cellnr_:
                     span_range = min(adjacent_cell, cellnr_), max(adjacent_cell, cellnr_)
                     cellnr_ = min(adjacent_cell, cellnr_)
@@ -263,8 +270,8 @@ class ScoreToPDFConverter(ParserModel):
                     dots = ""
             else:
                 dots = ""
-            value = Paragraph(value.format(dots=dots), parastyle)
-            row = [value if i == cellnr_ else "" for i in range(len(colwidths))]
+            value_ = Paragraph(value_.format(dots=dots), parastyle)
+            row = [value_ if i == cellnr_ else "" for i in range(len(colwidths))]
 
             # Check if the content can be added to the previous row
             if table.data:
@@ -327,15 +334,6 @@ class ScoreToPDFConverter(ParserModel):
 
             table = self._append_comments(table, gongan.comments)
 
-            if metalist := metadict.get("LABEL", None):
-                table = self._append_single_metadata_type(
-                    table,
-                    metalist=metalist,
-                    cellnr="beat",
-                    col_span=-1,
-                    parastyle=self.template.metadataLabelStyle,
-                )
-
             if metalist := metadict.get("TEMPO", None):
                 table = self._append_single_metadata_type(
                     table,
@@ -356,6 +354,15 @@ class ScoreToPDFConverter(ParserModel):
                     spantype=SpanType.RANGE,
                     parastyle=self.template.metadataDefaultStyle,
                     formatter=self._gradual_change_formatter,
+                )
+
+            if metalist := metadict.get("LABEL", None):
+                table = self._append_single_metadata_type(
+                    table,
+                    metalist=metalist,
+                    cellnr="beat",
+                    col_span=-1,
+                    parastyle=self.template.metadataLabelStyle,
                 )
 
         if not above_notation:
@@ -421,16 +428,34 @@ class ScoreToPDFConverter(ParserModel):
             score (Score): The score
         """
         METADATA_KEEP = ["DYNAMICS", "GOTO", "LABEL", "PART", "REPEAT", "SEQUENCE", "SUPPRESS", "TEMPO"]
+        # Save global comments
+        colwidths = [self.TAG_COLWIDTH] + [self.template.doc.pageTemplates[0].frames[0]._aW - self.TAG_COLWIDTH]
+        content: TableContent = TableContent(data=[], colwidths=colwidths, style=[])
+        self._append_comments(content, comments=self.score.global_comments)
+        comment_table = Table(
+            data=content.data,
+            colWidths=colwidths,
+            style=content.style,
+            rowHeights=0.4 * cm,
+            splitByRow=False,
+            hAlign="LEFT",
+            spaceAfter=0.5 * cm,
+        )
+        self.story.append(comment_table)
+
         for gongan in self.score.gongans:
             if not gongan.beats:
                 continue
             staves_ = clean_staves(gongan)
             pos_tags = aggregate_positions(gongan)
             notation_data, beat_colwidths = self._staves_to_tabledata(staves_, pos_tags)
-            last_col_width = max(
-                self.template.doc.pageTemplate.frames[0].width - sum(beat_colwidths) - self.TAG_COLWIDTH, 0
+            overflow_col_width = max(
+                self.template.doc.pageTemplates[0].frames[0]._aW - sum(beat_colwidths) - self.TAG_COLWIDTH, 0
             )
-            colwidths = [self.TAG_COLWIDTH] + beat_colwidths + [last_col_width]
+            colwidths = [self.TAG_COLWIDTH] + beat_colwidths + [overflow_col_width]
+            # Add an overflow column
+            for row in notation_data:
+                row.append("")
 
             # Create an empty content container
             content: TableContent = TableContent(data=[], colwidths=colwidths, style=[])

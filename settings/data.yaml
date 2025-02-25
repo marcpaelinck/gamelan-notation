@@ -103,7 +103,8 @@ notations:
     # Otherwise the midi file will end abruptly to allow looping.
     defaults:
         run_type: ${options.notation_to_midi.runtype}
-        include_in_run_types: [RUN_SINGLE, RUN_ALL]
+        include_in_run_types: [RUN_SINGLE, RUN_SINGLE_PRODUCTION, RUN_ALL, RUN_ALL_PRODUCTION]
+        generate_pdf_part_ids: [full]
         production: true
         folders:
             RUN_SINGLE:

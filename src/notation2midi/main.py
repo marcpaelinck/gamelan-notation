@@ -37,7 +37,11 @@ def notation_to_midi(run_settings: RunSettings):
 
     if success and run_settings.options.notation_to_midi.save_corrected_to_file:
         score_to_notation_file(score)
-    if success and run_settings.options.notation_to_midi.save_pdf_notation:
+    if (
+        success
+        and run_settings.options.notation_to_midi.save_pdf_notation
+        and run_settings.notation.part_id in run_settings.notation.generate_pdf_part_ids
+    ):
         ScoreToPDFConverter(score).create_notation()
 
 

@@ -185,7 +185,7 @@ class NotationTemplate:
 
     def notationTableStyle(self, row1: int, row2: int) -> list[tuple]:
         return [
-            ("LINEAFTER", (0, row1), (-1, row2), 0.5, colors.black),
+            ("LINEAFTER", (0, row1), (-2, row2), 0.5, colors.black),  # no line after overflow column
             ("FONT", (0, row1), (-1, row2), "Helvetica", 9, 11),
             ("TEXTCOLOR", (0, row1), (-1, row2), colors.black),
             ("ALIGNMENT", (0, row1), (-1, row2), "LEFT"),
