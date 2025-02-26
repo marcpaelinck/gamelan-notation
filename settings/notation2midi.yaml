@@ -4,7 +4,7 @@
 midi:
   midiversion: GAMELAN1
 notation:
-  composition: legongmahawidya_gk
+  composition: legongmahawidya
   part_id: full
 
 options:

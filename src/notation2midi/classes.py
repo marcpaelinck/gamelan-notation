@@ -38,7 +38,7 @@ class NamedIntID(int):
 
 class ParserModel:
     # Base class for the classes that each perform a step of the conversion
-    # from notation to MIDI output. It provides a uniform logging format.
+    # from notation to MIDI/PDF/TXT output. It provides a uniform logging format.
     class ParserType(StrEnum):
         # Used by the logger to determine the source of a warning or error
         # message.

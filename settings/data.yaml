@@ -124,6 +124,7 @@ notations:
         fontversion: BaliMusic5
         instrumentgroup: GONG_KEBYAR
         midi_out_file: ${notation.title}_${notation.part_id}_${midi.midiversion}.mid
+        pdf_out_file: ${notation.title}_${notation.part_id}_${midi.midiversion}.pdf
     bapangselisir:
         title: Bapang Selisir
         subfolder: bapang selisir

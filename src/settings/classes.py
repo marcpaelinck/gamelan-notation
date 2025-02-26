@@ -143,6 +143,7 @@ class RunSettings(BaseModel):
         title: str
         instrumentgroup: InstrumentGroup
         midi_out_file: str
+        pdf_out_file: str
         run_type: RunType
         folders: dict[RunType, FolderInfo] = Field(default_factory=dict)
         subfolder: str
@@ -166,6 +167,10 @@ class RunSettings(BaseModel):
         @property
         def midi_out_filepath(self):
             return os.path.join(self.folders[self.run_type].folder_out, self.midi_out_file)
+
+        @property
+        def pdf_out_filepath(self):
+            return os.path.join(self.folders[self.run_type].folder_out, self.pdf_out_file)
 
     class MidiInfo(BaseModel):
         # Implementation of tremolo notes. First two parameters are in 1/base_note_time. E.g. if base_note_time=24, then 24 is a standard note duration.

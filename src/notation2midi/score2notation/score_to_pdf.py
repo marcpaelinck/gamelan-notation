@@ -1,13 +1,14 @@
+from __future__ import annotations
+
 import itertools
 import os
 import pickle
-import typing
 from dataclasses import dataclass, field
 from enum import Enum
 from os import path
-from typing import Self
+from typing import Callable
 
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.lib.enums import TA_RIGHT
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
 from reportlab.pdfbase.pdfmetrics import registerFont, stringWidth
@@ -15,12 +16,13 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, Table, TableStyle
 
 from src.common.classes import Gongan, Note, Score
-from src.common.constants import InstrumentType, Position
+from src.common.constants import Position
 from src.common.metadata_classes import MetaDataBaseModel
 from src.notation2midi.classes import ParserModel
 from src.notation2midi.score2notation.formatting import NotationTemplate
 from src.notation2midi.score2notation.score_to_notation import aggregate_positions
 from src.notation2midi.score2notation.utils import (
+    _has_kempli_beat,
     clean_staves,
     measure_to_str,
     stringWidth_fromNotes,
@@ -34,17 +36,50 @@ class SpanType(Enum):
 
 @dataclass
 class TableContent:
+    """Convenience class to enable building up the contents of a table
+    row by row before creating an actual Table object.
+    """
 
     data: list[list[str | Paragraph]] = field(default_factory=list)
     style: list[tuple] = field(default_factory=list)
     colwidths: list[float] = field(default_factory=list)
+    template: NotationTemplate = None
 
-    def append(self, table: Self):
+    def append(self, content: TableContent):
+        """Appends the content of a TableContent.
+        Args:
+            content (TableContent): content to append.
+        Raises:
+            Exception: If the number of columns don't match.
+        """
         # Note: only the base object's colwidths are retained
-        if not (len(table.colwidths) == len(self.colwidths)):
+        if not (len(content.colwidths) == len(self.colwidths)):
             raise Exception("Number of columns does not match")
-        self.data.extend(table.data)
-        self.style.extend(table.style)
+        self.data.extend(content.data)
+        self.style.extend(content.style)
+
+    def _append_empty_row(self, col_span: list[int] = [], parastyle: ParagraphStyle = None) -> TableContent:
+        """Adds an empty row to the tablecontent.
+        Args:
+            content (TableContent): the content to which a row should be added.
+            col_span (list[int], optional): Cell range that should be merged. Defaults to [].
+            parastyle (ParagraphStyle, optional): Default paragraph style for the cells. Defaults to None.
+
+        Returns:
+            TableContent: the modified content.
+        """
+        rownr = len(self.data)
+        tablestyle = TableStyle(
+            self.template.metadataTableRAStyle(rownr, rownr)
+            if parastyle.alignment in [TA_RIGHT, "RIGHT"]
+            else self.template.metadataTableLAStyle(rownr, rownr)
+        )
+        # Add span information to the style list.
+        if col_span[0] != col_span[1]:
+            tablestyle.add("SPAN", (col_span[0], len(self.data)), (col_span[1], len(self.data)))
+        self.data.append([Paragraph("", style=parastyle)] * len(self.colwidths))
+        self.style.extend(tablestyle.getCommands())
+        return self
 
 
 class ScoreToPDFConverter(ParserModel):
@@ -54,135 +89,34 @@ class ScoreToPDFConverter(ParserModel):
     W = 0
     H = 1
 
-    def __init__(self, score: Score, pickle: bool = True):
+    def __init__(self, score: Score, pickle: bool = False):
         super().__init__(self.ParserType.SCORETOPDF, score.settings)
-        self.pdf_settings = self.run_settings.pdf_converter
-        fpath, ext = os.path.splitext(score.settings.notation.midi_out_filepath)
-        self.filepath = fpath + "_ALT.pdf"
-        # self.canvas: Canvas = Canvas(self.filepath, pagesize=A4)
         self.score = score
         self.template = NotationTemplate(self.score.settings)
-        self.pickle = pickle
+        self.pickle = pickle  # only used for development
         self.current_tempo = -1
-        self.current_dynamics = -1
+        self.current_dynamics = -1  # Not used currently
         registerFont(TTFont("Bali Music 5", self.run_settings.font.ttf_filepath))
         self.story = []
 
-    def _to_aggregated_tags(self, positions: list[Position]) -> list[str]:
-        tags = set(pos.instrumenttype.lower() for pos in positions)
-        gangsa = {InstrumentType.PEMADE.lower(), InstrumentType.KANTILAN.lower()}
-        if gangsa.issubset(tags):
-            tags = tags.difference(gangsa).union({"gangsa"})
-        return tags
-
-    def _append_empty_row(
-        self, table: TableContent, colwidths: int, col_span: list[int] = [], parastyle: ParagraphStyle = None
-    ) -> TableContent:
-        rownr = len(table.data)
-        tablestyle = TableStyle(
-            self.template.metadataTableRAStyle(rownr, rownr)
-            if parastyle.alignment in [TA_RIGHT, "RIGHT"]
-            else self.template.metadataTableLAStyle(rownr, rownr)
-        )
-        if col_span[0] != col_span[1]:
-            tablestyle.add("SPAN", (col_span[0], len(table.data)), (col_span[1], len(table.data)))
-        table.data.append([Paragraph("", style=parastyle)] * len(colwidths))
-        table.style.extend(tablestyle.getCommands())
-        return table
-
-    def _default_formatter(
-        self,
-        value: typing.Any | None,
-        meta: MetaDataBaseModel,
-        before: str = "",
-        after: str = "",
-    ) -> str:
-        """Simple formatter for metadata. Adds the value to the given paragraph.
-        Args:
-            value (typing.Any): Value that should be written. If missing, the metadata DEFAULTPARAM attribute will be used.
-            meta (MetaDataBaseModel): Metadata object.
-            before (str, optional): Text that should precede the value. Defaults to "".
-            after (str, optional): Text that should follow the value. Defaults to "".
-            paragraph (Paragraph, optional): The paragraph to which the value should be written. Defaults to None.
-            charstyle (CharacterStyle, optional): Character style for the added text. Defaults to `metadatastyle`.
-        """
-        value_ = value or getattr(meta, meta.DEFAULTPARAM)
-        return f"{before}{value_}{after}"
-
-    def _list_formatter(
-        self,
-        value: list[str],
-        meta: MetaDataBaseModel,
-        before: str = "",
-        after: str = "",
-    ) -> str:
-        """Formatter for a metadata list value. Formats the value to a comma separated list.
-            The list items are formatted using the `labelstyle` character style.
-        Args:
-            value (typing.Any): Value that should be written. If missing, the metadata DEFAULTPARAM attribute will be used.
-            meta (MetaDataBaseModel): Metadata object.
-            before (str, optional): Text that should precede the value. Defaults to "".
-            after (str, optional): Text that should follow the value. Defaults to "".
-            paragraph (Paragraph, optional): The paragraph to which the value should be written. Defaults to None.
-            charstyle (CharacterStyle, optional): Character style for the added text. Defaults to `metadatastyle`.
-        """
-        value_ = value or getattr(meta, meta.DEFAULTPARAM)
-        if isinstance(value_, list):
-            value_ = ", ".join(value_)
-        value_ = self.template.format_text(value_, self.template.metadataLabelCharStyle)
-        return f"{before}{value_}{after}"
-
-    def _gradual_change_formatter(
-        self,
-        value: list[str],
-        meta: MetaDataBaseModel,
-        before: str = "",
-        after: str = "",
-    ) -> str:
-        """Formatter for GradualChangeMetadata subclasses. These values can include a range of beats to which the metadata
-           applies. Called for TEMPO and DYNAMICS metadata which can gradually change over several beats.
-           The value will be preceded or followed by a dotted line that will reach to the right margine of the (merged) cell.
-        Args:
-            value (typing.Any): Value that should be written. If missing, the metadata DEFAULTPARAM attribute will be used.
-            meta (MetaDataBaseModel): Metadata object.
-            before (str, optional): Text that should precede the value. Defaults to "".
-            after (str, optional): Text that should follow the value. Defaults to "".
-            paragraph (Paragraph, optional): The paragraph to which the value should be written. Defaults to None.
-            charstyle (CharacterStyle, optional): Character style for the added text. Defaults to `metadatastyle`.
-        """
-        # If the metadata spans several beats, a tab character will be added before or after the value and a tab stop
-        # with preceding dashes will be added at the right-hand margin of the merged cell.
-        if meta.metatype == "TEMPO":
-            if self.current_tempo == -1:
-                self.current_tempo = meta.value
-                return None
-            if meta.value == self.current_tempo:
-                return None
-            value = "faster{dots}" if meta.value > self.current_tempo else "slower{dots}"
-            self.current_tempo = meta.value
-        elif meta.metatype == "DYNAMICS":
-            position_tags = self._to_aggregated_tags(meta.positions)
-            value = f"{", ".join(position_tags)}{": " if position_tags else ""}{"{dots}"}{meta.abbreviation}"
-            self.current_dynamics = meta.value
-        return value
-
     def _append_single_metadata_type(
         self,
-        table: TableContent,
+        content: TableContent,
         metalist: list[MetaDataBaseModel],
         value: str = None,
         cellnr: int | str = 1,
         spantype: SpanType = SpanType.LAST_CELL,
         col_span: int | str | None = None,
         parastyle: ParagraphStyle = None,
-        before: str = "",
-        after: str = "",
-        formatter: typing.Callable = None,
+        # before: str = "",
+        # after: str = "",
+        formatter: Callable = NotationTemplate._default_formatter,
+        **kwargs,
     ) -> TableContent:
         """Generic method that adds metadata items of the same type. A row is added to the table content for each metadata item.
-           Note that table contains an overflow column (after the last beat column) to accommodate long metadata texts.
+           Note that content contains an overflow column (after the last beat column) to accommodate long metadata texts.
         Args:
-            table (Table): The table to which to add the metadata.
+            content (TableContent): The table content to which to add the metadata.
             metalist (list[MetaData]): List of similar metadata items.
             value (str, optional): The value to print. Defaults to the default attrribute of the metadata item (set in DEFAULTPARAM).
             cellnr: (int, optional): The table cell in which to write the value. Defaults to 1.
@@ -195,13 +129,13 @@ class ScoreToPDFConverter(ParserModel):
         Returns:
             TableContent:
         """
-        colwidths = table.colwidths[:-1]  # Available columns excluding the overflow column
-        all_colwidths = table.colwidths
+        colwidths = content.colwidths[:-1]  # Available columns excluding the overflow column
+        all_colwidths = content.colwidths
         cellspans = []
-        first_row = len(table.data)
+        first_row = len(content.data)
 
         def span_width(col1: int, col2: int):
-            return sum(table.colwidths[c] for c in range(col1, col2 + 1))
+            return sum(content.colwidths[c] for c in range(col1, col2 + 1))
 
         def overlap(a: tuple[int], b: tuple[int]):
             # Span format is ('SPAN', (sc,sr), (ec,er))
@@ -210,6 +144,13 @@ class ScoreToPDFConverter(ParserModel):
 
         cell_alignment = "RIGHT" if parastyle.alignment in [TA_RIGHT, "RIGHT"] else "LEFT"
         for meta in metalist:
+            value_ = formatter(value, meta, **kwargs)
+            if meta.metatype == "TEMPO":
+                # Need to keep track of current tempo
+                self.current_tempo = meta.value
+            if not value_:
+                continue
+
             parastyle = parastyle or self.template.basicparaStyle
             # Determine the cell id that will contain the text
             cellnr_ = getattr(meta, cellnr) if isinstance(cellnr, str) else cellnr
@@ -228,11 +169,6 @@ class ScoreToPDFConverter(ParserModel):
                     raise ValueError(f"Unexpected value {spantype} for argument spantype.")
             else:
                 col_range = (cellnr_, cellnr_)
-
-            formatter = formatter or self._default_formatter
-            value_ = formatter(value, meta, before=before, after=after)
-            if not value_:
-                continue
 
             # Add 'passes' information if available
             if "passes" in meta.model_fields:
@@ -258,7 +194,7 @@ class ScoreToPDFConverter(ParserModel):
 
             span = None
             if span_range[0] != span_range[1]:
-                span = ("SPAN", (span_range[0], len(table.data)), (span_range[1], len(table.data)))
+                span = ("SPAN", (span_range[0], len(content.data)), (span_range[1], len(content.data)))
 
             # Add dots if necessary for metadata spanning more than one column
             if col_range[0] != col_range[1]:
@@ -274,48 +210,52 @@ class ScoreToPDFConverter(ParserModel):
             row = [value_ if i == cellnr_ else "" for i in range(len(colwidths))]
 
             # Check if the content can be added to the previous row
-            if table.data:
-                prevrow_spans = [cmd for cmd in table.style if cmd[0] == "SPAN" and cmd[1][1] == len(table.data) - 1]
-                content_overlap = any(cell1 and cell2 for cell1, cell2 in zip(row, table.data[-1]))
+            if content.data:
+                prevrow_spans = [
+                    cmd for cmd in content.style if cmd[0] == "SPAN" and cmd[1][1] == len(content.data) - 1
+                ]
+                content_overlap = any(cell1 and cell2 for cell1, cell2 in zip(row, content.data[-1]))
                 span_overlap = span and any(overlap(s1, s2) for s1, s2 in itertools.product([span], prevrow_spans))
                 if not content_overlap and not span_overlap:
-                    row = [c1 or c2 for c1, c2 in zip(table.data.pop(), row)]
+                    row = [c1 or c2 for c1, c2 in zip(content.data.pop(), row)]
                     if span:
                         span_tolist = list(span)
                         span_tolist[1:] = [(el[0], el[1] - 1) for el in span[1:]]
                         span = tuple(span_tolist)
             if span:
                 cellspans.append(span)
-            table.data.append(row)
+            content.data.append(row)
 
         # Update the table style list
-        last_row = len(table.data) - 1
+        last_row = len(content.data) - 1
         style_cmds = (
             self.template.metadataTableRAStyle(first_row, last_row)
             if cell_alignment == "RIGHT"
             else self.template.metadataTableLAStyle(first_row, last_row)
         ) + cellspans
         tablestyle = TableStyle(style_cmds)
-        table.style.extend(tablestyle.getCommands())
+        content.style.extend(tablestyle.getCommands())
 
-        return table
+        return content
 
-    def _append_comments(self, table: TableContent, comments: list[str]) -> TableContent:
+    def _append_comments(self, content: TableContent, comments: list[str]) -> TableContent:
+        """Adds comment lines to the content.
+        Args:
+            content (TableContent): content to which the new rows should be added.
+            comments ( list[str]): comment lines.
+        """
         for comment in comments:
             if not comment.startswith("#"):
-                table = self._append_empty_row(
-                    table, colwidths=table.colwidths, col_span=[1, -1], parastyle=self.template.basicparaStyle
-                )
-                table.data[-1][1] = Paragraph(text=f"{comment}", style=self.template.commentStyle)
-                table.style.append(("SPAN", (1, len(table.data)), (len(table.colwidths) - 1, len(table.data))))
-        return table
+                content._append_empty_row(col_span=[1, -1], parastyle=self.template.basicparaStyle)
+                content.data[-1][1] = Paragraph(text=f"{comment}", style=self.template.commentStyle)
+        return content
 
-    def _append_metadata(self, table: TableContent, gongan: Gongan, above_notation: bool) -> TableContent:
+    def _append_metadata(self, content: TableContent, gongan: Gongan, above_notation: bool) -> TableContent:
         """Adds the gongan metadata and comments that should appear above or below the notation part.
         Only processes the metadata that is meaningful for the PDF notation. E.g. ValidationMeta,
         GonganMeta, AutoKempyungMeta, OctavateMeta are skipped.
         Args:
-            table (TableContent): content to which the new rows should be added
+            content (TableContent): content to which the new rows should be added
             gongan (Gongan): the gongan to which the metadata belongs
             above_notation (bool): Selects which metadata to generate
         """
@@ -328,37 +268,39 @@ class ScoreToPDFConverter(ParserModel):
             # Content that should occur before the notation part of the gongan
             # still to add DynamicsMeta, KempliMeta, SuppressMeta, TempoMeta
             if metalist := metadict.get("PART", None):
-                table = self._append_single_metadata_type(
-                    table, metalist=metalist, col_span=-1, parastyle=self.template.metadataPartStyle
+                content = self._append_single_metadata_type(
+                    content, metalist=metalist, col_span=-1, parastyle=self.template.metadataPartStyle
                 )
 
-            table = self._append_comments(table, gongan.comments)
+            content = self._append_comments(content, gongan.comments)
 
             if metalist := metadict.get("TEMPO", None):
-                table = self._append_single_metadata_type(
-                    table,
+                content = self._append_single_metadata_type(
+                    content,
                     metalist=metalist,
                     cellnr="first_beat",
                     col_span="beat_count",
                     spantype=SpanType.RANGE,
                     parastyle=self.template.metadataDefaultStyle,
-                    formatter=self._gradual_change_formatter,
+                    formatter=self.template._gradual_change_formatter,
+                    current_value=self.current_tempo,
                 )
 
             if metalist := metadict.get("DYNAMICS", None):
-                table = self._append_single_metadata_type(
-                    table,
+                content = self._append_single_metadata_type(
+                    content,
                     metalist=metalist,
                     cellnr="first_beat",
                     col_span="beat_count",
                     spantype=SpanType.RANGE,
                     parastyle=self.template.metadataDefaultStyle,
-                    formatter=self._gradual_change_formatter,
+                    formatter=self.template._gradual_change_formatter,
+                    current_value=self.current_dynamics,
                 )
 
             if metalist := metadict.get("LABEL", None):
-                table = self._append_single_metadata_type(
-                    table,
+                content = self._append_single_metadata_type(
+                    content,
                     metalist=metalist,
                     cellnr="beat",
                     col_span=-1,
@@ -368,106 +310,140 @@ class ScoreToPDFConverter(ParserModel):
         if not above_notation:
             # Content that should occur after the notation part of the gongan
             if metalist := metadict.get("REPEAT", None):
-                table = self._append_single_metadata_type(
-                    table,
+                content = self._append_single_metadata_type(
+                    content,
                     metalist,
                     col_span=len(gongan.beats),  # right-aligned: do not use extra column
+                    parastyle=self.template.metadataGotoStyle,
                     before="repeat ",
                     after="X",
-                    parastyle=self.template.metadataGotoStyle,
                 )
 
             if metalist := metadict.get("GOTO", None):
-                table = self._append_single_metadata_type(
-                    table,
+                content = self._append_single_metadata_type(
+                    content,
                     metalist,
                     cellnr="from_beat",
-                    before="go to ",
                     parastyle=self.template.metadataGotoStyle,
-                    formatter=self._list_formatter,
+                    formatter=self.template._list_formatter,
+                    before="go to ",
                 )
 
             if metalist := metadict.get("SEQUENCE", None):
-                table = self._append_empty_row(
-                    table, colwidths=table.colwidths, col_span=[1, -1], parastyle=self.template.basicparaStyle
+                content._append_empty_row(
+                    col_span=[1, -1], parastyle=self.template.basicparaStyle
                 )  # add an empty row as a separator
-                table = self._append_single_metadata_type(
-                    table,
+                content = self._append_single_metadata_type(
+                    content,
                     metalist,
                     col_span=-1,
-                    before="sequence: ",
                     parastyle=self.template.metadataSequenceStyle,
-                    formatter=self._list_formatter,
+                    formatter=self.template._list_formatter,
+                    before="sequence: ",
                 )
-        return table
+        return content
 
-    def _staves_to_tabledata(
-        self, staves: dict[Position, list[list[Note]]], pos_tags: dict[Position, str]
-    ) -> tuple[list[list[typing.Any]], list[float]]:
-        colwidths = []
-        data = list()
-        for position in sorted(list(pos_tags.keys()), key=lambda x: x.sequence):
-            if not colwidths:
-                colwidths = [0] * len(staves[position])
-            row = [Paragraph(pos_tags[position], self.template.tagStyle)]
-            data.append(row)
-            for colnr, measure in enumerate(staves[position]):
-                text = measure_to_str(measure)
-                para = Paragraph(text, self.template.notationStyle)
-                # stringWidth does not take negative
+    def _gongan_colwidths(self, staves: dict[Position, list[list[Note]]], include_overflow_col: bool) -> list[float]:
+        """Calculates the column widths of the given gongan.
+        Args:
+            staves (dict[Position, list[list[Note]]]): the gongan as a dict Position -> measure
+            include_overflow_col: add an extra column at the end that extends to the right margin.
+        Returns:
+            list[float]: The column widths of the gongans.
+        """
+        beat_colwidths = None
+        for position, measures in staves.items():
+            if not beat_colwidths:
+                beat_colwidths = [0] * len(measures)
+            for colnr, measure in enumerate(measures):
                 w = stringWidth_fromNotes(
                     measure, self.template.notationStyle.fontName, self.template.notationStyle.fontSize
                 )
-                colwidths[colnr] = max(colwidths[colnr], w + 0.2 * cm)
+                beat_colwidths[colnr] = max(beat_colwidths[colnr], w + 2 * self.template.cell_padding)
+            overflow_colwidth = (
+                [max(self.template.doc.pageTemplates[0].frames[0]._aW - sum(beat_colwidths) - self.TAG_COLWIDTH, 0)]
+                if include_overflow_col
+                else []
+            )
+        colwidths = [self.TAG_COLWIDTH] + beat_colwidths + overflow_colwidth
+
+        return colwidths
+
+    def _staves_to_tabledata(
+        self, staves: dict[Position, list[list[Note]]], pos_tags: dict[Position, str], add_overflow_col: bool
+    ) -> list[list[Paragraph]]:
+        """Converts the staves of a gongan to a table structure containing a string
+           representation of the Note objects.
+        Args:
+            staves (dict[Position, list[list[Note]]]): the gongan as a dict Position -> measure
+            pos_tags (dict[Position, str]): mapping to the string representation of the positions.
+        Returns:
+            list[list[Paragraph]]: The table structure containing the notation.
+        """
+        data = list()
+        for position in sorted(list(pos_tags.keys()), key=lambda x: x.sequence):
+            row = [Paragraph(pos_tags[position], self.template.tagStyle)]
+            data.append(row)
+            for measure in staves[position]:
+                text = measure_to_str(measure)
+                para = Paragraph(text, self.template.notationStyle)
                 row.append(para)
-        return data, colwidths
+            if add_overflow_col:
+                row.append("")
+        return data
 
     def _convert_to_pdf(self) -> None:  # score_validation
-        """Converts a score object to readable notation and saves it to PDF format (via DOCX).
+        """Converts a score object to readable notation and saves it to PDF format.
         Args:
             score (Score): The score
         """
         METADATA_KEEP = ["DYNAMICS", "GOTO", "LABEL", "PART", "REPEAT", "SEQUENCE", "SUPPRESS", "TEMPO"]
         # Save global comments
         colwidths = [self.TAG_COLWIDTH] + [self.template.doc.pageTemplates[0].frames[0]._aW - self.TAG_COLWIDTH]
-        content: TableContent = TableContent(data=[], colwidths=colwidths, style=[])
+        content: TableContent = TableContent(data=[], colwidths=colwidths, style=[], template=self.template)
         self._append_comments(content, comments=self.score.global_comments)
-        comment_table = Table(
-            data=content.data,
-            colWidths=colwidths,
-            style=content.style,
-            rowHeights=0.4 * cm,
-            splitByRow=False,
-            hAlign="LEFT",
-            spaceAfter=0.5 * cm,
-        )
-        self.story.append(comment_table)
+        if content.data:
+            comment_table = Table(
+                data=content.data,
+                colWidths=colwidths,
+                style=content.style,
+                rowHeights=0.4 * cm,
+                splitByRow=False,
+                hAlign="LEFT",
+                spaceAfter=0.5 * cm,
+            )
+            self.story.append(comment_table)
 
         for gongan in self.score.gongans:
             if not gongan.beats:
                 continue
-            staves_ = clean_staves(gongan)
-            pos_tags = aggregate_positions(gongan)
-            notation_data, beat_colwidths = self._staves_to_tabledata(staves_, pos_tags)
-            overflow_col_width = max(
-                self.template.doc.pageTemplates[0].frames[0]._aW - sum(beat_colwidths) - self.TAG_COLWIDTH, 0
-            )
-            colwidths = [self.TAG_COLWIDTH] + beat_colwidths + [overflow_col_width]
-            # Add an overflow column
-            for row in notation_data:
-                row.append("")
 
-            # Create an empty content container
-            content: TableContent = TableContent(data=[], colwidths=colwidths, style=[])
+            # Determine the column widths
+            staves = clean_staves(gongan)
+            colwidths = self._gongan_colwidths(staves, include_overflow_col=True)
+
+            # Create an empty content container and add metadata above the gongan notation
+            content = TableContent(data=[], colwidths=colwidths, style=[], template=self.template)
             content = self._append_metadata(content, gongan=gongan, above_notation=True)
+
+            # Add the gongan notation
+            pos_tags = aggregate_positions(gongan)
+            notation_data = self._staves_to_tabledata(staves, pos_tags, add_overflow_col=True)
             row1, row2 = len(content.data), len(content.data) + len(notation_data) - 1
             content.append(
                 TableContent(
                     data=notation_data,
                     colwidths=colwidths,
-                    style=self.template.notationTableStyle(row1, row2),
+                    style=(
+                        self.template.notationTableStyle(row1, row2)
+                        if _has_kempli_beat(gongan)
+                        else self.template.notationNoKempliTableStyle(row1, row2)
+                    ),
+                    template=self.template,
                 )
             )
+
+            # Add the metadata that follows the gongan notation
             content = self._append_metadata(content, gongan, above_notation=False)
             gongan_table = Table(
                 data=content.data,
@@ -486,19 +462,17 @@ class ScoreToPDFConverter(ParserModel):
 
     @ParserModel.main
     def create_notation(self):
+        # Convenience for development only
         if self.pickle:
-            with open(self.filepath.replace("docx", "pickle"), "wb") as picklefile:
+            with open(self.template.filepath.replace("pdf", "pickle"), "wb") as picklefile:
                 pickle.dump(self.score, picklefile)
 
         self._convert_to_pdf()
-        self.logger.info(f"Notation file saved as {self.filepath}")
+        self.logger.info(f"Notation file saved as {self.template.filepath}")
 
 
 if __name__ == "__main__":
-    # print(ScoreToPDFConverter._bali_music_5_width(40) / 1 * cm)
-    # print(textwidth("This is a very long sentence, try this!", font="Arial", fontsize=10).cm)
-    # exit()
-
+    # For testing
     class Source(Enum):
         SINOMLADRANG = {
             "folder": r"C:\Users\marcp\Documents\administratie\_VRIJETIJD_REIZEN\Scripts-Programmas\PythonProjects\gamelan-notation\data\notation\sinom ladrang",

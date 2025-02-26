@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 from more_itertools import flatten
 from reportlab.lib import colors, utils
@@ -12,18 +13,10 @@ from reportlab.lib.units import cm
 from reportlab.pdfbase.pdfmetrics import registerFont, stringWidth
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
-from reportlab.platypus import (
-    Flowable,
-    Frame,
-    FrameBreak,
-    PageBegin,
-    PageBreak,
-    PageTemplate,
-    Paragraph,
-    SimpleDocTemplate,
-)
-from reportlab.platypus.doctemplate import _doNothing
+from reportlab.platypus import Frame, PageTemplate, Paragraph, SimpleDocTemplate
 
+from src.common.metadata_classes import MetaDataBaseModel
+from src.notation2midi.score2notation.utils import _to_aggregated_tags
 from src.settings.classes import RunSettings
 
 
@@ -42,8 +35,7 @@ class NotationTemplate:
     def __init__(self, run_settings: RunSettings):
         self.run_settings = run_settings
         self.title = self.run_settings.notation.title
-        fpath, ext = os.path.splitext(self.run_settings.notation.midi_out_filepath)
-        self.filepath = fpath + "_ALT.pdf"
+        self.filepath = self.run_settings.notation.pdf_out_filepath
         last_modif_epoch = os.path.getmtime(self.run_settings.notation.notation_filepath)
         self.datestamp = datetime.fromtimestamp(last_modif_epoch).strftime("%d-%b-%Y")
         self.doc = self._doc_template()
@@ -196,6 +188,19 @@ class NotationTemplate:
             ("VALIGN", (0, row1), (-1, row2), "MIDDLE"),
         ]
 
+    def notationNoKempliTableStyle(self, row1: int, row2: int) -> list[tuple]:
+        return [
+            ("LINEAFTER", (0, row1), (-2, row2), 0.5, colors.black, 0, (1, 2)),  # no line after overflow column
+            ("FONT", (0, row1), (-1, row2), "Helvetica", 9, 11),
+            ("TEXTCOLOR", (0, row1), (-1, row2), colors.black),
+            ("ALIGNMENT", (0, row1), (-1, row2), "LEFT"),
+            ("LEFTPADDING", (0, row1), (-1, row2), self.cell_padding),
+            ("RIGHTPADDING", (0, row1), (-1, row2), self.cell_padding),
+            ("BOTTOMPADDING", (0, row1), (-1, row2), 0),
+            ("TOPPADDING  ", (0, row1), (-1, row2), 0),
+            ("VALIGN", (0, row1), (-1, row2), "MIDDLE"),
+        ]
+
     def metadataTableLAStyle(self, row1: int, row2: int) -> list[tuple]:
         return [
             ("FONT", (0, row1), (-1, row2), "Helvetica", 9, 11),
@@ -287,3 +292,73 @@ class NotationTemplate:
         )
         template.pageTemplates = [self._first_page_template, self._later_page_template]
         return template
+
+    @classmethod
+    def _default_formatter(
+        cls,
+        value: Any | None,
+        meta: MetaDataBaseModel,
+        before: str = "",
+        after: str = "",
+    ) -> str:
+        """Simple formatter for metadata. Adds the value to the given paragraph.
+        Args:
+            value (Any): Value that should be written. If missing, the metadata DEFAULTPARAM attribute will be used.
+            meta (MetaDataBaseModel): Metadata object.
+            before (str, optional): Text that should precede the value. Defaults to "".
+            after (str, optional): Text that should follow the value. Defaults to "".
+            paragraph (Paragraph, optional): The paragraph to which the value should be written. Defaults to None.
+            charstyle (CharacterStyle, optional): Character style for the added text. Defaults to `metadatastyle`.
+        """
+        value_ = value or getattr(meta, meta.DEFAULTPARAM)
+        return f"{before}{value_}{after}"
+
+    def _list_formatter(
+        self,
+        value: list[str],
+        meta: MetaDataBaseModel,
+        before: str = "",
+        after: str = "",
+    ) -> str:
+        """Formatter for a metadata list value. Formats the value to a comma separated list.
+            The list items are formatted using the `labelstyle` character style.
+        Args:
+            value (typing.Any): Value that should be written. If missing, the metadata DEFAULTPARAM attribute will be used.
+            meta (MetaDataBaseModel): Metadata object.
+            before (str, optional): Text that should precede the value. Defaults to "".
+            after (str, optional): Text that should follow the value. Defaults to "".
+            paragraph (Paragraph, optional): The paragraph to which the value should be written. Defaults to None.
+            charstyle (CharacterStyle, optional): Character style for the added text. Defaults to `metadatastyle`.
+        """
+        value_ = value or getattr(meta, meta.DEFAULTPARAM)
+        if isinstance(value_, list):
+            value_ = ", ".join(value_)
+        value_ = self.format_text(value_, self.metadataLabelCharStyle)
+        return f"{before}{value_}{after}"
+
+    def _gradual_change_formatter(self, value: list[str], meta: MetaDataBaseModel, current_value: int) -> str:
+        """Formatter for GradualChangeMetadata subclasses. These values can include a range of beats to which the metadata
+           applies. Called for TEMPO and DYNAMICS metadata which can gradually change over several beats.
+           The value will be preceded or followed by a dotted line that will reach to the right margine of the (merged) cell.
+        Args:
+            value (typing.Any): Value that should be written. If missing, the metadata DEFAULTPARAM attribute will be used.
+            meta (MetaDataBaseModel): Metadata object.
+            before (str, optional): Text that should precede the value. Defaults to "".
+            after (str, optional): Text that should follow the value. Defaults to "".
+            paragraph (Paragraph, optional): The paragraph to which the value should be written. Defaults to None.
+            charstyle (CharacterStyle, optional): Character style for the added text. Defaults to `metadatastyle`.
+        """
+        # If the metadata spans several beats, a tab character will be added before or after the value and a tab stop
+        # with preceding dashes will be added at the right-hand margin of the merged cell.
+        if meta.metatype == "TEMPO":
+            if current_value == -1:
+                # Suppress initial tempo
+                return None
+            if meta.value == current_value:
+                # No tempo change
+                return None
+            value = ("faster" if meta.value > current_value else "slower") + "{dots}"
+        elif meta.metatype == "DYNAMICS":
+            position_tags = _to_aggregated_tags(meta.positions)
+            value = f"{", ".join(position_tags)}{": " if position_tags else ""}{"{dots}"}{meta.abbreviation}"
+        return value

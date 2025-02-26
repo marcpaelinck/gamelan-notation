@@ -1,7 +1,8 @@
 from reportlab.pdfbase.pdfmetrics import stringWidth
 
 from src.common.classes import Gongan, Note
-from src.common.constants import DEFAULT, Position, Stroke
+from src.common.constants import DEFAULT, InstrumentType, Position, Stroke
+from src.common.metadata_classes import GonganType, MetaDataSwitch
 
 
 def measure_to_str(notes: list[Note]) -> str:
@@ -55,3 +56,32 @@ def stringWidth_fromNotes(measure: list[Note], fontName: str, fontSize: int) -> 
     """
     char_count = len([note for note in measure if note.stroke != Stroke.GRACE_NOTE])
     return stringWidth("a" * char_count, fontName, fontSize)
+
+
+def _to_aggregated_tags(positions: list[Position]) -> list[str]:
+    """Returns a lowercase value of the instrument names. This function is used to
+       for the values of the `positions` parameter of metadata items.
+    Args:
+        positions (list[Position]):
+    Returns:
+        list[str]: list of lowercase values for the position names.
+    """
+    tags = set(pos.instrumenttype.lower() for pos in positions)
+    gangsa = {InstrumentType.PEMADE.lower(), InstrumentType.KANTILAN.lower()}
+    if gangsa.issubset(tags):
+        tags = tags.difference(gangsa).union({"gangsa"})
+    return tags
+
+
+def _has_kempli_beat(gongan: Gongan) -> bool:
+    """Determines if the gongan has a kempli beat.
+    Args:
+        gongan (Gongan):
+    Returns:
+        bool: True if there is a kempli beat, otherwise False
+    """
+    return not any(
+        (meta.data.metatype == "KEMPLI" and meta.data.status is MetaDataSwitch.OFF)
+        or (meta.data.metatype == "GONGAN" and meta.data.type is not GonganType.REGULAR)
+        for meta in gongan.metadata
+    )
