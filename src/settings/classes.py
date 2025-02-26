@@ -1,4 +1,5 @@
 import os
+from dataclasses import dataclass, field
 from enum import Enum, StrEnum
 from typing import Any
 
@@ -82,8 +83,19 @@ class FontRecord(BaseModel):
 class Part(BaseModel):
     part: str
     file: str
+    pdf: str | None = None
     loop: bool
     markers: dict[str, float] = Field(default_factory=dict)  # {partname: milliseconds}
+
+
+@dataclass
+class PartForm:
+    # Can be used to update the values of Part objects
+    part: str
+    file: str | None = None
+    pdf: str | None = None
+    loop: bool | None = None
+    markers: dict[str, float] = field(default_factory=dict)
 
 
 class InstrumentInfo(BaseModel):
@@ -308,7 +320,7 @@ class RunSettings(BaseModel):
 
             @property
             def update_midiplayer_content(self) -> bool:
-                return self.runtype in [RunType.RUN_ALL, RunType.RUN_SINGLE_PRODUCTION]
+                return self.runtype in [RunType.RUN_ALL_PRODUCTION, RunType.RUN_SINGLE_PRODUCTION]
 
         class SoundfontOptions(BaseModel):
             run: bool

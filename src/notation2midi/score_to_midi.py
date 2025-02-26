@@ -8,24 +8,25 @@ from src.common.constants import DEFAULT, Pitch, Position
 from src.common.metadata_classes import PartMeta
 from src.notation2midi.classes import ParserModel
 from src.notation2midi.midi_track import MidiTrackX, TimeUnit
-from src.settings.classes import Part, RunSettings, RunType, Song
+from src.settings.classes import PartForm
 from src.settings.settings import (
     get_midiplayer_content,
     get_run_settings,
-    save_midiplayer_content,
+    update_midiplayer_content,
 )
 
 
 class MidiGenerator(ParserModel):
 
-    player_data: Part = None
+    part_info: PartForm = None
 
     def __init__(self, score: Score):
         super().__init__(self.ParserType.MIDIGENERATOR, score.settings)
         self.score = score
-        self.player_data = Part(
+        self.part_info = PartForm(
             part=self.run_settings.notation.part.name,
             file=self.run_settings.notation.midi_out_file,
+            pdf=self.run_settings.notation.pdf_out_file,
             loop=self.run_settings.notation.part.loop,
         )
 
@@ -65,11 +66,11 @@ class MidiGenerator(ParserModel):
                 return
             gongan = self.score.gongans[beat.gongan_seq]
             if partinfo := gongan.get_metadata(PartMeta):
-                if self.player_data.markers.get(partinfo.name, None):
+                if self.part_info.markers.get(partinfo.name, None):
                     # Return if the part has already been registered
                     return
                 curr_time = track.current_time_in_millis()
-                self.player_data.markers[partinfo.name] = int(curr_time)
+                self.part_info.markers[partinfo.name] = int(curr_time)
 
         track = MidiTrackX(position, Preset.get_preset(position), self.run_settings)
         # Add silence before the start of the piece, except if the piece should be played in a loop.
@@ -129,37 +130,18 @@ class MidiGenerator(ParserModel):
         """
         return {part: time / total_duration for part, time in sorted(list(markers.items()), key=lambda it: it[1])}
 
-    def update_midiplayer_content(self) -> None:
-        content = get_midiplayer_content()
-        # If info is already present, replace it.
-        song = next((song for song in content.songs if song.title == self.score.title), None)
-        if not song:
-            # TODO create components of Song
-            content.songs.append(
-                song := Song(
-                    title=self.run_settings.notation.title,
-                    display=True,
-                    instrumentgroup=self.run_settings.instruments.instrumentgroup,
-                )
-            )
-            self.loginfo(f"New song {song.title} created for MIDI player content")
-        part = next((part for part in song.parts if part.part == self.player_data.part), None)
-        if not part:
-            song.parts.append(
-                part := Part(
-                    part=self.player_data.part,
-                    file=self.player_data.file,
-                    loop=self.player_data.loop,
-                )
-            )
-            self.loginfo(f"New part {part.part} created for MIDI player content")
-        else:
-            self.loginfo(f"Existing part {part.part} updated for MIDI player content")
-            part.file = self.player_data.file
-            part.loop = self.player_data.loop
-        part.markers = self.sorted_markers_millis_to_frac(self.player_data.markers, self.score.midifile_duration)
-        self.loginfo(f"Added time markers to part {part.part}")
-        save_midiplayer_content(content)
+    def _update_midiplayer_content(self) -> None:
+        update_midiplayer_content(
+            title=self.run_settings.notation.title,
+            group=self.run_settings.notation.instrumentgroup,
+            partinfo=PartForm(
+                part=self.part_info.part,
+                file=self.part_info.file,
+                pdf=None,
+                loop=self.part_info.loop,
+                markers=self.sorted_markers_millis_to_frac(self.part_info.markers, self.score.midifile_duration),
+            ),
+        )
 
     @ParserModel.main
     def create_midifile(self) -> bool:
@@ -188,7 +170,7 @@ class MidiGenerator(ParserModel):
                 and self.run_settings.notation.production
             ):
                 # Test files should never be logged in the midiplayer content file
-                self.update_midiplayer_content()
+                self._update_midiplayer_content()
 
         return True
 

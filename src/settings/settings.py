@@ -7,8 +7,9 @@ import pandas as pd
 import yaml
 from pydantic import BaseModel, ValidationError
 
+from src.common.constants import InstrumentGroup
 from src.common.logger import get_logger
-from src.settings.classes import Content, RunSettings
+from src.settings.classes import Content, PartForm, RunSettings, Song
 from src.settings.constants import (
     DATA_INFOFILE,
     RUN_SETTINGSFILE,
@@ -298,6 +299,40 @@ def save_midiplayer_content(playercontent: Content, filename: str = None):
     else:
         os.remove(contentfilepath)
         os.rename(tempfilepath, contentfilepath)
+
+
+def update_midiplayer_content(title: str, group: InstrumentGroup, partinfo: PartForm) -> None:
+    """Updates the information given in Part in the content.json file of the midi player.
+
+    Args:
+        title (str): Title of the `song`, should be taken from run_settings.notation.title.
+        group (InstrumentGroup):
+        part (Part): Information that should be stored/updated. Attributes of `part` equal to None
+                     will not be modified in contents.json.
+    """
+    content = get_midiplayer_content()
+    # If info is already present, replace it.
+    player_song: Song = next((song_ for song_ in content.songs if song_.title == title), None)
+    if not player_song:
+        # TODO create components of Song
+        content.songs.append(player_song := Song(title=title, instrumentgroup=group, display=True))
+        logger.info(f"New song {player_song.title} created for MIDI player content")
+    part = next((part_ for part_ in player_song.parts if part_.part == partinfo.part), None)
+    if part:
+        part.file = partinfo.file or part.file
+        part.pdf = partinfo.pdf or part.pdf
+        part.loop = partinfo.loop or part.loop
+        part.markers = partinfo.markers or part.markers
+        logger.info(f"Existing part {part.part} updated for MIDI player content")
+    else:
+        if partinfo.file:
+            player_song.parts.append(partinfo)
+            logger.info(f"New part {partinfo.part} created for MIDI player content")
+        else:
+            logger.error(
+                f"Can't add new part info '{partinfo.part}' to the midiplayer content: missing midifile information. Please run again with run-option `save_midifile` set."
+            )
+    save_midiplayer_content(content)
 
 
 if __name__ == "__main__":

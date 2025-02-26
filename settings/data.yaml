@@ -129,7 +129,6 @@ notations:
         title: Bapang Selisir
         subfolder: bapang selisir
         instrumentgroup: SEMAR_PAGULINGAN
-        beat_at_end: false
         parts:
             full:
                 name: entire piece
@@ -139,7 +138,6 @@ notations:
         title: Bapang Selisir (gong kebyar)
         subfolder: bapang selisir
         instrumentgroup: GONG_KEBYAR
-        beat_at_end: false
         include_in_run_types: [RUN_SINGLE, RUN_ALL]
         parts:
             full:
@@ -149,7 +147,6 @@ notations:
     cendrawasih:
         title: Cendrawasih
         subfolder: cendrawasih
-        beat_at_end: false
         parts:
             full:
                 name: entire piece
@@ -158,7 +155,6 @@ notations:
     gilakdeng:
         title: Gilak Deng
         subfolder: gilak deng
-        beat_at_end: false
         parts:
             full:
                 name: entire piece
@@ -168,7 +164,6 @@ notations:
         title: Godek Miring
         subfolder: godek miring
         instrumentgroup: SEMAR_PAGULINGAN
-        beat_at_end: false
         autocorrect_kempyung : false
         parts:
             full:
@@ -192,18 +187,17 @@ notations:
                 file: Godek Miring font5_pengawak.tsv
                 loop: true
     legongmahawidya:
-        title: Legong Mahawidya
+        title: Legong Mahawidya SP
         subfolder: legong mahawidya
-        beat_at_end: false
+        production: false
         parts:
             full:
-                name: entire piece SP
-                file: Legong Mahawidya_font5.tsv
+                name: entire piece
+                file: Legong Mahawidya_font5_SP.tsv
                 loop: false
     legongmahawidya_gk:
         title: Legong Mahawidya GK
         subfolder: legong mahawidya
-        beat_at_end: false
         parts:
             full:
                 name: entire piece
@@ -212,7 +206,6 @@ notations:
     lengker:
         title: Lengker
         subfolder: lengker
-        beat_at_end: false
         autocorrect_kempyung : false
         instrumentgroup: SEMAR_PAGULINGAN
         parts:
@@ -235,7 +228,6 @@ notations:
     lengker-gk:
         title: Lengker (gong kebyar)
         subfolder: lengker
-        beat_at_end: false
         autocorrect_kempyung : false
         instrumentgroup: GONG_KEBYAR
         include_in_run_types: [RUN_SINGLE, RUN_ALL]
@@ -247,7 +239,6 @@ notations:
     margapati:
         title: Margapati
         subfolder: margapati
-        beat_at_end: false
         parts:
             full:
                 name: entire piece
@@ -294,13 +285,11 @@ notations:
                 name: pengecet
                 file: rejang dewa pengecet_font5.tsv
                 loop: true
-        beat_at_end: false
         autocorrect_kempyung : false
     sekargendot:
         title: Sekar Gendot
         subfolder: sekar gendot
         instrumentgroup: SEMAR_PAGULINGAN
-        beat_at_end: false
         autocorrect_kempyung : false
         parts:
             full:
@@ -311,7 +300,6 @@ notations:
         title: Sekar Gendot (gong kebyar)
         subfolder: sekar gendot
         instrumentgroup: GONG_KEBYAR
-        beat_at_end: false
         autocorrect_kempyung : false
         include_in_run_types: [RUN_SINGLE, RUN_ALL]
         parts:
@@ -323,7 +311,6 @@ notations:
         title: Sinom Ladrang
         subfolder: sinom ladrang
         instrumentgroup: SEMAR_PAGULINGAN
-        beat_at_end: false
         parts:
             full:
                 name: entire piece
@@ -340,7 +327,6 @@ notations:
     sinomladrang-gk:
         title: Sinom Ladrang (GK)
         subfolder: sinom ladrang
-        beat_at_end: false
         instrumentgroup: GONG_KEBYAR
         parts:
             full:

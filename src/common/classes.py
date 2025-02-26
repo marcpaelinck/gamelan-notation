@@ -43,7 +43,7 @@ from src.common.metadata_classes import (
     SequenceMeta,
     ValidationProperty,
 )
-from src.settings.classes import RunSettings
+from src.settings.classes import Part, RunSettings
 from src.settings.constants import (
     FontFields,
     InstrumentFields,
@@ -968,3 +968,4 @@ class Score:
     midi_notes_dict: dict[tuple[Position, Pitch, Octave, Stroke], MidiNote] = None
     flowinfo: FlowInfo = field(default_factory=FlowInfo)
     midifile_duration: int = None
+    part_info: Part = None

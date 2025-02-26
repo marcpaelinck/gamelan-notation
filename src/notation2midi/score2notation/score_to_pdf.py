@@ -27,6 +27,8 @@ from src.notation2midi.score2notation.utils import (
     measure_to_str,
     stringWidth_fromNotes,
 )
+from src.settings.classes import PartForm
+from src.settings.settings import update_midiplayer_content
 
 
 class SpanType(Enum):
@@ -460,6 +462,19 @@ class ScoreToPDFConverter(ParserModel):
     def is_docfile_closed():
         return
 
+    def _update_midiplayer_content(self) -> None:
+        update_midiplayer_content(
+            title=self.run_settings.notation.title,
+            group=self.run_settings.notation.instrumentgroup,
+            partinfo=PartForm(
+                part=self.run_settings.notation.part.name,
+                file=None,
+                pdf=self.score.settings.notation.pdf_out_file,
+                loop=None,
+                markers=None,
+            ),
+        )
+
     @ParserModel.main
     def create_notation(self):
         # Convenience for development only
@@ -469,6 +484,7 @@ class ScoreToPDFConverter(ParserModel):
 
         self._convert_to_pdf()
         self.logger.info(f"Notation file saved as {self.template.filepath}")
+        self._update_midiplayer_content()
 
 
 if __name__ == "__main__":
