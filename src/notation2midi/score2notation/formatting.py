@@ -1,10 +1,16 @@
+"""Formatting settings and instructions for the ScoreToPDFConverter.
+   The code uses the Platypus library of ReportLab.
+   See https://docs.reportlab.com/reportlab/userguide/ch5_platypus/.
+"""
+
+from __future__ import annotations
+
 import os
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from enum import Enum
 
-from more_itertools import flatten
-from reportlab.lib import colors, utils
+from reportlab.lib import colors
 from reportlab.lib.colors import HexColor
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib.pagesizes import A4
@@ -13,15 +19,88 @@ from reportlab.lib.units import cm
 from reportlab.pdfbase.pdfmetrics import registerFont, stringWidth
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
-from reportlab.platypus import Frame, PageTemplate, Paragraph, SimpleDocTemplate
+from reportlab.platypus import (
+    Frame,
+    PageTemplate,
+    Paragraph,
+    SimpleDocTemplate,
+    Table,
+    TableStyle,
+)
 
-from src.common.metadata_classes import MetaDataBaseModel
-from src.notation2midi.score2notation.utils import _to_aggregated_tags
+from src.common.metadata_classes import (
+    DynamicsMeta,
+    GoToMeta,
+    LabelMeta,
+    MetaDataBaseModel,
+    PartMeta,
+    RepeatMeta,
+    SequenceMeta,
+    TempoMeta,
+)
+from src.notation2midi.score2notation.utils import to_aggregated_tags
 from src.settings.classes import RunSettings
 
 
-class NotationTemplate:
+class SpanType(Enum):
+    RANGE = 1
+    LAST_CELL = 2
 
+
+@dataclass
+class TableContent:
+    """Convenience class that enables to build up the contents of a table
+    row by row before creating an actual Table object.
+    data: table-like list structure containing table data by row.
+    style: TableStyle entries, see https://docs.reportlab.com/reportlab/userguide/ch7_tables/#tablestyle-line-commands
+    colwidths: width of each column in points. len(colWidths) should
+               be equal to len(row) for each row in data.
+    template: NotationTemplate object which specifies the formatting of the document.
+    """
+
+    data: list[list[str | Paragraph]] = field(default_factory=list)
+    style: list[tuple] = field(default_factory=list)
+    colwidths: list[float] = field(default_factory=list)
+    template: NotationTemplate = None
+
+    def append(self, content: TableContent):
+        """Appends the content of a TableContent.
+        Args:
+            content (TableContent): content to append.
+        Raises:
+            Exception: If the number of columns don't match.
+        """
+        # Note: only the base object's colwidths are retained
+        if not (len(content.colwidths) == len(self.colwidths)):
+            raise Exception("Number of columns does not match")
+        self.data.extend(content.data)
+        self.style.extend(content.style)
+
+    def _append_empty_row(self, col_span: list[int] = [], parastyle: ParagraphStyle = None) -> TableContent:
+        """Adds an empty row to the tablecontent.
+        Args:
+            content (TableContent): the content to which a row should be added.
+            col_span (list[int], optional): Cell range that should be merged. Defaults to [].
+            parastyle (ParagraphStyle, optional): Default paragraph style for the cells. Defaults to None.
+
+        Returns:
+            TableContent: the modified content.
+        """
+        rownr = len(self.data)
+        tablestyle = TableStyle(
+            self.template.metadataTableRAStyle(rownr, rownr)
+            if parastyle.alignment in [TA_RIGHT, "RIGHT"]
+            else self.template.metadataTableLAStyle(rownr, rownr)
+        )
+        # Add span information to the style list.
+        if col_span[0] != col_span[1]:
+            tablestyle.add("SPAN", (col_span[0], len(self.data)), (col_span[1], len(self.data)))
+        self.data.append([Paragraph("", style=parastyle)] * len(self.colwidths))
+        self.style.extend(tablestyle.getCommands())
+        return self
+
+
+class NotationTemplate:
     pagesize = A4
     page_width = pagesize[0]
     page_height = pagesize[1]
@@ -31,6 +110,8 @@ class NotationTemplate:
     bottom_margin = 1 * cm
     body_top_margin = 2.1 * cm
     cell_padding = 0.1 * cm  # Left and right padding
+    table_row_height = 0.38 * cm
+    table_space_after = 0.5 * cm
 
     def __init__(self, run_settings: RunSettings):
         self.run_settings = run_settings
@@ -38,6 +119,7 @@ class NotationTemplate:
         self.filepath = self.run_settings.notation.pdf_out_filepath
         last_modif_epoch = os.path.getmtime(self.run_settings.notation.notation_filepath)
         self.datestamp = datetime.fromtimestamp(last_modif_epoch).strftime("%d-%b-%Y")
+        self.current_tempo = -1
         self.doc = self._doc_template()
         self.styles = getSampleStyleSheet()
         registerFont(TTFont("Bali Music 5", self.run_settings.font.ttf_filepath))
@@ -45,6 +127,11 @@ class NotationTemplate:
 
     @property
     def _body_frame(self) -> Frame:
+        """Defines the frame for each page. Each page contains a single frame, next
+           to the header which is written directly to the canvas.
+        Returns:
+            Frame:
+        """
         return Frame(
             self.left_margin,
             self.bottom_margin,
@@ -67,6 +154,7 @@ class NotationTemplate:
         return PageTemplate(id="Later", frames=[self._body_frame], autoNextPageTemplate=1, onPage=self._page_header)
 
     def _init_styles(self):
+        """Creates the paragraph and table styles and formats."""
         self.basicparaStyle = ParagraphStyle(
             name="basicparaStyle",
             fontName="Helvetica",
@@ -175,6 +263,66 @@ class NotationTemplate:
         )
         self.metadataLabelCharStyle = '<font color="blue" size="9" face="Courier-Bold">'
 
+        # metaFormatParameters
+        # Parameters for function `ScoreToPDFConverter._append_single_metadata_type` which generates the metadata
+        # directives that should appear above and below a gongan. See the function's docstring for more information.
+        # cellnr: The table cell in which to write the value. Defaults to 1.
+        # col_span, spantype: information about the number of beats (columns) over which to span the text (e.g. in case of
+        #                      crescendo). `spantype` specifies the meaning of value `col_span`: either RANGE (nr. of cells)
+        #                      or LAST_CELL (cell ID of the last cell of the cell range)
+        # parastyle: One of the paragraph styles defined above. Defaults to basicparaStyle.
+        # formatter: Function that generates the actual text for the metadata directive. Defaults to default_formatter.
+        #            The functions are defined below.
+        # before, after: Optional parameters for the `formatter` function.
+        self.metaFormatParameters = {
+            PartMeta: {
+                "col_span": -1,
+                "spantype": SpanType.LAST_CELL,
+                "parastyle": self.metadataPartStyle,
+            },
+            TempoMeta: {
+                "cellnr": "first_beat",
+                "col_span": "beat_count",
+                "spantype": SpanType.RANGE,
+                "parastyle": self.metadataDefaultStyle,
+                "formatter": self._gradual_change_formatter,
+            },
+            DynamicsMeta: {
+                "cellnr": "first_beat",
+                "col_span": "beat_count",
+                "spantype": SpanType.RANGE,
+                "parastyle": self.metadataDefaultStyle,
+                "formatter": self._gradual_change_formatter,
+            },
+            LabelMeta: {
+                "cellnr": "beat",
+                "col_span": -1,
+                "spantype": SpanType.LAST_CELL,
+                "parastyle": self.metadataLabelStyle,
+            },
+            RepeatMeta: {
+                "cellnr": -2,  # right-aligned starting from the last beat. Column -1 is the overflow column.
+                "parastyle": self.metadataGotoStyle,
+                "before": "repeat ",
+                "after": "X",
+            },
+            GoToMeta: {
+                "cellnr": "from_beat",
+                "parastyle": self.metadataGotoStyle,
+                "formatter": self._list_formatter,
+                "before": "go to ",
+            },
+            SequenceMeta: {
+                "col_span": -1,
+                "spantype": SpanType.LAST_CELL,
+                "parastyle": self.metadataSequenceStyle,
+                "formatter": self._list_formatter,
+                "before": "sequence: ",
+            },
+        }
+
+    # The following functions create table styles for the specified range of rows.
+
     def notationTableStyle(self, row1: int, row2: int) -> list[tuple]:
         return [
             ("LINEAFTER", (0, row1), (-2, row2), 0.5, colors.black),  # no line after overflow column
@@ -224,6 +372,17 @@ class NotationTemplate:
             ("TOPPADDING  ", (0, row1), (-1, row2), 0),
             ("VALIGN", (0, row1), (-1, row2), "MIDDLE"),
         ]
+
+    def create_table(self, content: TableContent):
+        return Table(
+            data=content.data,
+            colWidths=content.colwidths,
+            style=content.style,
+            rowHeights=self.table_row_height,
+            splitByRow=False,  # dont'split the table over multiple pages
+            hAlign="LEFT",  # align table with the left margin
+            spaceAfter=self.table_space_after,
+        )
 
     def format_text(self, text: str, charstyle: str):
         if charstyle:
@@ -296,7 +455,6 @@ class NotationTemplate:
     @classmethod
     def _default_formatter(
         cls,
-        value: Any | None,
         meta: MetaDataBaseModel,
         before: str = "",
         after: str = "",
@@ -310,12 +468,11 @@ class NotationTemplate:
             paragraph (Paragraph, optional): The paragraph to which the value should be written. Defaults to None.
             charstyle (CharacterStyle, optional): Character style for the added text. Defaults to `metadatastyle`.
         """
-        value_ = value or getattr(meta, meta.DEFAULTPARAM)
-        return f"{before}{value_}{after}"
+        value = getattr(meta, meta.DEFAULTPARAM)
+        return f"{before}{value}{after}"
 
     def _list_formatter(
         self,
-        value: list[str],
         meta: MetaDataBaseModel,
         before: str = "",
         after: str = "",
@@ -330,13 +487,12 @@ class NotationTemplate:
             paragraph (Paragraph, optional): The paragraph to which the value should be written. Defaults to None.
             charstyle (CharacterStyle, optional): Character style for the added text. Defaults to `metadatastyle`.
         """
-        value_ = value or getattr(meta, meta.DEFAULTPARAM)
-        if isinstance(value_, list):
-            value_ = ", ".join(value_)
+        value = getattr(meta, meta.DEFAULTPARAM)
+        value_ = ", ".join(value) if isinstance(value, list) else value
         value_ = self.format_text(value_, self.metadataLabelCharStyle)
         return f"{before}{value_}{after}"
 
-    def _gradual_change_formatter(self, value: list[str], meta: MetaDataBaseModel, current_value: int) -> str:
+    def _gradual_change_formatter(self, meta: MetaDataBaseModel, current_value: int = None) -> str:
         """Formatter for GradualChangeMetadata subclasses. These values can include a range of beats to which the metadata
            applies. Called for TEMPO and DYNAMICS metadata which can gradually change over several beats.
            The value will be preceded or followed by a dotted line that will reach to the right margine of the (merged) cell.
@@ -348,17 +504,21 @@ class NotationTemplate:
             paragraph (Paragraph, optional): The paragraph to which the value should be written. Defaults to None.
             charstyle (CharacterStyle, optional): Character style for the added text. Defaults to `metadatastyle`.
         """
-        # If the metadata spans several beats, a tab character will be added before or after the value and a tab stop
-        # with preceding dashes will be added at the right-hand margin of the merged cell.
+        # If the metadata spans several beats, dots will be added over the width of the corresponding columns.
+        value = getattr(meta, meta.DEFAULTPARAM)
+
         if meta.metatype == "TEMPO":
-            if current_value == -1:
+            if self.current_tempo == -1:
+                self.current_tempo = value
                 # Suppress initial tempo
                 return None
-            if meta.value == current_value:
+            if value == self.current_tempo:
                 # No tempo change
                 return None
-            value = ("faster" if meta.value > current_value else "slower") + "{dots}"
+            value_ = ("faster" if value > self.current_tempo else "slower") + "{dots}"
+            self.current_tempo = value
+
         elif meta.metatype == "DYNAMICS":
-            position_tags = _to_aggregated_tags(meta.positions)
-            value = f"{", ".join(position_tags)}{": " if position_tags else ""}{"{dots}"}{meta.abbreviation}"
-        return value
+            position_tags = to_aggregated_tags(meta.positions)
+            value_ = f"{", ".join(position_tags)}{": " if position_tags else ""}{"{dots}"}{value}"
+        return value_

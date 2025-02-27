@@ -46,7 +46,7 @@ def clean_staves(gongan: Gongan) -> dict[Position, list[list[Note]]]:
 def stringWidth_fromNotes(measure: list[Note], fontName: str, fontSize: int) -> int:
     """Determines the width of a notation string. This function corrects the value returned by
        the stringWidth method, which does not process grace notes correctly.
-       this is possibly due to the negative width of grace notes with the `Bali Font 5` font.
+       this is possibly due to the negative width of grace notes in  the `Bali Font 5` font.
     Args:
         measure (list[Note]): Notes for which to determine the width of the notation.
         fontName (str):
@@ -58,7 +58,7 @@ def stringWidth_fromNotes(measure: list[Note], fontName: str, fontSize: int) -> 
     return stringWidth("a" * char_count, fontName, fontSize)
 
 
-def _to_aggregated_tags(positions: list[Position]) -> list[str]:
+def to_aggregated_tags(positions: list[Position]) -> list[str]:
     """Returns a lowercase value of the instrument names. This function is used to
        for the values of the `positions` parameter of metadata items.
     Args:
@@ -73,7 +73,7 @@ def _to_aggregated_tags(positions: list[Position]) -> list[str]:
     return tags
 
 
-def _has_kempli_beat(gongan: Gongan) -> bool:
+def has_kempli_beat(gongan: Gongan) -> bool:
     """Determines if the gongan has a kempli beat.
     Args:
         gongan (Gongan):
