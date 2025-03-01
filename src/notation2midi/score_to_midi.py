@@ -26,7 +26,6 @@ class MidiGenerator(ParserModel):
         self.part_info = PartForm(
             part=self.run_settings.notation.part.name,
             file=self.run_settings.notation.midi_out_file,
-            pdf=self.run_settings.notation.pdf_out_file,
             loop=self.run_settings.notation.part.loop,
         )
 
@@ -137,7 +136,6 @@ class MidiGenerator(ParserModel):
             partinfo=PartForm(
                 part=self.part_info.part,
                 file=self.part_info.file,
-                pdf=None,
                 loop=self.part_info.loop,
                 markers=self.sorted_markers_millis_to_frac(self.part_info.markers, self.score.midifile_duration),
             ),

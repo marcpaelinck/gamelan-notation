@@ -1,6 +1,8 @@
 """This module can be used to perform a complete run cycle (notation -> midi output).
 """
 
+from tkinter.messagebox import askokcancel
+
 from src.common.constants import NotationFont
 from src.notation2midi.dict_to_score import DictToScoreConverter
 from src.notation2midi.notation_parser_tatsu import NotationTatsuParser
@@ -63,9 +65,16 @@ def single_run():
     notation_to_midi(run_settings)
 
 
-if __name__ == "__main__":
+def main():
     run_settings = get_run_settings()
-    if run_settings.options.notation_to_midi.runtype in (RunType.RUN_ALL, RunType.RUN_ALL_PRODUCTION):
-        multiple_notations_to_midi(run_settings)
-    else:
-        single_run()
+    if run_settings.options.notation_to_midi.runtype in [RunType.RUN_SINGLE, RunType.RUN_ALL] or askokcancel(
+        "Warning", "Running production version, is this OK?"
+    ):
+        if run_settings.options.notation_to_midi.runtype in (RunType.RUN_ALL, RunType.RUN_ALL_PRODUCTION):
+            multiple_notations_to_midi(run_settings)
+        else:
+            single_run()
+
+
+if __name__ == "__main__":
+    main()

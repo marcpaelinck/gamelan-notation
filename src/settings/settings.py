@@ -301,7 +301,9 @@ def save_midiplayer_content(playercontent: Content, filename: str = None):
         os.rename(tempfilepath, contentfilepath)
 
 
-def update_midiplayer_content(title: str, group: InstrumentGroup, partinfo: PartForm) -> None:
+def update_midiplayer_content(
+    title: str, group: InstrumentGroup, partinfo: PartForm | None = None, pdf_file: str | None = None
+) -> None:
     """Updates the information given in Part in the content.json file of the midi player.
 
     Args:
@@ -315,23 +317,26 @@ def update_midiplayer_content(title: str, group: InstrumentGroup, partinfo: Part
     player_song: Song = next((song_ for song_ in content.songs if song_.title == title), None)
     if not player_song:
         # TODO create components of Song
-        content.songs.append(player_song := Song(title=title, instrumentgroup=group, display=True))
+        content.songs.append(player_song := Song(title=title, instrumentgroup=group, display=True, pfd=pdf_file))
         logger.info(f"New song {player_song.title} created for MIDI player content")
-    part = next((part_ for part_ in player_song.parts if part_.part == partinfo.part), None)
-    if part:
-        part.file = partinfo.file or part.file
-        part.pdf = partinfo.pdf or part.pdf
-        part.loop = partinfo.loop or part.loop
-        part.markers = partinfo.markers or part.markers
-        logger.info(f"Existing part {part.part} updated for MIDI player content")
-    else:
-        if partinfo.file:
-            player_song.parts.append(partinfo)
-            logger.info(f"New part {partinfo.part} created for MIDI player content")
+    elif pdf_file:
+        player_song.pdf = pdf_file
+
+    if partinfo:
+        part = next((part_ for part_ in player_song.parts if part_.part == partinfo.part), None)
+        if part:
+            part.file = partinfo.file or part.file
+            part.loop = partinfo.loop or part.loop
+            part.markers = partinfo.markers or part.markers
+            logger.info(f"Existing part {part.part} updated for MIDI player content")
         else:
-            logger.error(
-                f"Can't add new part info '{partinfo.part}' to the midiplayer content: missing midifile information. Please run again with run-option `save_midifile` set."
-            )
+            if partinfo.file:
+                player_song.parts.append(partinfo)
+                logger.info(f"New part {partinfo.part} created for MIDI player content")
+            else:
+                logger.error(
+                    f"Can't add new part info '{partinfo.part}' to the midiplayer content: missing midifile information. Please run again with run-option `save_midifile` set."
+                )
     save_midiplayer_content(content)
 
 

@@ -4,7 +4,7 @@
 midi:
   midiversion: GAMELAN1
 notation:
-  composition: puspamekar
+  composition: legongmahawidya_gk
   part_id: full
 
 options:
@@ -14,11 +14,11 @@ options:
   notation_to_midi:
     #  possible `runtype` values are RUN_SINGLE, RUN_SINGLE_PRODUCTION (both use `notation` value above),
     #  RUN_ALL and RUN_ALL_PRODUCTION. (use `include_in_run_types` in data.yaml.) All runtypes affect the Notation output folders.
-    runtype: RUN_SINGLE
+    runtype: RUN_SINGLE_PRODUCTION
     detailed_validation_logging : false
     autocorrect : true
     save_corrected_to_file : false
     save_pdf_notation: true
-    save_midifile : false
+    save_midifile : true
     # If update_midiplayer_content==true, MIDI file is saved in midiplayer folder and content.json file is updated.
     # This setting is only effective if the runtype is RUN_ALL.

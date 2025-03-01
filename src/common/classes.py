@@ -553,10 +553,23 @@ class Note(NotationModel):
 
         if len(unisono_positions) == 1:
             # Notation for single position
-            if position in unisono_positions:
-                return cls._SYMBOL_TO_NOTE[position, normalized_symbol]
-            else:
+            if position not in unisono_positions:
                 raise ValueError(f"{position} not in list {unisono_positions}")
+            elif len(symbol) < 1:
+                raise ValueError(f"Unexpected empty symbol for {position}")
+            elif (position, normalized_symbol) not in cls._SYMBOL_TO_NOTE:
+                # Most common error is wrong octave. Find similar symbols with the correct octave.
+                any_oct_symbol = symbol + ",<"
+                alternatives = [
+                    note.symbol
+                    for note in cls._SYMBOL_TO_NOTE.values()
+                    if note.position is position and all(char in any_oct_symbol for char in note.symbol)
+                ]
+                raise ValueError(
+                    f"Invalid note '{symbol}' for {position}.{f" Did you mean '{"or '".join(alternatives)}'?" if alternatives else ""}"
+                )
+            else:
+                return cls._SYMBOL_TO_NOTE[position, normalized_symbol]
 
         # The notation is for multiple positions. Determine pitch and octave using the 'unisono rules'.
 

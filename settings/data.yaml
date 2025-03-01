@@ -152,6 +152,14 @@ notations:
                 name: entire piece
                 file: Cendrawasih_complete_font5.tsv
                 loop: false
+    janger:
+        title: Janger
+        subfolder: janger
+        parts:
+            full:
+                name: entire piece
+                file: Janger.tsv
+                loop: true
     gilakdeng:
         title: Gilak Deng
         subfolder: gilak deng

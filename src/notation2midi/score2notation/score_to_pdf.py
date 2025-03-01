@@ -39,7 +39,7 @@ from src.notation2midi.score2notation.utils import (
     measure_to_str,
     stringWidth_fromNotes,
 )
-from src.settings.classes import PartForm
+from src.settings.classes import PartForm, RunType
 from src.settings.settings import update_midiplayer_content
 
 
@@ -383,13 +383,7 @@ class ScoreToPDFConverter(ParserModel):
         update_midiplayer_content(
             title=self.run_settings.notation.title,
             group=self.run_settings.notation.instrumentgroup,
-            partinfo=PartForm(
-                part=self.run_settings.notation.part.name,
-                file=None,
-                pdf=self.score.settings.notation.pdf_out_file,
-                loop=None,
-                markers=None,
-            ),
+            pdf_file=self.score.settings.notation.pdf_out_file,
         )
 
     @ParserModel.main
@@ -401,7 +395,8 @@ class ScoreToPDFConverter(ParserModel):
 
         self._convert_to_pdf()
         self.logger.info(f"Notation file saved as {self.template.filepath}")
-        self._update_midiplayer_content()
+        if self.run_settings.notation.run_type in [RunType.RUN_SINGLE_PRODUCTION, RunType.RUN_ALL_PRODUCTION]:
+            self._update_midiplayer_content()
 
 
 if __name__ == "__main__":

@@ -83,7 +83,6 @@ class FontRecord(BaseModel):
 class Part(BaseModel):
     part: str
     file: str
-    pdf: str | None = None
     loop: bool
     markers: dict[str, float] = Field(default_factory=dict)  # {partname: milliseconds}
 
@@ -91,9 +90,9 @@ class Part(BaseModel):
 @dataclass
 class PartForm:
     # Can be used to update the values of Part objects
+    # (allows to use None value if no update available)
     part: str
     file: str | None = None
-    pdf: str | None = None
     loop: bool | None = None
     markers: dict[str, float] = field(default_factory=dict)
 
@@ -121,6 +120,7 @@ class Song(BaseModel):
     title: str
     instrumentgroup: InstrumentGroup
     display: bool
+    pdf: str | None = None
     parts: list[Part] = Field(default_factory=list)
 
 
