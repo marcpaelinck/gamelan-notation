@@ -106,7 +106,7 @@ class DictToScoreConverter(ParserModel):
             last_beat.next = new_beat
             for position in last_beat.measures.keys():
                 new_beat.measures[position] = Measure.new(position=position, notes=[])
-                new_gongan.beats.append(new_beat)
+            new_gongan.beats.append(new_beat)
 
         # Iterate through the beats starting from the end.
         # Move the end note of each instrument in the previous beat to the start of the current beat.
