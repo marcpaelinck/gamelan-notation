@@ -110,7 +110,7 @@
                                 {"part": "entire piece", "file": "Margapati_full_GAMELAN1.mid", "loop": false, "markers": {}}
                         ]
                 }, 
-                {"title": "Bapang Selisir (gong kebyar)", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": null, "parts": [
+                {"title": "Bapang Selisir (gong kebyar)", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Bapang Selisir (gong kebyar)_full_GAMELAN1.pdf", "parts": [
                                 {"part": "entire piece", "file": "Bapang Selisir (gong kebyar)_full_GAMELAN1.mid", "loop": false, "markers": {}}
                         ]
                 }, 

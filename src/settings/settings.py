@@ -343,4 +343,4 @@ def update_midiplayer_content(
 if __name__ == "__main__":
     # For testing
     settings = get_run_settings()
-    print(settings.font)
+    print(settings.notation)

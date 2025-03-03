@@ -395,7 +395,7 @@ class ScoreToPDFConverter(ParserModel):
 
         self._convert_to_pdf()
         self.logger.info(f"Notation file saved as {self.template.filepath}")
-        if self.run_settings.notation.run_type in [RunType.RUN_SINGLE_PRODUCTION, RunType.RUN_ALL_PRODUCTION]:
+        if self.run_settings.notation.is_production_run:
             self._update_midiplayer_content()
 
 

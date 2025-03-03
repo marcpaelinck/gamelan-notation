@@ -16,6 +16,6 @@ class IntegrationTester(unittest.TestCase):
     def test_integrationtest(self):
         run_settings = load_run_settings()
         # multiple_notations_to_midi(run_settings)
-        compare_dict = run_settings.notation.folders[run_settings.notation.run_type].folder_out
+        compare_dict = run_settings.notation.folder_out
         reference_dict = compare_dict.replace("output", "reference")
         compare_all(reference_dict, compare_dict)

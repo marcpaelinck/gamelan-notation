@@ -4,7 +4,7 @@
 midi:
   midiversion: GAMELAN1
 notation:
-  composition: legongmahawidya_gk
+  composition: pendet
   part_id: full
 
 options:
@@ -12,9 +12,10 @@ options:
   debug_logging: false
   validate_settings : true
   notation_to_midi:
-    #  possible `runtype` values are RUN_SINGLE, RUN_SINGLE_PRODUCTION (both use `notation` value above),
-    #  RUN_ALL and RUN_ALL_PRODUCTION. (use `include_in_run_types` in data.yaml.) All runtypes affect the Notation output folders.
-    runtype: RUN_ALL_PRODUCTION
+    #  possible `runtype` values are RUN_SINGLE (uses `notation` value above) or RUN_ALL (uses `include_in_run_types` in data.yaml.).
+    runtype: RUN_SINGLE
+    #  `production_run` determines the value of the output folder in the `notations` section
+    is_production_run: false
     detailed_validation_logging : false
     autocorrect : true
     save_corrected_to_file : false

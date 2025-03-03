@@ -1,9 +1,10 @@
 """This module can be used to perform a complete run cycle (notation -> midi output).
 """
 
-from tkinter.messagebox import askokcancel
+from tkinter.messagebox import askyesno
 
 from src.common.constants import NotationFont
+from src.common.logger import get_logger
 from src.notation2midi.dict_to_score import DictToScoreConverter
 from src.notation2midi.notation_parser_tatsu import NotationTatsuParser
 from src.notation2midi.score2notation.score_to_notation import score_to_notation_file
@@ -14,6 +15,8 @@ from src.settings.classes import RunSettings, RunType
 from src.settings.constants import Yaml
 from src.settings.settings import get_run_settings, load_run_settings
 from src.settings.settings_validation import SettingsValidator
+
+logger = get_logger(__name__)
 
 
 def load_and_validate_run_settings(notation: dict[str, str] = None) -> RunSettings:
@@ -45,6 +48,7 @@ def notation_to_midi(run_settings: RunSettings):
         and run_settings.notation.part_id in run_settings.notation.generate_pdf_part_ids
     ):
         ScoreToPDFConverter(score).create_notation()
+    logger.info("")
 
 
 def multiple_notations_to_midi(run_settings: RunSettings):
@@ -53,8 +57,13 @@ def multiple_notations_to_midi(run_settings: RunSettings):
     Args:
         notations (list[tuple[str, str]]): list of (composition, part) pairs
     """
-    for notation_key, notation_info in run_settings.notations.items():
-        if run_settings.options.notation_to_midi.runtype in notation_info.include_in_run_types:
+    notation_list = list(run_settings.notations.items())
+    runtype = run_settings.options.notation_to_midi.runtype
+    is_production_run = run_settings.options.notation_to_midi.is_production_run
+    for notation_key, notation_info in notation_list:
+        if runtype in notation_info.include_in_run_types and (
+            not is_production_run or notation_info.include_in_production_run
+        ):
             for part_key, part_info in notation_info.parts.items():
                 run_settings = load_and_validate_run_settings({Yaml.COMPOSITION: notation_key, Yaml.PART_ID: part_key})
                 notation_to_midi(run_settings)
@@ -67,10 +76,10 @@ def single_run():
 
 def main():
     run_settings = get_run_settings()
-    if run_settings.options.notation_to_midi.runtype in [RunType.RUN_SINGLE, RunType.RUN_ALL] or askokcancel(
-        "Warning", "Running production version, is this OK?"
+    if not run_settings.options.notation_to_midi.is_production_run or askyesno(
+        "Warning", "Running production version. Continue?"
     ):
-        if run_settings.options.notation_to_midi.runtype in (RunType.RUN_ALL, RunType.RUN_ALL_PRODUCTION):
+        if run_settings.options.notation_to_midi.runtype is RunType.RUN_ALL:
             multiple_notations_to_midi(run_settings)
         else:
             single_run()

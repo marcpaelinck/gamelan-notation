@@ -136,9 +136,7 @@ class Content(BaseModel):
 
 class RunType(StrEnum):
     RUN_SINGLE = "RUN_SINGLE"
-    RUN_SINGLE_PRODUCTION = "RUN_SINGLE_PRODUCTION"
     RUN_ALL = "RUN_ALL"
-    RUN_ALL_PRODUCTION = "RUN_ALL_PRODUCTION"
 
 
 class RunSettings(BaseModel):
@@ -148,41 +146,45 @@ class RunSettings(BaseModel):
         loop: bool
 
     class NotationInfo(BaseModel):
-        class FolderInfo(BaseModel):
-            folder_in: str
-            folder_out: str
-
         title: str
         instrumentgroup: InstrumentGroup
+        folder_in: str
+        folder_out_nonprod: str
+        folder_out_prod: str
         midi_out_file: str
         pdf_out_file: str
         run_type: RunType
-        folders: dict[RunType, FolderInfo] = Field(default_factory=dict)
         subfolder: str
         part_id: str = ""
         parts: dict[str, "RunSettings.NotationPart"] = Field(default_factory=dict)
         beat_at_end: bool
         autocorrect_kempyung: bool
+        # IDs of the parts for which to generate a PDF notation document
+        generate_pdf_part_ids: list[str] = Field(default_factory=list)
         # run types that should include this composition
         include_in_run_types: list[RunType] = Field(default_factory=list)
-        generate_pdf_part_ids: list[str] = Field(default_factory=list)
-        production: bool  # resulting MIDI file fit to save to production environment?
+        include_in_production_run: bool
+        is_production_run: bool
 
         @property
         def part(self):
             return self.parts[self.part_id] if self.part_id in self.parts.keys() else None
 
         @property
+        def folder_out(self):
+            return self.folder_out_prod if self.is_production_run else self.folder_out_nonprod
+
+        @property
         def notation_filepath(self):
-            return os.path.join(self.folders[self.run_type].folder_in, self.parts[self.part_id].file)
+            return os.path.join(self.folder_in, self.parts[self.part_id].file)
 
         @property
         def midi_out_filepath(self):
-            return os.path.join(self.folders[self.run_type].folder_out, self.midi_out_file)
+            return os.path.join(self.folder_out, self.midi_out_file)
 
         @property
         def pdf_out_filepath(self):
-            return os.path.join(self.folders[self.run_type].folder_out, self.pdf_out_file)
+            return os.path.join(self.folder_out, self.pdf_out_file)
 
     class MidiInfo(BaseModel):
         # Implementation of tremolo notes. First two parameters are in 1/base_note_time. E.g. if base_note_time=24, then 24 is a standard note duration.
@@ -249,12 +251,6 @@ class RunSettings(BaseModel):
         def ttf_filepath(self):
             return os.path.join(self.folder, self.ttf_file)
 
-    class MultipleRunsInfo(BaseModel):
-        folder_in: str
-        folder_out: str
-        runtype: RunType
-        notations: list[dict[str, str]]
-
     class GrammarInfo(BaseModel):
         folder: str
         notationfile: str
@@ -316,6 +312,7 @@ class RunSettings(BaseModel):
             save_corrected_to_file: bool
             save_pdf_notation: bool
             save_midifile: bool
+            is_production_run: bool
             is_integration_test: bool = False
 
             @property
@@ -348,7 +345,6 @@ class RunSettings(BaseModel):
     samples: SampleInfo | None = None
     notations: dict[str, NotationInfo] = Field(default_factory=dict)
     notation: NotationInfo | None = None
-    multiple_runs: MultipleRunsInfo | None = None
     instruments: InstrumentInfo | None = None
     font: FontInfo | None = None
     grammars: GrammarInfo | None = None

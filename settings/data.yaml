@@ -103,22 +103,14 @@ notations:
     # Otherwise the midi file will end abruptly to allow looping.
     defaults:
         run_type: ${options.notation_to_midi.runtype}
-        include_in_run_types: [RUN_SINGLE, RUN_SINGLE_PRODUCTION, RUN_ALL, RUN_ALL_PRODUCTION]
+        include_in_run_types: [RUN_SINGLE, RUN_ALL]
+        # parts for which to generate a PDF notation document
         generate_pdf_part_ids: [full]
-        production: true
-        folders:
-            RUN_SINGLE:
-                folder_in: ./data/notation/${notation.subfolder}
-                folder_out: ./data/notation/${notation.subfolder}
-            RUN_SINGLE_PRODUCTION:
-                folder_in: ./data/notation/${notation.subfolder}
-                folder_out:  ${midiplayer.folder}
-            RUN_ALL:
-                folder_in: ./data/notation/${notation.subfolder}
-                folder_out: ./data/notation/${notation.subfolder}
-            RUN_ALL_PRODUCTION:
-                folder_in: ./data/notation/${notation.subfolder}
-                folder_out: ${midiplayer.folder}
+        include_in_production_run: true
+        is_production_run: ${options.notation_to_midi.is_production_run}
+        folder_in: ./data/notation/${notation.subfolder}
+        folder_out_nonprod: ./data/notation/${notation.subfolder}
+        folder_out_prod: ${midiplayer.folder}
         beat_at_end: false
         autocorrect_kempyung : true
         fontversion: BaliMusic5
@@ -138,7 +130,7 @@ notations:
         title: Bapang Selisir (gong kebyar)
         subfolder: bapang selisir
         instrumentgroup: GONG_KEBYAR
-        include_in_run_types: [RUN_SINGLE, RUN_ALL]
+        include_in_production_run: false
         parts:
             full:
                 name: entire piece
@@ -238,7 +230,7 @@ notations:
         subfolder: lengker
         autocorrect_kempyung : false
         instrumentgroup: GONG_KEBYAR
-        include_in_run_types: [RUN_SINGLE, RUN_ALL]
+        include_in_production_run: false
         parts:
             full:
                 name: entire piece
@@ -309,7 +301,7 @@ notations:
         subfolder: sekar gendot
         instrumentgroup: GONG_KEBYAR
         autocorrect_kempyung : false
-        include_in_run_types: [RUN_SINGLE, RUN_ALL]
+        include_in_production_run: false
         parts:
             full:
                 name: entire piece
@@ -344,6 +336,7 @@ notations:
     test-gk:
         production: false
         include_in_run_types: [RUN_SINGLE]
+        include_in_production_run: false
         title: Test Gong Kebyar
         subfolder: test
         beat_at_end: false            
@@ -364,6 +357,7 @@ notations:
     test-sp:
         production: false
         include_in_run_types: [RUN_SINGLE]
+        include_in_production_run: false
         title: Test Semar Pagulingan
         subfolder: test
         beat_at_end: false            
