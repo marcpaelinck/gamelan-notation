@@ -127,8 +127,8 @@ class NotationTemplate:
 
     @property
     def _body_frame(self) -> Frame:
-        """Defines the frame for each page. Each page contains a single frame, next
-           to the header which is written directly to the canvas.
+        """Defines the frame for each page. Each page contains a single frame, apart
+           from the header which is written directly to the canvas.
         Returns:
             Frame:
         """
@@ -184,6 +184,14 @@ class NotationTemplate:
             fontName="Helvetica",
             fontSize=9,
             leading=12,
+            textColor=HexColor(0x000000),
+            alignment=TA_RIGHT,
+        )
+        self.headerStyleHyperlink = ParagraphStyle(
+            name="headerStyleHyperlink",
+            fontName="Helvetica",
+            fontSize=9,
+            leading=11,
             textColor=HexColor(0x000000),
             alignment=TA_RIGHT,
         )
@@ -390,12 +398,14 @@ class NotationTemplate:
         return text
 
     def _page_header(self, canvas: Canvas, document):
-        """Code that should be executed for each new page: it can be assigned to the onPage PageTemplate argument.
+        """Code that should be executed for each new page: it should be assigned to the onPage PageTemplate argument.
         Args:
             canvas (Canvas):
             document (_type_):
         """
+        notation_webpage = "https://swarasanti.nl/music-notation/"
         headerHeight = 1.5 * cm
+        hyperlink_ypos = 1.0 * cm
         lineDistance = 2  # distance between header text bottom and separator line
         lineWidth = 0.5  # width of separator line
         M_width = stringWidth("999", self.headerStylePageNr.fontName, self.headerStylePageNr.fontSize)
@@ -405,25 +415,33 @@ class NotationTemplate:
             self.headerStyleTitle.fontSize, self.headerStylePageNr.fontSize, self.headerStyleDateStamp.fontSize
         )  # maximum height of header text. Used to vertically align text.
 
-        def _write_text(text: str, style: ParagraphStyle, position: str = "L"):
-            container_width = M_width if position == "M" else L_R_width
+        def _write_text(text: str, style: ParagraphStyle, xpos: str, ypos_from_top: int):
+            container_width = M_width if xpos == "M" else L_R_width
             p = Paragraph(text, style)
             p.wrap(container_width, headerY)
             Xpos = (
                 self.doc.leftMargin
-                if position.upper() == "L"
+                if xpos.upper() == "L"
                 else (
                     (self.pagesize[0] - container_width) / 2
-                    if position.upper() == "C"
+                    if xpos.upper() == "C"
                     else self.pagesize[0] - container_width - self.doc.rightMargin
                 )
             )
-            p.drawOn(canvas, Xpos, self.pagesize[1] - headerHeight - headerY + style.fontSize)
+            p.drawOn(canvas, Xpos, self.pagesize[1] - ypos_from_top - headerY + style.fontSize)
 
         canvas.saveState()
-        _write_text(f"<b>{self.title}</b>", self.headerStyleTitle, "L")
-        _write_text(str(document.page), self.headerStylePageNr, "C")
-        _write_text(self.datestamp, self.headerStyleDateStamp, "R")
+        _write_text(f"<b>{self.title}</b>", self.headerStyleTitle, "L", headerHeight)
+        _write_text(str(document.page), self.headerStylePageNr, "C", headerHeight)
+        _write_text(self.datestamp, self.headerStyleDateStamp, "R", headerHeight)
+        if document.page == 1:
+            _write_text(
+                f'notation explained: <link href="{notation_webpage}"><u>{notation_webpage}</u></link>',
+                self.headerStyleHyperlink,
+                "R",
+                hyperlink_ypos,
+            )
+
         canvas.setStrokeColor(HexColor(0x000000))
         canvas.setLineWidth(lineWidth)
         canvas.line(

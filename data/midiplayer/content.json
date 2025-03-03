@@ -147,7 +147,8 @@
                 {"title": "Janger", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Janger_full_GAMELAN1.pdf", "parts": [
                                 {"part": "entire piece", "file": "Janger_full_GAMELAN1.mid", "loop": true, "markers": {}}
                         ]
-                }], 
+                }, 
+                {"title": "Legong Mahawidya SP", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Legong Mahawidya SP_full_GAMELAN1.pdf", "parts": []}], 
         "instrumentgroups": {
                 "GONG_KEBYAR": [
                         {"group": "GONGS", "label": "GONGS", "channels": [0], "midioffset": 0, "animation": "GK_GONGS"}, 
