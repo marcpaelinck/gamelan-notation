@@ -38,6 +38,7 @@
                 {"title": "Godek Miring", "instrumentgroup": "SEMAR_PAGULINGAN", "display": true, "pdf": "Godek Miring_full_GAMELAN1.pdf", "parts": [
                                 {"part": "entire piece", "file": "Godek Miring_full_GAMELAN1.mid", "loop": false, "markers": {
                                                 "kawitan": 0.0333281666378524, 
+                                                "pengawak": 0.23471303974579857, 
                                                 "pengecet": 0.7475870538508772
                                         }
                                 }, 
@@ -148,7 +149,15 @@
                                 {"part": "entire piece", "file": "Janger_full_GAMELAN1.mid", "loop": true, "markers": {}}
                         ]
                 }, 
-                {"title": "Legong Mahawidya SP", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Legong Mahawidya SP_full_GAMELAN1.pdf", "parts": []}], 
+                {"title": "Legong Mahawidya SP", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Legong Mahawidya SP_full_GAMELAN1.pdf", "parts": [
+                                {"part": "entire piece", "file": "Legong Mahawidya SP_full_GAMELAN1.mid", "loop": false, "markers": {
+                                                "kawitan": 0.021691741310838623, 
+                                                "pengawak": 0.325289155578746, 
+                                                "pengecet": 0.6573151288517842
+                                        }
+                                }
+                        ]
+                }], 
         "instrumentgroups": {
                 "GONG_KEBYAR": [
                         {"group": "GONGS", "label": "GONGS", "channels": [0], "midioffset": 0, "animation": "GK_GONGS"}, 

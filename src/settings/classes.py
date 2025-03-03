@@ -317,7 +317,7 @@ class RunSettings(BaseModel):
 
             @property
             def update_midiplayer_content(self) -> bool:
-                return self.runtype in [RunType.RUN_ALL_PRODUCTION, RunType.RUN_SINGLE_PRODUCTION]
+                return self.is_production_run
 
         class SoundfontOptions(BaseModel):
             run: bool

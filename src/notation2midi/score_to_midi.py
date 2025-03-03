@@ -165,7 +165,7 @@ class MidiGenerator(ParserModel):
 
             if (
                 self.run_settings.options.notation_to_midi.update_midiplayer_content
-                and self.run_settings.notation.production_ripe
+                and self.run_settings.notation.include_in_production_run
             ):
                 # Test files should never be logged in the midiplayer content file
                 self._update_midiplayer_content()
