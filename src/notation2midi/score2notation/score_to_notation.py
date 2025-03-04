@@ -177,6 +177,6 @@ def score_to_notation_file(score: Score) -> None:  # score_validation
     """
     score_dict = sum((gongan_to_records(gongan) for gongan in score.gongans), [])
     score_df = pd.DataFrame.from_records(score_dict)
-    fpath, ext = path.splitext(score.settings.notation.notation_filepath)
+    fpath, ext = path.splitext(score.settings.notation_filepath)
     filepath = fpath + "_CORRECTED" + ext
     score_df.to_csv(filepath, sep="\t", index=False, header=False, quoting=csv.QUOTE_NONE)

@@ -57,7 +57,7 @@ class ScoreToPDFConverter(ParserModel):
         self.pickle = pickle  # only used for development
         self.current_tempo = -1
         self.current_dynamics = -1  # Not used currently
-        registerFont(TTFont("Bali Music 5", self.run_settings.font.ttf_filepath))
+        registerFont(TTFont("Bali Music 5", self.run_settings.settingsdata.font.ttf_filepath))
         self.story = []
 
     def _append_single_metadata_type(
@@ -383,7 +383,7 @@ class ScoreToPDFConverter(ParserModel):
         update_midiplayer_content(
             title=self.run_settings.notation.title,
             group=self.run_settings.notation.instrumentgroup,
-            pdf_file=self.score.settings.notation.pdf_out_file,
+            pdf_file=self.score.settings.pdf_out_file,
         )
 
     @ParserModel.main
@@ -395,7 +395,7 @@ class ScoreToPDFConverter(ParserModel):
 
         self._convert_to_pdf()
         self.logger.info(f"Notation file saved as {self.template.filepath}")
-        if self.run_settings.notation.is_production_run:
+        if self.run_settings.options.notation_to_midi.is_production_run:
             self._update_midiplayer_content()
 
 

@@ -3,7 +3,8 @@
 
 from tkinter.messagebox import askyesno
 
-from src.common.constants import NotationFont
+from src.common.classes import Note
+from src.common.constants import NotationFontVersion
 from src.common.logger import get_logger
 from src.notation2midi.dict_to_score import DictToScoreConverter
 from src.notation2midi.notation_parser_tatsu import NotationTatsuParser
@@ -19,8 +20,8 @@ from src.settings.settings_validation import SettingsValidator
 logger = get_logger(__name__)
 
 
-def load_and_validate_run_settings(notation: dict[str, str] = None) -> RunSettings:
-    run_settings = load_run_settings(notation)
+def load_and_validate_run_settings(notation_id: str = None, part_id: str = None) -> RunSettings:
+    run_settings = load_run_settings(notation_id=notation_id, part_id=part_id)
     if run_settings.options.validate_settings:
         SettingsValidator(run_settings).validate_input_data()
     return run_settings
@@ -28,10 +29,10 @@ def load_and_validate_run_settings(notation: dict[str, str] = None) -> RunSettin
 
 def notation_to_midi(run_settings: RunSettings):
     if run_settings.options.notation_to_midi:
-        if run_settings.font.fontversion is NotationFont.BALIMUSIC5:
+        if run_settings.fontversion is NotationFontVersion.BALIMUSIC5:
             font_parser = NotationTatsuParser(run_settings)
         else:
-            raise Exception(f"Cannot parse font {run_settings.font.fontversion}.")
+            raise Exception(f"Cannot parse font {run_settings.fontversion}.")
         notation = font_parser.parse_notation()
         if notation:
             score = DictToScoreConverter(notation).create_score()
@@ -45,7 +46,7 @@ def notation_to_midi(run_settings: RunSettings):
     if (
         success
         and run_settings.options.notation_to_midi.save_pdf_notation
-        and run_settings.notation.part_id in run_settings.notation.generate_pdf_part_ids
+        and run_settings.part_id in run_settings.notation.generate_pdf_part_ids
     ):
         ScoreToPDFConverter(score).create_notation()
     logger.info("")
@@ -57,7 +58,7 @@ def multiple_notations_to_midi(run_settings: RunSettings):
     Args:
         notations (list[tuple[str, str]]): list of (composition, part) pairs
     """
-    notation_list = list(run_settings.notations.items())
+    notation_list = list(run_settings.settingsdata.notations.items())
     runtype = run_settings.options.notation_to_midi.runtype
     is_production_run = run_settings.options.notation_to_midi.is_production_run
     for notation_key, notation_info in notation_list:
@@ -65,7 +66,7 @@ def multiple_notations_to_midi(run_settings: RunSettings):
             not is_production_run or notation_info.include_in_production_run
         ):
             for part_key, part_info in notation_info.parts.items():
-                run_settings = load_and_validate_run_settings({Yaml.COMPOSITION: notation_key, Yaml.PART_ID: part_key})
+                run_settings = load_and_validate_run_settings(notation_id=notation_key, part_id=part_key)
                 notation_to_midi(run_settings)
 
 

@@ -302,7 +302,7 @@ class ScoreValidator(ParserModel):
         autocorrect = self.score.settings.options.notation_to_midi.autocorrect
         detailed_logging = self.score.settings.options.notation_to_midi.detailed_validation_logging
 
-        if self.score.settings.instruments.instrumentgroup != InstrumentGroup.GONG_KEBYAR:
+        if self.score.settings.instrumentgroup != InstrumentGroup.GONG_KEBYAR:
             self.logwarning("Skipping kempyung validation for non-gong kebyar scores.")
 
         for gongan in self.gongan_iterator(self.score):
@@ -326,7 +326,7 @@ class ScoreValidator(ParserModel):
             corrected_note_out_of_range.extend(corrected)
             ignored_note_out_of_range.extend(corrected)
 
-            if self.score.settings.instruments.instrumentgroup == InstrumentGroup.GONG_KEBYAR:
+            if self.score.settings.instrumentgroup == InstrumentGroup.GONG_KEBYAR:
                 invalids, corrected, ignored = self._incorrect_kempyung(gongan, autocorrect=autocorrect)
                 remaining_incorrect_kempyung.extend(invalids)
                 corrected_invalid_kempyung.extend(corrected)

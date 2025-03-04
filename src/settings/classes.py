@@ -1,7 +1,6 @@
 import os
 from dataclasses import dataclass, field
-from enum import Enum, StrEnum
-from typing import Any
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
@@ -13,8 +12,9 @@ from src.common.constants import (
     InstrumentGroup,
     InstrumentType,
     MIDIvalue,
+    MidiVersion,
     Modifier,
-    NotationFont,
+    NotationFontVersion,
     NoteOct,
     Octave,
     Pitch,
@@ -80,23 +80,6 @@ class FontRecord(BaseModel):
     #
 
 
-class Part(BaseModel):
-    part: str
-    file: str
-    loop: bool
-    markers: dict[str, float] = Field(default_factory=dict)  # {partname: milliseconds}
-
-
-@dataclass
-class PartForm:
-    # Can be used to update the values of Part objects
-    # (allows to use None value if no update available)
-    part: str
-    file: str | None = None
-    loop: bool | None = None
-    markers: dict[str, float] = field(default_factory=dict)
-
-
 class InstrumentInfo(BaseModel):
     group: str
     label: str  # for instrument selector dropdown
@@ -114,6 +97,23 @@ class Profile(BaseModel):
 class AnimationInfo(BaseModel):
     highlight: dict[AnimationStroke, list[str]]
     profiles: dict[AnimationProfiles, Profile]
+
+
+class Part(BaseModel):
+    part: str
+    file: str
+    loop: bool
+    markers: dict[str, float] = Field(default_factory=dict)  # {partname: milliseconds}
+
+
+@dataclass
+class PartForm:
+    # Can be used to update the values of Part objects
+    # (allows to use None value if no update available)
+    part: str
+    file: str | None = None
+    loop: bool | None = None
+    markers: dict[str, float] = field(default_factory=dict)
 
 
 class Song(BaseModel):
@@ -139,214 +139,269 @@ class RunType(StrEnum):
     RUN_ALL = "RUN_ALL"
 
 
-class RunSettings(BaseModel):
+class SettingsInstrumentInfo(BaseModel):
+    folder: str
+    instruments_file: str
+    tags_file: str
+    rules_file: str
+
+    @property
+    def instr_filepath(self):
+        return os.path.join(self.folder, self.instruments_file)
+
+    @property
+    def tag_filepath(self):
+        return os.path.join(self.folder, self.tags_file)
+
+
+class SettingsMidiInfo(BaseModel):
+    # Implementation of tremolo notes. First two parameters are in 1/base_note_time. E.g. if base_note_time=24, then 24 is a standard note duration.
+    class TremoloInfo(BaseModel):
+        notes_per_quarternote: int  # should be a divisor of base_note_time
+        accelerating_pattern: list[
+            int
+        ]  # relative duration of the notes. Even number so that alternating note patterns end on the second note
+        accelerating_velocity: list[
+            int
+        ]  # MIDI velocity value (0-127) for each note. Same number of values as accelerating_pattern.
+
+    folder: str
+    midi_definition_file: str
+    midiversion: MidiVersion
+    presets_file: str
+    PPQ: int  # pulses (ticks) per quarternote
+    base_note_time: int  # ticks
+    base_notes_per_beat: int
+    dynamics: dict[DynamicLevel, int] = Field(default_factory=dict)
+    default_dynamics: DynamicLevel
+    silence_seconds_before_start: int  # silence before first note
+    silence_seconds_after_end: int  # silence after last note
+    tremolo: TremoloInfo
+
+    @property
+    def notes_filepath(self):
+        return os.path.join(self.folder, self.midi_definition_file)
+
+    @property
+    def presets_filepath(self):
+        return os.path.join(self.folder, self.presets_file)
+
+
+class SettingsFontInfo(BaseModel):
+    folder: str
+    file: str
+    ttf_file: str | None
+
+    @property
+    def filepath(self):
+        return os.path.join(self.folder, self.file)
+
+    @property
+    def ttf_filepath(self):
+        return os.path.join(self.folder, self.ttf_file)
+
+
+class SettingsGrammarInfo(BaseModel):
+
+    folder: str
+    notationfile: str
+    metadatafile: str
+    picklefile: str
+    fontfile: str
+
+    @property
+    def notation_filepath(self) -> str:
+        return os.path.normpath(os.path.abspath(os.path.join(os.path.expanduser(self.folder), self.notationfile)))
+
+    @property
+    def pickle_filepath(self) -> str:
+        return os.path.normpath(os.path.abspath(os.path.join(os.path.expanduser(self.folder), self.picklefile)))
+
+    @property
+    def metadata_filepath(self) -> str:
+        return os.path.normpath(os.path.abspath(os.path.join(os.path.expanduser(self.folder), self.metadatafile)))
+
+    @property
+    def font_filepath(self) -> str:
+        return os.path.normpath(os.path.abspath(os.path.join(os.path.expanduser(self.folder), self.fontfile)))
+
+
+class SettingsSampleInfo(BaseModel):
+    folder: str
+    subfolder: str
+
+
+class SettingsSoundfontInfo(BaseModel):
+    folder: str
+    path_to_viena_app: str
+    definition_file_out: str = None
+    soundfont_file_out: str = None
+    soundfont_destination_folders: list[str] = field(default_factory=list)
+
+    @property
+    def def_filepath(self) -> str:
+        return os.path.normpath(
+            os.path.abspath(os.path.join(os.path.expanduser(self.folder), self.definition_file_out))
+        )
+
+    @property
+    def sf_filepath_list(self) -> list[str]:
+        return [
+            os.path.normpath(os.path.abspath(os.path.join(os.path.expanduser(folder), self.soundfont_file_out)))
+            for folder in self.soundfont_destination_folders
+        ]
+
+
+class SettingsMidiPlayerInfo(BaseModel):
+    folder: str
+    contentfile: str
+    helpinghand: list[Position] = None
+
+
+class SettingsPdfConverterInfo(BaseModel):
+    folder: str
+    docx_template: str
+    fonts: dict[str, str] = Field(default_factory=dict)
+
+
+class SettingsNotationInfo(BaseModel):
     class NotationPart(BaseModel):
         name: str
         file: str
         loop: bool
 
-    class NotationInfo(BaseModel):
-        title: str
-        instrumentgroup: InstrumentGroup
-        folder_in: str
-        folder_out_nonprod: str
-        folder_out_prod: str
-        midi_out_file: str
-        pdf_out_file: str
-        run_type: RunType
-        subfolder: str
-        part_id: str = ""
-        parts: dict[str, "RunSettings.NotationPart"] = Field(default_factory=dict)
-        beat_at_end: bool
-        autocorrect_kempyung: bool
-        # IDs of the parts for which to generate a PDF notation document
-        generate_pdf_part_ids: list[str] = Field(default_factory=list)
-        # run types that should include this composition
-        include_in_run_types: list[RunType] = Field(default_factory=list)
-        include_in_production_run: bool
+    title: str
+    subfolder: str
+    instrumentgroup: InstrumentGroup
+    fontversion: NotationFontVersion
+    parts: dict[str, NotationPart] = Field(default_factory=dict)
+    folder_in: str
+    folder_out_nonprod: str
+    folder_out_prod: str
+    midi_out_file_pattern: str
+    pdf_out_file_pattern: str
+    # IDs of the parts for which to generate a PDF notation document
+    generate_pdf_part_ids: list[str] = Field(default_factory=list)
+    beat_at_end: bool
+    autocorrect_kempyung: bool
+    # run types that should include this composition
+    include_in_run_types: list[RunType] = Field(default_factory=list)
+    include_in_production_run: bool
+    part: NotationPart = None
+
+
+class SettingsOptions(BaseModel):
+    class NotationToMidiOptions(BaseModel):
+        runtype: RunType
+        detailed_validation_logging: bool
+        autocorrect: bool
+        save_corrected_to_file: bool
+        save_pdf_notation: bool
+        save_midifile: bool
         is_production_run: bool
+        is_integration_test: bool = False
 
         @property
-        def part(self):
-            return self.parts[self.part_id] if self.part_id in self.parts.keys() else None
+        def update_midiplayer_content(self) -> bool:
+            return self.is_production_run
 
-        @property
-        def folder_out(self):
-            return self.folder_out_prod if self.is_production_run else self.folder_out_nonprod
+    class SoundfontOptions(BaseModel):
+        run: bool
+        create_sf2_files: bool
 
-        @property
-        def notation_filepath(self):
-            return os.path.join(self.folder_in, self.parts[self.part_id].file)
+    debug_logging: bool
+    validate_settings: bool
+    notation_to_midi: NotationToMidiOptions | None = None
+    soundfont: SoundfontOptions | None = None
 
-        @property
-        def midi_out_filepath(self):
-            return os.path.join(self.folder_out, self.midi_out_file)
 
-        @property
-        def pdf_out_filepath(self):
-            return os.path.join(self.folder_out, self.pdf_out_file)
+class Data(BaseModel):
+    # Contains pre-formatted table data
+    font: list[dict[str, str | None]] | None
+    instruments: list[dict[str, str | None]] | None
+    instrument_tags: list[dict[str, str | None]] | None
+    rules: list[dict[str, str | None]] | None
+    midinotes: list[dict[str, str | None]] | None
+    presets: list[dict[str, str | None]] | None
 
-    class MidiInfo(BaseModel):
-        # Implementation of tremolo notes. First two parameters are in 1/base_note_time. E.g. if base_note_time=24, then 24 is a standard note duration.
-        class TremoloInfo(BaseModel):
-            notes_per_quarternote: int  # should be a divisor of base_note_time
-            accelerating_pattern: list[
-                int
-            ]  # relative duration of the notes. Even number so that alternating note patterns end on the second note
-            accelerating_velocity: list[
-                int
-            ]  # MIDI velocity value (0-127) for each note. Same number of values as accelerating_pattern.
 
-        midiversion: str
-        folder: str
-        midi_definition_file: str
-        presets_file: str
-        PPQ: int  # pulses (ticks) per quarternote
-        base_note_time: int  # ticks
-        base_notes_per_beat: int
-        dynamics: dict[DynamicLevel, int] = Field(default_factory=dict)
-        default_dynamics: DynamicLevel
-        silence_seconds_before_start: int  # silence before first note
-        silence_seconds_after_end: int  # silence after last note
-        tremolo: TremoloInfo
+class SettingsData(BaseModel):
+    instruments: SettingsInstrumentInfo
+    midi: SettingsMidiInfo
+    font: SettingsFontInfo
+    grammar: SettingsGrammarInfo
+    samples: SettingsSampleInfo
+    soundfont: SettingsSoundfontInfo
+    midiplayer: SettingsMidiPlayerInfo
+    pdf_converter: SettingsPdfConverterInfo
+    notations: dict[str, SettingsNotationInfo] = Field(default_factory=dict)
 
-        @property
-        def notes_filepath(self):
-            return os.path.join(self.folder, self.midi_definition_file)
 
-        @property
-        def presets_filepath(self):
-            return os.path.join(self.folder, self.presets_file)
+class RunSettings(BaseModel):
+    midiversion: str | None = None
+    notation_id: str | None = None
+    part_id: str | None = None
+    options: SettingsOptions
+    settingsdata: SettingsData
+    data: Data = None
 
-    class SampleInfo(BaseModel):
-        folder: str
-        subfolder: str
+    @property
+    def notation(self) -> SettingsNotationInfo:
+        notation = self.settingsdata.notations[self.notation_id]
+        return notation.model_copy(update={"part": notation.parts[self.part_id]})
 
-    class InstrumentInfo(BaseModel):
-        instrumentgroup: InstrumentGroup
-        folder: str
-        instruments_file: str
-        tags_file: str
-        rules_file: str
+    @property
+    def midi(self) -> SettingsMidiInfo:
+        return self.settingsdata.midi
 
-        @property
-        def instr_filepath(self):
-            return os.path.join(self.folder, self.instruments_file)
+    @property
+    def font(self) -> SettingsFontInfo:
+        return self.settingsdata.font
 
-        @property
-        def tag_filepath(self):
-            return os.path.join(self.folder, self.tags_file)
+    @property
+    def grammar(self) -> SettingsGrammarInfo:
+        return self.settingsdata.grammar
 
-    class FontInfo(BaseModel):
-        fontversion: NotationFont
-        folder: str
-        file: str
-        ttf_file: str
+    @property
+    def midiplayer(self) -> SettingsMidiPlayerInfo:
+        return self.settingsdata.midiplayer
 
-        @property
-        def filepath(self):
-            return os.path.join(self.folder, self.file)
+    @property
+    def pdf_converter(self) -> SettingsPdfConverterInfo:
+        return self.settingsdata.pdf_converter
 
-        @property
-        def ttf_filepath(self):
-            return os.path.join(self.folder, self.ttf_file)
+    @property
+    def instrumentgroup(self) -> InstrumentGroup:
+        return self.notation.instrumentgroup
 
-    class GrammarInfo(BaseModel):
-        folder: str
-        notationfile: str
-        metadatafile: str
-        fontfile: str
-        picklefile: str
+    @property
+    def fontversion(self) -> NotationFontVersion:
+        return self.notation.fontversion
 
-        @property
-        def notation_filepath(self) -> str:
-            return os.path.normpath(os.path.abspath(os.path.join(os.path.expanduser(self.folder), self.notationfile)))
+    @property
+    def midi_out_file(self):
+        return self.notation.midi_out_file_pattern.format(title=self.notation.title, part_id=self.part_id)
 
-        @property
-        def pickle_filepath(self) -> str:
-            return os.path.normpath(os.path.abspath(os.path.join(os.path.expanduser(self.folder), self.picklefile)))
+    @property
+    def pdf_out_file(self):
+        return self.notation.pdf_out_file_pattern.format(title=self.notation.title, part_id=self.part_id)
 
-        @property
-        def metadata_filepath(self) -> str:
-            return os.path.normpath(os.path.abspath(os.path.join(os.path.expanduser(self.folder), self.metadatafile)))
+    @property
+    def folder_out(self):
+        return (
+            self.notation.folder_out_prod
+            if self.options.notation_to_midi.is_production_run
+            else self.notation.folder_out_nonprod
+        )
 
-        @property
-        def font_filepath(self) -> str:
-            return os.path.normpath(os.path.abspath(os.path.join(os.path.expanduser(self.folder), self.fontfile)))
+    @property
+    def notation_filepath(self):
+        return os.path.join(self.notation.folder_in, self.notation.parts[self.part_id].file)
 
-    class SoundfontInfo(BaseModel):
-        folder: str
-        path_to_viena_app: str
-        definition_file_out: str
-        soundfont_file_out: str
-        soundfont_destination_folders: list[str]
+    @property
+    def midi_out_filepath(self):
+        return os.path.join(self.folder_out, self.midi_out_file)
 
-        @property
-        def def_filepath(self) -> str:
-            return os.path.normpath(
-                os.path.abspath(os.path.join(os.path.expanduser(self.folder), self.definition_file_out))
-            )
-
-        @property
-        def sf_filepath_list(self) -> list[str]:
-            return [
-                os.path.normpath(os.path.abspath(os.path.join(os.path.expanduser(folder), self.soundfont_file_out)))
-                for folder in self.soundfont_destination_folders
-            ]
-
-    class MidiPlayerInfo(BaseModel):
-        folder: str
-        contentfile: str
-        helpinghand: list[Position] = None
-
-    class PdfConverterInfo(BaseModel):
-        folder: str
-        docx_template: str
-        fonts: dict[str, str] = Field(default_factory=dict)
-
-    class Options(BaseModel):
-        class NotationToMidiOptions(BaseModel):
-            runtype: RunType
-            detailed_validation_logging: bool
-            autocorrect: bool
-            save_corrected_to_file: bool
-            save_pdf_notation: bool
-            save_midifile: bool
-            is_production_run: bool
-            is_integration_test: bool = False
-
-            @property
-            def update_midiplayer_content(self) -> bool:
-                return self.is_production_run
-
-        class SoundfontOptions(BaseModel):
-            run: bool
-            create_sf2_files: bool
-
-        debug_logging: bool
-        validate_settings: bool
-        notation_to_midi: NotationToMidiOptions | None = None
-        soundfont: SoundfontOptions | None = None
-
-    class Data(BaseModel):
-        # Contains pre-formatted table data
-        font: list[dict[str, str | None]] | None
-        instruments: list[dict[str, str | None]] | None
-        instrument_tags: list[dict[str, str | None]] | None
-        rules: list[dict[str, str | None]] | None
-        midinotes: list[dict[str, str | None]] | None
-        presets: list[dict[str, str | None]] | None
-
-    # attributes of class RunSettings
-    options: Options
-    midi: MidiInfo | None = None
-    midiplayer: MidiPlayerInfo | None = None
-    soundfont: SoundfontInfo | None = None
-    samples: SampleInfo | None = None
-    notations: dict[str, NotationInfo] = Field(default_factory=dict)
-    notation: NotationInfo | None = None
-    instruments: InstrumentInfo | None = None
-    font: FontInfo | None = None
-    grammars: GrammarInfo | None = None
-    pdf_converter: PdfConverterInfo | None = None
-    data: Data
+    @property
+    def pdf_out_filepath(self):
+        return os.path.join(self.folder_out, self.pdf_out_file)

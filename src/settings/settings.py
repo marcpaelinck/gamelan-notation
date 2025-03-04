@@ -1,5 +1,6 @@
 import os
 import re
+from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
@@ -9,14 +10,15 @@ from pydantic import BaseModel, ValidationError
 
 from src.common.constants import InstrumentGroup
 from src.common.logger import get_logger
-from src.settings.classes import Content, PartForm, RunSettings, Song
-from src.settings.constants import (
-    DATA_INFOFILE,
-    RUN_SETTINGSFILE,
-    SETTINGSFOLDER,
-    TEST_SETTINGSFOLDER,
-    Yaml,
+from src.settings.classes import (
+    Content,
+    PartForm,
+    RunSettings,
+    SettingsData,
+    SettingsInstrumentInfo,
+    Song,
 )
+from src.settings.constants import DATA_INFOFILE, RUN_SETTINGSFILE, SETTINGSFOLDER, Yaml
 from src.settings.utils import pretty_compact_json
 
 logger = get_logger(__name__)
@@ -28,22 +30,23 @@ _RUN_SETTINGS_LISTENERS: set[callable] = set()
 
 # Contains information about where to find the data sources in the Value
 DATA = {
-    "font": {"category": "font", "folder": "folder", "filename": "file"},
     "instruments": {"category": "instruments", "folder": "folder", "filename": "instruments_file"},
     "instrument_tags": {"category": "instruments", "folder": "folder", "filename": "tags_file"},
     "rules": {"category": "instruments", "folder": "folder", "filename": "rules_file"},
     "midinotes": {"category": "midi", "folder": "folder", "filename": "midi_definition_file"},
     "presets": {"category": "midi", "folder": "folder", "filename": "presets_file"},
+    "font": {"category": "font", "folder": "folder", "filename": "file"},
 }
 
 
-def post_process(subdict: dict[str, Any], run_settings_dict: dict[str, Any] = None):
+def post_process(subdict: dict[str, Any], run_settings_dict: dict[str, Any] = None, curr_path: list = []):
     """This function enables references to yaml key values using ${<yaml_path>} notation.
-    The function substitutes these values with the corresponding yaml settings values.
+    e.g.: ${notations.defaults.include_in_production_run}
+    The function substitutes these references with the corresponding yaml settings values.
     Does not (yet) implement usage of references within a list structure.
 
     Args:
-        subdict (dict[str, Any]): Part of a yaml stucture in Python format.
+        subdict (dict[str, Any]): Part of a yaml stucture in Python format for which to substitute references.
         run_settings_dict(dict[str, Any]): Full yaml structure in Python dict format.
     """
     found: re.Match
@@ -51,11 +54,16 @@ def post_process(subdict: dict[str, Any], run_settings_dict: dict[str, Any] = No
     for key, value in subdict.items():
         if isinstance(value, dict):
             # Iterate through dict structures until a root node is found
-            subdict[key] = post_process(value, run_settings_dict or subdict)
+            sub_path = curr_path + [key]
+            subdict[key] = post_process(value, run_settings_dict or subdict, sub_path)
         elif isinstance(value, str):
             # Only implemented for key: str items. Does not operate on list structures (yet)
-            while found := re.search(r"\$\{(?P<item>[\w\.]+)\}", value):
+            # Determine if a ${<yaml_path>} string ioccurs in the value.
+            while found := re.search(r"\$\{\{(?P<item>[\w\.]+)\}\}", value):
                 keys = found.group("item").split(".")
+                # Replace '_PARENT_' literal with current path. Should be the first item in the list.
+                if keys[0].upper() == "_PARENT_":
+                    keys = curr_path + keys[1:]
                 item = run_settings_dict
                 for key1 in keys:
                     item = item[key1]
@@ -86,7 +94,7 @@ def read_settings(filename: str) -> dict:
         dict: dict containing all the settings contained in the file.
     """
     with open(os.path.join(SETTINGSFOLDER, filename), "r") as settingsfile:
-        return yaml.load(settingsfile, Loader=yaml.SafeLoader)
+        return yaml.load(settingsfile, yaml.Loader)
 
 
 def get_settings_fields(cls: BaseModel, settings_dict: dict) -> dict[str, Any]:
@@ -142,122 +150,53 @@ def get_run_settings(listener: callable = None) -> RunSettings:
 
 def validate_settings(data_dict: dict, run_settings_dict: dict) -> bool:
     ok = True
-    composition = run_settings_dict[Yaml.NOTATION][Yaml.COMPOSITION]
-    if not data_dict[Yaml.NOTATIONS].get(composition, None):
-        logger.error(f"invalid composition name: {composition}")
+    notation_id = run_settings_dict[Yaml.NOTATION_ID]
+    if not data_dict[Yaml.NOTATIONS].get(notation_id, None):
+        logger.error(f"invalid composition name: {notation_id}")
         ok = False
     return ok
 
 
-def load_run_settings(notation: dict[str, str] = None) -> RunSettings:
+def load_run_settings(notation_id: str = None, part_id: str = None) -> RunSettings:
     """Retrieves the run settings from the run settings yaml file, enriched with information
        from the data information yaml file.
 
     Args:
-        notation (dict[str, str], optional): A dict {'composition': <composition>, 'part': <part>} that defines a
-        composition/part combination in the data.yaml file. Defaults to the values in the run-settings.yaml file.
+        notation_id: key value of the notation as it appears in the data.yaml file
+        part_id: key value of the part of the notation
 
     Returns:
         RunSettings: settings object
     """
-    run_settings_dict = read_settings(RUN_SETTINGSFILE)
-    data_dict = read_settings(DATA_INFOFILE)
-
-    # Validate some manually set settings and abort if invalid
-    if not validate_settings(data_dict, run_settings_dict):
-        exit()
-
-    settings_dict = dict()
-
-    # Run Options
-    settings_dict[Yaml.OPTIONS] = get_settings_fields(RunSettings.Options, run_settings_dict[Yaml.OPTIONS])
-
-    # MIDI info
-    midiversion = data_dict[Yaml.MIDI][Yaml.MIDIVERSIONS][run_settings_dict[Yaml.MIDI][Yaml.MIDIVERSION]]
-    settings_dict[Yaml.MIDI] = get_settings_fields(
-        RunSettings.MidiInfo, data_dict[Yaml.MIDI] | run_settings_dict[Yaml.MIDI] | midiversion
-    )
-
-    # # Sample info
-    # samples = data_dict[Yaml.SAMPLES][Yaml.INSTRUMENTGROUPS][run_settings_dict[Yaml.SAMPLES][Yaml.INSTRUMENTGROUP]]
-    # settings_dict[Yaml.SAMPLES] = get_settings_fields(
-    #     RunSettings.SampleInfo, samples | run_settings_dict[Yaml.SAMPLES] | data_dict[Yaml.SAMPLES]
-    # )
-
-    # # Soundfont info
-    # settings_dict[Yaml.SOUNDFONT] = get_settings_fields(
-    #     RunSettings.SoundfontInfo, data_dict[Yaml.SOUNDFONTS] | run_settings_dict[Yaml.SOUNDFONT]
-    # )
-
-    settings_dict[Yaml.MIDIPLAYER] = get_settings_fields(RunSettings.MidiPlayerInfo, data_dict[Yaml.MIDIPLAYER])
-
-    # NOTATION INFORMATION
-
-    # Add the list of all notations and update each entry with the default settings
-    settings_dict[Yaml.NOTATIONS] = data_dict[Yaml.NOTATIONS]
-    for key, notation_entry in settings_dict[Yaml.NOTATIONS].items():
-        if key == Yaml.DEFAULTS:
-            continue
-        settings_dict[Yaml.NOTATIONS][key] = data_dict[Yaml.NOTATIONS][Yaml.DEFAULTS] | notation_entry
-    del settings_dict[Yaml.NOTATIONS][Yaml.DEFAULTS]
-
-    if notation:
-        run_settings_dict[Yaml.NOTATION] = notation
-
-    notation = data_dict[Yaml.NOTATIONS][run_settings_dict[Yaml.NOTATION][Yaml.COMPOSITION]]
-    notation[Yaml.PART_ID] = run_settings_dict[Yaml.NOTATION][Yaml.PART_ID]
-
-    settings_dict[Yaml.NOTATION] = get_settings_fields(
-        RunSettings.NotationInfo,
-        notation,
-    )
-
-    # INSTRUMENT INFORMATION
-
-    instruments = data_dict[Yaml.INSTRUMENTS][Yaml.INSTRUMENTGROUPS][notation[Yaml.INSTRUMENTGROUP]]
-    settings_dict[Yaml.INSTRUMENTS] = get_settings_fields(
-        RunSettings.InstrumentInfo,
-        notation | data_dict[Yaml.INSTRUMENTS] | instruments,
-    )
-
-    # FONT INFORMATION
-
-    font = data_dict[Yaml.FONTS][Yaml.FONTVERSIONS][notation[Yaml.FONTVERSION]] | {
-        Yaml.FONTVERSION: notation[Yaml.FONTVERSION]
-    }
-    settings_dict[Yaml.FONT] = get_settings_fields(RunSettings.FontInfo, data_dict[Yaml.FONTS] | font)
-
-    # GRAMMAR INFORMATION
-
-    fontgrammar = data_dict[Yaml.GRAMMARS][Yaml.FONTVERSIONS][notation[Yaml.FONTVERSION]]
-    settings_dict[Yaml.GRAMMARS] = get_settings_fields(RunSettings.GrammarInfo, data_dict[Yaml.GRAMMARS] | fontgrammar)
-
-    # SETTINGS FOR THE PDF OUTPUT GENERATOR
-
-    settings_dict[Yaml.PDF_CONVERTER] = get_settings_fields(RunSettings.PdfConverterInfo, data_dict[Yaml.PDF_CONVERTER])
-
-    # # MULTIPLE RUNS INTEGRATION TEST INFORMATION
-
-    # run_option = run_settings_dict[Yaml.OPTIONS][Yaml.NOTATION_TO_MIDI][Yaml.RUNTYPE]
-    # if run_option != Yaml.RUN_SINGLE:
-    #     settings_dict[Yaml.MULTIPLE_RUNS] = get_settings_fields(
-    #         RunSettings.MultipleRunsInfo, data_dict[Yaml.MULTIPLE_RUNS][run_option]
-    #     )
-
-    settings_dict = post_process(settings_dict)
-
-    # DATA FILES
-
-    settings_dict[Yaml.DATA] = read_data(settings_dict)
-
     global _RUN_SETTINGS
-    try:
-        _RUN_SETTINGS = RunSettings.model_validate(settings_dict)
-    except ValidationError as e:
-        # Aggregate errors by variable
-        errors = {err["input"]: err["msg"] for err in e.errors()}
-        logger.error(errors)
-        exit()
+
+    if not _RUN_SETTINGS:
+        settings_data_dict = read_settings(DATA_INFOFILE)
+        # update each notation entry with the default settings
+        for key, notation_entry in settings_data_dict[Yaml.NOTATIONS].items():
+            if key == Yaml.DEFAULTS:
+                continue
+            settings_data_dict[Yaml.NOTATIONS][key] = settings_data_dict[Yaml.NOTATIONS][Yaml.DEFAULTS] | notation_entry
+        del settings_data_dict[Yaml.NOTATIONS][Yaml.DEFAULTS]
+        settings_data_dict = post_process(settings_data_dict)
+
+        run_settings_dict = read_settings(RUN_SETTINGSFILE)
+        run_settings_dict[Yaml.SETTINGSDATA] = settings_data_dict
+        run_settings_dict[Yaml.DATA] = read_data(settings_data_dict)
+
+        try:
+            # _SETTINGS_DATA = SettingsData.model_validate(settings_data_dict)
+            _RUN_SETTINGS = RunSettings.model_validate(run_settings_dict)
+        except ValidationError as e:
+            # Aggregate errors by variable
+            logger.error(str(e))
+            exit()
+    else:
+        logger.info("Skipping reading of run settings")
+
+    if notation_id and part_id:
+        _RUN_SETTINGS.notation_id = notation_id
+        _RUN_SETTINGS.part_id = part_id
 
     for listener in _RUN_SETTINGS_LISTENERS:
         listener(_RUN_SETTINGS)
@@ -342,5 +281,5 @@ def update_midiplayer_content(
 
 if __name__ == "__main__":
     # For testing
-    settings = get_run_settings()
-    print(settings.notation)
+    settings = load_run_settings("lengker", "full")
+    print(settings.notation_id, settings.notation.part, settings.instrumentgroup)

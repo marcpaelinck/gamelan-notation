@@ -116,13 +116,13 @@ class NotationTemplate:
     def __init__(self, run_settings: RunSettings):
         self.run_settings = run_settings
         self.title = self.run_settings.notation.title
-        self.filepath = self.run_settings.notation.pdf_out_filepath
-        last_modif_epoch = os.path.getmtime(self.run_settings.notation.notation_filepath)
+        self.filepath = self.run_settings.pdf_out_filepath
+        last_modif_epoch = os.path.getmtime(self.run_settings.notation_filepath)
         self.datestamp = datetime.fromtimestamp(last_modif_epoch).strftime("%d-%b-%Y")
         self.current_tempo = -1
         self.doc = self._doc_template()
         self.styles = getSampleStyleSheet()
-        registerFont(TTFont("Bali Music 5", self.run_settings.font.ttf_filepath))
+        registerFont(TTFont("Bali Music 5", self.run_settings.settingsdata.font.ttf_filepath))
         self._init_styles()
 
     @property

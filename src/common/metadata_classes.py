@@ -430,5 +430,4 @@ class MetaData(BaseModel):
             json_result = json.loads(json_str)
         except:
             raise Exception(f"Err5 - Bad metadata format {data}. Could not parse the value, please check the format.")
-
         return json_result

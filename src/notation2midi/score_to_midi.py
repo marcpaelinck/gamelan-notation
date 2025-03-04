@@ -25,7 +25,7 @@ class MidiGenerator(ParserModel):
         self.score = score
         self.part_info = PartForm(
             part=self.run_settings.notation.part.name,
-            file=self.run_settings.notation.midi_out_file,
+            file=self.run_settings.midi_out_file,
             loop=self.run_settings.notation.part.loop,
         )
 
@@ -160,8 +160,8 @@ class MidiGenerator(ParserModel):
         self.score.midifile_duration = int(midifile.length * 1000)
 
         if self.run_settings.options.notation_to_midi.save_midifile:
-            midifile.save(self.run_settings.notation.midi_out_filepath)
-            self.logger.info(f"File saved as {self.run_settings.notation.midi_out_filepath}")
+            midifile.save(self.run_settings.midi_out_filepath)
+            self.logger.info(f"File saved as {self.run_settings.midi_out_filepath}")
 
             if (
                 self.run_settings.options.notation_to_midi.update_midiplayer_content

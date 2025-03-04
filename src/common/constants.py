@@ -68,9 +68,17 @@ class NotationEnum(StrEnum):
 # Disadvantage: no autocomplete for values.
 
 
-class NotationFont(NotationEnum):
+class NotationFontVersion(NotationEnum):
     BALIMUSIC4 = "BaliMusic4"
     BALIMUSIC5 = "BaliMusic5"
+
+
+class MidiVersion(NotationEnum):
+    GONG_KEBYAR1 = "GONG_KEBYAR1"
+    GONG_KEBYAR2 = "GONG_KEBYAR2"
+    GONG_KEBYAR3 = "GONG_KEBYAR3"
+    GONG_KEBYAR4 = "GONG_KEBYAR4"
+    GAMELAN1 = "GAMELAN1"
 
 
 class InstrumentGroup(NotationEnum):

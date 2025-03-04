@@ -1,8 +1,8 @@
 from typing import Callable
 
 from src.common.classes import Instrument, Note
-from src.common.constants import InstrumentGroup, Pitch, Stroke
-from src.settings.classes import RunSettings
+from src.common.constants import InstrumentGroup, Stroke
+from src.settings.classes import SettingsMidiInfo
 
 
 def update_grace_notes_octaves(notes: list[Note], group: InstrumentGroup):
@@ -20,9 +20,7 @@ def update_grace_notes_octaves(notes: list[Note], group: InstrumentGroup):
             notes[notes.index(note)] = nearest_grace_note
 
 
-def generate_tremolo(
-    notes: list[Note], midi_settings: RunSettings.MidiInfo, errorlogger: Callable = None
-) -> list[Note]:
+def generate_tremolo(notes: list[Note], midi_settings: SettingsMidiInfo, errorlogger: Callable = None) -> list[Note]:
     """Generates the note sequence for a tremolo.
         TREMOLO: The duration and pitch will be that of the given note.
         TREMOLO_ACCELERATING: The pitch will be that of the given note(s), the duration will be derived

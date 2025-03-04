@@ -126,22 +126,22 @@ class NotationTatsuParser(ParserModel):
         # Read and compile the grammar
         if from_pickle:
             self.model_source = "model from pickled file"
-            with open(settings.grammars.pickle_filepath, "rb") as picklefile:
+            with open(settings.grammar.pickle_filepath, "rb") as picklefile:
                 grammar_model = pickle.load(picklefile)
         else:
             self.model_source = "model compiled from grammar files"
-            with open(settings.grammars.notation_filepath, "r") as grammarfile:
+            with open(settings.grammar.notation_filepath, "r") as grammarfile:
                 notation_grammar = grammarfile.read()
             grammar_model = compile(notation_grammar)
         if pickle_it:
             self.loginfo("Saving parser model to pickle file.")
-            with open(settings.grammars.pickle_filepath, "wb") as picklefile:
+            with open(settings.grammar.pickle_filepath, "wb") as picklefile:
                 pickle.dump(grammar_model, picklefile)
         return grammar_model
 
     def _import_notation(self, settings: RunSettings):
         # Read and parse the notation file
-        with open(settings.notation.notation_filepath, "r") as notationfile:
+        with open(settings.notation_filepath, "r") as notationfile:
             notation = notationfile.read()
         return notation
 
@@ -298,16 +298,14 @@ class NotationTatsuParser(ParserModel):
                 #     continue
                 for position, measure in measures.items():
                     for pass_seq, pass_ in measure.passes.items():
-                        update_grace_notes_octaves(
-                            notes=pass_.notes, group=self.run_settings.instruments.instrumentgroup
-                        )
+                        update_grace_notes_octaves(notes=pass_.notes, group=self.run_settings.instrumentgroup)
 
     @ParserModel.main
     def parse_notation(self, notation: str | None = None) -> NotationDict:
         if notation:
             self.loginfo(f"Parsing notation from string")
         else:
-            notationpath = self.run_settings.notation.notation_filepath
+            notationpath = self.run_settings.notation_filepath
             self.loginfo(f"Parsing file {notationpath}")
             try:
                 with open(notationpath, "r") as notationfile:

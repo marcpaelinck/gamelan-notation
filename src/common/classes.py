@@ -313,7 +313,7 @@ class Instrument(NotationModel):
         all_tones = set()
 
         for row in run_settings.data.instruments:
-            if (InstrumentGroup[row["group"]]) != run_settings.instruments.instrumentgroup:
+            if (InstrumentGroup[row["group"]]) != run_settings.instrumentgroup:
                 continue
             # Create an Instrument object for the current data record, which contains data for a single instrument position.
             locals = (
@@ -340,7 +340,7 @@ class Instrument(NotationModel):
         """Creates the _RULES_DICT."""
         cls._RULES = defaultdict(lambda: defaultdict(list))
         for row in run_settings.data.rules:
-            if (InstrumentGroup[row["group"]]) != run_settings.instruments.instrumentgroup:
+            if (InstrumentGroup[row["group"]]) != run_settings.instrumentgroup:
                 continue
             # Create an Instrument object for the current data record, which contains data for a single instrument position.
             locals = (
@@ -700,7 +700,7 @@ class Preset(NotationModel):
         """
         # Select records for the current instrument group
         preset_records: list[str, str] = run_settings.data.presets
-        instrumentgroup: InstrumentGroup = run_settings.instruments.instrumentgroup
+        instrumentgroup: InstrumentGroup = run_settings.instrumentgroup
         presets_rec_list = [
             record for record in preset_records if record[PresetsFields.INSTRUMENTGROUP] == instrumentgroup.value
         ]

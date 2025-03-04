@@ -177,7 +177,7 @@ def create_note_records(run_settings: RunSettings) -> list[AnyNote]:
         run_settings.midi.notes_filepath, sep="\t", comment="#", dtype=DTYPES, converters=MIDI_FORMATTERS
     )
     # Filter on instrument group
-    midinotes_df = midinotes_df[midinotes_df[INSTRUMENTGROUP] == run_settings.instruments.instrumentgroup.value].drop(
+    midinotes_df = midinotes_df[midinotes_df[INSTRUMENTGROUP] == run_settings.instrumentgroup.value].drop(
         columns=[INSTRUMENTGROUP]
     )
     # Convert pre-filled instrument positions to a list of Position values.
@@ -192,7 +192,11 @@ def create_note_records(run_settings: RunSettings) -> list[AnyNote]:
 
     # READ FONT DATA
     balifont_df = pd.read_csv(
-        run_settings.font.filepath, sep="\t", quoting=csv.QUOTE_NONE, dtype=DTYPES, converters=FONT_FORMATTERS
+        run_settings.settingsdata.font.filepath,
+        sep="\t",
+        quoting=csv.QUOTE_NONE,
+        dtype=DTYPES,
+        converters=FONT_FORMATTERS,
     )
 
     # MERGE BOTH TABLES
@@ -397,7 +401,11 @@ def get_note_records(run_settings: RunSettings):
 
 def get_font_characters(run_settings: RunSettings):
     return pd.read_csv(
-        run_settings.font.filepath, sep="\t", quoting=csv.QUOTE_NONE, dtype=DTYPES, converters=FONT_FORMATTERS
+        run_settings.settingsdata.font.filepath,
+        sep="\t",
+        quoting=csv.QUOTE_NONE,
+        dtype=DTYPES,
+        converters=FONT_FORMATTERS,
     ).to_dict(orient="records")
 
 
