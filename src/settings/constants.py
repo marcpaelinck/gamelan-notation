@@ -69,6 +69,8 @@ class InstrumentFields(SStrEnum):
 # instrumenttags.tsv
 class InstrumentTagFields(SStrEnum):
     TAG = "tag"
+    ADDITION = "addition"
+    GROUPS = "groups"
     INFILE = "infile"
     POSITIONS = "positions"
 

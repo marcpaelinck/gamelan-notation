@@ -26,7 +26,7 @@ class NamedIntID(int):
         elif isinstance(value, int):
             self.value = value
         else:
-            raise Exception(f"illegal value {value}.")
+            raise ValueError(f"illegal value {value}.")
         if value >= 0:
             self.repr = self.name + f"({{value:{self.nbr_format}}})".format(value=self.value)
         else:
@@ -63,8 +63,11 @@ class ParserModel:
         self.run_settings = run_settings
         self.logger = get_logger(self.__class__.__name__)
 
-    def main(func: Callable):
-        # decorator for main parser function. Will print opening and closing logging.
+    @classmethod
+    def main(cls, func: Callable):
+        """Decorator for main parser function. Add a @ParserModel.main decorator
+        to the main method of each subclass. This will take care of
+        of logging before the start and after the end of the method."""
 
         def wrapper(*args, **kwargs):
             self = args[0]
@@ -88,47 +91,57 @@ class ParserModel:
         p = f"{pos:02d}"
         return f"{val:{p}d}" if val else " " * pos
 
-    def log(self, err_msg: str, level: int = logging.ERROR) -> str:
+    def log(self, msg: str, *args, level: int = logging.ERROR) -> str:
+        """Formats the message. and sends it to the console. Stores a copy in the log_msgs dict.
+        Args:
+            msg (str): The message
+            level (int, optional): Logging level. Defaults to logging.ERROR.
+            *args: optional arguments for the logger (required when lazy % formatting is applied).
+        Returns:
+            str: _description_
+        """
         extra_spaces = " " * (7 - len(logging.getLevelName(level)))
         prefix = f"{extra_spaces}{self.f(self.curr_gongan_id,2)}-{self.f(self.curr_beat_id,2)} |{self.f(self.curr_line_nr,4)}| "
-        msg = prefix + err_msg
-        self.logger.log(level, msg)
+        msg = prefix + msg
+        self.logger.log(level, msg, *args)
         if level > logging.INFO:
             self.log_msgs[level].append(msg)
 
-    def logerror(self, msg: str) -> str:
-        self.log(msg, level=logging.ERROR)
+    def logerror(self, msg: str, *args: Any) -> str:
+        """Logs an error"""
+        self.log(msg, *args, level=logging.ERROR)
 
-    def logwarning(self, msg: str) -> str:
-        self.log(msg, level=logging.WARNING)
+    def logwarning(self, msg: str, *args: Any) -> str:
+        """Logs a warning"""
+        self.log(msg, *args, level=logging.WARNING)
 
-    def loginfo(self, msg: str) -> str:
-        self.log(msg, level=logging.INFO)
+    def loginfo(self, msg: str, *args: Any) -> str:
+        """Logs info"""
+        self.log(msg, *args, level=logging.INFO)
 
-    """Use the following generators to iterate through gongans and beats if you 
-    want to use the logging methods of this class. This will ensure that the 
-    logging is prefixed with the correct gongan id, beat id and line number.
-    """
+    # Use the following generators to iterate through gongans and beats if you
+    # want to use the logging methods of this class. This will ensure that the
+    # logging is prefixed with the correct gongan id, beat id and line number.
 
-    def gongan_iterator(self, object: Any):
-        if not hasattr(object, "gongans"):
-            raise Exception("base object has no attribute `gongans`")
-        for gongan in object.gongans:
+    def gongan_iterator(self, obj: Any):
+        if not hasattr(obj, "gongans"):
+            raise AttributeError("base object has no attribute `gongans`")
+        for gongan in obj.gongans:
             self.curr_gongan_id = gongan.id
             self.curr_beat_id = None
             yield gongan
 
-    def beat_iterator(self, object: Any) -> Generator[Beat, None, None]:
-        if not hasattr(object, "beats"):
-            raise Exception("base object has no attribute `beats`")
-        for beat in object.beats:
+    def beat_iterator(self, obj: Any) -> Generator[Beat, None, None]:
+        if not hasattr(obj, "beats"):
+            raise AttributeError("base object has no attribute `beats`")
+        for beat in obj.beats:
             self.curr_beat_id = beat.id
             yield beat
 
-    def pass_iterator(self, object: Any):
-        if not hasattr(object, "passes"):
-            raise Exception("base object has no attribute `passes`")
-        for _, pass_seq in object.passes.items():
+    def pass_iterator(self, obj: Any):
+        if not hasattr(obj, "passes"):
+            raise AttributeError("base object has no attribute `passes`")
+        for _, pass_seq in obj.passes.items():
             self.curr_line_nr = pass_seq.line
             yield pass_seq
 

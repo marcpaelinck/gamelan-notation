@@ -1,21 +1,30 @@
 import json
 import re
-from dataclasses import field
 from enum import StrEnum
-from typing import Any, ClassVar, Literal, Optional, Union
+from itertools import product
+from typing import Annotated, Any, ClassVar, Literal, Optional, Union
 
 import regex
-from pydantic import BaseModel, Field, ValidationInfo, field_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    BeforeValidator,
+    Field,
+    ValidationInfo,
+    field_validator,
+)
 
 from src.common.constants import (
     DEFAULT,
-    DynamicLevel,
+    InstrumentGroup,
     InstrumentType,
     NotationEnum,
     Position,
 )
+from src.settings.classes import RunSettings
 from src.settings.constants import InstrumentTagFields
 from src.settings.settings import get_run_settings
+from src.settings.utils import tag_to_position_dict
 
 
 # MetaData related constants
@@ -47,29 +56,6 @@ class Scope(NotationEnum):
     SCORE = "SCORE"
 
 
-def tag_to_position_dict() -> dict[str, list[Position]]:
-    """Creates a dict that maps 'free format' position tags to a list of InstumentPosition values
-    Args:  run_settings (RunSettings):
-    Returns (dict[str, list[Position]]):
-    """
-    TAG = InstrumentTagFields.TAG
-    POS = InstrumentTagFields.POSITIONS
-    locals_ = {"None": None} | Position._member_map_
-    format = lambda val: eval("None" if val == "" else val, locals_)
-    run_settings = get_run_settings()
-    tag_rec_list = [record | {POS: format(record[POS])} for record in run_settings.data.instrument_tags]
-    tag_rec_list += [
-        {TAG: instr, POS: [pos for pos in Position if pos.instrumenttype == instr]} for instr in InstrumentType
-    ]
-    tag_rec_list += [{TAG: pos, POS: [pos]} for pos in Position]
-    lookup_dict = {record[TAG]: record[POS] for record in tag_rec_list}
-
-    return lookup_dict
-
-
-TAG_TO_POSITION = tag_to_position_dict()
-
-
 class MetaDataBaseModel(BaseModel):
     metatype: Literal[""]
     scope: Optional[Scope] = Scope.GONGAN
@@ -78,6 +64,7 @@ class MetaDataBaseModel(BaseModel):
 
     # name of the paramater whose value may appear in the notation without specifying the parameter
     DEFAULTPARAM: ClassVar[str]
+    _TAG_TO_POSITION: dict[str, list[Position]]
 
     @classmethod
     def string_to_list(cls, value: str, el_type: type):
@@ -121,7 +108,53 @@ class MetaDataBaseModel(BaseModel):
         if self.DEFAULTPARAM:
             defval = json[self.DEFAULTPARAM]
             del json[self.DEFAULTPARAM]
+        else:
+            defval = ""
         return f"{{{self.metatype} {defval} {' '.join([f'{key}={val}' for key, val in json.items()])}}}".strip()
+
+    @classmethod
+    def _initialize(cls, run_settings: RunSettings):
+        print(
+            f"(RE-)INITIALIZING METADATA BASE CLASS FOR COMPOSITION {run_settings.notation.title} - {run_settings.notation.part.name}"
+        )
+        cls._TAG_TO_POSITION = tag_to_position_dict(run_settings)
+
+    @classmethod
+    def _build_class(cls):
+        run_settings = get_run_settings(cls._initialize)
+        cls._initialize(run_settings)
+
+
+# # INITIALIZE THE MetaDataBaseModel CLASS TO CREATE AND UPDATE THE TAG LOOKUP TABLE
+# ##############################################################################
+MetaDataBaseModel._build_class()
+# ##############################################################################
+
+
+# Define reusable field validators
+# See https://docs.pydantic.dev/latest/concepts/validators/#which-validator-pattern-to-use
+def normalize_positions(data: str | list[str]) -> list[Position]:
+    """Converts a position tag into a list of corresponding Position values."""
+    if isinstance(data, str):
+        data = [data]
+    try:
+        return sum((MetaDataBaseModel._TAG_TO_POSITION[pos] for pos in data), [])
+    except:
+        raise ValueError(f"Unrecognized instrument position in {data}.")
+
+
+def normalize_instrument(data: str) -> list[InstrumentType]:
+    """Converts an instrument tag into the corresponding InstrumentType value."""
+    position: Position = None
+    try:
+        position = sum((MetaDataBaseModel._TAG_TO_POSITION[pos] for pos in data), [])
+    except:
+        raise ValueError(f"Unrecognized instrument position in {data}.")
+    return position.instrumenttype
+
+
+PositionsFromTag = Annotated[list[Position], BeforeValidator(normalize_positions)]
+InstrumentFromTag = Annotated[InstrumentType, BeforeValidator(normalize_instrument)]
 
 
 class GradualChangeMetadata(MetaDataBaseModel):
@@ -130,7 +163,7 @@ class GradualChangeMetadata(MetaDataBaseModel):
     value: int = None
     first_beat: Optional[int] = 1
     beat_count: Optional[int] = 0
-    passes: Optional[list[int]] = field(
+    passes: Optional[list[int]] = Field(
         default_factory=lambda: list([DEFAULT])
     )  # On which pass(es) should goto be performed?
 
@@ -142,33 +175,13 @@ class GradualChangeMetadata(MetaDataBaseModel):
 
 # THE METADATA CLASSES
 
-# Reusable validators:
-
-
-def normalize_positions(cls, data: list[str]) -> list[Position]:
-    try:
-        return sum((TAG_TO_POSITION[pos] for pos in data), [])
-    except:
-        raise ValueError(f"Unrecognized instrument position in {data}.")
-
 
 class DynamicsMeta(GradualChangeMetadata):
     metatype: Literal["DYNAMICS"]
     # Currently, an empty list stands for all positions.
-    positions: list[Position] = field(default_factory=list)
+    positions: PositionsFromTag  # list[Position]
     abbreviation: str = ""
     DEFAULTPARAM = "abbreviation"
-
-    # validators
-    _normalize_position_list: classmethod = field_validator("positions", mode="before")(normalize_positions)
-    # @field_validator("positions", mode="before")
-    # @classmethod
-    # # Converts 'free format' position tags to Position values.
-    # def normalize_positions(cls, data: list[str]) -> list[Position]:
-    #     try:
-    #         return sum((TAG_TO_POSITION[pos] for pos in data), [])
-    #     except:
-    #         raise ValueError(f"Unrecognized instrument position in {data}.")
 
     @field_validator("abbreviation", mode="after")
     @classmethod
@@ -208,7 +221,7 @@ class GoToMeta(MetaDataBaseModel):
 class KempliMeta(MetaDataBaseModel):
     metatype: Literal["KEMPLI"]
     status: MetaDataSwitch
-    beats: Optional[list[int]] = field(default_factory=list)
+    beats: Optional[list[int]] = Field(default_factory=list)
     scope: Optional[Scope] = Scope.GONGAN
     DEFAULTPARAM = "status"
 
@@ -236,18 +249,10 @@ class LabelMeta(MetaDataBaseModel):
 
 class OctavateMeta(MetaDataBaseModel):
     metatype: Literal["OCTAVATE"]
-    instrument: InstrumentType
+    instrument: InstrumentFromTag  # InstrumentType
     octaves: int
     scope: Optional[Scope] = Scope.GONGAN
     DEFAULTPARAM = "instrument"
-
-    @field_validator("instrument", mode="before")
-    @classmethod
-    # Converts 'free format' position tags to Position values.
-    # TODO the tag might refer to more than one instrument. Consider replacing
-    # the single instrument attribute with a list of instruments.
-    def normalize_positions(cls, data: str) -> Position:
-        return TAG_TO_POSITION[data][0].instrumenttype
 
 
 class PartMeta(MetaDataBaseModel):
@@ -265,29 +270,17 @@ class RepeatMeta(MetaDataBaseModel):
 
 class SequenceMeta(MetaDataBaseModel):
     metatype: Literal["SEQUENCE"]
-    value: list[str] = field(default_factory=list)
+    value: list[str] = Field(default_factory=list)
     frequency: FrequencyType = FrequencyType.ALWAYS
     DEFAULTPARAM = "value"
 
 
 class SuppressMeta(MetaDataBaseModel):
     metatype: Literal["SUPPRESS"]
-    positions: list[Position] = field(default_factory=list)
-    passes: Optional[list[int]] = field(default_factory=list)
-    beats: list[int] = field(default_factory=list)
+    positions: PositionsFromTag  # list[Position]
+    passes: Optional[list[int]] = Field(default_factory=list)
+    beats: list[int] = Field(default_factory=list)
     DEFAULTPARAM = "positions"
-
-    # validators
-    _normalize_position_list: classmethod = field_validator("positions", mode="before")(normalize_positions)
-
-    # @field_validator("positions", mode="before")
-    # @classmethod
-    # # Converts 'free format' position tags to Position values.
-    # def normalize_positions(cls, data: list[str]) -> list[Position]:
-    #     try:
-    #         return sum((TAG_TO_POSITION[pos] for pos in data), [])
-    #     except:
-    #         raise ValueError(f"Unrecognized instrument position in {data}.")
 
 
 class TempoMeta(GradualChangeMetadata):
@@ -297,7 +290,7 @@ class TempoMeta(GradualChangeMetadata):
 
 class ValidationMeta(MetaDataBaseModel):
     metatype: Literal["VALIDATION"]
-    beats: Optional[list[int]] = field(default_factory=list)
+    beats: Optional[list[int]] = Field(default_factory=list)
     ignore: list[ValidationProperty]
     scope: Optional[Scope] = Scope.GONGAN
     DEFAULTPARAM = None
@@ -307,7 +300,7 @@ class WaitMeta(MetaDataBaseModel):
     metatype: Literal["WAIT"]
     seconds: float = None
     after: bool = True
-    passes: Optional[list[int]] = field(
+    passes: Optional[list[int]] = Field(
         default_factory=lambda: list(range(99, -1))
     )  # On which pass(es) should goto be performed? Default is all passes.
     # TODO: devise a more elegant way to express this, e.g. with "ALL" value.

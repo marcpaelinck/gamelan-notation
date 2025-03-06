@@ -12,26 +12,26 @@ class CustomFormatter(logging.Formatter):
     red = "\x1b[31;20m"
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
-    format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"  # (%(filename)s:%(lineno)d)"
+    msgformat = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"  # (%(filename)s:%(lineno)d)"
 
     def __init__(self, colors=True):
         self.withcolors = colors
 
     FORMATS = {
         True: {
-            logging.DEBUG: grey + format + reset,
-            logging.INFO: grey + format + reset,
-            logging.WARNING: yellow + format + reset,
-            logging.ERROR: red + format + reset,
-            logging.CRITICAL: bold_red + format + reset,
+            logging.DEBUG: grey + msgformat + reset,
+            logging.INFO: grey + msgformat + reset,
+            logging.WARNING: yellow + msgformat + reset,
+            logging.ERROR: red + msgformat + reset,
+            logging.CRITICAL: bold_red + msgformat + reset,
             "datefmt": "%H:%M:%S",
         },
         False: {
-            logging.DEBUG: format,
-            logging.INFO: format,
-            logging.WARNING: format,
-            logging.ERROR: format,
-            logging.CRITICAL: format,
+            logging.DEBUG: msgformat,
+            logging.INFO: msgformat,
+            logging.WARNING: msgformat,
+            logging.ERROR: msgformat,
+            logging.CRITICAL: msgformat,
             "datefmt": "%H:%M:%S",
         },
     }

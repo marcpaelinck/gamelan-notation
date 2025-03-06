@@ -61,9 +61,11 @@ import copy
 import json
 import pickle
 import re
+import sys
 from collections import ChainMap
 
-from tatsu import compile
+from tatsu import compile as tatsu_compile
+from tatsu.exceptions import FailedParse
 from tatsu.model import ParseModel
 from tatsu.util import asjson
 
@@ -132,7 +134,7 @@ class NotationTatsuParser(ParserModel):
             self.model_source = "model compiled from grammar files"
             with open(settings.grammar.notation_filepath, "r") as grammarfile:
                 notation_grammar = grammarfile.read()
-            grammar_model = compile(notation_grammar)
+            grammar_model = tatsu_compile(notation_grammar)
         if pickle_it:
             self.loginfo("Saving parser model to pickle file.")
             with open(settings.grammar.pickle_filepath, "wb") as picklefile:
@@ -303,16 +305,17 @@ class NotationTatsuParser(ParserModel):
     @ParserModel.main
     def parse_notation(self, notation: str | None = None) -> NotationDict:
         if notation:
-            self.loginfo(f"Parsing notation from string")
+            self.loginfo("Parsing notation from string")
         else:
             notationpath = self.run_settings.notation_filepath
-            self.loginfo(f"Parsing file {notationpath}")
+            # pylint disable=too-many-function-args
+            self.loginfo("Parsing file %s", notationpath)
             try:
-                with open(notationpath, "r") as notationfile:
+                with open(notationpath, mode="r", encoding="utf-8") as notationfile:
                     notation = notationfile.read()
-            except Exception as e:
+            except ValueError as e:
                 self.logerror(str(e))
-                exit()
+                sys.exit()
 
         # Parse the notation using the ebnf grammar.
         # In case of an error, the current line will be skipped and the parser will be called again
@@ -327,7 +330,7 @@ class NotationTatsuParser(ParserModel):
         while not ast:
             try:
                 ast = self.grammar_model.parse(notation)
-            except Exception as e:
+            except FailedParse as e:
                 parsed_text = e.args[0].original_text[: e.pos + 1]
                 char = parsed_text[e.pos]
                 if char == "\n":
@@ -338,15 +341,13 @@ class NotationTatsuParser(ParserModel):
                 char_pos = e.pos - start_curr_line + 1
                 char = char.replace("\n", "end of line").replace("\t", "tab")
                 self.logerror(
-                    f"Unexpected `{char}` at position {char_pos}. {e.message}. Ignoring the rest of the line."
+                    "Unexpected `%s` at position %s. %s. Ignoring the rest of the line.", char, char_pos, e.message
                 )
                 if e.pos == 0 or chars_to_next_line < 0:
                     # No progress or nothing to do
                     break
-                else:
-                    line_offset = self.curr_line_nr
-                    notation = e.args[0].original_text[start_curr_line + chars_to_next_line :]
-                    x = 1
+                line_offset = self.curr_line_nr
+                notation = e.args[0].original_text[start_curr_line + chars_to_next_line :]
 
         if self.has_errors:
             self.logerror("Program halted.")

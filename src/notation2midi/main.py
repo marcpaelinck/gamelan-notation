@@ -3,7 +3,6 @@
 
 from tkinter.messagebox import askyesno
 
-from src.common.classes import Note
 from src.common.constants import NotationFontVersion
 from src.common.logger import get_logger
 from src.notation2midi.dict_to_score import DictToScoreConverter
@@ -13,7 +12,6 @@ from src.notation2midi.score2notation.score_to_pdf import ScoreToPDFConverter
 from src.notation2midi.score_to_midi import MidiGenerator
 from src.notation2midi.score_validation import ScoreValidator
 from src.settings.classes import RunSettings, RunType
-from src.settings.constants import Yaml
 from src.settings.settings import get_run_settings, load_run_settings
 from src.settings.settings_validation import SettingsValidator
 
@@ -28,11 +26,12 @@ def load_and_validate_run_settings(notation_id: str = None, part_id: str = None)
 
 
 def notation_to_midi(run_settings: RunSettings):
+    success = False
     if run_settings.options.notation_to_midi:
         if run_settings.fontversion is NotationFontVersion.BALIMUSIC5:
             font_parser = NotationTatsuParser(run_settings)
         else:
-            raise Exception(f"Cannot parse font {run_settings.fontversion}.")
+            raise ValueError(f"Cannot parse font {run_settings.fontversion}.")
         notation = font_parser.parse_notation()
         if notation:
             score = DictToScoreConverter(notation).create_score()
@@ -65,7 +64,7 @@ def multiple_notations_to_midi(run_settings: RunSettings):
         if runtype in notation_info.include_in_run_types and (
             not is_production_run or notation_info.include_in_production_run
         ):
-            for part_key, part_info in notation_info.parts.items():
+            for part_key, _ in notation_info.parts.items():
                 run_settings = load_and_validate_run_settings(notation_id=notation_key, part_id=part_key)
                 notation_to_midi(run_settings)
 

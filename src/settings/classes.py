@@ -236,7 +236,7 @@ class SettingsSoundfontInfo(BaseModel):
     path_to_viena_app: str
     definition_file_out: str = None
     soundfont_file_out: str = None
-    soundfont_destination_folders: list[str] = field(default_factory=list)
+    soundfont_destination_folders: list[str] = Field(default_factory=list)
 
     @property
     def def_filepath(self) -> str:
@@ -248,7 +248,7 @@ class SettingsSoundfontInfo(BaseModel):
     def sf_filepath_list(self) -> list[str]:
         return [
             os.path.normpath(os.path.abspath(os.path.join(os.path.expanduser(folder), self.soundfont_file_out)))
-            for folder in self.soundfont_destination_folders
+            for folder in self.soundfont_destination_folders  # pylint: disable=not-an-iterable
         ]
 
 

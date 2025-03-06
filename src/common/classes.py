@@ -9,6 +9,7 @@ from typing import Any, ClassVar, Optional, Self
 from pydantic import (
     BaseModel,
     ConfigDict,
+    Field,
     computed_field,
     field_validator,
     model_validator,
@@ -24,7 +25,6 @@ from src.common.constants import (
     Modifier,
     NotationDict,
     Octave,
-    ParamValue,
     PassSequence,
     Pitch,
     Position,
@@ -52,6 +52,7 @@ from src.settings.constants import (
 )
 from src.settings.font_to_valid_notes import get_note_records
 from src.settings.settings import get_run_settings
+from src.settings.utils import tag_to_position_dict
 
 
 class NotationModel(BaseModel):
@@ -72,8 +73,8 @@ class NotationModel(BaseModel):
             if all(isinstance(el, str) for el in value):
                 try:
                     return [el_type[el] if issubclass(el_type, StrEnum) else float(el) for el in value]
-                except:
-                    raise ValueError(f"Could not convert value {value} to a list of {el_type}")
+                except Exception as exc:
+                    raise ValueError(f"Could not convert value {value} to a list of {el_type}") from exc
             elif all(isinstance(el, el_type) for el in value):
                 # List of el_type: do nothing
                 return value
@@ -100,7 +101,7 @@ class Tone:
 
     @property
     def key(self):
-        return self.pitch.index + self.octave * 10
+        return self.pitch.sequence + self.octave * 10
 
     def is_melodic(self):
         return self.pitch in Tone._MELODIC_PITCHES
@@ -122,9 +123,9 @@ class Instrument(NotationModel):
     group: InstrumentGroup
     positions: list[Position]
     instrumenttype: InstrumentType
-    position_ranges: dict[Position, list[Tone]] = field(default_factory=lambda: defaultdict(list))
-    extended_position_ranges: dict[Position, list[Tone]] = field(default_factory=lambda: defaultdict(list))
-    instrument_range: list[Tone] = field(default_factory=list)
+    position_ranges: dict[Position, list[Tone]] = Field(default_factory=lambda: defaultdict(list))
+    extended_position_ranges: dict[Position, list[Tone]] = Field(default_factory=lambda: defaultdict(list))
+    instrument_range: list[Tone] = Field(default_factory=list)
 
     @classmethod
     def get_instrument(cls, position: Position) -> "Instrument":
@@ -221,7 +222,7 @@ class Instrument(NotationModel):
         if not other:
             return self
         # Merge the data of two Instrument objects.
-        self.positions += other.positions
+        self.positions += other.positions  # pylint: disable=E1101 -> incorrect warning
         self.position_ranges = self.position_ranges | other.position_ranges
         self.extended_position_ranges = self.extended_position_ranges | other.extended_position_ranges
         self.instrument_range = sorted(list(set(self.instrument_range + other.instrument_range)), key=lambda x: x.key)
@@ -317,7 +318,7 @@ class Instrument(NotationModel):
                 continue
             # Create an Instrument object for the current data record, which contains data for a single instrument position.
             locals = (
-                InstrumentGroup._member_map_ | InstrumentType._member_map_ | Position._member_map_ | Pitch._member_map_
+                InstrumentGroup.member_map() | InstrumentType.member_map() | Position.member_map() | Pitch.member_map()
             )
             record = {key: eval(row[key] or "[]", locals) for key in row.keys()}
             record[POSITIONS] = [position := record[InstrumentFields.POSITION]]
@@ -344,12 +345,12 @@ class Instrument(NotationModel):
                 continue
             # Create an Instrument object for the current data record, which contains data for a single instrument position.
             locals = (
-                InstrumentGroup._member_map_
-                | Position._member_map_
-                | Pitch._member_map_
-                | RuleType._member_map_
-                | RuleParameter._member_map_
-                | RuleValue._member_map_
+                InstrumentGroup.member_map()
+                | Position.member_map()
+                | Pitch.member_map()
+                | RuleType.member_map()
+                | RuleParameter.member_map()
+                | RuleValue.member_map()
             )
             record = {key: eval(row[key] or "None", locals) for key in row.keys()}
             for position in (
@@ -590,6 +591,8 @@ class Note(NotationModel):
                 duration=reference_note.duration,
                 rest_after=reference_note.rest_after,
             )
+        else:
+            raise ValueError("Could not find an equivalent for %s for %s}" % (symbol, position))
         return note.model_copy_x(transformation=tone.transformation)
 
     def get_kempyung(self, extended_range=False, exact_octave_match=True, inverse: bool = False) -> "Note":
@@ -710,14 +713,14 @@ class Preset(NotationModel):
         cls._POSITION_TO_PRESET = {preset.position: preset for preset in presets_obj_list}
 
     @classmethod
-    def _build_class(cls):
+    def build_class(cls):
         run_settings = get_run_settings(cls._create_position_to_preset_dict)
         cls._create_position_to_preset_dict(run_settings)
 
 
 # INITIALIZE THE Preset CLASS TO GENERATE THE POSITION_TO_PRESET LOOKUP DICT
 ##############################################################################
-Preset._build_class()
+Preset.build_class()
 ##############################################################################
 
 
@@ -728,6 +731,7 @@ class InstrumentTag(NotationModel):
     autocorrect: bool = False  # Indicates that parser should try to octavate to match the position's range.
 
     _TAG_TO_INSTRUMENTTAG_LIST: ClassVar[dict[str, "InstrumentTag"]]
+    _TAG_SEPARATORS: ClassVar[str] = r"/|-|\||,|, "  # expected separators when tags are combined, e.g. ga
 
     @field_validator("positions", mode="before")
     @classmethod
@@ -741,19 +745,22 @@ class InstrumentTag(NotationModel):
         Args:  run_settings (RunSettings):
         Returns (dict[str, list[Position]]):
         """
-        tag_obj_list = [InstrumentTag.model_validate(record) for record in run_settings.data.instrument_tags]
-        tag_obj_list += [
-            InstrumentTag(tag=instr, positions=[pos for pos in Position if pos.instrumenttype == instr])
-            for instr in InstrumentType
-        ]
-        tag_obj_list += [InstrumentTag(tag=pos, positions=[pos]) for pos in Position]
-        lookup_dict = {t.tag: t for t in tag_obj_list}
+        tag_to_pos = tag_to_position_dict(run_settings)
+        # tag_obj_list = [InstrumentTag.model_validate(record) for record in run_settings.data.instrument_tags]
+        # tag_obj_list += [
+        #     InstrumentTag(tag=instr, positions=[pos for pos in Position if pos.instrumenttype == instr])
+        #     for instr in InstrumentType
+        # ]
+        # tag_obj_list += [InstrumentTag(tag=pos, positions=[pos]) for pos in Position]
+        lookup_dict = {tag: InstrumentTag(tag=tag, positions=value) for tag, value in tag_to_pos.items()}
 
         cls._TAG_TO_INSTRUMENTTAG_LIST = lookup_dict
 
     @classmethod
     def get_positions(cls, tag: str) -> list[Position]:
-        return cls._TAG_TO_INSTRUMENTTAG_LIST.get(tag, None).positions
+        taglist = re.split(cls._TAG_SEPARATORS, tag)
+        positions_groups = [cls._TAG_TO_INSTRUMENTTAG_LIST.get(t, None).positions for t in taglist]
+        return sum(positions_groups, [])
 
     @classmethod
     def _build_class(cls):
@@ -833,7 +840,7 @@ class Beat:
         new_value: int
         steps: int = 0
         incremental: bool = False
-        positions: list[Position] = field(default_factory=list)
+        positions: list[Position] = Field(default_factory=list)
 
     @dataclass
     class GoTo:

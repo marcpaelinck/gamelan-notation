@@ -1,7 +1,6 @@
 import os
 import re
-from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
 import pandas as pd
@@ -10,14 +9,7 @@ from pydantic import BaseModel, ValidationError
 
 from src.common.constants import InstrumentGroup
 from src.common.logger import get_logger
-from src.settings.classes import (
-    Content,
-    PartForm,
-    RunSettings,
-    SettingsData,
-    SettingsInstrumentInfo,
-    Song,
-)
+from src.settings.classes import Content, PartForm, RunSettings, Song
 from src.settings.constants import DATA_INFOFILE, RUN_SETTINGSFILE, SETTINGSFOLDER, Yaml
 from src.settings.utils import pretty_compact_json
 
@@ -39,7 +31,7 @@ DATA = {
 }
 
 
-def post_process(subdict: dict[str, Any], run_settings_dict: dict[str, Any] = None, curr_path: list = []):
+def post_process(subdict: dict[str, Any], run_settings_dict: dict[str, Any] = None, curr_path: list = None):
     """This function enables references to yaml key values using ${<yaml_path>} notation.
     e.g.: ${notations.defaults.include_in_production_run}
     The function substitutes these references with the corresponding yaml settings values.
@@ -50,6 +42,7 @@ def post_process(subdict: dict[str, Any], run_settings_dict: dict[str, Any] = No
         run_settings_dict(dict[str, Any]): Full yaml structure in Python dict format.
     """
     found: re.Match
+    curr_path = curr_path or []
 
     for key, value in subdict.items():
         if isinstance(value, dict):
@@ -126,16 +119,13 @@ def read_data(settings_dict: dict) -> dict[str, list[dict[str, str]]]:
     return data
 
 
-def get_run_settings(listener: callable = None) -> RunSettings:
+def get_run_settings(listener: Callable[[], None] = None) -> RunSettings:
     """Retrieves the most recently loaded run settings. Loads the settings from the run-settings.yaml file if no
     settings have been loaded yet.
-    Be aware that the run settings are loaded at the first import of src.common.classes. If you need to load settings
-    from another location than the default folder set in src.settings.constants, (e.g. for unit tests), you will need
-    to call load_run_settings after having changed the folder.
 
     Args:
-        listener (callable, optional): A function that should be called when new run settings are loaded. This value
-        can be passed by modules and objects that use the run settings during their initialization phase. Defaults to None.
+        listener (callable, optional): A function that should be called after new run settings have been loaded. This value
+        can be passed by modules and objects that use the run settings during their (re-)initialization phase. Defaults to None.
 
     Returns:
         RunSettings: settings object
@@ -160,6 +150,9 @@ def validate_settings(data_dict: dict, run_settings_dict: dict) -> bool:
 def load_run_settings(notation_id: str = None, part_id: str = None) -> RunSettings:
     """Retrieves the run settings from the run settings yaml file, enriched with information
        from the data information yaml file.
+       Be aware that this method is called automatically when python first encounters an import statement that imports
+       src.common.classes (see the `_build_class` methods in that module). This is especially relevant for unit tests
+       that use separate YAML settings files.
 
     Args:
         notation_id: key value of the notation as it appears in the data.yaml file
@@ -257,24 +250,27 @@ def update_midiplayer_content(
     if not player_song:
         # TODO create components of Song
         content.songs.append(player_song := Song(title=title, instrumentgroup=group, display=True, pfd=pdf_file))
-        logger.info(f"New song {player_song.title} created for MIDI player content")
+        logger.info("New song %s created for MIDI player content", player_song.title)
     elif pdf_file:
         player_song.pdf = pdf_file
 
     if partinfo:
+        # pylint: disable=not-an-iterable -> pylint gets confused by assignment of Field() to Pydantic member Song.parts
         part = next((part_ for part_ in player_song.parts if part_.part == partinfo.part), None)
         if part:
             part.file = partinfo.file or part.file
             part.loop = partinfo.loop or part.loop
             part.markers = partinfo.markers or part.markers
-            logger.info(f"Existing part {part.part} updated for MIDI player content")
+            logger.info("Existing part %s updated for MIDI player content", part.part)
         else:
             if partinfo.file:
+                # pylint: disable=no-member -> pylint gets confused by assignment of Field() to Pydantic member Song.parts
                 player_song.parts.append(partinfo)
-                logger.info(f"New part {partinfo.part} created for MIDI player content")
+                logger.info("New part %s created for MIDI player content", partinfo.part)
             else:
                 logger.error(
-                    f"Can't add new part info '{partinfo.part}' to the midiplayer content: missing midifile information. Please run again with run-option `save_midifile` set."
+                    "Can't add new part info '%s' to the midiplayer content: missing midifile information. Please run again with run-option `save_midifile` set.",
+                    partinfo.part,
                 )
     save_midiplayer_content(content)
 

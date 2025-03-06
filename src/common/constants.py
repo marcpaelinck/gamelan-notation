@@ -61,6 +61,10 @@ class NotationEnum(StrEnum):
     def sequence(self):
         return list(self.__class__).index(self)
 
+    @classmethod
+    def member_map(cls):
+        return {m.name: m for m in cls}
+
 
 # TODO should we create enums dynamically from settings files?
 # See https://stackoverflow.com/questions/47299036/how-can-i-construct-an-enum-enum-from-a-dictionary-of-values
@@ -194,13 +198,6 @@ class Pitch(NotationEnum):
     STRIKE2 = "STRIKE2"
     TONG = "TONG"
     NONE = "NONE"
-
-    @property
-    def index(self):
-        return list(Pitch).index(self)
-
-    def _todict():
-        return {key: val for key, val in Pitch.__members__.items()}
 
 
 class Stroke(NotationEnum):
@@ -341,4 +338,4 @@ VALID_MIDI_MESSAGE_TYPES = ["note_on", "note_off", "rest"]
 
 
 if __name__ == "__main__":
-    logger.info(InstrumentType.CALUNG.sequence)
+    pass
