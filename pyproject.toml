@@ -26,15 +26,18 @@ vulture = "^2.14"
 python-docx = "^1.1.2"
 docx2pdf = "^0.1.8"
 pillow = "^11.1.0"
-
 reportlab = "^4.3.1"
 unittest-parametrize = "^1.6.0"
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra -q"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"
+
+[tool.pylint.'MESSAGES CONTROL']
+max-line-length = 120
 
 [build-system]
 requires = ["poetry-core"]
