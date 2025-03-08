@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass, field
 from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -317,12 +318,12 @@ class SettingsOptions(BaseModel):
 
 class Data(BaseModel):
     # Contains pre-formatted table data
-    font: list[dict[str, str | None]] | None
-    instruments: list[dict[str, str | None]] | None
-    instrument_tags: list[dict[str, str | None]] | None
-    rules: list[dict[str, str | None]] | None
-    midinotes: list[dict[str, str | None]] | None
-    presets: list[dict[str, str | None]] | None
+    font: list[dict[str, Any]] | None
+    instruments: list[dict[str, Any]] | None
+    instrument_tags: list[dict[str, Any]] | None
+    rules: list[dict[str, Any]] | None
+    midinotes: list[dict[str, Any]] | None
+    presets: list[dict[str, Any]] | None
 
 
 class SettingsData(BaseModel):

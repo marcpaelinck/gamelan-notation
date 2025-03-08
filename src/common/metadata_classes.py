@@ -1,28 +1,12 @@
+# pylint: disable=missing-class-docstring
 import json
-import re
-from enum import StrEnum
-from itertools import product
-from typing import Annotated, Any, ClassVar, Literal, Optional, Union
+from typing import Any, ClassVar, Literal, Optional, Union
 
 import regex
-from pydantic import (
-    AfterValidator,
-    BaseModel,
-    BeforeValidator,
-    Field,
-    ValidationInfo,
-    field_validator,
-)
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
-from src.common.constants import (
-    DEFAULT,
-    InstrumentGroup,
-    InstrumentType,
-    NotationEnum,
-    Position,
-)
+from src.common.constants import DEFAULT, InstrumentType, NotationEnum, Position
 from src.settings.classes import RunSettings
-from src.settings.constants import InstrumentTagFields
 from src.settings.settings import get_run_settings
 from src.settings.utils import tag_to_position_dict
 
@@ -66,51 +50,16 @@ class MetaDataBaseModel(BaseModel):
     DEFAULTPARAM: ClassVar[str]
     _TAG_TO_POSITION: dict[str, list[Position]]
 
-    @classmethod
-    def string_to_list(cls, value: str, el_type: type):
-        """Tries to to parse a string or a list of strings. If el_type is None, returns a list of strings.
-        If el_type is given, the function tries to parse the list elements into `el_type` values.
-        `el_type` should either be `float` or a subclass of `StrEnum`.
-        Args:
-            value (str): a json-interpretable string.
-            el_type (type): type to which to convert the list elements. Should either be a subtype of StrEnum
-                            or a type that can be cast from string by applying el_type(value).
-        Returns:
-            list[el_type]:
-        """
-        if isinstance(value, str):
-            # Single string representing a list of strings: parse into a list of strings
-            # First add double quotes around each list element.
-            val = re.sub(r"([A-Za-z_][\w]*)", r'"\1"', value)
-            try:
-                value = json.loads(val)
-            except Exception:
-                raise ValueError(
-                    f"{value} is not a valid list. Elements should be comma separated and enclosed between square brackets []."
-                )
-        if isinstance(value, list):
-            # List of strings: convert strings to enumtype objects.
-            if all(isinstance(el, str) for el in value):
-                try:
-                    return [el_type[el] if issubclass(el_type, StrEnum) else el_type(el) for el in value]
-                except Exception:
-                    ValueError(f"Could not convert the elements of {value} to {el_type} types.")
-            elif all(isinstance(el, el_type) for el in value):
-                # List of el_type: return as-is
-                return value
-        else:
-            raise ValueError(f"Could not convert {value} into a list of {el_type}.")
-
     def model_dump_notation(self):
-        json = self.model_dump(exclude_defaults=True)
-        del json["line"]
-        del json["metatype"]
+        jsonval = self.model_dump(exclude_defaults=True)
+        del jsonval["line"]
+        del jsonval["metatype"]
         if self.DEFAULTPARAM:
-            defval = json[self.DEFAULTPARAM]
-            del json[self.DEFAULTPARAM]
+            defval = jsonval[self.DEFAULTPARAM]
+            del jsonval[self.DEFAULTPARAM]
         else:
             defval = ""
-        return f"{{{self.metatype} {defval} {' '.join([f'{key}={val}' for key, val in json.items()])}}}".strip()
+        return f"{{{self.metatype} {defval} {' '.join([f'{key}={val}' for key, val in jsonval.items()])}}}".strip()
 
     @classmethod
     def _initialize(cls, run_settings: RunSettings):
@@ -120,41 +69,15 @@ class MetaDataBaseModel(BaseModel):
         cls._TAG_TO_POSITION = tag_to_position_dict(run_settings)
 
     @classmethod
-    def _build_class(cls):
+    def build_class(cls):
         run_settings = get_run_settings(cls._initialize)
         cls._initialize(run_settings)
 
 
 # # INITIALIZE THE MetaDataBaseModel CLASS TO CREATE AND UPDATE THE TAG LOOKUP TABLE
 # ##############################################################################
-MetaDataBaseModel._build_class()
+MetaDataBaseModel.build_class()
 # ##############################################################################
-
-
-# Define reusable field validators
-# See https://docs.pydantic.dev/latest/concepts/validators/#which-validator-pattern-to-use
-def normalize_positions(data: str | list[str]) -> list[Position]:
-    """Converts a position tag into a list of corresponding Position values."""
-    if isinstance(data, str):
-        data = [data]
-    try:
-        return sum((MetaDataBaseModel._TAG_TO_POSITION[pos] for pos in data), [])
-    except:
-        raise ValueError(f"Unrecognized instrument position in {data}.")
-
-
-def normalize_instrument(data: str) -> list[InstrumentType]:
-    """Converts an instrument tag into the corresponding InstrumentType value."""
-    position: Position = None
-    try:
-        position = sum((MetaDataBaseModel._TAG_TO_POSITION[pos] for pos in data), [])
-    except:
-        raise ValueError(f"Unrecognized instrument position in {data}.")
-    return position.instrumenttype
-
-
-PositionsFromTag = Annotated[list[Position], BeforeValidator(normalize_positions)]
-InstrumentFromTag = Annotated[InstrumentType, BeforeValidator(normalize_instrument)]
 
 
 class GradualChangeMetadata(MetaDataBaseModel):
@@ -179,7 +102,7 @@ class GradualChangeMetadata(MetaDataBaseModel):
 class DynamicsMeta(GradualChangeMetadata):
     metatype: Literal["DYNAMICS"]
     # Currently, an empty list stands for all positions.
-    positions: PositionsFromTag  # list[Position]
+    positions: list[Position]  # PositionsFromTag
     abbreviation: str = ""
     DEFAULTPARAM = "abbreviation"
 
@@ -192,9 +115,9 @@ class DynamicsMeta(GradualChangeMetadata):
         try:
             run_settingss = get_run_settings()
             valinfo.data["value"] = run_settingss.midi.dynamics[abbr]
-        except:
+        except Exception as exc:
             # Should not occur because the validator is called after resolving the other fields
-            raise Exception(f"illegal value for dynamics: {abbr}")
+            raise ValueError("illegal value for dynamics: {}".format(abbr)) from exc
         return abbr
 
 
@@ -249,7 +172,7 @@ class LabelMeta(MetaDataBaseModel):
 
 class OctavateMeta(MetaDataBaseModel):
     metatype: Literal["OCTAVATE"]
-    instrument: InstrumentFromTag  # InstrumentType
+    instrument: InstrumentType  # InstrumentFromTag
     octaves: int
     scope: Optional[Scope] = Scope.GONGAN
     DEFAULTPARAM = "instrument"
@@ -277,7 +200,7 @@ class SequenceMeta(MetaDataBaseModel):
 
 class SuppressMeta(MetaDataBaseModel):
     metatype: Literal["SUPPRESS"]
-    positions: PositionsFromTag  # list[Position]
+    positions: list[Position]  # PositionsFromTag
     passes: Optional[list[int]] = Field(default_factory=list)
     beats: list[int] = Field(default_factory=list)
     DEFAULTPARAM = "positions"
@@ -367,10 +290,10 @@ class MetaData(BaseModel):
         if not match:
             # NOTE All exceptions in this method are unit tested by checking the error number
             # a the beginning of the error message.
-            raise Exception(f"Err1 - Bad metadata format {data}: could not determine metadata type.")
+            raise ValueError("Err1 - Bad metadata format {}: could not determine metadata type.".format(data))
         meta_keyword = match.group(1)
         if not meta_keyword in field_dict.keys():
-            raise Exception(f"Err2 - Metadata {data} has an invalid keyword {meta_keyword}.")
+            raise ValueError("Err2 - Metadata {} has an invalid keyword {}.".format(data, meta_keyword))
 
         # Retrieve the corresponding parameter names
         param_names = field_dict[meta_keyword]
@@ -392,8 +315,10 @@ class MetaData(BaseModel):
         # Validate the general structure.
         match = regex.fullmatch(full_metadata_pattern, meta)
         if not match:
-            raise Exception(
-                f"Err3 - Bad metadata format {data}, please check the format. Are the parameters separated by commas?"
+            raise ValueError(
+                "Err3 - Bad metadata format {}, please check the format. Are the parameters separated by commas?".format(
+                    data
+                )
             )
 
         # Create a pattern requiring valid parameter nammes exclusively.
@@ -403,8 +328,10 @@ class MetaData(BaseModel):
         # Validate the parameter names.
         match = regex.fullmatch(full_metadata_pattern, meta)
         if not match:
-            raise Exception(
-                f"Err4 - Metadata {data} contains invalid parameter(s). Valid values are: {', '.join(field_dict[meta_keyword])}."
+            raise ValueError(
+                "Err4 - Metadata {} contains invalid parameter(s). Valid values are: {}.".format(
+                    data, ", ".join(field_dict[meta_keyword])
+                )
             )
 
         # Capture the (parametername, value) pairs
@@ -421,6 +348,8 @@ class MetaData(BaseModel):
 
         try:
             json_result = json.loads(json_str)
-        except:
-            raise Exception(f"Err5 - Bad metadata format {data}. Could not parse the value, please check the format.")
+        except Exception as exc:
+            raise ValueError(
+                "Err5 - Bad metadata format {}. Could not parse the value, please check the format.".format(data)
+            ) from exc
         return json_result

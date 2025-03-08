@@ -1,4 +1,4 @@
-import json
+# pylint: disable=missing-module-docstring
 import math
 import re
 from collections import defaultdict
@@ -24,6 +24,7 @@ from src.common.constants import (
     InstrumentType,
     Modifier,
     NotationDict,
+    NotationEnum,
     Octave,
     PassSequence,
     Pitch,
@@ -54,32 +55,7 @@ from src.settings.font_to_valid_notes import get_note_records
 from src.settings.settings import get_run_settings
 from src.settings.utils import tag_to_position_dict
 
-
-class NotationModel(BaseModel):
-    # Class model containing common utilities.
-
-    @classmethod
-    def to_list(cls, value, el_type: type):
-        # This method tries to to parse a string or a list of strings
-        # into a list of `el_type` values.
-        # el_type can only be `float` or a subclass of `StrEnum`.
-        if isinstance(value, str):
-            # Single string representing a list of strings: parse into a list of strings
-            # First add double quotes around each list element.
-            val = re.sub(r"([A-Za-z_][\w]*)", r'"\1"', value)
-            value = json.loads(val)
-        if isinstance(value, list):
-            # List of strings: convert strings to enumtype objects.
-            if all(isinstance(el, str) for el in value):
-                try:
-                    return [el_type[el] if issubclass(el_type, StrEnum) else float(el) for el in value]
-                except Exception as exc:
-                    raise ValueError(f"Could not convert value {value} to a list of {el_type}") from exc
-            elif all(isinstance(el, el_type) for el in value):
-                # List of el_type: do nothing
-                return value
-        else:
-            raise ValueError(f"Could not convert value {value} to a list of {el_type}")
+# pylint: disable=missing-class-docstring
 
 
 @dataclass(frozen=True)
@@ -101,9 +77,11 @@ class Tone:
 
     @property
     def key(self):
+        """Returns a sorting key to order the tones by frequency"""
         return self.pitch.sequence + self.octave * 10
 
     def is_melodic(self):
+        """True if the the tone's pitch is one of DING...DAING"""
         return self.pitch in Tone._MELODIC_PITCHES
 
 
@@ -114,7 +92,7 @@ class Rule:
     parameters: dict[RuleParameter, Any]
 
 
-class Instrument(NotationModel):
+class Instrument(BaseModel):
 
     _POS_TO_INSTR: ClassVar[dict[Position, "Instrument"]]
     _RULES: ClassVar[dict[Position, dict[RuleType, list[Rule]]]]
@@ -218,11 +196,11 @@ class Instrument(NotationModel):
             k_list, key=lambda x: [0, 1, 2, -1, -2].index(math.floor(Instrument.interval(tone, x) / oct_interval))
         )
 
-    def _merge(self, other: "Instrument") -> "Instrument":
+    def merge(self, other: "Instrument") -> "Instrument":
         if not other:
             return self
         # Merge the data of two Instrument objects.
-        self.positions += other.positions  # pylint: disable=E1101 -> incorrect warning
+        self.positions += other.positions  # pylint: disable=no-member; -> incorrect warning
         self.position_ranges = self.position_ranges | other.position_ranges
         self.extended_position_ranges = self.extended_position_ranges | other.extended_position_ranges
         self.instrument_range = sorted(list(set(self.instrument_range + other.instrument_range)), key=lambda x: x.key)
@@ -300,14 +278,26 @@ class Instrument(NotationModel):
             key=lambda x: x.key,
         )
 
+    @staticmethod
+    def _get_member_map(classes: list[NotationEnum]) -> dict[str, NotationEnum]:
+        """Creates a mapping {value -> object} for the members of all NotationEnum subclasses.
+        Args:
+            classes (list[NotationEnum]): List of enum classes
+        Returns:
+            _type_: _description_
+        """
+        return {m.name: m for cls in classes for m in cls}
+
     @classmethod
     def _init_pos_to_instr(cls, run_settings: RunSettings):
         """Creates the _POS_TO_INSTR lookup dict."""
         # Field definition
+        # pylint: disable=invalid-name
         POSITIONS = InstrumentFields.POSITION + "s"
         POSITION_RANGES = InstrumentFields.POSITION_RANGE + "s"
         EXTENDED_POSITION_RANGES = InstrumentFields.EXTENDED_POSITION_RANGE + "s"
         INSTRUMENT_RANGE = "INSTRUMENT_RANGE"
+        # pylint: enable=invalid-name
 
         # First create a dict with all instruments to merge multiple data records for the same instrument type.
         instr_dict: dict[InstrumentType, Instrument] = defaultdict(lambda: None)
@@ -316,21 +306,20 @@ class Instrument(NotationModel):
         for row in run_settings.data.instruments:
             if (InstrumentGroup[row["group"]]) != run_settings.instrumentgroup:
                 continue
-            # Create an Instrument object for the current data record, which contains data for a single instrument position.
-            locals = (
-                InstrumentGroup.member_map() | InstrumentType.member_map() | Position.member_map() | Pitch.member_map()
-            )
-            record = {key: eval(row[key] or "[]", locals) for key in row.keys()}
+            # Create an Instrument object for the current data record, which contains data for a single
+            # instrument position.
+            record = row.copy()
             record[POSITIONS] = [position := record[InstrumentFields.POSITION]]
-            record[POSITION_RANGES] = {position: cls._parse_range(record[InstrumentFields.POSITION_RANGE])}
+            record[POSITION_RANGES] = {position: [Tone(*tpl) for tpl in record[InstrumentFields.POSITION_RANGE]]}
             record[EXTENDED_POSITION_RANGES] = {
-                position: cls._parse_range(record[InstrumentFields.EXTENDED_POSITION_RANGE])
+                position: [Tone(*tpl) for tpl in record[InstrumentFields.EXTENDED_POSITION_RANGE]]
                 or record[POSITION_RANGES][position]
             }
             record[INSTRUMENT_RANGE] = record[EXTENDED_POSITION_RANGES][position]
+
             all_tones.update(set(record[INSTRUMENT_RANGE]))
             instrument = Instrument.model_validate(record)
-            instr_dict[instrument.instrumenttype] = instrument._merge(instr_dict[instrument.instrumenttype])
+            instr_dict[instrument.instrumenttype] = instrument.merge(instr_dict[instrument.instrumenttype])
 
         # Invert the dict
         cls._POS_TO_INSTR = {pos: instr for instr in instr_dict.values() for pos in instr.positions}
@@ -343,16 +332,9 @@ class Instrument(NotationModel):
         for row in run_settings.data.rules:
             if (InstrumentGroup[row["group"]]) != run_settings.instrumentgroup:
                 continue
-            # Create an Instrument object for the current data record, which contains data for a single instrument position.
-            locals = (
-                InstrumentGroup.member_map()
-                | Position.member_map()
-                | Pitch.member_map()
-                | RuleType.member_map()
-                | RuleParameter.member_map()
-                | RuleValue.member_map()
-            )
-            record = {key: eval(row[key] or "None", locals) for key in row.keys()}
+            # Create an Instrument object for the current data record, which contains data for a single
+            # instrument position.
+            record = row.copy()
             for position in (
                 Position
                 # [pos for pos in Position if not cls._RULES[pos]]
@@ -386,25 +368,26 @@ class Instrument(NotationModel):
     @classmethod
     def _initialize(cls, run_settings: RunSettings):
         print(
-            f"INITIALIZING INSTRUMENT CLASS FOR COMPOSITION {run_settings.notation.title} - {run_settings.notation.part.name}"
+            "INITIALIZING INSTRUMENT CLASS FOR COMPOSITION"
+            f"{run_settings.notation.title} - {run_settings.notation.part.name}"
         )
         cls._init_pos_to_instr(run_settings)
         cls._init_rules(run_settings)
-        x = 1
 
     @classmethod
-    def _build_class(cls):
+    def build_class(cls):
+        """Class initializer"""
         run_settings = get_run_settings(cls._initialize)
         cls._initialize(run_settings)
 
 
 # # INITIALIZE THE Instrument CLASS WITH LIST OF VALID NOTES AND CORRESPONDING LOOKUPS
 # ##############################################################################
-Instrument._build_class()
+Instrument.build_class()
 # ##############################################################################
 
 
-class Note(NotationModel):
+class Note(BaseModel):
     # config revalidate_instances forces validation when using model_copy
     model_config = ConfigDict(extra="ignore", frozen=True, revalidate_instances="always")
 
@@ -496,10 +479,11 @@ class Note(NotationModel):
             f"{self.duration} {self.rest_after} for {self.position}"
         )
 
-    def model_copy(self, update={}) -> Optional["Note"]:
+    def model_copy(self, update=None) -> Optional["Note"]:  # pylint: disable=arguments-differ
         """Overwrites the default model_copy method to allow for validation check.
         BaseModel.model_copy does not validate the input data.
         """
+        update = update or {}
         note_record = self.model_dump() | update
         return Note(**note_record)
 
@@ -626,14 +610,14 @@ class Note(NotationModel):
         }
 
     @classmethod
-    def _build_class(cls):
+    def build_class(cls):
         run_settings = get_run_settings(cls._set_up_dicts)
         cls._set_up_dicts(run_settings)
 
 
 # INITIALIZE THE Note CLASS WITH LIST OF VALID NOTES AND CORRESPONDING LOOKUPS
 ##############################################################################
-Note._build_class()
+Note.build_class()
 ##############################################################################
 
 
@@ -670,7 +654,7 @@ def explode_list_by_pos(record_list: list[DataRecord], position_title: str) -> l
     return [record | {position_title: position} for record in record_list for position in record[position_title]]
 
 
-class Preset(NotationModel):
+class Preset(BaseModel):
     # See http://www.synthfont.com/The_Definitions_File.pdf
     # For port, see https://github.com/spessasus/SpessaSynth/wiki/About-Multi-Port
 
@@ -724,7 +708,7 @@ Preset.build_class()
 ##############################################################################
 
 
-class InstrumentTag(NotationModel):
+class InstrumentTag(BaseModel):
 
     tag: str
     positions: list[Position]
@@ -733,10 +717,10 @@ class InstrumentTag(NotationModel):
     _TAG_TO_INSTRUMENTTAG_LIST: ClassVar[dict[str, "InstrumentTag"]]
     _TAG_SEPARATORS: ClassVar[str] = r"/|-|\||,|, "  # expected separators when tags are combined, e.g. ga
 
-    @field_validator("positions", mode="before")
-    @classmethod
-    def validate_pos(cls, value):
-        return cls.to_list(value, Position)
+    # @field_validator("positions", mode="before")
+    # @classmethod
+    # def validate_pos(cls, value):  # pylint: disable=missing-function-docstring
+    #     return string_to_enum_list(value, Position)
 
     @classmethod
     def _create_tag_to_record_dict(cls, run_settings: RunSettings) -> dict[str, list[Position]]:
@@ -746,12 +730,6 @@ class InstrumentTag(NotationModel):
         Returns (dict[str, list[Position]]):
         """
         tag_to_pos = tag_to_position_dict(run_settings)
-        # tag_obj_list = [InstrumentTag.model_validate(record) for record in run_settings.data.instrument_tags]
-        # tag_obj_list += [
-        #     InstrumentTag(tag=instr, positions=[pos for pos in Position if pos.instrumenttype == instr])
-        #     for instr in InstrumentType
-        # ]
-        # tag_obj_list += [InstrumentTag(tag=pos, positions=[pos]) for pos in Position]
         lookup_dict = {tag: InstrumentTag(tag=tag, positions=value) for tag, value in tag_to_pos.items()}
 
         cls._TAG_TO_INSTRUMENTTAG_LIST = lookup_dict
@@ -763,18 +741,18 @@ class InstrumentTag(NotationModel):
         return sum(positions_groups, [])
 
     @classmethod
-    def _build_class(cls):
+    def build_class(cls):
         settings = get_run_settings(cls._create_tag_to_record_dict)
         cls._create_tag_to_record_dict(settings)
 
 
 # INITIALIZE THE InstrumentTag CLASS TO GENERATE THE TAG_TO_POSITION_LIST LOOKUP DICT
 #####################################################################################
-InstrumentTag._build_class()
+InstrumentTag.build_class()
 #####################################################################################
 
 
-class MidiNote(NotationModel):
+class MidiNote(BaseModel):
     instrumenttype: InstrumentType
     positions: list[Position]
     pitch: Pitch
@@ -786,10 +764,10 @@ class MidiNote(NotationModel):
     # preset: Preset
     remark: str
 
-    @field_validator("positions", mode="before")
-    @classmethod
-    def validate_pos(cls, value):
-        return cls.to_list(value, Position)
+    # @field_validator("positions", mode="before")
+    # @classmethod
+    # def validate_pos(cls, value):  # pylint: disable=missing-function-docstring
+    #     return string_to_enum_list(value, Position)
 
     @field_validator("octave", mode="before")
     @classmethod
@@ -830,8 +808,8 @@ class Measure:
 # which would otherwise cause an "Infinite recursion" error.
 @dataclass
 class Beat:
-    class Change(NotationModel):
-        # NotationModel contains a method to translate a list-like string to an actual list.
+    class Change(BaseModel):
+        # BaseModel contains a method to translate a list-like string to an actual list.
         class Type(StrEnum):
             TEMPO = auto()
             DYNAMICS = auto()
@@ -989,3 +967,7 @@ class Score:
     flowinfo: FlowInfo = field(default_factory=FlowInfo)
     midifile_duration: int = None
     part_info: Part = None
+
+
+if __name__ == "__main__":
+    ...

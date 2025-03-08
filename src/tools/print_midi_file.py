@@ -1,3 +1,4 @@
+# pylint: disable=all
 import os
 
 from mido import MidiFile
@@ -7,9 +8,8 @@ def to_text(path, midifilename):
     midifilepath = os.path.join(path, midifilename)
     txtfilepath = os.path.splitext(midifilepath)[0] + ".txt"
 
-    lines = []
     mid = MidiFile(midifilepath)
-    with open(txtfilepath, "w") as csvfile:
+    with open(txtfilepath, "w", encoding="utf-8") as csvfile:
         for i, track in enumerate(mid.tracks):
             clocktime = 0
             csvfile.write("Track {}: {}".format(i, track.name) + "\n")

@@ -3,7 +3,7 @@ from enum import StrEnum
 SETTINGSFOLDER = "./settings"
 TEST_SETTINGSFOLDER = "./tests/settings"
 RUN_SETTINGSFILE = "notation2midi.yaml"
-DATA_INFOFILE = "data.yaml"
+CONFIG_FILE = "config.yaml"
 
 
 class SStrEnum(StrEnum):

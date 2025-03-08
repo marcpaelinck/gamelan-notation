@@ -1,12 +1,12 @@
-""" 
+"""
 This module provides the valid combinations of note attributes as a list of records. The list is created
 by combining the font and MIDI notes definitions and applying some logic. The result is a list of all
-meaningful combinations of Position, Pitch, Octave, Stroke, Modifier, duration and rest_after values 
-for Note objects, together with the corresponding combination of characters from the font. 
+meaningful combinations of Position, Pitch, Octave, Stroke, Modifier, duration and rest_after values
+for Note objects, together with the corresponding combination of characters from the font.
 All Note objects should be created from this list. This will be enforced by the Note validator.
 
-The result is intentionally returned as a list of records (NotationRecord = list[str, Any]) and not 
-as a list of Note objects to enable the Note validator to import this module without causing a 
+The result is intentionally returned as a list of records (NotationRecord = list[str, Any]) and not
+as a list of Note objects to enable the Note validator to import this module without causing a
 circular reference.
 """
 
@@ -67,23 +67,6 @@ class ValidNote(BaseModel):
 NoteDict = dict[str, Any]
 
 # Functions that should be applied to each field when processing the MIDI data
-MIDI_FORMATTERS = {
-    NoteFields.PITCH.value: lambda x: Pitch[x],
-    NoteFields.STROKE.value: lambda x: Stroke[x],
-    NoteFields.INSTRUMENTTYPE.value: lambda x: InstrumentType[x],
-    NoteFields.PITCH.value: lambda x: Pitch[x],
-    NoteFields.STROKE.value: lambda x: Stroke[x],
-    NoteFields.MIDINOTE.value: lambda x: eval(x) if x.startswith("[") else [int(x)],
-    NoteFields.SAMPLE.value: lambda x: "" if pd.isna(x) else x,
-    NoteFields.SYMBOL.value: lambda x: "" if pd.isna(x) else x,
-    NoteFields.ROOTNOTE.value: lambda x: "" if pd.isna(x) else x,
-}
-# Same for the font data
-FONT_FORMATTERS = {
-    NoteFields.PITCH.value: lambda x: Pitch[x],
-    NoteFields.STROKE.value: lambda x: Stroke[x],
-    NoteFields.MODIFIER.value: lambda x: Modifier[x],
-}
 DTYPES = {NoteFields.OCTAVE.value: "Int64"}
 
 
@@ -172,32 +155,16 @@ def create_note_records(run_settings: RunSettings) -> list[AnyNote]:
 
     REST_STROKES = [Stroke.SILENCE, Stroke.EXTENSION]
 
-    # READ MIDINOTES DATA
-    midinotes_df = pd.read_csv(
-        run_settings.midi.notes_filepath, sep="\t", comment="#", dtype=DTYPES, converters=MIDI_FORMATTERS
-    )
+    # PROCESS MIDINOTES DATA
+    midinotes_df = pd.DataFrame.from_records(run_settings.data.midinotes).astype(DTYPES)
     # Filter on instrument group
     midinotes_df = midinotes_df[midinotes_df[INSTRUMENTGROUP] == run_settings.instrumentgroup.value].drop(
         columns=[INSTRUMENTGROUP]
     )
-    # Convert pre-filled instrument positions to a list of Position values.
-    # Fill in empty position fields with all positions for the instrument type.
-    # Then 'explode' the DF: repeat each row for each position in the list.
-    mask = midinotes_df[POSITIONS].isnull()
-    midinotes_df.loc[~mask, POSITIONS] = midinotes_df.loc[~mask, POSITIONS].apply(lambda x: to_list(x, Position))
-    midinotes_df.loc[mask, POSITIONS] = midinotes_df.loc[mask, INSTRUMENTTYPE].apply(
-        lambda x: [p for p in Position if p.instrumenttype == x]
-    )
     midinotes_df = midinotes_df.explode(column=[POSITIONS]).rename(columns={POSITIONS: POSITION})
 
-    # READ FONT DATA
-    balifont_df = pd.read_csv(
-        run_settings.settingsdata.font.filepath,
-        sep="\t",
-        quoting=csv.QUOTE_NONE,
-        dtype=DTYPES,
-        converters=FONT_FORMATTERS,
-    )
+    # PROCESS FONT DATA
+    balifont_df = pd.DataFrame.from_records(run_settings.data.font).astype(DTYPES)
 
     # MERGE BOTH TABLES
     notes_df = midinotes_df.merge(balifont_df, on=[PITCH, OCTAVE, STROKE], how="outer")[keep]
@@ -217,7 +184,7 @@ def create_note_records(run_settings: RunSettings) -> list[AnyNote]:
     ].to_dict(orient="records")
     modifiers = [AnyNote(**note) for note in modifiers_dicts]
 
-    global MODIFIERS
+    # global MODIFIERS  # TODO why global ??
     MODIFIERS = modifiers
 
     unmatched = list()
@@ -399,25 +366,5 @@ def get_note_records(run_settings: RunSettings):
     return create_note_records(run_settings)
 
 
-def get_font_characters(run_settings: RunSettings):
-    return pd.read_csv(
-        run_settings.settingsdata.font.filepath,
-        sep="\t",
-        quoting=csv.QUOTE_NONE,
-        dtype=DTYPES,
-        converters=FONT_FORMATTERS,
-    ).to_dict(orient="records")
-
-
-def sort_chars(chars: str, sortingorder) -> str:
-    return "".join(sorted(chars, key=lambda c: sortingorder.get(c, 99)))
-
-
 if __name__ == "__main__":
-    settings = get_run_settings()
-    font = get_font_characters(settings)
-    mod_list = list(Modifier)
-    sortingorder = {sym[NoteFields.SYMBOL]: mod_list.index(sym[NoteFields.MODIFIER]) for sym in font}
-    print([(n, o) for n, o in sortingorder.items() if o > 0])
-    for chars in ["a_,/", "an<", "x:_"]:
-        print(f"{chars} -> {sort_chars(chars, sortingorder)}")
+    pass

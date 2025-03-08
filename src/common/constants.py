@@ -1,4 +1,5 @@
-from enum import Flag, StrEnum
+# pylint: disable=missing-module-docstring,missing-class-docstring
+from enum import StrEnum
 from typing import Any
 
 from src.common.logger import get_logger
@@ -21,12 +22,9 @@ ErrorMessage = str
 DEFAULT = -1
 
 
-class ParamValue(Flag):
-    DEFAULT = True
-    MISSING = False
-
-
 class ParserTag(StrEnum):
+    """String tags/labels used in tabular representations of notation elements."""
+
     # Putting constants in a class enables them to be used in a `match`statement
     # See e.g. https://github.com/microsoft/pylance-release/issues/4309
     UNBOUND = "unbound"
@@ -45,17 +43,14 @@ class ParserTag(StrEnum):
 
 
 class NotationEnum(StrEnum):
+    """Base class with added utility methods."""
+
     def __repr__(self):
         # Enables to parse string values correctly
         return self.value
 
     def __str__(self):
         return self.name
-
-    # @classmethod
-    # def from_value(cls, value):
-    #     enum = next((el for el in cls if value in [el.name, el.value]), None)
-    #     return enum
 
     @property
     def sequence(self):
@@ -64,6 +59,10 @@ class NotationEnum(StrEnum):
     @classmethod
     def member_map(cls):
         return {m.name: m for m in cls}
+
+    @classmethod
+    def get(cls, value: Any, notfoundval: Any):
+        return cls[value] if value in cls else notfoundval
 
 
 # TODO should we create enums dynamically from settings files?
@@ -86,7 +85,7 @@ class MidiVersion(NotationEnum):
 
 
 class InstrumentGroup(NotationEnum):
-    # TODO replace with settings file
+    # TODO replace with values from settings file
     GONG_KEBYAR = "GONG_KEBYAR"
     SEMAR_PAGULINGAN = "SEMAR_PAGULINGAN"
     GONG_PELEGONGAN = "GONG_PELEGONGAN"
@@ -132,9 +131,10 @@ class RuleValue(NotationEnum):
 
 
 class Position(NotationEnum):
-    # TODO replace with settings file
-    # The sorting order affects the layout of the
-    # corrected score (see common.utils.gongan_to_records)
+    # TODO replace with values from settings file
+    # Be aware that the order of the list is the order in which
+    # the positions will occur in the PDF notation output
+    # (see common.utils.gongan_to_records)
     UGAL = "UGAL"
     SULING = "SULING"
     GENDERRAMBAT = "GENDERRAMBAT"
@@ -159,6 +159,7 @@ class Position(NotationEnum):
 
     @property
     def instrumenttype(self):
+        # TODO this should be replaced by a lookup based on the instruments.tsv settings file
         return InstrumentType[self.split("_")[0]]
 
     @property
@@ -216,7 +217,7 @@ class Stroke(NotationEnum):
     NONE = "NONE"
 
 
-class Modifier(StrEnum):
+class Modifier(NotationEnum):
     # The order of the values should comply to the
     # standardized sequence for the font characters:
     # 1. NONE (=pitch character)
@@ -323,10 +324,10 @@ class DynamicLevel(NotationEnum):
 # MIDI to Notation
 
 MIDI_TO_COURIER = {
-    36: "\u1ECD",
-    37: "\u1EB9",
-    38: "\u1EE5",
-    39: "\u1EA1",
+    36: "\u1ecd",
+    37: "\u1eb9",
+    38: "\u1ee5",
+    39: "\u1ea1",
     40: "\u0131",
     41: "o",
     42: "e",

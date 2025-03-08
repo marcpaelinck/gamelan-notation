@@ -107,6 +107,6 @@ class SoundfontTextfile:
 
     def save(self):
         outfilepath = self.settings.soundfont.def_filepath
-        with open(outfilepath, "w") as outfile:
+        with open(outfilepath, "w", encoding="utf-8") as outfile:
             outfile.write(self.content)
         return outfilepath

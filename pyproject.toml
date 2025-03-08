@@ -38,6 +38,7 @@ ipykernel = "^6.29.5"
 
 [tool.pylint.'MESSAGES CONTROL']
 max-line-length = 120
+disable = ["fixme", "consider-using-f-string", "eval-used"]
 
 [build-system]
 requires = ["poetry-core"]

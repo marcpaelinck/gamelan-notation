@@ -70,14 +70,7 @@ from tatsu.model import ParseModel
 from tatsu.util import asjson
 
 from src.common.classes import InstrumentTag, Measure, Notation, Note
-from src.common.constants import (
-    InstrumentType,
-    NotationDict,
-    ParserTag,
-    Position,
-    RuleType,
-    Stroke,
-)
+from src.common.constants import NotationDict, ParserTag, Position, RuleType, Stroke
 from src.common.metadata_classes import MetaData, Scope
 from src.notation2midi.classes import NamedIntID, ParserModel
 from src.notation2midi.special_notes_treatment import (
@@ -85,13 +78,13 @@ from src.notation2midi.special_notes_treatment import (
     update_grace_notes_octaves,
 )
 from src.settings.classes import RunSettings
-from src.settings.settings import get_run_settings
 
 # The following classes display meaningful names for the IDs
 # which will be used as key values in the output dict structure.
 # Mostly useful for debugging purposes.
 
 
+# pylint: disable=missing-class-docstring
 class GonganID(NamedIntID):
     name = "GONGAN"
     default = "SCORE LEVEL"
@@ -106,7 +99,12 @@ class PassID(NamedIntID):
     default = "DEFAULT PASS"
 
 
+# pylint enable=missing-class-docstring
+
+
 class NotationTatsuParser(ParserModel):
+    """Parser for notation documents. Uses the Tatsu library in combination with ebnf grammar files."""
+
     run_settings: RunSettings
     grammar_model: str
     model_source: str
@@ -123,27 +121,27 @@ class NotationTatsuParser(ParserModel):
         return note_chars.replace(",", "").replace("<", "")
 
     def _create_notation_grammar_model(
-        self, settings: RunSettings, from_pickle: bool = False, pickle_it: bool = False
+        self, run_settings: RunSettings, from_pickle: bool = False, pickle_it: bool = False
     ) -> ParseModel:
         # Read and compile the grammar
         if from_pickle:
             self.model_source = "model from pickled file"
-            with open(settings.grammar.pickle_filepath, "rb") as picklefile:
+            with open(run_settings.grammar.pickle_filepath, "rb") as picklefile:
                 grammar_model = pickle.load(picklefile)
         else:
             self.model_source = "model compiled from grammar files"
-            with open(settings.grammar.notation_filepath, "r") as grammarfile:
+            with open(run_settings.grammar.notation_filepath, "r", encoding="utf-8") as grammarfile:
                 notation_grammar = grammarfile.read()
             grammar_model = tatsu_compile(notation_grammar)
         if pickle_it:
             self.loginfo("Saving parser model to pickle file.")
-            with open(settings.grammar.pickle_filepath, "wb") as picklefile:
+            with open(run_settings.grammar.pickle_filepath, "wb") as picklefile:
                 pickle.dump(grammar_model, picklefile)
         return grammar_model
 
-    def _import_notation(self, settings: RunSettings):
+    def _import_notation(self, run_settings: RunSettings):
         # Read and parse the notation file
-        with open(settings.notation_filepath, "r") as notationfile:
+        with open(run_settings.notation_filepath, "r", encoding="utf-8") as notationfile:
             notation = notationfile.read()
         return notation
 
@@ -191,7 +189,7 @@ class NotationTatsuParser(ParserModel):
                 self.logerror(f"Could not parse {note_chars[0]} from {measure} for {position.value}")
                 note_chars = note_chars[1:]
             else:
-                if istremolo := (next_note.stroke in (Stroke.TREMOLO, Stroke.TREMOLO_ACCELERATING)):
+                if istremolo := next_note.stroke in (Stroke.TREMOLO, Stroke.TREMOLO_ACCELERATING):
                     tremolo_notes.append(next_note)
                 if len(tremolo_notes) == 2 or (tremolo_notes and (not istremolo or last_note)):
                     # Max. 2 notes may be combined in a tremolo. Generate the tremolo notes if max has been
@@ -298,12 +296,21 @@ class NotationTatsuParser(ParserModel):
             for self.curr_beat_id, measures in beat_dict[ParserTag.BEATS].items():
                 # if not isinstance(self.curr_beat_id, int):
                 #     continue
-                for position, measure in measures.items():
-                    for pass_seq, pass_ in measure.passes.items():
+                for _position, measure in measures.items():
+                    for _pass_seq, pass_ in measure.passes.items():
                         update_grace_notes_octaves(notes=pass_.notes, group=self.run_settings.instrumentgroup)
 
     @ParserModel.main
     def parse_notation(self, notation: str | None = None) -> NotationDict:
+        """parses the notation into a record structure. The entire document is parsed.
+           If a parsing error is encountered, the error is logged and the parser skips
+           to the next line.
+        Args:
+            notation (str | None, optional): the notation read from file. Defaults to None.
+        Returns:
+            NotationDict: dict containing a structured representation of the notation.
+            See the beginning of this module for a description.
+        """
         if notation:
             self.loginfo("Parsing notation from string")
         else:
@@ -356,7 +363,8 @@ class NotationTatsuParser(ParserModel):
         notation_dict = asjson(ast)
 
         # Convert the gongan structure into a dict {id: gongan}
-        # The sum function concatenates the final gongan to the list of gongans (final gongan is defined separately in the grammar)
+        # The sum function concatenates the final gongan to the list of gongans
+        # (final gongan is defined separately in the grammar)
         notation_dict = {GonganID(-1): notation_dict[ParserTag.UNBOUND]} | {
             GonganID(count + 1): gongan
             for count, gongan in enumerate(notation_dict[ParserTag.GONGANS])
@@ -426,7 +434,4 @@ class NotationTatsuParser(ParserModel):
 
 
 if __name__ == "__main__":
-    settings = get_run_settings()
-    parser = NotationTatsuParser(settings)
-    notation_dict = parser.parse_notation()
-    print(notation_dict)
+    pass

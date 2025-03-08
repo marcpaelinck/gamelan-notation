@@ -3,6 +3,7 @@ from itertools import product
 from src.common.constants import (  # pylint: disable=unused-import
     InstrumentGroup,
     InstrumentType,
+    NotationEnum,
     Position,
 )
 from src.settings.classes import RunSettings
@@ -79,24 +80,9 @@ def tag_to_position_dict(run_settings: RunSettings) -> dict[str, list[Position]]
     ADD = InstrumentTagFields.ADDITION
     # pylint: enable=invalid-name
 
-    # Cast the `groups` and `position` fields to the corresponding enum types
-    # Note: eval(val, InstrumentGroup.member_map()) would be nicer in the following assignment,
-    #       but it causes an inexplicable SchemaValidationError when tag_to_position_dict is called
-    #       from a Pydantic class.
-    # pylint: disable=eval-used
-
-    def format_group(val: str):
-        return eval(val.replace(" ", "").replace("[", "[InstrumentGroup.").replace(",", ",InstrumentGroup."))
-
-    def format_pos(val: str):
-        return eval(val.replace(" ", "").replace("[", "[Position.").replace(",", ",Position."))
-
-    # and filter records for the current instrumentgroup value.
-    tag_rec_list = [record | {GROUPS: format_group(record[GROUPS])} for record in run_settings.data.instrument_tags]
+    # filter records for the current instrumentgroup value.
     tag_rec_list = [
-        record | {POS: format_pos(record[POS])}
-        for record in tag_rec_list
-        if run_settings.instrumentgroup in record[GROUPS]
+        record.copy() for record in run_settings.data.instrument_tags if run_settings.instrumentgroup in record[GROUPS]
     ]
     # split the `tag` and `addition` fields and explode the data for each combination of tag and addition
     # combine both part with different separators. Store the result into a lookup dict.
@@ -117,12 +103,4 @@ def tag_to_position_dict(run_settings: RunSettings) -> dict[str, list[Position]]
 
 
 if __name__ == "__main__":
-    from src.settings.settings import (
-        get_midiplayer_content,
-        get_run_settings,
-        save_midiplayer_content,
-    )
-
-    settings = get_run_settings()
-    content = get_midiplayer_content()
-    save_midiplayer_content(content, "content.json")
+    pass
