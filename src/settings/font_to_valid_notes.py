@@ -10,7 +10,6 @@ as a list of Note objects to enable the Note validator to import this module wit
 circular reference.
 """
 
-import csv
 import json
 import re
 from enum import StrEnum
@@ -23,7 +22,6 @@ from pydantic import BaseModel, ConfigDict
 from src.common.constants import InstrumentType, Modifier, Pitch, Position, Stroke
 from src.settings.classes import RunSettings
 from src.settings.constants import MidiNotesFields, NoteFields
-from src.settings.settings import get_run_settings
 
 
 class AnyNote(BaseModel):
@@ -182,13 +180,10 @@ def create_note_records(run_settings: RunSettings) -> list[AnyNote]:
     modifiers_dicts = notes_df[
         pd.isna(notes_df[INSTRUMENTTYPE]) & (notes_df[PITCH] == "NONE") & (notes_df[MODIFIER] != "NONE")
     ].to_dict(orient="records")
-    modifiers = [AnyNote(**note) for note in modifiers_dicts]
-
-    # global MODIFIERS  # TODO why global ??
-    MODIFIERS = modifiers
+    modifier_notes = [AnyNote(**note) for note in modifiers_dicts]
 
     unmatched = list()
-    unmatched.extend(modifiers)
+    unmatched.extend(modifier_notes)
     note_list: list[ValidNote] = list()
     all_positions: list[Position] = set()
 
@@ -222,7 +217,7 @@ def create_note_records(run_settings: RunSettings) -> list[AnyNote]:
             match = match.model_copy(update={POSITION: record.position})
         # Try adding an octave modifier
         if match and match.octave != record.octave:
-            modifier = getmatch(record, [OCTAVE], modifiers, True)
+            modifier = getmatch(record, [OCTAVE], modifier_notes, True)
             match = match.model_copy(
                 update={SYMBOL: match.symbol + modifier.symbol, OCTAVE: (modifier.octave)} if modifier else {}
             )
@@ -230,7 +225,7 @@ def create_note_records(run_settings: RunSettings) -> list[AnyNote]:
                 unmatched.remove(modifier)
         # Try adding a stroke modifier
         if match and match.stroke != record.stroke:
-            modifier = getmatch(record, [STROKE], modifiers, True)
+            modifier = getmatch(record, [STROKE], modifier_notes, True)
             match = match.model_copy(
                 update={SYMBOL: match.symbol + modifier.symbol, STROKE: (modifier.stroke)} if modifier else {}
             )
@@ -292,7 +287,7 @@ def create_note_records(run_settings: RunSettings) -> list[AnyNote]:
             duration_updater (callable | None): Arguments: note: Note, modifier: NoteRecord. Determines the new note's duration value.  If None, the note's value remains unchanged.
             restafter_updater (callable | None): _descrArguments: note: Note, modifier: NoteRecord. Determines the new note's rest_after value.  If None, the note's value remains unchanged.
         """
-        modifier_records = [mod for mod in modifiers if mod.modifier in modifier_list]
+        modifier_records = [mod for mod in modifier_notes if mod.modifier in modifier_list]
 
         # Create modified notes by applying modifiers on each note that qualifies
         modified_notes = list()
@@ -311,27 +306,27 @@ def create_note_records(run_settings: RunSettings) -> list[AnyNote]:
         return modified_notes
 
     # Add notes with half and quarter duration
-    MODIFIERS = [Modifier.HALF_NOTE, Modifier.QUARTER_NOTE]
+    modifiers = [Modifier.HALF_NOTE, Modifier.QUARTER_NOTE]
     note_filter = lambda note: note.duration + note.rest_after == 1
     duration_updater = lambda note, mod: note.duration * (mod.duration + mod.rest_after)
     restafter_updater = lambda note, mod: note.rest_after * (mod.duration + mod.rest_after)
     short_notes = modified_notes(
-        MODIFIERS, note_filter=note_filter, duration_updater=duration_updater, restafter_updater=restafter_updater
+        modifiers, note_filter=note_filter, duration_updater=duration_updater, restafter_updater=restafter_updater
     )
     note_list.extend([ValidNote.model_validate(note) for note in short_notes])
 
     # Add tremolo variants for each whole-duration note. This will generate tremolo notes for all melodic instruments
     # Including pokok instruments. Undesired combinations can be excluded by modifying the regex filters of the notation parser.
-    MODIFIERS = [Modifier.TREMOLO, Modifier.TREMOLO_ACCELERATING]
+    modifiers = [Modifier.TREMOLO, Modifier.TREMOLO_ACCELERATING]
     note_filter = (
         lambda note: note.pitch != Pitch.NONE and note.duration + note.rest_after == 1 and note.stroke == Stroke.OPEN
     )
     stroke_updater = lambda note, mod: mod.stroke
-    tremolo_notes = modified_notes(MODIFIERS, note_filter=note_filter, stroke_updater=stroke_updater)
+    tremolo_notes = modified_notes(modifiers, note_filter=note_filter, stroke_updater=stroke_updater)
     note_list.extend([ValidNote.model_validate(note) for note in tremolo_notes])
 
     # Add norot variants for each melodic note.
-    MODIFIERS = [Modifier.NOROT]
+    modifiers = [Modifier.NOROT]
     melodics = [Pitch.DING, Pitch.DONG, Pitch.DENG, Pitch.DEUNG, Pitch.DUNG, Pitch.DANG, Pitch.DAING]
     norot_positions = [
         pos
@@ -353,7 +348,7 @@ def create_note_records(run_settings: RunSettings) -> list[AnyNote]:
         and note.position in norot_positions
     )
     stroke_updater = lambda note, mod: mod.stroke
-    norot_notes = modified_notes(MODIFIERS, note_filter=note_filter, stroke_updater=stroke_updater)
+    norot_notes = modified_notes(modifiers, note_filter=note_filter, stroke_updater=stroke_updater)
     note_list.extend([ValidNote.model_validate(note) for note in norot_notes])
 
     # Convert to generic records.

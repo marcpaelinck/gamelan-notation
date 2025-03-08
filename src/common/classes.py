@@ -672,8 +672,8 @@ class Preset(BaseModel):
     def get_preset(cls, position: Position):
         try:
             return cls._POSITION_TO_PRESET[position]
-        except:
-            raise ValueError("No preset found for {position}.")
+        except Exception as exc:
+            raise ValueError("No preset found for {}.".format(position)) from exc
 
     @classmethod
     def get_preset_dict(cls) -> dict[Position, "Preset"]:
