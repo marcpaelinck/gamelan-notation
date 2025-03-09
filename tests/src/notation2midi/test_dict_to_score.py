@@ -1,5 +1,4 @@
 import unittest
-from enum import Enum, auto
 from unittest.mock import MagicMock, patch
 
 import src.settings.settings
@@ -11,26 +10,18 @@ from src.common.constants import (
     ParserTag,
     Pitch,
     Position,
-    RuleType,
     Stroke,
 )
 from src.common.metadata_classes import (
-    AutoKempyungMeta,
     DynamicsMeta,
-    GonganMeta,
-    GonganType,
     GoToMeta,
     KempliMeta,
     LabelMeta,
     MetaData,
     MetaDataSwitch,
     OctavateMeta,
-    PartMeta,
-    RepeatMeta,
-    SequenceMeta,
     SuppressMeta,
     TempoMeta,
-    ValidationMeta,
     WaitMeta,
 )
 from src.notation2midi.dict_to_score import DictToScoreConverter
@@ -160,9 +151,7 @@ class TestDictToScoreConverter(unittest.TestCase):
 
     @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
     def get_converter_sp(self):
-        settings = src.settings.settings.load_run_settings(
-            notation={Yaml.COMPOSITION: "test-semarpagulingan", Yaml.PART_ID: "full"}
-        )
+        settings = src.settings.settings.load_run_settings(notation_id="test-semarpagulingan", part_id="full")
         mock_notation = MagicMock(spec=Notation)
         mock_notation.settings = settings
         mock_notation.notation_dict = get_notation()
@@ -170,9 +159,7 @@ class TestDictToScoreConverter(unittest.TestCase):
 
     @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
     def get_converter_beat_at_end(self):
-        settings = src.settings.settings.load_run_settings(
-            notation={Yaml.COMPOSITION: "test_beat_at_end", Yaml.PART_ID: "full"}
-        )
+        settings = src.settings.settings.load_run_settings(notation_id="test_beat_at_end", part_id="full")
         mock_notation = MagicMock(spec=Notation)
         mock_notation.settings = settings
         mock_notation.notation_dict = get_notation()
@@ -297,16 +284,23 @@ class TestDictToScoreConverter(unittest.TestCase):
 
     metadata = [
         (
-            DynamicsMeta(metatype="DYNAMICS", abbreviation=DynamicLevel.PIANISSIMO, first_beat=1),
-            DynamicsMeta(metatype="DYNAMICS", valabbreviationue=DynamicLevel.FORTISSIMO, first_beat=2),
+            DynamicsMeta(
+                metatype="DYNAMICS",
+                abbreviation=DynamicLevel.PIANISSIMO,
+                first_beat=1,
+                positions=[Position.PEMADE_POLOS, Position.PEMADE_SANGSIH],
+            ),
+            DynamicsMeta(
+                metatype="DYNAMICS",
+                valabbreviationue=DynamicLevel.FORTISSIMO,
+                first_beat=2,
+                positions=[Position.PEMADE_POLOS, Position.PEMADE_SANGSIH],
+            ),
             ({1: {"value": DynamicLevel.PIANISSIMO}, 2: {"value": DynamicLevel.FORTISSIMO}}),
         ),
         (KempliMeta(metatype="KEMPLI", status=MetaDataSwitch.OFF, beats=[1])),
         (OctavateMeta(metatype="OCTAVATE", octaves=1, instrument=InstrumentType.UGAL)),
         ([TempoMeta(metatype="TEMPO", value=50, beat_count=1), TempoMeta(metatype="TEMPO", value=70, first_beat=2)]),
-    ]
-
-    metadata = [
         (GoToMeta(metatype="GOTO", label="LABEL1")),
         (SuppressMeta(metatype="SUPPRESS", positions=[Position.PEMADE_SANGSIH], beats=[2])),
         (WaitMeta(metatype="WAIT", seconds=2)),

@@ -122,6 +122,7 @@ class Song(BaseModel):
     instrumentgroup: InstrumentGroup
     display: bool
     pdf: str | None = None
+    pdf_version: str
     parts: list[Part] = Field(default_factory=list)
 
 

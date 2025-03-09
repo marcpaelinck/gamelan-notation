@@ -1,6 +1,7 @@
+# pylint: disable=no-member
 """Formatting settings and instructions for the ScoreToPDFConverter.
-   The code uses the Platypus library of ReportLab.
-   See https://docs.reportlab.com/reportlab/userguide/ch5_platypus/.
+The code uses the Platypus library of ReportLab.
+See https://docs.reportlab.com/reportlab/userguide/ch5_platypus/.
 """
 
 from __future__ import annotations
@@ -510,7 +511,7 @@ class NotationTemplate:
         value_ = self.format_text(value_, self.metadataLabelCharStyle)
         return f"{before}{value_}{after}"
 
-    def _gradual_change_formatter(self, meta: MetaDataBaseModel, current_value: int = None) -> str:
+    def _gradual_change_formatter(self, meta: MetaDataBaseModel) -> str:
         """Formatter for GradualChangeMetadata subclasses. These values can include a range of beats to which the metadata
            applies. Called for TEMPO and DYNAMICS metadata which can gradually change over several beats.
            The value will be preceded or followed by a dotted line that will reach to the right margine of the (merged) cell.
@@ -524,6 +525,7 @@ class NotationTemplate:
         """
         # If the metadata spans several beats, dots will be added over the width of the corresponding columns.
         value = getattr(meta, meta.DEFAULTPARAM)
+        value_ = None
 
         if meta.metatype == "TEMPO":
             if self.current_tempo == -1:

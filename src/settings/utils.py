@@ -1,11 +1,6 @@
 from itertools import product
 
-from src.common.constants import (  # pylint: disable=unused-import
-    InstrumentGroup,
-    InstrumentType,
-    NotationEnum,
-    Position,
-)
+from src.common.constants import InstrumentType, Position
 from src.settings.classes import RunSettings
 from src.settings.constants import InstrumentTagFields
 

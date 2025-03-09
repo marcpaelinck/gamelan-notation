@@ -121,12 +121,12 @@ class ToneTester(unittest.TestCase):
     @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
     def load_settings_sp(self):
         # Create mock notation and converter for semar pagulingan score
-        load_run_settings(notation={Yaml.COMPOSITION: "test-semarpagulingan", Yaml.PART_ID: "full"})
+        load_run_settings(notation_id="test-semarpagulingan", part_id="full")
 
     @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
     def load_settings_gk(self):
         # Create mock notation and converter for gong kebyar score with beat at end
-        load_run_settings(notation={Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART_ID: "full"})
+        load_run_settings(notation_id="test-gongkebyar", part_id="full")
 
     # fmt: off
     tone_range_data = [
@@ -154,7 +154,7 @@ class RuleTester(unittest.TestCase):
     @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
     def setUp(self):
         # Create mock notation and converter for gong kebyar score with beat at end
-        load_run_settings(notation={Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART_ID: "full"})
+        load_run_settings(notation_id="test-gongkebyar", part_id="full")
 
     # fmt: off
     kempyung_tone_data = [

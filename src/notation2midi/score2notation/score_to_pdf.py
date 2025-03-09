@@ -376,9 +376,6 @@ class ScoreToPDFConverter(ParserModel):
             self.story.append(gongan_table)
         self.template.doc.build(self.story)
 
-    def is_docfile_closed():
-        return
-
     def _update_midiplayer_content(self) -> None:
         update_midiplayer_content(
             title=self.run_settings.notation.title,

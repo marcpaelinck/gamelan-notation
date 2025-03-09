@@ -11,7 +11,7 @@
         "black"
     ],
     "python.testing.cwd": "${workspaceFolder}",
-    "python.testing.unittestEnabled": true,
+    "python.testing.unittestEnabled": false,
     "python.testing.unittestArgs": [
         "-v",
         "-s",
@@ -19,10 +19,9 @@
         "-p",
         "test_*.py"
     ],
-    "python.testing.pytestEnabled": false,
+    "python.testing.pytestEnabled": true,
     "python.testing.pytestArgs": [
-        "--cache-clear",
-        "-s"
+        "tests"
     ],
     "files.associations": {
         "*.tsv": "tsv"

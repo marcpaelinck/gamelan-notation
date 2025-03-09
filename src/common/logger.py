@@ -15,6 +15,7 @@ class CustomFormatter(logging.Formatter):
     msgformat = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"  # (%(filename)s:%(lineno)d)"
 
     def __init__(self, colors=True):
+        super().__init__(fmt=self.msgformat)
         self.withcolors = colors
 
     FORMATS = {
@@ -70,6 +71,6 @@ def get_logger(name) -> logging.Logger:
 
 
 if __name__ == "__main__":
-    logger = get_logger("test")
-    logger.error("Foutmelding!")
+    testlogger = get_logger("test")
+    testlogger.error("Foutmelding!")
     print(LOGGING)

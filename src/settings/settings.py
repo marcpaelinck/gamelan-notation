@@ -296,7 +296,7 @@ def load_run_settings(notation_id: str = None, part_id: str = None) -> RunSettin
        that use separate YAML settings files.
 
     Args:
-        notation_id: key value of the notation as it appears in the data.yaml file
+        notation_id: key value of the notation as it appears in the config.yaml file
         part_id: key value of the part of the notation
 
     Returns:
