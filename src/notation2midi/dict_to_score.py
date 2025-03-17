@@ -1,7 +1,7 @@
-""" Creates a midi file based on a notation file.
-    See ./data/README.md for more information about notation files and ./data/notation/test for an example of a notation file.
+"""Creates a midi file based on a notation file.
+See ./data/README.md for more information about notation files and ./data/notation/test for an example of a notation file.
 
-    Main method: convert_notation_to_midi()
+Main method: convert_notation_to_midi()
 """
 
 from statistics import mode
@@ -33,6 +33,7 @@ from src.common.metadata_classes import (
     OctavateMeta,
     PartMeta,
     RepeatMeta,
+    Scope,
     SequenceMeta,
     SuppressMeta,
     TempoMeta,
@@ -207,7 +208,7 @@ class DictToScoreConverter(ParserModel):
                         for note in pass_.notes
                     ]
 
-    def _apply_metadata(self, metadata: list[MetaData], gongan: Gongan) -> None:
+    def _apply_metadata(self, gongan: Gongan) -> None:
         """Processes the metadata of a gongan into the object model.
 
         Args:
@@ -227,6 +228,9 @@ class DictToScoreConverter(ParserModel):
                 )
                 gongan.beats[goto.data.beat_seq].goto_[rep] = goto_item
 
+        metadata = gongan.metadata.copy() + [
+            m for m in self.score.gongans[0].metadata if hasattr(m, "scope") and m.scope == Scope.SCORE
+        ]
         haslabel = False  # Will be set to true if the gongan has a metadata Label tag.
         for meta in sorted(metadata, key=lambda x: x.data._processingorder_):
             self.curr_line_nr = meta.data.line
@@ -620,7 +624,7 @@ class DictToScoreConverter(ParserModel):
             # TODO temporary fix. Create generators to iterate through gongans, beats and positions
             # These should update the curr counters.
             gongan.beat_duration = max(beat.duration for beat in gongan.beats)  # most occuring duration
-            self._apply_metadata(gongan.metadata, gongan)
+            self._apply_metadata(gongan)
         # Process the sequences metadata
         self._process_sequences()
         # Add kempli beats

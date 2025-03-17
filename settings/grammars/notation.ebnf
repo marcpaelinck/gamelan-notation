@@ -47,7 +47,8 @@ stave_line = position:tag beats:{beat_with_tab} {tab} eol ;
 (* position tag may be anything except 'comment' or 'metadata' (no check on value currently) 
    and can be optionally followed by a pass indicator (colon followed by digit(s).
    If no pass value is encountered the default -1 is returned                          *)
-tag = tag:/(?!comment|metadata)\w[\w\- \/]*/ pass:(/:(\d+)/ | `-1`);
+(*tag = tag:/(?!comment|metadata)\w[\w\- \/]*/ pass:(/:(\d+)/ | `-1`); *)
+tag = tag:/(?!comment|metadata\t)\w[\w\- \/\+]*/ pass:(/:(\d+)/ | `-1`);
 
 (* beat is defined in font5.metadata *)
 beat_with_tab = tab @:{note};

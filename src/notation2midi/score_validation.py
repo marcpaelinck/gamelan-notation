@@ -167,7 +167,7 @@ class ScoreValidator(ParserModel):
         # CURRENLTY GONG KEBYAR ONLY
         all_notes = sorted(
             list(product([Pitch.DING, Pitch.DONG, Pitch.DENG, Pitch.DUNG, Pitch.DANG], [0, 1, 2])),
-            key=lambda x: x[0].index + x[1] * 10,
+            key=lambda x: x[0].sequence + x[1] * 10,
         )
         base_dict = list(zip(all_notes, all_notes[3:]))
         kempyung_dict = {p: s if s in instrumentrange else p for (p, s) in base_dict if p in instrumentrange}
@@ -305,6 +305,7 @@ class ScoreValidator(ParserModel):
         if self.score.settings.instrumentgroup != InstrumentGroup.GONG_KEBYAR:
             self.logwarning("Skipping kempyung validation for non-gong kebyar scores.")
 
+        gongan: Gongan
         for gongan in self.gongan_iterator(self.score):
             # Determine if the beat duration is a power of 2 (ignore kebyar)
             invalids, corrected, ignored = self._invalid_beat_lengths(gongan, autocorrect)
@@ -317,6 +318,7 @@ class ScoreValidator(ParserModel):
                 beat_at_end=self.score.settings.notation.beat_at_end,
                 autocorrect=autocorrect,
             )
+
             remaining_bad_measure_lengths.extend(invalids)
             corrected_measure_lengths.extend(corrected)
             ignored_measure_lengths.extend(ignored)
@@ -326,7 +328,8 @@ class ScoreValidator(ParserModel):
             corrected_note_out_of_range.extend(corrected)
             ignored_note_out_of_range.extend(corrected)
 
-            if self.score.settings.instrumentgroup == InstrumentGroup.GONG_KEBYAR:
+            # TODO temporary disabled
+            if False and self.score.settings.instrumentgroup == InstrumentGroup.GONG_KEBYAR:
                 invalids, corrected, ignored = self._incorrect_kempyung(gongan, autocorrect=autocorrect)
                 remaining_incorrect_kempyung.extend(invalids)
                 corrected_invalid_kempyung.extend(corrected)

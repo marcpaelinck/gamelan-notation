@@ -1,7 +1,7 @@
 ---
 # The settings below (except for options) refer to values in the data.yaml file.
 # The font selection is defined in the details of the selected notation component (see data.yaml file).
-notation_id: legongmahawidya_gk
+notation_id: danceimprovisation
 part_id: full
 options:
   # Option autocorrect should be set in the input files. Default should be false.
