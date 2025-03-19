@@ -3,6 +3,7 @@ from __future__ import annotations
 import itertools
 import os
 import pickle
+import time
 from enum import Enum
 from os import path
 from typing import Callable
@@ -377,10 +378,13 @@ class ScoreToPDFConverter(ParserModel):
         self.template.doc.build(self.story)
 
     def _update_midiplayer_content(self) -> None:
+        modification_time = os.path.getmtime(self.score.settings.pdf_out_filepath)
+        notation_version = time.strftime("%d%b/%Y %H:%M", time.gmtime(modification_time)).lower()
         update_midiplayer_content(
             title=self.run_settings.notation.title,
             group=self.run_settings.notation.instrumentgroup,
             pdf_file=self.score.settings.pdf_out_file,
+            notation_version=notation_version,
         )
 
     @ParserModel.main

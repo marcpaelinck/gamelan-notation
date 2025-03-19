@@ -173,9 +173,17 @@ notations:
                 name: entire piece
                 file: Legong Mahawidya_font5_GK.tsv
                 loop: false
+            kawitan:
+                name: kawitan
+                file: Legong Mahawidya_font5_GK_kawitan.tsv
+                loop: true
             pengawak:
                 name: pengawak
                 file: Legong Mahawidya_font5_GK_pengawak.tsv
+                loop: true
+            pengecet:
+                name: pengecet
+                file: Legong Mahawidya_font5_GK_pengecet.tsv
                 loop: true
     lengker:
         title: Lengker

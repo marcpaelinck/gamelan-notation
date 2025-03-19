@@ -4,6 +4,7 @@ Functions for importing and validating the run settings.
 
 import os
 import re
+import time
 from typing import Any, Callable
 
 import numpy as np
@@ -337,6 +338,25 @@ def load_run_settings(notation_id: str = None, part_id: str = None) -> RunSettin
     return get_run_settings()
 
 
+def temp_update_me(content: Content):
+    """Auxiliary function that updates the content with the pdf version"""
+    for song in content.songs:
+        notation_info = next(
+            (
+                notation
+                for key, notation in _RUN_SETTINGS.settingsdata.notations.items()
+                if notation.title == song.title
+            ),
+            None,
+        )
+        if song.pdf and notation_info:
+            filepath = os.path.join(notation_info.folder_in, notation_info.parts["full"].file)
+            modification_time = os.path.getmtime(filepath)
+            version_date = time.strftime("%d-%b-%Y", time.gmtime(modification_time)).lower()
+            song.notation_version = version_date
+    return content
+
+
 def get_midiplayer_content() -> Content:
     """Loads the configuration file for the JavaScript midplayer app.
        Next to settings, the file contains information about the MIDI and PDF files
@@ -349,6 +369,7 @@ def get_midiplayer_content() -> Content:
     contentfile = run_settings.midiplayer.contentfile
     with open(os.path.join(datafolder, contentfile), "r", encoding="utf-8") as contentfile:
         playercontent = contentfile.read()
+    # return temp_update_me(Content.model_validate_json(playercontent))
     return Content.model_validate_json(playercontent)
 
 
@@ -376,7 +397,11 @@ def save_midiplayer_content(playercontent: Content, filename: str = None):
 
 
 def update_midiplayer_content(
-    title: str, group: InstrumentGroup, partinfo: PartForm | None = None, pdf_file: str | None = None
+    title: str,
+    group: InstrumentGroup,
+    partinfo: PartForm | None = None,
+    pdf_file: str | None = None,
+    notation_version: str = "",
 ) -> None:
     """Updates the information given in Part in the content.json file of the midi player.
 
@@ -391,7 +416,11 @@ def update_midiplayer_content(
     player_song: Song = next((song_ for song_ in content.songs if song_.title == title), None)
     if not player_song:
         # TODO create components of Song
-        content.songs.append(player_song := Song(title=title, instrumentgroup=group, display=True, pfd=pdf_file))
+        content.songs.append(
+            player_song := Song(
+                title=title, instrumentgroup=group, display=True, pfd=pdf_file, notation_version=notation_version
+            )
+        )
         logger.info("New song %s created for MIDI player content", player_song.title)
     elif pdf_file:
         player_song.pdf = pdf_file
