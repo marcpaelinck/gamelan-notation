@@ -1,7 +1,7 @@
-""" Creates an Excel soundfont definition file. This file can imported in the Viena application 
-    to create a  Soundfont file (.sf2 format). See http://www.synthfont.com/The_Definitions_File.pdf
+"""Creates an Excel soundfont definition file. This file can imported in the Viena application
+to create a  Soundfont file (.sf2 format). See http://www.synthfont.com/The_Definitions_File.pdf
 
-    Main method: create_soundfont_file()
+Main method: create_soundfont_file()
 """
 
 import os
@@ -30,7 +30,7 @@ def create_soundfont_definition_file(run_settings: RunSettings) -> None:
     logger.info(f"Midi version: {run_settings.midi.midiversion}")
 
     instrument_to_midi_dict = {
-        instrument: [note.midinote for note in Note._VALIDNOTES if note.position.instrumenttype is instrument]
+        instrument: [note.midinote for note in Note.VALIDNOTES if note.position.instrumenttype is instrument]
         for instrument in InstrumentType
     }
 

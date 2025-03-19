@@ -27,15 +27,15 @@ Example:
                         }
     GONGAN(1):          {   METADATA:   [MetaData(...), ...],
                             COMMENTS:   ['comment 2', ...],
-                            BEATS       {   
-                                BEAT(1):    {   
+                            BEATS       {
+                                BEAT(1):    {
                                     UGAL: Measure(
-                                            position=KANTILAN_SANGSIH, 
+                                            position=KANTILAN_SANGSIH,
                                             passes={
-                                                DEFAULT PASS(-1): 
+                                                DEFAULT PASS(-1):
                                                     Measure.Pass(
-                                                        pass_seq=DEFAULT PASS(-1), 
-                                                        line=9, 
+                                                        pass_seq=DEFAULT PASS(-1),
+                                                        line=9,
                                                         notes=[Note(...), Note(...), ...]
                                                     ),
                                                 PASS(1):
@@ -44,7 +44,7 @@ Example:
                                     },
                                     CALUNG: { ...
                                     },
-                                        ...        
+                                        ...
                                 },
                                 BEAT(2):    {...
                                 },
@@ -63,6 +63,7 @@ import pickle
 import re
 import sys
 from collections import ChainMap
+from typing import Any
 
 from tatsu import compile as tatsu_compile
 from tatsu.exceptions import FailedParse
@@ -70,14 +71,15 @@ from tatsu.model import ParseModel
 from tatsu.util import asjson
 
 from src.common.classes import InstrumentTag, Measure, Notation, Note
-from src.common.constants import NotationDict, ParserTag, Position, RuleType, Stroke
+from src.common.constants import NotationDict, ParserTag, Position, RuleType
 from src.common.metadata_classes import MetaData, Scope
 from src.notation2midi.classes import NamedIntID, ParserModel
-from src.notation2midi.special_notes_treatment import (
-    generate_tremolo,
-    update_grace_notes_octaves,
-)
+from src.notation2midi.score2notation.classes import NoteRecord
+from src.notation2midi.special_notes_treatment import update_grace_notes_octaves
 from src.settings.classes import RunSettings
+from src.settings.constants import FontFields, NoteFields
+from src.settings.font_to_valid_notes import get_note_records
+from src.settings.settings import get_run_settings
 
 # The following classes display meaningful names for the IDs
 # which will be used as key values in the output dict structure.
@@ -108,14 +110,38 @@ class NotationTatsuParser(ParserModel):
     run_settings: RunSettings
     grammar_model: str
     model_source: str
+    _char_to_fontinfo_dict: dict[str, dict[str, Any]]
+    _symbol_to_note: dict[str, NoteRecord]
 
     def __init__(self, run_settings: RunSettings):
         super().__init__(self.ParserType.NOTATIONPARSER, run_settings)
         self.run_settings = run_settings
         self.grammar_model = self._create_notation_grammar_model(self.run_settings, from_pickle=False, pickle_it=False)
+        # Initialize _font_dict lookup dict
+        self._char_to_fontinfo_dict = {sym[FontFields.SYMBOL]: sym for sym in self.run_settings.data.font}
+        # Initialize _symbol_to_note lookup dict
+        note_records = get_note_records(self.run_settings)
+        self._symbol_to_note = {
+            self.sorted_chars(note[NoteFields.SYMBOL]): NoteRecord(
+                **{k: v for k, v in note.items() if k in NoteRecord.fieldnames()}
+            )
+            for note in note_records
+        }
+
+    def sorted_chars(self, chars: str) -> str:
+        """Sorts the characters of a note symbol in a unique and deterministic order.
+        The sorting order is determined by the sequence of the Modifier Enum value of each font character.
+        The resulting string starts with the pitch character (Modifier.NONE) followed by optional
+        modifier in a fixed sequence."""
+        try:
+            return "".join(sorted(chars, key=lambda c: self._char_to_fontinfo_dict[c][FontFields.MODIFIER].sequence))
+        except KeyError:
+            self.logerror("Illegal character in %s", chars)
+        except Exception:  # pylint: disable=broad-exception-caught
+            self.logerror("Error parsing note %s", chars)
 
     @classmethod
-    def unoctavated(cls, note_chars: str) -> str:
+    def unoctavated(cls, note_chars: str) -> str:  # TODO MOVE
         """returns a note symbol with octavation characters removed."""
         # TODO: make this more generic
         return note_chars.replace(",", "").replace("<", "")
@@ -139,12 +165,6 @@ class NotationTatsuParser(ParserModel):
                 pickle.dump(grammar_model, picklefile)
         return grammar_model
 
-    def _import_notation(self, run_settings: RunSettings):
-        # Read and parse the notation file
-        with open(run_settings.notation_filepath, "r", encoding="utf-8") as notationfile:
-            notation = notationfile.read()
-        return notation
-
     def _flatten_meta(self, metadict: dict) -> dict:
         # The json_dict contains the first parameter and its value, and a key "parameters" with a list of dicts
         # other parameters + values. E.g.
@@ -156,7 +176,28 @@ class NotationTatsuParser(ParserModel):
         )
         return flattened_dict
 
-    def _parse_measure(self, measure: str, position: Position, all_positions: list[Position]) -> list[Note]:
+    def _parse_generic_note(
+        self,
+        symbol: str,
+        position: Position,
+    ) -> "Note":
+        """Parses the given notation symbol to a NoteRecord object.
+           The note is generic in the sense that it is not bound to an instument type.
+           This binding will be performed in a later step of the pipeline (dict_to_score).
+           This is done to keep the notation parser free of any 'knowledge' about the instruments.
+        Args:
+            symbol (str): notation characters.
+            position (Position): position
+        Returns:
+            NoteRecord: A generic note object, i.e. not bound to any instrument type.
+        """
+        normalized_symbol = self.sorted_chars(symbol)
+
+        if len(symbol) < 1:
+            raise ValueError(f"Unexpected empty symbol for {position}")
+        return self._symbol_to_note[normalized_symbol]
+
+    def _parse_measure(self, measure: str, position: Position) -> list[Note]:
         """Parses the notation of a stave to note objects
            If the stave stands for multiple reyong positions, the notation is transformed to match
            each position separately. There are two possible cases:
@@ -166,43 +207,34 @@ class NotationTatsuParser(ParserModel):
             - All reyong positions: the notation is expected to represent the REYONG_1 part.
               In this case the kempyung equivalent of the notation will be determined for REYONG_2
               and REYONG_4 within their respective range.
-
         Args:
             stave (str): one stave of notation
             position (Position):
             multiple_positions (list[Position]): List of all positions for this stave.
-
-        Returns: str | None: _description_
+        Returns: list[str] | None: _description_
         """
         notes = []  # will contain the Note objects
-        tremolo_notes = []
         note_chars = measure
-        for note_sequence, note_chars in enumerate(measure, start=1):
-            # try parsing the next note
-            # next_note = Note.parse_next_note(note_chars, position)
-            last_note = note_sequence == len(measure)
+        for note_chars in measure:
             try:
-                next_note = Note.parse(note_chars, position, all_positions)
+                next_note = self._parse_generic_note(note_chars, position)
             except ValueError as e:
                 self.logerror(str(e))
             if not next_note:
                 self.logerror(f"Could not parse {note_chars[0]} from {measure} for {position.value}")
                 note_chars = note_chars[1:]
             else:
-                if istremolo := next_note.stroke in (Stroke.TREMOLO, Stroke.TREMOLO_ACCELERATING):
-                    tremolo_notes.append(next_note)
-                if len(tremolo_notes) == 2 or (tremolo_notes and (not istremolo or last_note)):
-                    # Max. 2 notes may be combined in a tremolo. Generate the tremolo notes if max has been
-                    # reached, or if no tremolo note follows the last saved tremolo note.
-                    notes.extend(generate_tremolo(tremolo_notes, self.run_settings.midi, self.logerror))
-                    tremolo_notes.clear()
-                if not istremolo:
-                    notes.append(next_note)
+                notes.append(next_note)
                 note_chars = note_chars[len(next_note.symbol) :]
-
         return notes
 
     def _replace_tags_with_positions(self, staves: list[dict]) -> None:
+        """Translates the tag (position name in the first column of a measure) to a list of Position enum values.
+           Note that a tag can represent multiple values, e.g. 'gangsa' stands for four positions: polos and sangsih
+           positions for both pemade and kantilan.
+        Args:
+            staves (list[dict]): list of records, each representing a stave
+        """
         additional_staves = []
         for stave in staves:
             tag = stave[ParserTag.POSITION][ParserTag.TAG]
@@ -258,11 +290,11 @@ class NotationTatsuParser(ParserModel):
             return {}
         # count only non-empty beats
         beat_count = max(len([beat for beat in stave[ParserTag.BEATS] if beat]) for stave in staves)
-        positions = {stave[ParserTag.POSITION] for stave in staves}
         beats = {
             BeatID(beat_seq + 1): {
-                position: Measure(
-                    position=position,
+                stave[ParserTag.POSITION]: Measure(
+                    position=stave[ParserTag.POSITION],  # position,
+                    all_positions=stave[ParserTag.ALL_POSITIONS],  # positions,
                     passes={
                         stave[ParserTag.PASS]: (
                             Measure.Pass(
@@ -274,31 +306,14 @@ class NotationTatsuParser(ParserModel):
                                 ruletype=RuleType.UNISONO if len(stave[ParserTag.ALL_POSITIONS]) > 1 else None,
                             )
                         )
-                        for stave in staves
-                        if stave[ParserTag.POSITION] == position
                     },
                 )
-                for position in positions
-                if any(stave for stave in staves)
+                for stave in staves
             }
             for beat_seq in range(beat_count)
         }
 
         return beats
-
-    def _update_grace_notes(self, notation_dict: NotationDict):
-        """Modifies the octave of all the grace notes to match the not that follows.
-        Args:
-            notation_dict (NotationDict): The notation
-        """
-
-        for self.curr_gongan_id, beat_dict in notation_dict.items():
-            for self.curr_beat_id, measures in beat_dict[ParserTag.BEATS].items():
-                # if not isinstance(self.curr_beat_id, int):
-                #     continue
-                for _position, measure in measures.items():
-                    for _pass_seq, pass_ in measure.passes.items():
-                        update_grace_notes_octaves(notes=pass_.notes, group=self.run_settings.instrumentgroup)
 
     @ParserModel.main
     def parse_notation(self, notation: str | None = None) -> NotationDict:
@@ -414,15 +429,13 @@ class NotationTatsuParser(ParserModel):
                 # Parse the beats into Note objects
                 parsed_beats = []
                 for self.curr_beat_id, measure in enumerate(stave[ParserTag.BEATS], start=1):
-                    parsed_beats.append(
-                        self._parse_measure(measure, stave[ParserTag.POSITION], stave[ParserTag.ALL_POSITIONS])
-                    )
+                    parsed_beats.append(self._parse_measure(measure, stave[ParserTag.POSITION]))
                 stave[ParserTag.BEATS] = parsed_beats
 
             # Transpose the gongan from stave-oriented to beat-oriented
             gongan[ParserTag.BEATS] = self._staves_to_beats(gongan[ParserTag.STAVES])
             del gongan[ParserTag.STAVES]
-        self._update_grace_notes(notation_dict)
+        # self._update_grace_notes(notation_dict)
 
         if self.has_errors:
             self.logerror("Program halted.")
@@ -434,4 +447,6 @@ class NotationTatsuParser(ParserModel):
 
 
 if __name__ == "__main__":
-    pass
+    settings = get_run_settings()
+    parser = NotationTatsuParser(settings)
+    print(parser.sorted_chars("i=,/"))

@@ -25,7 +25,8 @@ from src.settings.constants import MidiNotesFields, NoteFields
 
 
 class AnyNote(BaseModel):
-    # Class used to create valid note objects. None values are accepted here.
+    """Class used to create valid note objects. None values are accepted here."""
+
     model_config = ConfigDict(frozen=True)
 
     instrumenttype: InstrumentType | None
@@ -100,15 +101,15 @@ def create_note_records(run_settings: RunSettings) -> list[AnyNote]:
 
     def getmatch(
         note_record: AnyNote, fields: list[str], record_list: list[AnyNote], ismodifier: bool
-    ) -> AnyNote | ModuleNotFoundError:
+    ) -> AnyNote | None:
         """Searches for a record in record_list with a value that matches the given fields of note_record.
         Args:
-            note_record (NoteRecord): A dict containing note properties
+            note_record (AnyNote): A dict containing note properties
             fields (list[str]): List of fields to match
             record_list (_type_):
             ismodifier (bool): True: record_list is a list of modifiers. False: record_list is a list of note records.
         Returns:
-            NoteRecord | None: The note record if found.
+            AnyNote | None: The note record if found.
         """
         found = next(
             (
@@ -283,9 +284,9 @@ def create_note_records(run_settings: RunSettings) -> list[AnyNote]:
         Args:
             modifier_list (list[Modifier]): List of modifier to apply
             note_filter (callable | None): Arguments: note: Note. Filters for the notes for which to apply the modifiers. If None, no filter is applied.
-            stroke_updater (callable | None): Arguments: note: Note, modifier: NoteRecord. Determines the new note's stroke value. If None, the note's value remains unchanged.
-            duration_updater (callable | None): Arguments: note: Note, modifier: NoteRecord. Determines the new note's duration value.  If None, the note's value remains unchanged.
-            restafter_updater (callable | None): _descrArguments: note: Note, modifier: NoteRecord. Determines the new note's rest_after value.  If None, the note's value remains unchanged.
+            stroke_updater (callable | None): Arguments: note: Note, modifier: ValidNote. Determines the new note's stroke value. If None, the note's value remains unchanged.
+            duration_updater (callable | None): Arguments: note: Note, modifier: ValidNote. Determines the new note's duration value.  If None, the note's value remains unchanged.
+            restafter_updater (callable | None): _descrArguments: note: Note, modifier: ValidNote. Determines the new note's rest_after value.  If None, the note's value remains unchanged.
         """
         modifier_records = [mod for mod in modifier_notes if mod.modifier in modifier_list]
 
@@ -357,7 +358,7 @@ def create_note_records(run_settings: RunSettings) -> list[AnyNote]:
     return note_record_list
 
 
-def get_note_records(run_settings: RunSettings):
+def get_note_records(run_settings: RunSettings) -> list[AnyNote]:
     return create_note_records(run_settings)
 
 

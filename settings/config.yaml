@@ -173,6 +173,10 @@ notations:
                 name: entire piece
                 file: Legong Mahawidya_font5_GK.tsv
                 loop: false
+            pengawak:
+                name: pengawak
+                file: Legong Mahawidya_font5_GK_pengawak.tsv
+                loop: true
     lengker:
         title: Lengker
         subfolder: lengker

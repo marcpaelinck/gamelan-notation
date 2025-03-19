@@ -153,6 +153,7 @@ class AutoKempyungMeta(MetaDataBaseModel):
     metatype: Literal["AUTOKEMPYUNG"]
     status: MetaDataSwitch
     scope: Optional[Scope] = Scope.GONGAN
+    positions: list[Position] = None  # PositionsFromTag
     DEFAULTPARAM = "status"
 
 

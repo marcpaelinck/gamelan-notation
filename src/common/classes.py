@@ -36,14 +36,17 @@ from src.common.constants import (
     Velocity,
 )
 from src.common.metadata_classes import (
+    AutoKempyungMeta,
     FrequencyType,
     GonganType,
     GoToMeta,
     MetaData,
+    MetaDataSwitch,
     MetaDataType,
     SequenceMeta,
     ValidationProperty,
 )
+from src.notation2midi.score2notation.classes import NoteRecord
 from src.settings.classes import Part, RunSettings
 from src.settings.constants import (
     FontFields,
@@ -221,15 +224,17 @@ class Instrument(BaseModel):
         return None
 
     @classmethod
-    def cast_to_position(cls, tone: Tone, position: Position, unisono_positions: set[Position]) -> Tone | None:
-        """Returns the equivalent tone for `position`, given that the same notation is common for `unisono_positions`.
-        This method uses instrument rules that describe how to interpret a 'unisono' notation line that is
-        preceded with a 'multiple instrument' tag such as 'gangsa', 'gangsa p', 'reyong', 'ugal/ga', or 'ug/ga/rey'.
+    def cast_to_position(
+        cls, tone: Tone, position: Position, all_positions: set[Position], metadata: list[MetaData]
+    ) -> Tone | None:
+        """Returns the equivalent tone for `position`, given that the same notation is common for `all_positions`.
+        This method uses instrument rules that describe how to interpret a common notation line for multiple
+        positions.
 
         Args:
             tone (Tone): original 'unisono' tone parsed from the notation.
             position (Position): position for which the rule should apply.
-            unisono_positions (set[Position]): positions that share the same notation.
+            all_positions (set[Position]): positions that share the same notation.
 
         Raises:
             Exception: no unisono rule found for the position.
@@ -237,11 +242,21 @@ class Instrument(BaseModel):
         Returns:
             Tone | None: the tone, cast to the position.
         """
+        # Select metadata that affects the rules
+        autokempyung = True
+        for meta in metadata:
+            if (
+                isinstance(meta.data, AutoKempyungMeta)
+                and meta.data.status == MetaDataSwitch.OFF
+                and (not meta.data.positions or position in meta.data.positions)
+            ):
+                autokempyung = False
+
         # Rules only apply to melodic pitches.
         if not tone.is_melodic():
             return tone
 
-        rule = Instrument.get_shared_notation_rule(position, set(unisono_positions))
+        rule = Instrument.get_shared_notation_rule(position, set(all_positions))
         if not rule:
             raise ValueError(f"No unisono rule found for {position}.")
 
@@ -257,15 +272,25 @@ class Instrument(BaseModel):
                     # retain pitch, select octave within instrument's extended range
                     tones = cls.get_tones_within_range(tone, position, extended_range=True, match_octave=False)
                 case RuleValue.EXACT_KEMPYUNG:
-                    # select kempyung tone that lies immediately above the given tone
-                    tones = cls.get_kempyung_tones_within_range(
-                        tone, position, extended_range=False, exact_octave_match=True
-                    )
+                    if autokempyung:
+                        # select kempyung tone that lies immediately above the given tone
+                        tones = cls.get_kempyung_tones_within_range(
+                            tone, position, extended_range=False, exact_octave_match=True
+                        )
+                    else:
+                        tones = cls.get_tones_within_range(
+                            tone, position, extended_range=False, match_octave=True
+                        ) or cls.get_tones_within_range(tone, position, extended_range=False, match_octave=False)
                 case RuleValue.KEMPYUNG:
-                    # select kempyung pitch that lies within instrument's range
-                    tones = cls.get_kempyung_tones_within_range(
-                        tone, position, extended_range=False, exact_octave_match=False
-                    )
+                    if autokempyung:
+                        # select kempyung pitch that lies within instrument's range
+                        tones = cls.get_kempyung_tones_within_range(
+                            tone, position, extended_range=False, exact_octave_match=False
+                        )
+                    else:
+                        tones = cls.get_tones_within_range(
+                            tone, position, extended_range=False, match_octave=True
+                        ) or cls.get_tones_within_range(tone, position, extended_range=False, match_octave=False)
             if tones:
                 return Tone(pitch=tones[0].pitch, octave=tones[0].octave, transformation=action)
 
@@ -394,7 +419,7 @@ class Note(BaseModel):
     # POS_P_O_S_D_R stands for Position, Pitch, Octave, Stroke, Duration, Rest After
     # This uniquely defines a Note object that is mapped to a single MIDI note.
     _VALID_POS_P_O_S_D_R: ClassVar[list[tuple[Position, Pitch, Octave, Stroke, Duration, Duration]]]
-    _VALIDNOTES: ClassVar[list["Note"]]
+    VALIDNOTES: ClassVar[list["Note"]]
     _SYMBOL_TO_NOTE: ClassVar[dict[(Position, str), "Note"]]
     _POS_P_O_S_D_R_TO_NOTE: ClassVar[dict[tuple[Position, Pitch, Octave, Stroke, Duration, Duration], "Note"]] = None
     _FONT_SORTING_ORDER: ClassVar[dict[str, int]]
@@ -516,69 +541,6 @@ class Note(BaseModel):
     def to_tone(self) -> Tone:
         return Tone(self.pitch, self.octave)
 
-    @classmethod
-    def parse(
-        cls,
-        symbol: str,
-        position: Position,
-        unisono_positions: list[Position],
-    ) -> "Note":
-        """Parses the given notation symbol to a matching note within the position's range.
-        In case multiple positions share the same notation (unisono), this method determines
-        the note based on rules (e.g. octavation or kempyung).
-        Args:
-            symbol (str): notation characters.
-            position (Position): position to match.
-            unisono_positions (list[Position]): positions that share the same notation.
-
-        Returns:
-            Note: _description_
-        """
-        normalized_symbol = cls.sorted_chars(symbol)
-
-        if len(unisono_positions) == 1:
-            # Notation for single position
-            if position not in unisono_positions:
-                raise ValueError(f"{position} not in list {unisono_positions}")
-            elif len(symbol) < 1:
-                raise ValueError(f"Unexpected empty symbol for {position}")
-            elif (position, normalized_symbol) not in cls._SYMBOL_TO_NOTE:
-                # Most common error is wrong octave. Find similar symbols with the correct octave.
-                any_oct_symbol = symbol + ",<"
-                alternatives = [
-                    note.symbol
-                    for note in cls._SYMBOL_TO_NOTE.values()
-                    if note.position is position and all(char in any_oct_symbol for char in note.symbol)
-                ]
-                raise ValueError(
-                    f"Invalid note '{symbol}' for {position}.{f" Did you mean '{"or '".join(alternatives)}'?" if alternatives else ""}"
-                )
-            else:
-                return cls._SYMBOL_TO_NOTE[position, normalized_symbol]
-
-        # The notation is for multiple positions. Determine pitch and octave using the 'unisono rules'.
-
-        # Create a Tone object from the the symbol by finding any matching note (disregarding the position)
-        reference_note = next((note for note in cls._VALIDNOTES if note.symbol == normalized_symbol), None)
-        if not reference_note:
-            return None
-        reference_tone = reference_note.to_tone()
-        tone = Instrument.cast_to_position(reference_tone, position, set(unisono_positions))
-
-        # Return the matching note within the position's range
-        if tone:
-            note = Note.get_note(
-                position=position,
-                pitch=tone.pitch,
-                octave=tone.octave,
-                stroke=reference_note.stroke,
-                duration=reference_note.duration,
-                rest_after=reference_note.rest_after,
-            )
-        else:
-            raise ValueError("Could not find an equivalent for %s for %s}" % (symbol, position))
-        return note.model_copy_x(transformation=tone.transformation)
-
     def get_kempyung(self, extended_range=False, exact_octave_match=True, inverse: bool = False) -> "Note":
         k_list = Instrument.get_kempyung_tones_within_range(
             Tone(self.pitch, self.octave),
@@ -603,10 +565,10 @@ class Note(BaseModel):
             tuple([rec[a] for a in ["position", "pitch", "octave", "stroke", "duration", "rest_after"]])
             for rec in valid_records
         ]
-        cls._VALIDNOTES = [Note(**record) for record in valid_records]
-        cls._SYMBOL_TO_NOTE = {(n.position, cls.sorted_chars(n.symbol)): n for n in cls._VALIDNOTES}
+        cls.VALIDNOTES = [Note(**record) for record in valid_records]
+        cls._SYMBOL_TO_NOTE = {(n.position, cls.sorted_chars(n.symbol)): n for n in cls.VALIDNOTES}
         cls._POS_P_O_S_D_R_TO_NOTE = {
-            (n.position, n.pitch, n.octave, n.stroke, n.duration, n.rest_after): n for n in cls._VALIDNOTES
+            (n.position, n.pitch, n.octave, n.stroke, n.duration, n.rest_after): n for n in cls.VALIDNOTES
         }
 
     @classmethod
@@ -792,6 +754,7 @@ class Measure:
         ruletype: RuleType | None = None
 
     position: Position
+    all_positions: list[Position]
     passes: dict[PassSequence, Pass] = field(default_factory=dict)
 
     @classmethod
@@ -799,6 +762,7 @@ class Measure:
         # Shorthand method to create a Measure object
         return Measure(
             position=position,
+            all_positions=[position],
             passes={pass_seq: Measure.Pass(seq=pass_seq, line=line, notes=notes)},
         )
 

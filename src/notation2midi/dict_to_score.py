@@ -6,7 +6,16 @@ Main method: convert_notation_to_midi()
 
 from statistics import mode
 
-from src.common.classes import Beat, Gongan, Measure, Notation, Note, Score
+from src.common.classes import (
+    Beat,
+    Gongan,
+    Instrument,
+    Measure,
+    Notation,
+    Note,
+    Score,
+    Tone,
+)
 from src.common.constants import (
     DEFAULT,
     Duration,
@@ -33,7 +42,6 @@ from src.common.metadata_classes import (
     OctavateMeta,
     PartMeta,
     RepeatMeta,
-    Scope,
     SequenceMeta,
     SuppressMeta,
     TempoMeta,
@@ -42,6 +50,12 @@ from src.common.metadata_classes import (
     WaitMeta,
 )
 from src.notation2midi.classes import ParserModel
+from src.notation2midi.score2notation.classes import NoteRecord
+from src.notation2midi.special_notes_treatment import (
+    generate_tremolo,
+    update_grace_notes_octaves,
+)
+from src.settings.constants import NoteFields
 
 
 class DictToScoreConverter(ParserModel):
@@ -173,7 +187,7 @@ class DictToScoreConverter(ParserModel):
         prev_beat: Beat,
         positions: list[Position],
         duration: Duration,
-        force_silence: list[Position] = [],
+        force_silence: list[Position] = None,
         pass_seq: PassSequence = DEFAULT,
     ):
         silence = Stroke.SILENCE
@@ -187,7 +201,7 @@ class DictToScoreConverter(ParserModel):
         # Remark: the resttype is EXTENSION if the previous stroke is MUTED or ABBREVIATED.
         # This will avoid undesired muting when a GOTO points to this measure.
         resttypes = {
-            pos: silence if prevstroke is silence or pos in force_silence else extension
+            pos: silence if prevstroke is silence or pos in (force_silence or []) else extension
             for pos, prevstroke in prevstrokes.items()
         }
         return {
@@ -196,6 +210,133 @@ class DictToScoreConverter(ParserModel):
             )
             for position in positions
         }
+
+    def _note_from_rec(
+        self,
+        note_record: NoteRecord,
+        position: Position,
+        all_positions: list[Position],
+        metadata: list[MetaData],
+    ) -> "Note":
+        """Casts the given NoteRecord objevct to a Note object which is bound to a Position.
+        If multiple positions share the same notation this method applies rules
+        (e.g. octavation or kempyung) to cast the NoteRecord to the correct Note for the given position.
+        Args:
+            symbol (str): notation characters.
+            position (Position): position to match.
+            unisono_positions (list[Position]): positions that share the same notation.
+        Returns:
+            Note: _description_
+        """
+        if len(all_positions) == 1:
+            # Notation for single position
+            if position not in all_positions:
+                raise ValueError(f"{position} not in list {all_positions}")
+            note = Note.get_note(
+                position,
+                pitch=note_record.pitch,
+                octave=note_record.octave,
+                stroke=note_record.stroke,
+                duration=note_record.duration,
+                rest_after=note_record.rest_after,
+            )
+            if not note:
+                # Most common error is wrong octave. Find similar symbols with the correct octave.
+                any_oct_symbol = note_record + ",<"
+                alternatives = [
+                    n.symbol
+                    for n in Note.VALIDNOTES
+                    if n.position is position and all(char in any_oct_symbol for char in n.symbol)
+                ]
+                raise ValueError(
+                    f"Invalid note '{note_record.symbol}' for {position}.{f" Did you mean '{"or '".join(alternatives)}'?" if alternatives else ""}"
+                )
+            return note
+
+        # The notation is for multiple positions. Determine pitch and octave using the 'unisono rules'.
+
+        # Create a Tone object from the the symbol by finding any matching note (disregarding the position)
+        reference_tone = Tone(note_record.pitch, note_record.octave)
+        tone = Instrument.cast_to_position(
+            tone=reference_tone, position=position, all_positions=set(all_positions), metadata=metadata
+        )
+
+        # Return the matching note within the position's range
+        if tone:
+            note = Note.get_note(
+                position=position,
+                pitch=tone.pitch,
+                octave=tone.octave,
+                stroke=note_record.stroke,
+                duration=note_record.duration,
+                rest_after=note_record.rest_after,
+            )
+            return note.model_copy_x(transformation=tone.transformation)
+        else:
+            # return silence
+            note = Note.get_note(
+                position=position,
+                pitch=Pitch.NONE,
+                octave=None,
+                stroke=Stroke.SILENCE,
+                duration=0,
+                rest_after=note_record.duration + note_record.rest_after,
+            )
+            return note
+            # raise ValueError("Could not find an equivalent for %s for %s}" % (note_record.symbol, position))
+
+    def _convert_to_notes(
+        self,
+        noterecord_list: list[NoteRecord],
+        position: Position,
+        all_positions: list[Position],
+        metadata: list[MetaData],
+    ) -> list[Note]:
+        """Converts the generic NoteRecord objects to position bound Note objects.
+            Applies rules to transform the note to the correct value for the given position (e.g. kempyung, octavation).
+            Updates the octave of grace notes.
+            Converts tremolo notes to a pattern of Note objects.
+
+           If the stave stands for multiple reyong positions, the notation is transformed to match
+           each position separately. There are two possible cases:
+            - REYONG_1 and REYONG_3 are combined: the notation is expected to represent the REYONG_1 part
+              and the score is octavated for the REYONG_3 position.
+            - REYONG_2 and REYONG_4: similar case. The notation should represent the REYONG_2 part.
+            - All reyong positions: the notation is expected to represent the REYONG_1 part.
+              In this case the kempyung equivalent of the notation will be determined for REYONG_2
+              and REYONG_4 within their respective range.
+
+        Args:
+            stave (str): one stave of notation
+            position (Position):
+            multiple_positions (list[Position]): List of all positions for this stave.
+
+        Returns: str | None: _description_
+        """
+        notes = []  # will contain the Note objects
+        tremolo_notes = []
+        for note_rec in noterecord_list:
+            # try parsing the next note
+            # next_note = Note.parse_next_note(note_chars, position)
+            last_note = note_rec == noterecord_list[-1]
+            try:
+                next_note = self._note_from_rec(note_rec, position, all_positions, metadata=metadata)
+            except ValueError as e:
+                self.logerror(str(e))
+            if not next_note:
+                self.logerror(f"Could not cast {note_rec[NoteFields.SYMBOL]} to {position.value}")
+            else:
+                if istremolo := (next_note.stroke in (Stroke.TREMOLO, Stroke.TREMOLO_ACCELERATING)):
+                    tremolo_notes.append(next_note)
+                if len(tremolo_notes) == 2 or (tremolo_notes and (not istremolo or last_note)):
+                    # Max. 2 notes may be combined in a tremolo. Generate the tremolo notes if max has been
+                    # reached, or if no tremolo note follows the last saved tremolo note.
+                    notes.extend(generate_tremolo(tremolo_notes, self.run_settings.midi, self.logerror))
+                    tremolo_notes.clear()
+                if not istremolo:
+                    notes.append(next_note)
+        update_grace_notes_octaves(notes=notes)
+        return notes
 
     def _reverse_kempyung(self, beat: Beat):
         # Only applies to PEMADE_SANGSIH and KANTILAN_SANGSIH.
@@ -228,9 +369,7 @@ class DictToScoreConverter(ParserModel):
                 )
                 gongan.beats[goto.data.beat_seq].goto_[rep] = goto_item
 
-        metadata = gongan.metadata.copy() + [
-            m for m in self.score.gongans[0].metadata if hasattr(m, "scope") and m.scope == Scope.SCORE
-        ]
+        metadata = gongan.metadata.copy() + self.score.global_metadata
         haslabel = False  # Will be set to true if the gongan has a metadata Label tag.
         for meta in sorted(metadata, key=lambda x: x.data._processingorder_):
             self.curr_line_nr = meta.data.line
@@ -258,11 +397,8 @@ class DictToScoreConverter(ParserModel):
                             if beat.id in meta.data.beats or not meta.data.beats:
                                 beat.has_kempli_beat = False
                 case AutoKempyungMeta():
-                    if meta.data.status == MetaDataSwitch.ON:
-                        # Nothing to do, kempyung is default
-                        continue
-                    for beat in gongan.beats:
-                        self._reverse_kempyung(beat)
+                    # This metadata item is used in Instrument.cast_to_position to select the correct casting method.
+                    continue
                 case LabelMeta():
                     # Add the label to flowinfo
                     haslabel = True
@@ -277,7 +413,7 @@ class DictToScoreConverter(ParserModel):
                             for pass_ in self.pass_iterator(beat.measures[meta.data.instrument]):
                                 for idx in range(len(notes := pass_.notes)):
                                     note: Note = notes[idx]
-                                    if note.octave != None:
+                                    if note.octave is not None:
                                         note = Note.get_note(
                                             note.position,
                                             note.pitch,
@@ -556,12 +692,22 @@ class DictToScoreConverter(ParserModel):
             Score: A Score object model, not yet validated for inconsistencies.
         """
         beats: list[Beat] = []
+        measures: list[Measure]
         for self.curr_gongan_id, gongan_info in self.notation.notation_dict.items():
             if self.curr_gongan_id < 0:
                 # Skip the gongan holding the global (score-wide) metadata items
                 self.score.global_metadata = gongan_info.get(ParserTag.METADATA, [])
                 self.score.global_comments = gongan_info.get(ParserTag.COMMENTS, [])
             for self.curr_beat_id, measures in gongan_info[ParserTag.BEATS].items():
+                # Generate measure content: convert NoteRecord objects to Note objects.
+                for _, measure in measures.items():
+                    for _, pass_ in measure.passes.items():
+                        pass_.notes = self._convert_to_notes(
+                            pass_.notes,
+                            measure.position,
+                            measure.all_positions,
+                            metadata=gongan_info.get(ParserTag.METADATA, []) + self.score.global_metadata,
+                        )
                 # Create the beat and add it to the list of beats
                 new_beat = Beat(
                     id=int(self.curr_beat_id),
@@ -636,7 +782,7 @@ class DictToScoreConverter(ParserModel):
         All settings are read from the (YAML) settings files.
         """
 
-        self.logger.info(f"input file: {self.run_settings.notation.part.file}")
+        self.loginfo("input file: %s", self.run_settings.notation.part.file)
         self._create_score_object_model()
         if self.has_errors:
             self.logerror("Program halted.")

@@ -39,7 +39,7 @@ kemplimeta = metatype:'KEMPLI' {('status'|'value') '='} status:strvalue paramete
 kemplimetaparameters = {[','] @:(beats_parm | scope_parm)} ;
 
 autokempyungmeta = metatype:'AUTOKEMPYUNG' {('status'|'value') '='} status:strvalue parameters:autokempyungmetaparameters ;
-autokempyungmetaparameters = {[','] @:(scope_parm)} ;
+autokempyungmetaparameters = {[','] @:(scope_parm | positions_parm)} ;
 
 labelmeta = metatype:'LABEL' {('name'|'value') '='} name:strvalue parameters:labelmetaparameters ;
 labelmetaparameters = {[','] @:beat_parm} ;

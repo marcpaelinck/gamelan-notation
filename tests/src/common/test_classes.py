@@ -4,15 +4,7 @@ from typing import Any
 from unittest.mock import patch
 
 from src.common.classes import Instrument, Note, Tone
-from src.common.constants import (
-    InstrumentGroup,
-    InstrumentType,
-    NoteRecord,
-    Pitch,
-    Position,
-    RuleValue,
-    Stroke,
-)
+from src.common.constants import InstrumentGroup, Pitch, Position, RuleValue, Stroke
 from src.settings.constants import NoteFields, Yaml
 from src.settings.settings import load_run_settings
 

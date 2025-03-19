@@ -16,7 +16,7 @@ class ScoreToNotationTester(unittest.TestCase):
     @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
     def setUp(self):
         load_run_settings({Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART_ID: "full"})
-        self.symbol_to_note_lookup = {(note.position, note.symbol): note for note in Note._VALIDNOTES}
+        self.symbol_to_note_lookup = {(note.position, note.symbol): note for note in Note.VALIDNOTES}
 
         self.notation_data = [
             (["i", "I", "o", "O", "e", "E", "u", "U", "a", "A"], "iIoOeEuUaA"),

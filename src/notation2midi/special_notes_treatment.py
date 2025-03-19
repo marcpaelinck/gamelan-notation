@@ -1,11 +1,11 @@
 from typing import Callable
 
 from src.common.classes import Instrument, Note
-from src.common.constants import InstrumentGroup, Stroke
+from src.common.constants import Stroke
 from src.settings.classes import SettingsMidiInfo
 
 
-def update_grace_notes_octaves(notes: list[Note], group: InstrumentGroup):
+def update_grace_notes_octaves(notes: list[Note]):
     """Modifies the octave of grace notes to match the note that follows.
     The octave is set to minimise the 'distance' between both notes.
     Args:

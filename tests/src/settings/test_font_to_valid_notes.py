@@ -4,14 +4,7 @@ from typing import Any
 from unittest import TestCase
 from unittest.mock import patch
 
-from src.common.constants import (
-    InstrumentGroup,
-    InstrumentType,
-    NoteRecord,
-    Pitch,
-    Position,
-    Stroke,
-)
+from src.common.constants import InstrumentGroup, Pitch, Position, Stroke
 from src.settings.constants import NoteFields, Yaml
 from src.settings.font_to_valid_notes import get_note_records
 from src.settings.settings import load_run_settings
@@ -35,7 +28,7 @@ class SettingsTester(TestCase):
     @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
     def valid_notes_sp(
         self,
-    ) -> list[NoteRecord]:
+    ) -> list[dict[str, Any]]:
         # Creates a list of valid notes for Semar Pagulingan
         settings = load_run_settings({Yaml.COMPOSITION: "test-semarpagulingan", Yaml.PART_ID: "full"})
         notes_sp = get_note_records(settings)
@@ -44,7 +37,7 @@ class SettingsTester(TestCase):
     @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
     def valid_notes_gk(
         self,
-    ) -> list[NoteRecord]:
+    ) -> list[dict[str, Any]]:
         # Creates a list of valid notes for  Gong Kebyar
         settings = load_run_settings({Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART_ID: "full"})
         notes_gk = get_note_records(settings)
