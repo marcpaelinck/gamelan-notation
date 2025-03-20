@@ -46,7 +46,6 @@ from src.common.metadata_classes import (
     SequenceMeta,
     ValidationProperty,
 )
-from src.notation2midi.score2notation.classes import NoteRecord
 from src.settings.classes import Part, RunSettings
 from src.settings.constants import (
     FontFields,
@@ -801,9 +800,17 @@ class Beat:
         kind: RepeatType = RepeatType.GONGAN
         _countdown: int = 0
 
-        def reset(self):
-            # Resets the repeat countdown counter
+        def reset_countdown(self):
+            """Resets the countdown counter to its initial value"""
             self._countdown = self.iterations
+
+        def decr_countdown(self) -> None:
+            """increments the countdown counter"""
+            self._countdown -= 1
+
+        def get_countdown(self) -> int:
+            """returns the countdown counter"""
+            return self._countdown
 
     id: int
     gongan_id: int
@@ -883,6 +890,18 @@ class Beat:
         if pass_ := self.get_pass(position=position, pass_seq=pass_seq):
             return pass_.notes
         return none
+
+    def reset_pass_counter(self) -> None:
+        """(re-)initializes the pass counter"""
+        self._pass_ = 0
+
+    def incr_pass_counter(self) -> None:
+        """increments the pass counter"""
+        self._pass_ += 1
+
+    def get_pass_counter(self) -> int:
+        """returns the pass counter"""
+        return self._pass_
 
 
 @dataclass

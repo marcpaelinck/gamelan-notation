@@ -1,11 +1,10 @@
+"""Generates a PDF notation document based on a Score object."""
+
 from __future__ import annotations
 
 import itertools
 import os
-import pickle
 import time
-from enum import Enum
-from os import path
 from typing import Callable
 
 from reportlab.lib.enums import TA_RIGHT
@@ -40,25 +39,25 @@ from src.notation2midi.score2notation.utils import (
     measure_to_str,
     stringWidth_fromNotes,
 )
-from src.settings.classes import PartForm, RunType
 from src.settings.settings import update_midiplayer_content
 
 
 class ScoreToPDFConverter(ParserModel):
+    """PDF generator"""
+
     TAG_COLWIDTH = 2.3 * cm
     basicparastyle = None
     metadatastyle = None
     W = 0
     H = 1
 
-    def __init__(self, score: Score, pickle: bool = False):
+    def __init__(self, score: Score):
         super().__init__(self.ParserType.SCORETOPDF, score.settings)
         self.score = score
         self.template = NotationTemplate(self.score.settings)
-        self.pickle = pickle  # only used for development
         self.current_tempo = -1
         self.current_dynamics = -1  # Not used currently
-        registerFont(TTFont("Bali Music 5", self.run_settings.settingsdata.font.ttf_filepath))
+        registerFont(TTFont("Bali Music 5", self.run_settings.configdata.font.ttf_filepath))
         self.story = []
 
     def _append_single_metadata_type(
@@ -69,7 +68,7 @@ class ScoreToPDFConverter(ParserModel):
         spantype: SpanType = SpanType.LAST_CELL,
         col_span: int | str | None = None,
         parastyle: ParagraphStyle = None,
-        formatter: Callable = NotationTemplate._default_formatter,
+        formatter: Callable = None,
         **kwargs,
     ) -> TableContent:
         """Generic method that adds metadata items with the same metatype. A row is added to the table content for each
@@ -78,25 +77,29 @@ class ScoreToPDFConverter(ParserModel):
 
            Metadata directives are added as additional rows to the table containing the notation instead of putting
            them in separate 'Paragraph' containers. This enables to align the directives with specific columns/beats,
-           and it makes it possible to keep the entire gongan on the same page. The latter is achieved by setting the value
-           of parameter splitByRow of reportlab.platypus.Table to False. The parameters `cellnr`, `col_span` and `spantype`
-           contain information about the alignment of the text. `cellnr` and `col_span` contain either numeric or string values.
-           A string value indicate that the value of the corresponding attribute of the metadata object should be used.
-           The number of columns is equal to the number of beats + 2. The first column contains the position names, the last
-           one is an overflow column which extends to the right page margin. Parameters `col_span` and `spantype` contain
-           information about the number of beats (columns) over which to span the text (e.g. in case of crescendo).
+           and it makes it possible to keep the entire gongan on the same page. The latter is achieved by setting the
+           value of parameter splitByRow of reportlab.platypus.Table to False.
+           The parameters `cellnr`, `col_span` and `spantype` contain information about the alignment of the text.
+           `cellnr` and `col_span` contain either numeric or string values. A string value indicate that the value of
+           the corresponding attribute of the metadata object should be used.
+           The number of columns is equal to the number of beats + 2. The first column contains the position names, the
+           last one is an overflow column which extends to the right page margin. Parameters `col_span` and `spantype`
+           contain information about the number of beats (columns) over which to span the text (e.g. in case of
+           crescendo).
            Value -1 for `col_span` in combination with `spantype` LAST_CELL indicates that the text can extend to the
            end of the line.
 
-           If the text width is larger than the width of the assigned cell or cell range, the method will expand the range
-           as much as possible to make te text fit on one line.
+           If the text width is larger than the width of the assigned cell or cell range, the method will expand the
+           range as much as possible to make te text fit on one line.
         Args:
             content (TableContent): The table content to which to add the metadata.
             metalist (list[MetaData]): List of similar metadata items.
-            cellnr: (int, optional): The table cell in which to write the value, also first cell of the cell range. Defaults to 1.
+            cellnr: (int, optional): The table cell in which to write the value, also first cell of the cell range.
+                                     Defaults to 1.
             spantype (SpanType): value LAST_CELL - `col_span` contains the id of the last cell of the cell range.
                                  value RANGE - `col_span` contains the number of cells for the cell range.
-            col_span (int | str, optional): Value for the cell range, either a column id or a metadata attribute name. Defaults to None.
+            col_span (int | str, optional): Value for the cell range, either a column id or a metadata attribute name.
+                                            Defaults to None.
             parastyle (ParagraphStyle, optional): Paragraph style. Defaults to basicparastyle.
             before (str, optional): Text to print before the value. Defaults to "".
             after (str, optional): Text to print after the value. Defaults to "".
@@ -230,7 +233,7 @@ class ScoreToPDFConverter(ParserModel):
         """
         for comment in comments:
             if not comment.startswith("#"):
-                content._append_empty_row(col_span=[1, -1], parastyle=self.template.basicparaStyle)
+                content.append_empty_row(col_span=[1, -1], parastyle=self.template.basicparaStyle)
                 content.data[-1][1] = Paragraph(text=f"{comment}", style=self.template.commentStyle)
         return content
 
@@ -269,7 +272,7 @@ class ScoreToPDFConverter(ParserModel):
             for metatype in [RepeatMeta, GoToMeta, SequenceMeta]:
                 if metalist := metadict.get(metatype, None):
                     if metatype is SequenceMeta:
-                        content._append_empty_row(
+                        content.append_empty_row(
                             col_span=[1, -1], parastyle=self.template.basicparaStyle
                         )  # add an empty row as a separator
                     content = self._append_single_metadata_type(
@@ -287,7 +290,7 @@ class ScoreToPDFConverter(ParserModel):
             list[float]: The column widths of the gongans.
         """
         beat_colwidths = None
-        for position, measures in staves.items():
+        for measures in staves.values():
             if not beat_colwidths:
                 beat_colwidths = [0] * len(measures)
             for colnr, measure in enumerate(measures):
@@ -295,11 +298,13 @@ class ScoreToPDFConverter(ParserModel):
                     measure, self.template.notationStyle.fontName, self.template.notationStyle.fontSize
                 )
                 beat_colwidths[colnr] = max(beat_colwidths[colnr], textwidth + 2 * self.template.cell_padding)
+            # pylint: disable=protected-access
             overflow_colwidth = (
                 [max(self.template.doc.pageTemplates[0].frames[0]._aW - sum(beat_colwidths) - self.TAG_COLWIDTH, 0)]
                 if include_overflow_col
                 else []
             )
+            # pylint: enable=protected-access
         colwidths = [self.TAG_COLWIDTH] + beat_colwidths + overflow_colwidth
 
         return colwidths
@@ -333,7 +338,9 @@ class ScoreToPDFConverter(ParserModel):
             score (Score): The score
         """
         # Save global comments
+        # pylint: disable=protected-access
         colwidths = [self.TAG_COLWIDTH] + [self.template.doc.pageTemplates[0].frames[0]._aW - self.TAG_COLWIDTH]
+        # pylint: enable=protected-access
         content: TableContent = TableContent(data=[], colwidths=colwidths, style=[], template=self.template)
         self._append_comments(content, comments=self.score.global_comments)
         if content.data:
@@ -389,40 +396,12 @@ class ScoreToPDFConverter(ParserModel):
 
     @ParserModel.main
     def create_notation(self):
-        # Convenience for development only
-        if self.pickle:
-            with open(self.template.filepath.replace("pdf", "pickle"), "wb") as picklefile:
-                pickle.dump(self.score, picklefile)
-
+        """Main method, creates the PDF notation file"""
         self._convert_to_pdf()
-        self.logger.info(f"Notation file saved as {self.template.filepath}")
+        self.logger.info("Notation file saved as %s", self.template.filepath)
         if self.run_settings.options.notation_to_midi.is_production_run:
             self._update_midiplayer_content()
 
 
 if __name__ == "__main__":
-    # For testing
-    class Source(Enum):
-        SINOMLADRANG = {
-            "folder": r"C:\Users\marcp\Documents\administratie\_VRIJETIJD_REIZEN\Scripts-Programmas\PythonProjects\gamelan-notation\data\notation\sinom ladrang",
-            "filename": "Sinom Ladrang_full_GAMELAN1.pickle",
-        }
-        LEGONGMAHAWIDYA = {
-            "folder": r"C:\Users\marcp\Documents\administratie\_VRIJETIJD_REIZEN\Scripts-Programmas\PythonProjects\gamelan-notation\data\notation\legong mahawidya",
-            "filename": "Legong Mahawidya_full_GAMELAN1.pickle",
-        }
-        SEKARGENDOT = {
-            "folder": r"C:\Users\marcp\Documents\administratie\_VRIJETIJD_REIZEN\Scripts-Programmas\PythonProjects\gamelan-notation\data\notation\sekar gendot",
-            "filename": "Sekar Gendot_full_GAMELAN1.pickle",
-        }
-        LENGKER = {
-            "folder": r"C:\Users\marcp\Documents\administratie\_VRIJETIJD_REIZEN\Scripts-Programmas\PythonProjects\gamelan-notation\data\notation\lengker",
-            "filename": "Lengker_full_GAMELAN1.pickle",
-        }
-
-    source = Source.LEGONGMAHAWIDYA
-
-    path = os.path.join(source.value["folder"], source.value["filename"])
-    with open(path, "rb") as picklefile:
-        score = pickle.load(picklefile)
-        ScoreToPDFConverter(score, False)._convert_to_pdf()
+    pass

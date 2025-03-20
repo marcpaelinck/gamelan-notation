@@ -1,6 +1,6 @@
 {
         "songs": [
-                {"title": "Cendrawasih", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Cendrawasih_full_GAMELAN1.pdf", "pdf_version": "13-jan-2025", "parts": [
+                {"title": "Cendrawasih", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Cendrawasih_full_GAMELAN1.pdf", "notation_version": "", "parts": [
                                 {"part": "entire piece", "file": "Cendrawasih_full_GAMELAN1.mid", "loop": false, "markers": {
                                                 "pepeson": 0.06791841965004593, 
                                                 "pengawak": 0.2908213601261014, 
@@ -23,7 +23,6 @@
                                                 "Pengecet": 0.010417028369040592
                                         }
                                 }, 
-                                {"part": "pengawak reyong", "file": "Rejang Dewa_pengawak-reyong_GAMELAN1.mid", "loop": true, "markers": {}}
                                 {"part": "pengawak reyong", "file": "Rejang Dewa_pengawak-reyong_GAMELAN1.mid", "loop": true, "markers": {}}
                         ]
                 }, 
@@ -161,6 +160,15 @@
                                                 "kawitan": 0.021691741310838623, 
                                                 "pengawak": 0.325289155578746, 
                                                 "pengecet": 0.6573151288517842
+                                        }
+                                }
+                        ]
+                }, 
+                {"title": "Dance Improvisation", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Dance Improvisation_full_GAMELAN1.pdf", "notation_version": "", "parts": [
+                                {"part": "entire piece", "file": "Dance Improvisation_full_GAMELAN1.mid", "loop": false, "markers": {
+                                                "Part 1": 0.0238049632620538, 
+                                                "Part 2": 0.1863406860303864, 
+                                                "Part 3": 0.5078609244631049
                                         }
                                 }
                         ]

@@ -1,5 +1,4 @@
-"""This module can be used to perform a complete run cycle (notation -> midi output).
-"""
+"""This module can be used to perform a complete run cycle (notation -> midi output)."""
 
 from tkinter.messagebox import askyesno
 
@@ -57,7 +56,7 @@ def multiple_notations_to_midi(run_settings: RunSettings):
     Args:
         notations (list[tuple[str, str]]): list of (composition, part) pairs
     """
-    notation_list = list(run_settings.settingsdata.notations.items())
+    notation_list = list(run_settings.configdata.notations.items())
     runtype = run_settings.options.notation_to_midi.runtype
     is_production_run = run_settings.options.notation_to_midi.is_production_run
     for notation_key, notation_info in notation_list:

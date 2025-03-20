@@ -72,10 +72,12 @@ from tatsu.util import asjson
 
 from src.common.classes import InstrumentTag, Measure, Notation, Note
 from src.common.constants import NotationDict, ParserTag, Position, RuleType
-from src.common.metadata_classes import MetaData, Scope
-from src.notation2midi.classes import NamedIntID, ParserModel
-from src.notation2midi.score2notation.classes import NoteRecord
-from src.notation2midi.special_notes_treatment import update_grace_notes_octaves
+from src.notation2midi.classes import (
+    MetaDataRecord,
+    NamedIntID,
+    NoteRecord,
+    ParserModel,
+)
 from src.settings.classes import RunSettings
 from src.settings.constants import FontFields, NoteFields
 from src.settings.font_to_valid_notes import get_note_records
@@ -105,7 +107,11 @@ class PassID(NamedIntID):
 
 
 class NotationTatsuParser(ParserModel):
-    """Parser for notation documents. Uses the Tatsu library in combination with ebnf grammar files."""
+    """Parser that converts notation documents into a hierarchical dict structure. It uses the
+    Tatsu library in combination with ebnf grammar files.
+    The parser has no 'knowledge' about the instruments and idiom of the music. It only checks the
+    basic structure of the notation as described in the grammar files and reports any syntax error.
+    """
 
     run_settings: RunSettings
     grammar_model: str
@@ -413,12 +419,8 @@ class NotationTatsuParser(ParserModel):
 
             # Parse the metadata into MetaData objects
             gongan[ParserTag.METADATA] = [
-                MetaData(data=self._flatten_meta(meta)) for meta in gongan[ParserTag.METADATA]
+                MetaDataRecord(**self._flatten_meta(meta)) for meta in gongan[ParserTag.METADATA]
             ]
-            for metadata in gongan[ParserTag.METADATA]:
-                if metadata.data.scope == Scope.SCORE:
-                    gongan[ParserTag.METADATA].remove(metadata)
-                    notation_dict[GonganID.default_value][ParserTag.METADATA].append(metadata)
 
             # Look up the Position value for the 'free style' tags.
             # If the tag stands for multiple posiitions, create a copy of the stave for each position.

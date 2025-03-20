@@ -1,5 +1,11 @@
+"""Generates a midi file based on a Score object.
+Keeps track of the number of time each beat was passed and processes the flow (GOTOs, SEQUENCEs, REPEATs) accordingly.
+Main method: create_midifile()
+"""
+
 import os
 import pprint
+import sys
 
 from mido import MidiFile
 
@@ -17,6 +23,7 @@ from src.settings.settings import (
 
 
 class MidiGenerator(ParserModel):
+    """This Parser creates a MIDI file based on a Score objects."""
 
     part_info: PartForm = None
 
@@ -55,9 +62,9 @@ class MidiGenerator(ParserModel):
         def reset_pass_counters():
             for gongan in self.score.gongans:
                 for beat in gongan.beats:
-                    beat._pass_ = 0
+                    beat.reset_pass_counter()
                     if beat.repeat:
-                        beat.repeat.reset()
+                        beat.repeat.reset_countdown()
 
         def store_part_info(beat: Beat):
             # current_time_in_millis might be incorrect if the beat consists of only silences.
@@ -84,9 +91,9 @@ class MidiGenerator(ParserModel):
                 track.marker(f"b_{beat.full_id}")
             # If a new part is encountered, store timestamp and name in the midiplayer_data section of the score
             store_part_info(beat)
-            beat._pass_ += 1
+            beat.incr_pass_counter()
             if self.run_settings.options.debug_logging:
-                track.comment(f"beat {beat.full_id} pass{beat._pass_}")
+                track.comment(f"beat {beat.full_id} pass{beat.get_pass_counter()}")
             # Set new tempo
             if new_bpm := beat.get_changed_value(track.current_bpm, position, Beat.Change.Type.TEMPO):
                 track.update_tempo(new_bpm or beat.get_bpm_start())
@@ -96,20 +103,23 @@ class MidiGenerator(ParserModel):
 
             # Process individual notes.
             try:
-                pass_ = beat.measures[position].passes.get(beat._pass_, beat.measures[position].passes[DEFAULT])
-            except:
-                self.logerror(f"No score found for {position} in beat {beat.full_id}. Program halted.")
-                exit()
+                # TODO: create function Beat.next_beat_in_flow()
+                pass_ = beat.measures[position].passes.get(
+                    beat.get_pass_counter(), beat.measures[position].passes[DEFAULT]
+                )
+            except KeyError:
+                self.logerror(f"No measure found for {position} in beat {beat.full_id}. Program halted.")
+                sys.exit()
             for note in pass_.notes:
                 track.add_note(note)
-            if beat.repeat and beat.repeat._countdown > 0:
-                beat.repeat._countdown -= 1
+            if beat.repeat and beat.repeat.get_countdown() > 0:
+                beat.repeat.decr_countdown()
                 beat = beat.repeat.goto  # TODO GOTO modify, also for freq type
             else:
                 if beat.repeat:
-                    beat.repeat.reset()
+                    beat.repeat.reset_countdown()
                 beat = beat.goto.get(
-                    beat._pass_, beat.goto.get(DEFAULT, beat.next)
+                    beat.get_pass_counter(), beat.goto.get(DEFAULT, beat.next)
                 )  # TODO GOTO modify, also for freq type
 
         track.finalize()
@@ -161,7 +171,7 @@ class MidiGenerator(ParserModel):
 
         if self.run_settings.options.notation_to_midi.save_midifile:
             midifile.save(self.run_settings.midi_out_filepath)
-            self.logger.info(f"File saved as {self.run_settings.midi_out_filepath}")
+            self.logger.info("File saved as %s", self.run_settings.midi_out_filepath)
 
             if (
                 self.run_settings.options.notation_to_midi.update_midiplayer_content
@@ -179,5 +189,5 @@ if __name__ == "__main__":
     str_content = content.model_dump_json(indent=4, serialize_as_any=True)
     datafolder = run_settings.notation.folder
     content_json = content.model_dump_json(indent=4, serialize_as_any=True)
-    with open(os.path.join(datafolder, "content_test.json"), "w") as contentfile:
+    with open(os.path.join(datafolder, "content_test.json"), "w", encoding="utf-8") as contentfile:
         pprint.pprint(content_json, stream=contentfile, width=250)

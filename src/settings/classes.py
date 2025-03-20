@@ -146,6 +146,7 @@ class SettingsInstrumentInfo(BaseModel):
     instruments_file: str
     tags_file: str
     rules_file: str
+    shorthand_notation: list[Position]
 
     @property
     def instr_filepath(self):
@@ -327,7 +328,7 @@ class Data(BaseModel):
     presets: list[dict[str, Any]] | None
 
 
-class SettingsData(BaseModel):
+class ConfigData(BaseModel):
     instruments: SettingsInstrumentInfo
     midi: SettingsMidiInfo
     font: SettingsFontInfo
@@ -344,33 +345,33 @@ class RunSettings(BaseModel):
     notation_id: str | None = None
     part_id: str | None = None
     options: SettingsOptions
-    settingsdata: SettingsData
+    configdata: ConfigData
     data: Data = None
 
     @property
     def notation(self) -> SettingsNotationInfo:
-        notation = self.settingsdata.notations[self.notation_id]
+        notation = self.configdata.notations[self.notation_id]
         return notation.model_copy(update={"part": notation.parts[self.part_id]})
 
     @property
     def midi(self) -> SettingsMidiInfo:
-        return self.settingsdata.midi
+        return self.configdata.midi
 
     @property
     def font(self) -> SettingsFontInfo:
-        return self.settingsdata.font
+        return self.configdata.font
 
     @property
     def grammar(self) -> SettingsGrammarInfo:
-        return self.settingsdata.grammar
+        return self.configdata.grammar
 
     @property
     def midiplayer(self) -> SettingsMidiPlayerInfo:
-        return self.settingsdata.midiplayer
+        return self.configdata.midiplayer
 
     @property
     def pdf_converter(self) -> SettingsPdfConverterInfo:
-        return self.settingsdata.pdf_converter
+        return self.configdata.pdf_converter
 
     @property
     def instrumentgroup(self) -> InstrumentGroup:

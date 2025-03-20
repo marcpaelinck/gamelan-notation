@@ -1,6 +1,6 @@
 # pylint: disable=missing-class-docstring
 import json
-from typing import Any, ClassVar, Literal, Optional, Union
+from typing import Any, ClassVar, Literal, Union
 
 import regex
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
@@ -42,9 +42,9 @@ class Scope(NotationEnum):
 
 class MetaDataBaseModel(BaseModel):
     metatype: Literal[""]
-    scope: Optional[Scope] = Scope.GONGAN
+    scope: Scope = Scope.GONGAN
     line: int = None
-    _processingorder_ = 99
+    processingorder: ClassVar[int] = 99
 
     # name of the paramater whose value may appear in the notation without specifying the parameter
     DEFAULTPARAM: ClassVar[str]
@@ -84,11 +84,9 @@ class GradualChangeMetadata(MetaDataBaseModel):
     # Generic class that represent a value that can gradually
     # change over a number of beats, such as tempo or dynamics.
     value: int = None
-    first_beat: Optional[int] = 1
-    beat_count: Optional[int] = 0
-    passes: Optional[list[int]] = Field(
-        default_factory=lambda: list([DEFAULT])
-    )  # On which pass(es) should goto be performed?
+    first_beat: int = 1
+    beat_count: int = 0
+    passes: list[int] = Field(default_factory=lambda: list([DEFAULT]))  # On which pass(es) should goto be performed?
 
     @property
     def first_beat_seq(self) -> int:
@@ -130,8 +128,8 @@ class GonganMeta(MetaDataBaseModel):
 class GoToMeta(MetaDataBaseModel):
     metatype: Literal["GOTO"]
     label: str
-    from_beat: Optional[int] = -1  # Beat number from which to goto. Default is last beat of the gongan.
-    passes: Optional[list[int]] = [DEFAULT]  # On which pass(es) should goto be performed?
+    from_beat: int = -1  # Beat number from which to goto. Default is last beat of the gongan.
+    passes: list[int] = [DEFAULT]  # On which pass(es) should goto be performed?
     frequency: FrequencyType = FrequencyType.ALWAYS
     DEFAULTPARAM = "label"
 
@@ -144,15 +142,15 @@ class GoToMeta(MetaDataBaseModel):
 class KempliMeta(MetaDataBaseModel):
     metatype: Literal["KEMPLI"]
     status: MetaDataSwitch
-    beats: Optional[list[int]] = Field(default_factory=list)
-    scope: Optional[Scope] = Scope.GONGAN
+    beats: list[int] = Field(default_factory=list)
+    scope: Scope = Scope.GONGAN
     DEFAULTPARAM = "status"
 
 
 class AutoKempyungMeta(MetaDataBaseModel):
     metatype: Literal["AUTOKEMPYUNG"]
     status: MetaDataSwitch
-    scope: Optional[Scope] = Scope.GONGAN
+    scope: Scope = Scope.GONGAN
     positions: list[Position] = None  # PositionsFromTag
     DEFAULTPARAM = "status"
 
@@ -160,7 +158,7 @@ class AutoKempyungMeta(MetaDataBaseModel):
 class LabelMeta(MetaDataBaseModel):
     metatype: Literal["LABEL"]
     name: str
-    beat: Optional[int] = 1
+    beat: int = 1
     # Make sure that labels are processed before gotos in same gongan.
     _processingorder_ = 1
     DEFAULTPARAM = "name"
@@ -175,7 +173,7 @@ class OctavateMeta(MetaDataBaseModel):
     metatype: Literal["OCTAVATE"]
     instrument: InstrumentType  # InstrumentFromTag
     octaves: int
-    scope: Optional[Scope] = Scope.GONGAN
+    scope: Scope = Scope.GONGAN
     DEFAULTPARAM = "instrument"
 
 
@@ -202,7 +200,7 @@ class SequenceMeta(MetaDataBaseModel):
 class SuppressMeta(MetaDataBaseModel):
     metatype: Literal["SUPPRESS"]
     positions: list[Position]  # PositionsFromTag
-    passes: Optional[list[int]] = Field(default_factory=list)
+    passes: list[int] = Field(default_factory=list)
     beats: list[int] = Field(default_factory=list)
     DEFAULTPARAM = "positions"
 
@@ -214,9 +212,9 @@ class TempoMeta(GradualChangeMetadata):
 
 class ValidationMeta(MetaDataBaseModel):
     metatype: Literal["VALIDATION"]
-    beats: Optional[list[int]] = Field(default_factory=list)
+    beats: list[int] = Field(default_factory=list)
     ignore: list[ValidationProperty]
-    scope: Optional[Scope] = Scope.GONGAN
+    scope: Scope = Scope.GONGAN
     DEFAULTPARAM = None
 
 
@@ -224,7 +222,7 @@ class WaitMeta(MetaDataBaseModel):
     metatype: Literal["WAIT"]
     seconds: float = None
     after: bool = True
-    passes: Optional[list[int]] = Field(
+    passes: list[int] = Field(
         default_factory=lambda: list(range(99, -1))
     )  # On which pass(es) should goto be performed? Default is all passes.
     # TODO: devise a more elegant way to express this, e.g. with "ALL" value.

@@ -316,7 +316,7 @@ def load_run_settings(notation_id: str = None, part_id: str = None) -> RunSettin
         settings_data_dict = post_process(settings_data_dict)
 
         run_settings_dict = read_settings(RUN_SETTINGSFILE)
-        run_settings_dict[Yaml.SETTINGSDATA] = settings_data_dict
+        run_settings_dict[Yaml.CONFIGDATA] = settings_data_dict
         run_settings_dict[Yaml.DATA] = read_data(settings_data_dict, DATA)
 
         try:
@@ -342,11 +342,7 @@ def temp_update_me(content: Content):
     """Auxiliary function that updates the content with the pdf version"""
     for song in content.songs:
         notation_info = next(
-            (
-                notation
-                for key, notation in _RUN_SETTINGS.settingsdata.notations.items()
-                if notation.title == song.title
-            ),
+            (notation for key, notation in _RUN_SETTINGS.configdata.notations.items() if notation.title == song.title),
             None,
         )
         if song.pdf and notation_info:
@@ -452,4 +448,4 @@ def update_midiplayer_content(
 if __name__ == "__main__":
     # For testing
     settings = load_run_settings("lengker", "full")
-    print(settings.notation_id, settings.notation.part, settings.instrumentgroup)
+    print(settings.configdata.instruments)

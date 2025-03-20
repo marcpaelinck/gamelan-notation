@@ -5,6 +5,8 @@ instruments:
     instruments_file: instruments.tsv
     tags_file: instrumenttags.tsv
     rules_file: rules.tsv
+    # shorthand_notation: instruments for which silence and extension symbols may be omitted
+    shorthand_notation: [UGAL, CALUNG, JEGOGAN, GONGS, KEMPLI]
 midi:
     folder: ./settings/midi
     midi_definition_file: gamelan_midinotes1.tsv

@@ -23,7 +23,7 @@ class SettingsValidator(ParserModel):
         values for fields `value`, `duration` and `rest_after`.
         """
         groupby = [FontFields.PITCH, FontFields.OCTAVE, FontFields.STROKE, FontFields.DURATION, FontFields.REST_AFTER]
-        font_df = pd.read_csv(self.run_settings.settingsdata.font.filepath, sep="\t", quoting=csv.QUOTE_NONE)[
+        font_df = pd.read_csv(self.run_settings.configdata.font.filepath, sep="\t", quoting=csv.QUOTE_NONE)[
             groupby + [FontFields.SYMBOL]
         ]
         duplicates = font_df[font_df.duplicated(groupby, keep=False)].groupby(groupby)[FontFields.SYMBOL].apply(list)
@@ -46,7 +46,7 @@ class SettingsValidator(ParserModel):
         # Use Int64 type to cope with NaN values,
         # see https://pandas.pydata.org/pandas-docs/version/0.24/whatsnew/v0.24.0.html#optional-integer-na-support
         font_df = pd.read_csv(
-            self.run_settings.settingsdata.font.filepath,
+            self.run_settings.configdata.font.filepath,
             sep="\t",
             quoting=csv.QUOTE_NONE,
             dtype={FontFields.OCTAVE: "Int64"},

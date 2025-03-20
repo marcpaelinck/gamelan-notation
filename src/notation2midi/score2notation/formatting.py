@@ -42,8 +42,11 @@ from src.common.metadata_classes import (
 from src.notation2midi.score2notation.utils import to_aggregated_tags
 from src.settings.classes import RunSettings
 
+# pylint: disable=invalid-name
+# pylint: disable=missing-function-docstring
 
-class SpanType(Enum):
+
+class SpanType(Enum):  # pylint: disable=missing-class-docstring
     RANGE = 1
     LAST_CELL = 2
 
@@ -72,12 +75,12 @@ class TableContent:
             Exception: If the number of columns don't match.
         """
         # Note: only the base object's colwidths are retained
-        if not (len(content.colwidths) == len(self.colwidths)):
-            raise Exception("Number of columns does not match")
+        if not len(content.colwidths) == len(self.colwidths):
+            raise ValueError("Number of columns does not match")
         self.data.extend(content.data)
         self.style.extend(content.style)
 
-    def _append_empty_row(self, col_span: list[int] = [], parastyle: ParagraphStyle = None) -> TableContent:
+    def append_empty_row(self, col_span: list[int], parastyle: ParagraphStyle = None) -> TableContent:
         """Adds an empty row to the tablecontent.
         Args:
             content (TableContent): the content to which a row should be added.
@@ -102,6 +105,8 @@ class TableContent:
 
 
 class NotationTemplate:
+    """This class contains all the formatting definitions for the PDF export."""
+
     pagesize = A4
     page_width = pagesize[0]
     page_height = pagesize[1]
@@ -123,7 +128,7 @@ class NotationTemplate:
         self.current_tempo = -1
         self.doc = self._doc_template()
         self.styles = getSampleStyleSheet()
-        registerFont(TTFont("Bali Music 5", self.run_settings.settingsdata.font.ttf_filepath))
+        registerFont(TTFont("Bali Music 5", self.run_settings.configdata.font.ttf_filepath))
         self._init_styles()
 
     @property
@@ -276,9 +281,9 @@ class NotationTemplate:
         # Parameters for function `ScoreToPDFConverter._append_single_metadata_type` which generates the metadata
         # directives that should appear above and below a gongan. See the function's docstring for more information.
         # cellnr: The table cell in which to write the value. Defaults to 1.
-        # col_span, spantype: information about the number of beats (columns) over which to span the text (e.g. in case of
-        #                      crescendo). `spantype` specifies the meaning of value `col_span`: either RANGE (nr. of cells)
-        #                      or LAST_CELL (cell ID of the last cell of the cell range)
+        # col_span, spantype: information about the number of beats (columns) over which to span the text (e.g. in case
+        #                      of crescendo). `spantype` specifies the meaning of value `col_span`: either RANGE
+        #                      (nr. of cells) or LAST_CELL (cell ID of the last cell of the cell range)
         # parastyle: One of the paragraph styles defined above. Defaults to basicparaStyle.
         # formatter: Function that generates the actual text for the metadata directive. Defaults to default_formatter.
         #            The functions are defined below.
@@ -288,6 +293,7 @@ class NotationTemplate:
                 "col_span": -1,
                 "spantype": SpanType.LAST_CELL,
                 "parastyle": self.metadataPartStyle,
+                "formatter": self._simple_formatter,
             },
             TempoMeta: {
                 "cellnr": "first_beat",
@@ -308,12 +314,14 @@ class NotationTemplate:
                 "col_span": -1,
                 "spantype": SpanType.LAST_CELL,
                 "parastyle": self.metadataLabelStyle,
+                "formatter": self._simple_formatter,
             },
             RepeatMeta: {
                 "cellnr": -2,  # right-aligned starting from the last beat. Column -1 is the overflow column.
                 "parastyle": self.metadataGotoStyle,
                 "before": "repeat ",
                 "after": "X",
+                "formatter": self._simple_formatter,
             },
             GoToMeta: {
                 "cellnr": "from_beat",
@@ -382,7 +390,10 @@ class NotationTemplate:
             ("VALIGN", (0, row1), (-1, row2), "MIDDLE"),
         ]
 
+    # pylint: enable=missing-function-docstring
+
     def create_table(self, content: TableContent):
+        """Creates a Table object based on the given content"""
         return Table(
             data=content.data,
             colWidths=content.colwidths,
@@ -394,6 +405,7 @@ class NotationTemplate:
         )
 
     def format_text(self, text: str, charstyle: str):
+        """Applies a HTML character format to the text"""
         if charstyle:
             return f"{charstyle}{text}</font>"
         return text
@@ -472,7 +484,7 @@ class NotationTemplate:
         return template
 
     @classmethod
-    def _default_formatter(
+    def _simple_formatter(
         cls,
         meta: MetaDataBaseModel,
         before: str = "",
@@ -499,7 +511,8 @@ class NotationTemplate:
         """Formatter for a metadata list value. Formats the value to a comma separated list.
             The list items are formatted using the `labelstyle` character style.
         Args:
-            value (typing.Any): Value that should be written. If missing, the metadata DEFAULTPARAM attribute will be used.
+            value (typing.Any): Value that should be written. If missing, the metadata DEFAULTPARAM attribute will
+                                be used.
             meta (MetaDataBaseModel): Metadata object.
             before (str, optional): Text that should precede the value. Defaults to "".
             after (str, optional): Text that should follow the value. Defaults to "".
@@ -512,11 +525,13 @@ class NotationTemplate:
         return f"{before}{value_}{after}"
 
     def _gradual_change_formatter(self, meta: MetaDataBaseModel) -> str:
-        """Formatter for GradualChangeMetadata subclasses. These values can include a range of beats to which the metadata
-           applies. Called for TEMPO and DYNAMICS metadata which can gradually change over several beats.
-           The value will be preceded or followed by a dotted line that will reach to the right margine of the (merged) cell.
+        """Formatter for GradualChangeMetadata subclasses. These values can include a range of beats to which the
+           metadata applies. Called for TEMPO and DYNAMICS metadata which can gradually change over several beats.
+           The value will be preceded or followed by a dotted line that will reach to the right margine of the
+           (merged) cell.
         Args:
-            value (typing.Any): Value that should be written. If missing, the metadata DEFAULTPARAM attribute will be used.
+            value (typing.Any): Value that should be written. If missing, the metadata DEFAULTPARAM attribute will
+                                be used.
             meta (MetaDataBaseModel): Metadata object.
             before (str, optional): Text that should precede the value. Defaults to "".
             after (str, optional): Text that should follow the value. Defaults to "".

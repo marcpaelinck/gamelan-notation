@@ -126,4 +126,4 @@ class Yaml(SStrEnum):
     INSTRUMENTGROUP = "instrumentgroup"
     MIDIPLAYER = "midiplayer"
     MULTIPLE_RUNS = "multiple_runs"
-    SETTINGSDATA = "settingsdata"
+    CONFIGDATA = "configdata"
