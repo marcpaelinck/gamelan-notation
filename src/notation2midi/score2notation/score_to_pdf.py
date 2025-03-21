@@ -122,7 +122,7 @@ class ScoreToPDFConverter(ParserModel):
             # and ec, er are the IDs of the last (end) row and column.
             # This function is called for spans that combine cells on the same row,
             # so sr=er and we only need to check the column overlap.
-            return not max(0, min(a[2][0], b[2][0]) - max(a[1][0], b[1][0]))
+            return min(a[2][0], b[2][0]) - max(a[1][0], b[1][0]) >= 0
 
         cell_alignment = "RIGHT" if parastyle.alignment in [TA_RIGHT, "RIGHT"] else "LEFT"
         for meta in metalist:
@@ -386,7 +386,9 @@ class ScoreToPDFConverter(ParserModel):
 
     def _update_midiplayer_content(self) -> None:
         modification_time = os.path.getmtime(self.score.settings.pdf_out_filepath)
-        notation_version = time.strftime("%d%b/%Y %H:%M", time.gmtime(modification_time)).lower()
+        notation_version = time.strftime(
+            self.score.settings.pdf_converter.version_fmt, time.gmtime(modification_time)
+        ).lower()
         update_midiplayer_content(
             title=self.run_settings.notation.title,
             group=self.run_settings.notation.instrumentgroup,

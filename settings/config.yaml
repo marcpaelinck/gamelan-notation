@@ -55,9 +55,10 @@ midiplayer:
     folder: ./data/midiplayer
     contentfile: content.json
     helpinghand: [CALUNG, JEGOGAN, PEMADE_POLOS, PEMADE_SANGSIH, KANTILAN_POLOS, KANTILAN_SANGSIH, UGAL] # Animate panggul.
-pdf_converter: 
+pdf_converter:
     folder: ./settings/pdf_converter
     docx_template: pdf_output_template.docx
+    version_fmt: "%d-%b-%Y"
     fonts:
         Courier New: COUR.TTF
         Arial: ARIBLK.TTF

@@ -63,7 +63,7 @@ validationmeta = metatype:'VALIDATION' {('ignore'|'value') '='} (ignore:strlistv
 validationmetaparameters = {[','] @:(beats_parm | scope_parm)} ;
 
 waitmeta = metatype:'WAIT' {('seconds'|'value') '='} seconds:floatvalue parameters:waitmetaparameters ;
-waitmetaparameters = {[','] @:after_parm};
+waitmetaparameters = {[','] @:(after_parm | passes_parm)};
 
 after_parm = 'after' '=' after:boolvalue;
 beat_count_parm = 'beat_count' '=' beat_count:intvalue;

@@ -36,19 +36,30 @@ _RUN_SETTINGS: RunSettings = None
 _RUN_SETTINGS_LISTENERS: set[callable] = set()
 
 
-# DATA contains information about the location of the data sources and how to format the content.
-# The values of the first three entries (section, folder and location) refer to key values in the config file.
-# Structure:
-# <table-key>: {"section": <top level key>, "folder": <key of data subfolder>, "filename": <key of file name>}
-# table-name is the target key in the `data` section of the settings dict
-# The "formats" member contains information for the formatting to apply on each individual record. The tuple items
-# have the following meaning (the last item is optional).
-#   #0: <list of NotationEnum sublasses>: classes to include when applying the eval function to the string value.
-#   #1: <default value> to be applied instead of the eval function if the value an empty string or missing.
-#   #2: <post-processing function>. Applied after the above transformations. It should have the entire record as
-#     only argument.
-# For numerical values, the first member should be an empty list.
-# Any non-formatted field will have a str format.
+# DATA contains information about the location of the settings data tables and how to format their contents.
+# Its structure enables to process each settings data table with the same generic code (function read_data).
+# The tables are stored as csv or tsv files in the settings subfolders `font`, `grammars`, `instruments`, ...
+# In the following explanation each table is expected to have been imported as a record-oriented list of dicts.
+# in the form [{"<col1_header>": <row1col1 value>}, "<col2_header>": <row1col2 value>,...}, ...]
+#
+# Structure of the DATA constant:
+# <table-key>: {"section": <top level key>, "folder": <key of data subfolder>, "filename": <key of file name>,
+#               "formats": <dict with formatting info>}
+#
+# <table-key> is the target attribute of src.settings.classes.Data that should contain the table content.
+# "section" refers to the section in the `data` section of settings/config.yaml containing information about the
+#            file location.
+# The values of "folder" and "filename" are the keys in this section that contain the folder and file name.
+# The "formats" member is a dict that contains information about the formatting to apply to each individual
+#      record in the table.
+#      Each key corresponds with a record field name (=table column name). The values consist of a tuple with
+#      three elements that have the following meaning (the last item is optional).
+#         #0: <list of NotationEnum sublasses>: classes to which the (string) values should be cast.
+#         #1: <default value> for empty strings and missing values.
+#         #2: <post-processing function>. Applied after the above casting. It should accept the entire record as
+#             only argument.
+#      For numeric values the first member should be an empty list.
+#      Any field that does not occur in the "formats" section will be cast to str.
 DATA = {
     "instruments": {
         "section": "instruments",
@@ -348,7 +359,9 @@ def temp_update_me(content: Content):
         if song.pdf and notation_info:
             filepath = os.path.join(notation_info.folder_in, notation_info.parts["full"].file)
             modification_time = os.path.getmtime(filepath)
-            version_date = time.strftime("%d-%b-%Y", time.gmtime(modification_time)).lower()
+            version_date = time.strftime(
+                _RUN_SETTINGS.pdf_converter.version_fmt, time.gmtime(modification_time)
+            ).lower()
             song.notation_version = version_date
     return content
 
@@ -420,6 +433,8 @@ def update_midiplayer_content(
         logger.info("New song %s created for MIDI player content", player_song.title)
     elif pdf_file:
         player_song.pdf = pdf_file
+    if notation_version:
+        player_song.notation_version = notation_version
 
     if partinfo:
         # pylint: disable=not-an-iterable

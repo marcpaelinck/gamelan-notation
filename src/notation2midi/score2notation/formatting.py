@@ -124,7 +124,9 @@ class NotationTemplate:
         self.title = self.run_settings.notation.title
         self.filepath = self.run_settings.pdf_out_filepath
         last_modif_epoch = os.path.getmtime(self.run_settings.notation_filepath)
-        self.datestamp = datetime.fromtimestamp(last_modif_epoch).strftime("%d-%b-%Y")
+        self.datestamp = (
+            datetime.fromtimestamp(last_modif_epoch).strftime(run_settings.pdf_converter.version_fmt).lower()
+        )
         self.current_tempo = -1
         self.doc = self._doc_template()
         self.styles = getSampleStyleSheet()
@@ -311,8 +313,8 @@ class NotationTemplate:
             },
             LabelMeta: {
                 "cellnr": "beat",
-                "col_span": -1,
-                "spantype": SpanType.LAST_CELL,
+                # "col_span": -1,
+                # "spantype": SpanType.LAST_CELL,
                 "parastyle": self.metadataLabelStyle,
                 "formatter": self._simple_formatter,
             },

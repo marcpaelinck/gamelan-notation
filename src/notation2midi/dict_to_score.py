@@ -525,12 +525,12 @@ class DictToScoreConverter(ParserModel):
                         # move goto pointers to the end of the wait beat
                         # TODO GOTO REMOVE next 5 lines
                         for rep, beat in lastbeat.goto.items():
-                            if rep in meta.passes:
+                            if rep in meta.data.passes:
                                 newbeat.goto[rep] = beat
                                 del lastbeat.goto[rep]
                         lastbeat.goto = dict()
                         for rep, goto in lastbeat.goto_.items():
-                            if rep in meta.passes:
+                            if rep in meta.data.passes:
                                 newbeat.goto_[rep] = goto
                                 del lastbeat.goto_[rep]
                         lastbeat.goto_ = dict()
@@ -539,7 +539,7 @@ class DictToScoreConverter(ParserModel):
                     )
                     gongan.beats.append(newbeat)
                 case _:
-                    raise ValueError(f"Metadata value {meta.data.metatype} is not supported.")
+                    raise ValueError("Metadata type %s is not supported." % type(meta.data).__name__)
 
         if haslabel:
             # Gongan has one or more Label metadata items: explicitly set the current tempo for each beat by copying it
@@ -780,8 +780,7 @@ class DictToScoreConverter(ParserModel):
                     id=int(self.curr_gongan_id),
                     beats=beats,
                     beat_duration=mode(beat.duration for beat in beats),  # most occuring duration
-                    metadata=gongan_info.get(ParserTag.METADATA, [])
-                    + self.notation.notation_dict[DEFAULT][ParserTag.METADATA],
+                    metadata=gongan_info.get(ParserTag.METADATA, []) + self.score.global_metadata,
                     comments=gongan_info.get(ParserTag.COMMENTS, []),
                 )
                 self.score.gongans.append(gongan)

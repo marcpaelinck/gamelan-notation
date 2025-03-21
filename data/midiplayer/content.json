@@ -151,7 +151,7 @@
                                 }
                         ]
                 }, 
-                {"title": "Janger", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Janger_full_GAMELAN1.pdf", "notation_version": "28-feb-2025", "parts": [
+                {"title": "Janger", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Janger_full_GAMELAN1.pdf", "notation_version": "21-mar-2025", "parts": [
                                 {"part": "entire piece", "file": "Janger_full_GAMELAN1.mid", "loop": true, "markers": {}}
                         ]
                 }, 
