@@ -1,18 +1,17 @@
 import math
 import os
-from dataclasses import dataclass
 from itertools import batched, pairwise
 
 from mido import MidiFile
 
-from src.common.constants import FROM_PIANO, MIDI_TO_COURIER, VALID_MIDI_MESSAGE_TYPES
 from src.common.logger import get_logger
 from src.midi2notation.classes import TimedMessage, TimingData
+from src.midi2notation.constants import MIDI_TO_COURIER, VALID_MIDI_MESSAGE_TYPES
 
 logger = get_logger(__name__)
 
-# datafolder = ".\\data\\puspanjali\\"
-datafolder = ".\\data\\cendrawasih\\"
+datafolder = ".\\data\\puspanjali\\"
+# datafolder = ".\\data\\cendrawasih\\"
 
 BEATS_PER_GONGAN = 16
 
@@ -111,7 +110,7 @@ def get_timed_messages(mid: MidiFile, metadata: TimingData):
         TimedMessage(
             msg.time,
             msg.type,
-            MIDI_TO_COURIER.get(msg.note, MIDI_TO_COURIER.get(FROM_PIANO.get(msg.note, 0), 0)),
+            MIDI_TO_COURIER.get(msg.note, MIDI_TO_COURIER.get(MIDI_TO_COURIER.get(msg.note, 0), 0)),
             -1,
         )
         for msg in mid.tracks[0]
@@ -174,13 +173,13 @@ def generate_grouping(mid: MidiFile):
 
 
 if __name__ == "__main__":
-    # mid_polos = MidiFile(datafolder + "Puspanjali Intro P.mid", clip=True)
-    # mid_sangsih = MidiFile(datafolder + "Puspanjali Intro S.mid", clip=True)
-    mid_polos = MidiFile(datafolder + "Cendrawasih gangsa p.mid", clip=True)
+    mid_polos = MidiFile(datafolder + "Puspanjali Intro P.mid", clip=True)
+    mid_sangsih = MidiFile(datafolder + "Puspanjali Intro S.mid", clip=True)
+    # mid_polos = MidiFile(datafolder + "Cendrawasih gangsa p.mid", clip=True)
     x = 1
     # mid_sangsih = MidiFile(datafolder + "Cendrawasih_piano.mid", clip=True)
     grouping_polos = generate_grouping(mid_polos)
-    # grouping_sangsih = generate_grouping(mid_sangsih)
+    grouping_sangsih = generate_grouping(mid_sangsih)
     p_gongans = ["|".join("".join([note for note in beat]) for beat in gongan) for gongan in grouping_polos]
     s_gongans = ["|".join("".join([note for note in beat]) for beat in gongan) for gongan in grouping_sangsih]
 
