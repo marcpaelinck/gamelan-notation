@@ -5,7 +5,6 @@ from mido import Message
 from src.common.classes import Preset
 from src.common.constants import Position
 from src.notation2midi.midi_track import MidiTrackX
-from src.settings.classes import RunSettings
 from src.settings.settings import get_run_settings
 
 

@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 from src.common.constants import DEFAULT, InstrumentType, NotationEnum, Position
 from src.settings.classes import RunSettings
-from src.settings.settings import get_run_settings
+from src.settings.settings import add_run_settings_listener, get_run_settings
 from src.settings.utils import tag_to_position_dict
 
 
@@ -68,15 +68,16 @@ class MetaDataBaseModel(BaseModel):
         )
         cls._TAG_TO_POSITION = tag_to_position_dict(run_settings)
 
-    @classmethod
-    def build_class(cls):
-        run_settings = get_run_settings(cls._initialize)
-        cls._initialize(run_settings)
+    # @classmethod
+    # def build_class(cls):
+    #     run_settings = get_run_settings(cls._initialize)
+    #     cls._initialize(run_settings)
 
 
 # # INITIALIZE THE MetaDataBaseModel CLASS TO CREATE AND UPDATE THE TAG LOOKUP TABLE
 # ##############################################################################
-MetaDataBaseModel.build_class()
+# MetaDataBaseModel.build_class()
+add_run_settings_listener(MetaDataBaseModel._initialize)
 # ##############################################################################
 
 
@@ -103,6 +104,7 @@ class DynamicsMeta(GradualChangeMetadata):
     positions: list[Position]  # PositionsFromTag
     abbreviation: str = ""
     DEFAULTPARAM = "abbreviation"
+    DYNAMICS: ClassVar[dict[str, int]] = Field(default_factory=dict)
 
     @field_validator("abbreviation", mode="after")
     @classmethod
@@ -111,12 +113,21 @@ class DynamicsMeta(GradualChangeMetadata):
         # TODO: This is not very nice code but GradualChangeMetadata expects `value` to be an int.
         # Is there a better way to do this?
         try:
-            run_settingss = get_run_settings()
-            valinfo.data["value"] = run_settingss.midi.dynamics[abbr]
+            valinfo.data["value"] = cls.DYNAMICS[abbr]  # pylint: disable=unsubscriptable-object
         except Exception as exc:
             # Should not occur because the validator is called after resolving the other fields
-            raise ValueError("illegal value for dynamics: {}".format(abbr)) from exc
+            raise ValueError("illegal value for dynamics: {}".format(abbr) + str(exc)) from exc
         return abbr
+
+    @classmethod
+    def _initialize(cls, run_settings: RunSettings):
+        cls.DYNAMICS = run_settings.midi.dynamics
+
+
+# # ADD DynamicsMeta initialize method as listener to run_settings change
+# ##############################################################################
+add_run_settings_listener(DynamicsMeta._initialize)
+# ##############################################################################
 
 
 class GonganMeta(MetaDataBaseModel):
@@ -258,97 +269,3 @@ class MetaData(BaseModel):
     @classmethod
     def __is_list__(cls, value):
         return value.startswith("[") and value.endswith("]")
-
-    @field_validator("data", mode="before")
-    @classmethod
-    def convert_to_proper_json(cls, data: str) -> dict[Any]:
-        """Converts the metadata syntax used in the notation into regular JSON strings.
-            metadata format: {META_KEYWORD keyword1=value1[keywordN=valueN] }
-        Args:
-            x (_type_): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        if not isinstance(data, str):
-            return data
-
-        meta = data.strip()
-        membertypes = MetaDataType.__dict__["__args__"]
-        # create a dict containing the valid parameters for each metadata keyword.
-        # Format: {<meta-keyword>: [<parameter1>, <parameter2>, ...]}
-        field_dict = {
-            member.model_fields["metatype"].annotation.__args__[0]: [
-                param for param in list(member.model_fields.keys()) if param != "metatype"
-            ]
-            for member in membertypes
-        }
-        # Try to retrieve the keyword
-        keyword_pattern = r"\{ *([A-Z]+) +"
-        match = regex.match(keyword_pattern, meta)
-        if not match:
-            # NOTE All exceptions in this method are unit tested by checking the error number
-            # a the beginning of the error message.
-            raise ValueError("Err1 - Bad metadata format {}: could not determine metadata type.".format(data))
-        meta_keyword = match.group(1)
-        if not meta_keyword in field_dict.keys():
-            raise ValueError("Err2 - Metadata {} has an invalid keyword {}.".format(data, meta_keyword))
-
-        # Retrieve the corresponding parameter names
-        param_names = field_dict[meta_keyword]
-
-        # Create a match pattern for the parameter values
-        value_pattern_list = [
-            r"(?P<value>'[^']+')",  # quoted value (single quotes)
-            r"(?P<value>\"[^\"]+\")",  # quoted value (double quotes)
-            r"(?P<value>\[[^\[\]]+\])",  # list
-            r"(?P<value>[^,\"'\[\]]+)",  # simple unquoted value
-        ]
-        value_pattern = "(?:" + "|".join(value_pattern_list) + ")"
-
-        # Create a pattern to validate the general format of the string, without validating the parameter names.
-        # This test is performed separately in order to have a more specific error handling.
-        single_param_pattern = r"(?: *(?P<parameter>[\w]+) *= *" + value_pattern + " *)"
-        multiple_params_pattern = "(?:" + single_param_pattern + ", *)*" + single_param_pattern
-        full_metadata_pattern = r"^\{ *" + meta_keyword + " +" + multiple_params_pattern + r"\}"
-        # Validate the general structure.
-        match = regex.fullmatch(full_metadata_pattern, meta)
-        if not match:
-            raise ValueError(
-                "Err3 - Bad metadata format {}, please check the format. Are the parameters separated by commas?".format(
-                    data
-                )
-            )
-
-        # Create a pattern requiring valid parameter nammes exclusively.
-        single_param_pattern = f"(?: *(?P<parameter>{'|'.join(param_names)})" + r" *= *" + value_pattern + " *)"
-        multiple_params_pattern = "(?:" + single_param_pattern + ", *)*" + single_param_pattern
-        full_metadata_pattern = r"^\{ *" + meta_keyword + " +" + multiple_params_pattern + r"\}"
-        # Validate the parameter names.
-        match = regex.fullmatch(full_metadata_pattern, meta)
-        if not match:
-            raise ValueError(
-                "Err4 - Metadata {} contains invalid parameter(s). Valid values are: {}.".format(
-                    data, ", ".join(field_dict[meta_keyword])
-                )
-            )
-
-        # Capture the (parametername, value) pairs
-        groups = [match.captures(i) for i, reg in enumerate(match.regs) if i > 0 and reg != (-1, -1)]
-
-        # Quote non-numeric values, either quoted or non-quoted
-        nonnumeric = r'(?: *\'([^"]+)\')|(?: *"([^"]+)")|(?: *(\w*[A-Za-z_]\w*\b) *)'
-        # nonnumeric = r"(?: *(\w*[A-Za-z_ ]+\w*) *) *"
-        pv = regex.compile(nonnumeric)
-
-        # create a json string
-        parameters = [f'"{p}": {pv.sub(r'"\1\2\3"', v)}' for p, v in zip(*groups)]
-        json_str = f'{{"metatype": "{meta_keyword}", {" ,".join(parameters)}}}'
-
-        try:
-            json_result = json.loads(json_str)
-        except Exception as exc:
-            raise ValueError(
-                "Err5 - Bad metadata format {}. Could not parse the value, please check the format.".format(data)
-            ) from exc
-        return json_result

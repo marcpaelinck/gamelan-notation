@@ -58,7 +58,6 @@ grammar:
     fontfile: font5.ebnf
 pdf_converter:
     folder: ./settings/pdf_converter
-    docx_template: pdf_output_template.docx
     version_fmt: "%d-%b-%Y"
     fonts:
         Courier New: COUR.TTF
@@ -135,7 +134,7 @@ notations:
             full:
                 name: entire piece
                 file: Janger.tsv
-                loop: true
+                loop: false
     gilakdeng:
         title: Gilak Deng
         subfolder: gilak deng

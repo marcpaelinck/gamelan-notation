@@ -3,10 +3,18 @@
 import logging
 from dataclasses import _MISSING_TYPE, MISSING, dataclass, fields
 from enum import StrEnum
+from types import UnionType
 from typing import Any, Callable, Generator
 
 from src.common.classes import Beat, Gongan, Measure, Score
-from src.common.constants import InstrumentType, Modifier, Pitch, Position, Stroke
+from src.common.constants import (
+    DynamicLevel,
+    InstrumentType,
+    Modifier,
+    Pitch,
+    Position,
+    Stroke,
+)
 from src.common.logger import get_logger
 from src.common.metadata_classes import (
     FrequencyType,
@@ -199,13 +207,21 @@ class NoteRecord:
         return [f.name for f in fields(cls)]
 
 
-@dataclass(init=False, kw_only=False)
+@dataclass(init=False, kw_only=True)
 class MetaDataRecord:
+    """This class casts string values to the given types.
+    All types used here should be able to cast a string variable, e.g. int("3")
+    This holds for all NotationEnum subtypes.
+    list[<type>] is also valid.
+    Note that casting is not strictly necessary here because MetaDataRecord objects
+    will be cast to Pydantic MetaData objects later and Pydantic takes care of casting str values.
+    """
+
     # TODO the list of attributes needs to be kept in sync with
     # the attributes of the metadata classes. Can this be avoided?
     metatype: str
     line: int
-    abbreviation: str | _MISSING_TYPE = MISSING
+    abbreviation: DynamicLevel | _MISSING_TYPE = MISSING
     beat: int | _MISSING_TYPE = MISSING
     beat_count: int | _MISSING_TYPE = MISSING
     beats: list[int] | _MISSING_TYPE = MISSING
@@ -231,7 +247,42 @@ class MetaDataRecord:
         names = self.fieldnames()
         for key, val in kwargs.items():
             if key in names:
-                setattr(self, key, val)
+                setattr(self, key, self.castany(key, val))
+
+    @classmethod
+    def cast(cls, value, fieldtype) -> Any:
+        """Casts value or its elements to fieldtype"""
+        if hasattr(fieldtype, "__origin__"):
+            # see https://docs.python.org/3/library/stdtypes.html#special-attributes-of-genericalias-objects
+            if fieldtype.__origin__ is list:
+                eltype = fieldtype.__args__[0]
+                return [eltype(it) for it in value]
+            else:
+                # Not implemented GenericAlias origin
+                return value
+        else:
+            return fieldtype(value)
+
+    @classmethod
+    def castany(cls, field, value) -> Any:
+        """Casts any str or list[str] value to the field's assigned type"""
+        typing = cls.__annotations__[field]
+        if typing.__class__ is UnionType:
+            # Multiple typing options. Try casting to each until success
+            for fieldtype in typing.__args__:
+                if fieldtype is not _MISSING_TYPE:
+                    try:
+                        return cls.cast(value, fieldtype)
+                    except Exception:  # pylint: disable=broad-exception-caught
+                        pass
+        else:
+            # Single typing.
+            try:
+                return typing(value)
+            except Exception:  # pylint: disable=broad-exception-caught
+                pass
+
+        raise ValueError("Incorrect format %s for %s" % (value, field))
 
     @classmethod
     def fieldnames(cls) -> list[str]:

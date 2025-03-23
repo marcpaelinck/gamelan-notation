@@ -263,7 +263,6 @@ class SettingsMidiPlayerInfo(BaseModel):
 
 class SettingsPdfConverterInfo(BaseModel):
     folder: str
-    docx_template: str
     version_fmt: str
     fonts: dict[str, str] = Field(default_factory=dict)
 

@@ -269,7 +269,7 @@ class MidiTrackX(MidiTrack):
                     Message(
                         type="note_on",
                         note=midivalue,
-                        velocity=self.current_velocity,
+                        velocity=self.current_velocity if not note.velocity else note.velocity,
                         time=self.current_ticktime - self.ticktime_last_message,
                         channel=self.channel,
                     )

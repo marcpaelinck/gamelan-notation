@@ -1,19 +1,18 @@
 # Describes the contents of the data folder.
 instruments: 
     folder: ./settings/instruments
-    instrumentgroups:
-        GONG_KEBYAR: 
-            instruments_file: instruments.tsv
-            tags_file: instrumenttags.tsv
-            rules_file: rules.tsv
-        SEMAR_PAGULINGAN: 
-            instruments_file: instruments.tsv
-            tags_file: instrumenttags.tsv
-            rules_file: rules.tsv
+    instruments_file: instruments.tsv
+    tags_file: instrumenttags.tsv
+    rules_file: rules.tsv
+    # shorthand_notation: instruments for which silence and extension symbols may be omitted
+    shorthand_notation: [UGAL, CALUNG, JEGOGAN, GONGS, KEMPLI]
 midi:
     folder: ./settings/midi
-    comment1: PPQ and base_note_time in MIDI ticks. Beat is MIDI beat, not kempli beat.
-    comment2: beat indication (BPM) in notation should be expressed in MIDI beats.
+    midi_definition_file: gamelan_midinotes1.tsv
+    presets_file: gamelan_presets1.tsv
+    midiversion: GAMELAN1
+    # PPQ (pulses per quarternote) and base_note_time in MIDI ticks. Beat is MIDI beat, not kempli beat.
+    # beat indication (BPM) in notations should be expressed in MIDI beats.
     PPQ: 96
     base_note_time: 24
     base_notes_per_beat: 4
@@ -28,70 +27,36 @@ midi:
     silence_seconds_before_start: 3 
     silence_seconds_after_end: 10
     tremolo:
-        comment1: Implementation of tremolo notes. First two parameters are in 1/base_note_time. E.g. if base_note_time=24, then 24 is a standard note duration.
-        comment2: notes_per_quarternote -  should be a divisor of base_note_time
-        comment3: accelerating_pattern - relative duration of the notes. Even number so that alternating note patterns end on the second note
-        comment4: accelerating_velocity - MIDI velocity value (0-127) for each note. Same number of values as accelerating_pattern.
         notes_per_quarternote: 3
         accelerating_pattern: [48, 40, 32, 26, 22, 18, 14, 10, 10, 10, 10, 10]
         accelerating_velocity: [100, 100, 100, 100, 100, 100, 100, 90, 80, 70, 60, 50]
-    midiversions:
-        GONG_KEBYAR1:
-            comment: two presets (melodic and percussion)
-            midi_definition_file: gk_midinotes.tsv
-            presets_file: gk_presets.tsv
-        GONG_KEBYAR2:
-            comment: three presets (percussion, metallophones, melodic gongs)
-            midi_definition_file: gk_midinotes2.tsv
-            presets_file: gk_presets2.tsv
-        GONG_KEBYAR3:
-            comment: one preset for each instrument
-            midi_definition_file: gk_midinotes3.tsv
-            presets_file: gk_presets3.tsv
-        GONG_KEBYAR4:
-            comment: one preset for each instrument position
-            midi_definition_file: gk_midinotes4.tsv
-            presets_file: gk_presets4.tsv
-        GAMELAN1:
-            comment: GK + SP, one sample per instrument
-            midi_definition_file: gamelan_midinotes1.tsv
-            presets_file: gamelan_presets1.tsv
-fonts:
+font:
     folder: ./settings/font
-    fontversions:
-        BaliMusic4: 
-            file: balimusic4font.tsv
-        BaliMusic5:
-            file: balimusic5font.tsv
-grammars:
+    file: balimusic5font.tsv
+    ttf_file: bali-music-5.ttf
+grammar:
     folder: ./settings/grammars
     notationfile: notation.ebnf
     metadatafile: metadata.ebnf
     picklefile: notation_model.pickle
-    fontversions:
-        BaliMusic5: 
-            fontfile: font5.ebnf
+    fontfile: font5.ebnf
+pdf_converter:
+    folder: ./settings/pdf_converter
+    version_fmt: "%d-%b-%Y"
+    fonts:
+        Courier New: COUR.TTF
+        Arial: ARIBLK.TTF
+        BaliMusic5: bali-music-5.ttf
 samples:
     folder: ./data/samples
-    instrumentgroups:
-        GONG_KEBYAR:
-            subfolder: gong_kebyar
-        GAMELAN:
-            subfolder: gamelan
-soundfonts:
+    subfolder: gamelan
+soundfont:
     folder: ./data/soundfont
     path_to_viena_app: C:/Program Files/Viena/Viena64.exe
 midiplayer:
     folder: ./data/midiplayer
     contentfile: content.json
     helpinghand: [CALUNG, JEGOGAN, PEMADE_POLOS, PEMADE_SANGSIH, KANTILAN_POLOS, KANTILAN_SANGSIH] # Animate panggul.
-pdf_converter:
-    folder: ./settings/pdf_converter
-    docx_template: pdf_output_template.docx
-    fonts:
-        Courier New: COUR.TTF
-        Arial: ARIBLK.TTF
-        Bali Music 5: bali-music-5.ttf
 notations:
     # `beat_at_end` indicates whether the notation has the gir at the end of each gongan (Balinese concept) or at the beginning.
     # the entries under the 'files' label will be referred to as 'part'.
@@ -100,28 +65,22 @@ notations:
     # If `loop`==false, the last note of each instrument will be extended for a natural fade out.
     # Otherwise the midi file will end abruptly to allow looping.
     defaults:
-        run_type: ${options.notation_to_midi.runtype}
-        include_in_run_types: [RUN_SINGLE, RUN_ALL]
-        run_test_part: full
-        production: true
-        folders:
-            RUN_SINGLE:
-                folder_in: ./tests/data/notation/${notation.subfolder}
-                folder_out: ./tests/data/notation/${notation.subfolder}
-            RUN_SINGLE_PRODUCTION:
-                folder_in: ./tests/data/notation/${notation.subfolder}
-                folder_out:  /tests/${midiplayer.folder}
-            RUN_ALL:
-                folder_in: ./tests/data/notation/_integration_test/notations
-                folder_out: ./tests/data/notation/_integration_test/output
+        instrumentgroup: GONG_KEBYAR
+        folder_in: ./data/notation/${{_PARENT_.subfolder}}
+        folder_out_nonprod: ./data/notation/${{_PARENT_.subfolder}}
+        folder_out_prod: ${{midiplayer.folder}}
+        midi_out_file_pattern: !!str "${{_PARENT_.title}}_{part_id}_${{midi.midiversion}}.mid"
+        pdf_out_file_pattern: !!str "${{_PARENT_.title}}_{part_id}_${{midi.midiversion}}.pdf"
+        # parts for which to generate a PDF notation document
+        generate_pdf_part_ids: [full]
         beat_at_end: false
         autocorrect_kempyung : true
         fontversion: BaliMusic5
-        instrumentgroup: GONG_KEBYAR
-        midi_out_file: ${notation.title}_${notation.part_id}_${midi.midiversion}.mid
+        include_in_run_types: [RUN_SINGLE, RUN_ALL]
+        include_in_production_run: true
     test-semarpagulingan:
         title: Sinom Ladrang
-        subfolder: sinom ladrang
+        subfolder: .
         instrumentgroup: SEMAR_PAGULINGAN
         beat_at_end: false
         include_in_run_types: [RUN_SINGLE]
@@ -132,7 +91,7 @@ notations:
                 loop: false
     test-gongkebyar:
         title: Sinom Ladrang (GK)
-        subfolder: sinom ladrang
+        subfolder: .
         beat_at_end: false
         instrumentgroup: GONG_KEBYAR
         include_in_run_types: [RUN_SINGLE]
@@ -143,7 +102,7 @@ notations:
                 loop: false
     test_beat_at_end:
         title: Pendet
-        subfolder: pendet
+        subfolder: .
         beat_at_end: true
         instrumentgroup: GONG_KEBYAR
         include_in_run_types: [RUN_SINGLE]
@@ -152,6 +111,17 @@ notations:
                 name: entire piece
                 file: pendet_font5_beat_at_end.tsv
                 loop: false
+    integration_test:
+        title: Integration Test
+        subfolder: _integration_test/reference
+        folder_in: ./tests/data/notation/_integration_test/reference
+        folder_out_nonprod: ./tests/data/notation/_integration_test/output
+        include_in_run_types: []
+        parts: 
+            dummy:
+                name: dummy
+                file: dummy
+                loop: false        
     bapangselisir:
         title: Bapang Selisir
         subfolder: bapang selisir

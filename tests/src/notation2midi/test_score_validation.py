@@ -1,24 +1,25 @@
 import unittest
-from unittest.mock import patch
 
-from src.common.classes import Beat, Gongan, Measure, Note, Score
-from src.common.constants import DEFAULT, Pitch, Position, Stroke
+from src.common.classes import Beat, Gongan, Measure, Score
+from src.common.constants import DEFAULT, Position
 from src.common.metadata_classes import GonganType
 from src.notation2midi.score_validation import ScoreValidator
 from src.settings.constants import Yaml
 from src.settings.settings import load_run_settings
-
-
-def note(position: Position, pitch: Pitch, octave: int):
-    return Note.get_note(position, pitch, octave, Stroke.OPEN, 1, 0)
+from tests.src.testutils import PositionNote
 
 
 class ScoreValidationTester(unittest.TestCase):
+    """Validator for the record to score parser"""
 
-    @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
+    # pylint: disable=protected-access
+
     def setUp(self):
         # Create a sample gongan with one incorrect beat (PEMADE and SANGSIH are the same) and one correct beat
         settings = load_run_settings({Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART_ID: "full"})
+        P = PositionNote(Position.PEMADE_POLOS)
+        S = PositionNote(Position.PEMADE_SANGSIH)
+
         gongan = Gongan(
             id=1,
             gongantype=GonganType.REGULAR,
@@ -32,42 +33,44 @@ class ScoreValidationTester(unittest.TestCase):
                     velocities_end=[],
                     duration=10,
                     measures={
-                        (P := Position.PEMADE_POLOS): Measure(
-                            position=P,
+                        P.position: Measure(
+                            position=P.position,
+                            all_positions=[P.position],
                             passes={
                                 DEFAULT: Measure.Pass(
                                     seq=DEFAULT,
                                     notes=[
-                                        note(P, Pitch.DONG, 0),
-                                        note(P, Pitch.DENG, 0),
-                                        note(P, Pitch.DUNG, 0),
-                                        note(P, Pitch.DANG, 0),
-                                        note(P, Pitch.DING, 1),
-                                        note(P, Pitch.DONG, 1),
-                                        note(P, Pitch.DENG, 1),
-                                        note(P, Pitch.DUNG, 1),
-                                        note(P, Pitch.DANG, 1),
-                                        note(P, Pitch.DING, 2),
+                                        P.DONG0,
+                                        P.DENG0,
+                                        P.DUNG0,
+                                        P.DANG0,
+                                        P.DING1,
+                                        P.DONG1,
+                                        P.DENG1,
+                                        P.DUNG1,
+                                        P.DANG1,
+                                        P.DING2,
                                     ],
                                 )
                             },
                         ),
-                        (S := Position.PEMADE_SANGSIH): Measure(
-                            position=S,
+                        S.position: Measure(
+                            position=S.position,
+                            all_positions=[S.position],
                             passes={
                                 DEFAULT: Measure.Pass(
                                     seq=DEFAULT,
                                     notes=[
-                                        note(S, Pitch.DONG, 0),
-                                        note(S, Pitch.DENG, 0),
-                                        note(S, Pitch.DUNG, 0),
-                                        note(S, Pitch.DANG, 0),
-                                        note(S, Pitch.DING, 1),
-                                        note(S, Pitch.DONG, 1),
-                                        note(S, Pitch.DENG, 1),
-                                        note(S, Pitch.DUNG, 1),
-                                        note(S, Pitch.DANG, 1),
-                                        note(S, Pitch.DING, 2),
+                                        S.DONG0,
+                                        S.DENG0,
+                                        S.DUNG0,
+                                        S.DANG0,
+                                        S.DING1,
+                                        S.DONG1,
+                                        S.DENG1,
+                                        S.DUNG1,
+                                        S.DANG1,
+                                        S.DING2,
                                     ],
                                 )
                             },

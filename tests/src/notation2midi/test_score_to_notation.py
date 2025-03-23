@@ -13,7 +13,6 @@ from src.settings.settings import load_run_settings
 
 class ScoreToNotationTester(unittest.TestCase):
 
-    @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
     def setUp(self):
         load_run_settings({Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART_ID: "full"})
         self.symbol_to_note_lookup = {(note.position, note.symbol): note for note in Note.VALIDNOTES}
@@ -40,6 +39,7 @@ class ScoreToNotationTester(unittest.TestCase):
                             measures={
                                 instr: Measure(
                                     position=instr,
+                                    all_positions=instr,
                                     passes={
                                         DEFAULT: Measure.Pass(
                                             seq=DEFAULT,

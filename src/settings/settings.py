@@ -25,10 +25,16 @@ from src.common.constants import (
 )
 from src.common.logger import get_logger
 from src.settings.classes import Content, PartForm, RunSettings, Song
-from src.settings.constants import CONFIG_FILE, RUN_SETTINGSFILE, SETTINGSFOLDER, Yaml
+from src.settings.constants import (
+    ENV_VAR_CONFIG_PATH,
+    ENV_VAR_N2M_SETTINGS_PATH,
+    ENV_VAR_SETTINGS_DATA_FOLDER,
+    Yaml,
+)
 from src.settings.utils import pretty_compact_json
 
 logger = get_logger(__name__)
+
 
 # Container for the run settings
 _RUN_SETTINGS: RunSettings = None
@@ -193,16 +199,16 @@ def post_process(subdict: dict[str, Any], run_settings_dict: dict[str, Any] = No
     return subdict
 
 
-def read_settings(filename: str) -> dict:
-    """Retrieves settings from the given (YAML) file. The file should occur in SETTINGSFOLDER.
+def read_settings(filepath: str) -> dict:
+    """Retrieves settings from the given (YAML) file. The folder is retrieved from the environment.
 
     Args:
-        filename (str): YAML file name. Should occur in SETTINGSFOLDER.
+        filename (str): YAML file name.
 
     Returns:
         dict: dict containing all the settings contained in the file.
     """
-    with open(os.path.join(SETTINGSFOLDER, filename), "r", encoding="utf-8") as settingsfile:
+    with open(filepath, "r", encoding="utf-8") as settingsfile:
         return yaml.load(settingsfile, yaml.Loader)
 
 
@@ -235,7 +241,7 @@ def read_data(settings_dict: dict, specs: dict) -> dict[str, list[dict[str, str]
     Returns:
         dict[str, list[dict[str, str]]]: dict table-key -> <list of records> where each record represents a row.
     """
-    data = dict()
+    data = {}
     for item, entry in specs.items():
         category = entry["section"]
         folder = settings_dict[category][entry["folder"]]
@@ -260,6 +266,21 @@ def read_data(settings_dict: dict, specs: dict) -> dict[str, list[dict[str, str]
                         if len(formatting) > 2:
                             record[fmtcolumn] = formatting[2](record)
     return data
+
+
+def add_run_settings_listener(listener: Callable[[], None] = None) -> None:
+    """Retrieves the most recently loaded run settings. Loads the settings from the run-settings.yaml file if no
+    settings have been loaded yet.
+
+    Args:
+        listener (callable, optional): A function that should be called after new run settings have been loaded.
+        This value can be passed by modules and objects that use the run settings during their (re-)initialization
+        phase. Defaults to None.
+    Returns:
+        RunSettings: settings object
+    """
+    if listener:
+        _RUN_SETTINGS_LISTENERS.add(listener)
 
 
 def get_run_settings(listener: Callable[[], None] = None) -> RunSettings:
@@ -317,7 +338,8 @@ def load_run_settings(notation_id: str = None, part_id: str = None) -> RunSettin
     global _RUN_SETTINGS  # pylint: disable=global-statement
 
     if not _RUN_SETTINGS:
-        settings_data_dict = read_settings(CONFIG_FILE)
+        config_filepath = os.getenv(ENV_VAR_CONFIG_PATH)
+        settings_data_dict = read_settings(config_filepath)
         # update each notation entry with the default settings
         for key, notation_entry in settings_data_dict[Yaml.NOTATIONS].items():
             if key == Yaml.DEFAULTS:
@@ -326,7 +348,8 @@ def load_run_settings(notation_id: str = None, part_id: str = None) -> RunSettin
         del settings_data_dict[Yaml.NOTATIONS][Yaml.DEFAULTS]
         settings_data_dict = post_process(settings_data_dict)
 
-        run_settings_dict = read_settings(RUN_SETTINGSFILE)
+        settings_filepath = os.getenv(ENV_VAR_N2M_SETTINGS_PATH)
+        run_settings_dict = read_settings(settings_filepath)
         run_settings_dict[Yaml.CONFIGDATA] = settings_data_dict
         run_settings_dict[Yaml.DATA] = read_data(settings_data_dict, DATA)
 

@@ -235,7 +235,7 @@ class NotationTatsuParser(ParserModel):
                 note_chars = note_chars[len(next_note.symbol) :]
         return notes
 
-    def _replace_metadata_tags_with_positions(self, metadata_list: list[MetaDataRecord]) -> None:
+    def _replace_metadata_tags_with_positions_old(self, metadata_list: list[MetaDataRecord]) -> None:
         """Translates the values of `position` or `positions` metadata attributes to a list of Position enum values.
            Note that a tag can represent multiple values, e.g. 'gangsa' stands for four positions: polos and sangsih
            positions for both pemade and kantilan.
@@ -245,6 +245,22 @@ class NotationTatsuParser(ParserModel):
         for meta in metadata_list:
             if not isinstance(meta.positions, _MISSING_TYPE):
                 meta.positions = sum([InstrumentTag.get_positions(tag) for tag in meta.positions], [])
+
+    def _replace_metadata_tags_with_positions(self, metadata_list: list[dict]) -> None:
+        """Translates the values of `position` or `positions` metadata attributes to a list of Position enum values.
+           Note that a tag can represent multiple values, e.g. 'gangsa' stands for four positions: polos and sangsih
+           positions for both pemade and kantilan.
+        Args:
+            metadata_list (list[dict]): list of records, each representing a metadata item
+        """
+        for meta in metadata_list:
+            if "positions" in meta:
+                meta["positions"] = sum([InstrumentTag.get_positions(tag) for tag in meta["positions"]], [])
+            if "parameters" in meta:
+                if "positions" in meta["parameters"]:
+                    meta["parameters"]["positions"] = sum(
+                        [InstrumentTag.get_positions(tag) for tag in meta["parameters"]["positions"]], []
+                    )
 
     def _replace_stave_tags_with_positions(self, staves: list[dict]) -> None:
         """Translates the tag (position name in the first column of a measure) to a list of Position enum values.
@@ -429,11 +445,13 @@ class NotationTatsuParser(ParserModel):
                 stave for stave in gongan.get(ParserTag.STAVES, {}) if any((beat for beat in stave["beats"]))
             ]
 
-            # Parse the metadata into MetaData objects
-            gongan[ParserTag.METADATA] = [
-                MetaDataRecord(**self._flatten_meta(meta)) for meta in gongan[ParserTag.METADATA]
-            ]
+            # Parse the metadata into MetaDataRecord objects
+            gongan[ParserTag.METADATA] = [self._flatten_meta(meta) for meta in gongan[ParserTag.METADATA]]
             self._replace_metadata_tags_with_positions(gongan[ParserTag.METADATA])
+            try:
+                gongan[ParserTag.METADATA] = [MetaDataRecord(**meta) for meta in gongan[ParserTag.METADATA]]
+            except ValueError as err:
+                self.logerror(str(err))
 
             # Look up the Position value for the 'free style' tags.
             # If the tag stands for multiple posiitions, create a copy of the stave for each position.

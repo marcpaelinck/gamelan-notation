@@ -1,18 +1,36 @@
 from enum import StrEnum
 
-SETTINGSFOLDER = "./settings"
-TEST_SETTINGSFOLDER = "./tests/settings"
-RUN_SETTINGSFILE = "notation2midi.yaml"
-CONFIG_FILE = "config.yaml"
+# Names of the environment variables in the .env and .env.test files
+ENV_VAR_CONFIG_PATH = "GAMELAN_NOTATION_CONFIG_PATH"
+ENV_VAR_N2M_SETTINGS_PATH = "GAMELAN_NOTATION_N2M_SETTINGS_PATH"
+ENV_VAR_SETTINGS_DATA_FOLDER = "GAMELAN_NOTATION_SETTINGS_DATA_FOLDER"
 
 
 class SStrEnum(StrEnum):
+    """Base class for enums, with modified str value"""
+
     def __str__(self):
         return self.value
 
 
-# gamelan_midinotes<nr>.tsv
+# Enums containing field names of the configuration data tables in subfolders of the settings folder.
+
+
+class PresetsFields(SStrEnum):
+    """settings/midi/presets.tsv"""
+
+    INSTRUMENTGROUP = "instrumentgroup"
+    INSTRUMENTTYPE = "instrumenttype"
+    POSITION = "position"
+    BANK = "bank"
+    PRESET = "preset"
+    CHANNEL = "channel"
+    PRESET_NAME = "preset_name"
+
+
 class MidiNotesFields(SStrEnum):
+    """settings/midi/gamelan_midinotes<nr>.tsv"""
+
     INSTRUMENTGROUP = "instrumentgroup"
     INSTRUMENTTYPE = "instrumenttype"
     POSITIONS = "positions"
@@ -25,8 +43,9 @@ class MidiNotesFields(SStrEnum):
     SAMPLE = "sample"
 
 
-# balimusic<nr>font.tsv
 class FontFields(SStrEnum):
+    """settings/font/balimusic<nr>font.tsv"""
+
     SYMBOL = "symbol"
     UNICODE = "unicode"
     SYMBOL_DESCRIPTION = "symbol_description"
@@ -40,8 +59,9 @@ class FontFields(SStrEnum):
     DESCRIPTION = "description"
 
 
-# Combination of the above classes
 class NoteFields(SStrEnum):
+    """Combination of the above two classes"""
+
     INSTRUMENTGROUP = "instrumentgroup"
     INSTRUMENTTYPE = "instrumenttype"
     POSITION = "position"
@@ -57,8 +77,9 @@ class NoteFields(SStrEnum):
     SAMPLE = "sample"
 
 
-# instruments.tsv
 class InstrumentFields(SStrEnum):
+    """settings/instruments/instruments.tsv"""
+
     GROUP = "group"
     INSTRUMENT = "instrument"
     POSITION = "position"
@@ -66,8 +87,9 @@ class InstrumentFields(SStrEnum):
     EXTENDED_POSITION_RANGE = "extended_position_range"
 
 
-# instrumenttags.tsv
 class InstrumentTagFields(SStrEnum):
+    """settings/instruments/instrumenttags.tsv"""
+
     TAG = "tag"
     ADDITION = "addition"
     GROUPS = "groups"
@@ -75,8 +97,9 @@ class InstrumentTagFields(SStrEnum):
     POSITIONS = "positions"
 
 
-# rules.tsv
 class RuleFields(SStrEnum):
+    """settings/instruments/rules.tsv"""
+
     GROUP = "group"
     RULETYPE = "ruletype"
     POSITIONS = "positions"
@@ -86,19 +109,9 @@ class RuleFields(SStrEnum):
     VALUE2 = "value2"
 
 
-class PresetsFields(SStrEnum):
-    INSTRUMENTGROUP = "instrumentgroup"
-    INSTRUMENTTYPE = "instrumenttype"
-    POSITION = "position"
-    BANK = "bank"
-    PRESET = "preset"
-    CHANNEL = "channel"
-    PRESET_NAME = "preset_name"
-
-
 class Yaml(SStrEnum):
+    """YAML fieldnames and (enum) values"""
 
-    # YAML fieldnames and (enum) values
     NOTATIONS = "notations"
     NOTATION = "notation"
     DATA = "data"

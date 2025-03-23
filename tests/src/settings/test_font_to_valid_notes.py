@@ -1,8 +1,6 @@
-import sys
 from collections import defaultdict
 from typing import Any
 from unittest import TestCase
-from unittest.mock import patch
 
 from src.common.constants import InstrumentGroup, Pitch, Position, Stroke
 from src.settings.constants import NoteFields, Yaml
@@ -25,21 +23,19 @@ class SettingsTester(TestCase):
         # Create a tuple containing the note fields that we want to test.
         return [tuple([note[field] for field in FIELDS_IN_TUPLE]) for note in note_records]
 
-    @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
     def valid_notes_sp(
         self,
     ) -> list[dict[str, Any]]:
         # Creates a list of valid notes for Semar Pagulingan
-        settings = load_run_settings({Yaml.COMPOSITION: "test-semarpagulingan", Yaml.PART_ID: "full"})
+        settings = load_run_settings(notation_id="test-semarpagulingan", part_id="full")
         notes_sp = get_note_records(settings)
         return [{field.value: note[field] for field in FIELDS_IN_TUPLE} for note in notes_sp]
 
-    @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
     def valid_notes_gk(
         self,
     ) -> list[dict[str, Any]]:
         # Creates a list of valid notes for  Gong Kebyar
-        settings = load_run_settings({Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART_ID: "full"})
+        settings = load_run_settings(notation_id="test-gongkebyar", part_id="full")
         notes_gk = get_note_records(settings)
         return [{field.value: note[field] for field in FIELDS_IN_TUPLE} for note in notes_gk]
 
@@ -102,10 +98,10 @@ class SettingsTester(TestCase):
     # fmt: on
 
     def test_create_note_records(self):
-        # Validates the create_note_records function, which returns all valid note feature combinations.
-        # TRY_COMBINATIONS contains valid and invalid combinations of pitch, octave, stroke and duration.
-        # We test that only combinations that match VALID_PITCH_OCTAVE and VALID_STROKE_DURATION
-        # occur in validnotes, the return value of create_note_records.
+        """Validates the create_note_records function, which returns all valid note feature combinations.
+        TRY_COMBINATIONS contains valid and invalid combinations of pitch, octave, stroke and duration.
+        We test that only combinations that match VALID_PITCH_OCTAVE and VALID_STROKE_DURATION
+        occur in validnotes, the return value of create_note_records."""
         for instrumentgroup, validnotes in [
             (InstrumentGroup.SEMAR_PAGULINGAN, self.valid_notes_sp()),
             (InstrumentGroup.GONG_KEBYAR, self.valid_notes_gk()),

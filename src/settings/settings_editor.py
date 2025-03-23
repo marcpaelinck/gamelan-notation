@@ -1,12 +1,10 @@
-import json
 import tkinter as tk
 from enum import StrEnum, auto
 from itertools import count
-from tkinter import filedialog, messagebox, ttk
+from tkinter import ttk
 
 from src.settings.classes import RunType
-from src.settings.constants import RUN_SETTINGSFILE
-from src.settings.settings import load_run_settings, read_settings
+from src.settings.settings import load_run_settings
 
 
 class ItemType(StrEnum):

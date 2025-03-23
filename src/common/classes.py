@@ -54,7 +54,7 @@ from src.settings.constants import (
     RuleFields,
 )
 from src.settings.font_to_valid_notes import get_note_records
-from src.settings.settings import get_run_settings
+from src.settings.settings import add_run_settings_listener, get_run_settings
 from src.settings.utils import tag_to_position_dict
 
 # pylint: disable=missing-class-docstring
@@ -398,16 +398,17 @@ class Instrument(BaseModel):
         cls._init_pos_to_instr(run_settings)
         cls._init_rules(run_settings)
 
-    @classmethod
-    def build_class(cls):
-        """Class initializer"""
-        run_settings = get_run_settings(cls._initialize)
-        cls._initialize(run_settings)
+    # @classmethod
+    # def build_class(cls):
+    #     """Class initializer"""
+    #     run_settings = get_run_settings(cls._initialize)
+    #     cls._initialize(run_settings)
 
 
 # # INITIALIZE THE Instrument CLASS WITH LIST OF VALID NOTES AND CORRESPONDING LOOKUPS
 # ##############################################################################
-Instrument.build_class()
+add_run_settings_listener(Instrument._initialize)
+# Instrument.build_class()
 # ##############################################################################
 
 
@@ -430,7 +431,7 @@ class Note(BaseModel):
     stroke: Stroke
     duration: float | None
     rest_after: float | None
-    velocity: int = 127
+    velocity: int | None = None  # If None, will be set according to DynamicMeta setting
     modifier: Modifier | None = Modifier.NONE
     midinote: tuple[int, ...] = (127,)  # 0..128, used when generating MIDI output.
     rootnote: str = ""
@@ -570,15 +571,16 @@ class Note(BaseModel):
             (n.position, n.pitch, n.octave, n.stroke, n.duration, n.rest_after): n for n in cls.VALIDNOTES
         }
 
-    @classmethod
-    def build_class(cls):
-        run_settings = get_run_settings(cls._set_up_dicts)
-        cls._set_up_dicts(run_settings)
+    # @classmethod
+    # def build_class(cls):
+    #     run_settings = get_run_settings(cls._set_up_dicts)
+    #     cls._set_up_dicts(run_settings)
 
 
 # INITIALIZE THE Note CLASS WITH LIST OF VALID NOTES AND CORRESPONDING LOOKUPS
 ##############################################################################
-Note.build_class()
+add_run_settings_listener(Note._set_up_dicts)
+# Note.build_class()
 ##############################################################################
 
 
@@ -657,15 +659,16 @@ class Preset(BaseModel):
         presets_obj_list = [Preset.model_validate(record) for record in presets_rec_list]
         cls._POSITION_TO_PRESET = {preset.position: preset for preset in presets_obj_list}
 
-    @classmethod
-    def build_class(cls):
-        run_settings = get_run_settings(cls._create_position_to_preset_dict)
-        cls._create_position_to_preset_dict(run_settings)
+    # @classmethod
+    # def build_class(cls):
+    #     run_settings = get_run_settings(cls._create_position_to_preset_dict)
+    #     cls._create_position_to_preset_dict(run_settings)
 
 
 # INITIALIZE THE Preset CLASS TO GENERATE THE POSITION_TO_PRESET LOOKUP DICT
 ##############################################################################
-Preset.build_class()
+# Preset.build_class()
+add_run_settings_listener(Preset._create_position_to_preset_dict)
 ##############################################################################
 
 
@@ -701,15 +704,16 @@ class InstrumentTag(BaseModel):
         positions_groups = [cls._TAG_TO_INSTRUMENTTAG_LIST.get(t, None).positions for t in taglist]
         return sum(positions_groups, [])
 
-    @classmethod
-    def build_class(cls):
-        settings = get_run_settings(cls._create_tag_to_record_dict)
-        cls._create_tag_to_record_dict(settings)
+    # @classmethod
+    # def build_class(cls):
+    #     settings = get_run_settings(cls._create_tag_to_record_dict)
+    #     cls._create_tag_to_record_dict(settings)
 
 
 # INITIALIZE THE InstrumentTag CLASS TO GENERATE THE TAG_TO_POSITION_LIST LOOKUP DICT
 #####################################################################################
-InstrumentTag.build_class()
+# InstrumentTag.build_class()
+add_run_settings_listener(InstrumentTag._create_tag_to_record_dict)
 #####################################################################################
 
 
