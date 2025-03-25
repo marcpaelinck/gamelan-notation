@@ -91,20 +91,32 @@ class ParserModel:
 
         def wrapper(*args, **kwargs):
             self = args[0]
-            separator = "=" * int(50 - len(self.parser_type.value) // 2)
+            separator = "-" * int(50 - len(self.parser_type.value) // 2)
             title = f"{separator} {self.parser_type.value} {separator}"
             self.logger.info(title)
 
             result = func(*args, **kwargs)
 
-            sep_length = len(title)
-            self.logger.info("=" * sep_length)
+            # sep_length = len(title)
+            # self.logger.info("=" * sep_length)
             return result
 
         return wrapper
 
-    def _close_logging(self):
+    def open_logging(self):
+        """To be called by the main program before the first parsing step.
+        Adds an empty line followed by a title line"""
+        title_text = f"NOTATION2MIDI: {self.run_settings.notation.title}"
+        separator = "-" * int(50 - len(title_text) // 2)
+        title = f"{separator} {title_text} {separator}"
+        self.logger.info("")
+        self.logger.info(title)
+
+    def close_logging(self):
+        """To be called by the main program after the last parsing step.
+        Draws a double line (===) followed by an empty line"""
         self.logger.info("=" * 102)
+        self.logger.info("")
 
     def _fmt(self, val: int | None, pos: int):
         """Number formatting, used to format logging messages"""

@@ -67,7 +67,7 @@ notations:
     defaults:
         instrumentgroup: GONG_KEBYAR
         folder_in: ./data/notation/${{_PARENT_.subfolder}}
-        folder_out_nonprod: ./data/notation/${{_PARENT_.subfolder}}
+        folder_out_nonprod: ./tests/data/notation/${{_PARENT_.subfolder}}
         folder_out_prod: ${{midiplayer.folder}}
         midi_out_file_pattern: !!str "${{_PARENT_.title}}_{part_id}_${{midi.midiversion}}.mid"
         pdf_out_file_pattern: !!str "${{_PARENT_.title}}_{part_id}_${{midi.midiversion}}.pdf"
@@ -111,8 +111,12 @@ notations:
                 name: entire piece
                 file: pendet_font5_beat_at_end.tsv
                 loop: false
+    # The notations below will be used for the integration test unless they are marked
+    # with `include_in_run_types: [RUN_SINGLE]`
+    # `integration_test` is a dummy. It contains the input and output folder for the
+    # compare step of the integration test.
     integration_test:
-        title: Integration Test
+        title: Dummy for Integration Test
         subfolder: _integration_test/reference
         folder_in: ./tests/data/notation/_integration_test/reference
         folder_out_nonprod: ./tests/data/notation/_integration_test/output
@@ -126,6 +130,8 @@ notations:
         title: Bapang Selisir
         subfolder: bapang selisir
         instrumentgroup: SEMAR_PAGULINGAN
+        folder_in: ./tests/data/notation/_integration_test/notations
+        folder_out_nonprod: ./tests/data/notation/_integration_test/output
         beat_at_end: false
         parts:
             full:
@@ -134,7 +140,9 @@ notations:
                 loop: false
     cendrawasih:
         title: Cendrawasih
-        subfolder: cendrawasih
+        subfolder: .
+        folder_in: ./tests/data/notation/_integration_test/notations
+        folder_out_nonprod: ./tests/data/notation/_integration_test/output
         beat_at_end: false
         parts:
             full:
@@ -143,7 +151,9 @@ notations:
                 loop: false
     gilakdeng:
         title: Gilak Deng
-        subfolder: gilak deng
+        subfolder: .
+        folder_in: ./tests/data/notation/_integration_test/notations
+        folder_out_nonprod: ./tests/data/notation/_integration_test/output
         beat_at_end: false
         parts:
             full:
@@ -152,8 +162,10 @@ notations:
                 loop: false
     godekmiring:
         title: Godek Miring
-        subfolder: godek miring
         instrumentgroup: SEMAR_PAGULINGAN
+        subfolder: .
+        folder_in: ./tests/data/notation/_integration_test/notations
+        folder_out_nonprod: ./tests/data/notation/_integration_test/output
         beat_at_end: false
         autocorrect_kempyung : false
         parts:
@@ -163,7 +175,9 @@ notations:
                 loop: false
     legongmahawidya:
         title: Legong Mahawidya
-        subfolder: legong mahawidya
+        subfolder: .
+        folder_in: ./tests/data/notation/_integration_test/notations
+        folder_out_nonprod: ./tests/data/notation/_integration_test/output
         beat_at_end: false
         parts:
             full:
@@ -172,7 +186,9 @@ notations:
                 loop: false
     lengker:
         title: Lengker
-        subfolder: lengker
+        subfolder: .
+        folder_in: ./tests/data/notation/_integration_test/notations
+        folder_out_nonprod: ./tests/data/notation/_integration_test/output
         beat_at_end: false
         autocorrect_kempyung : false
         instrumentgroup: SEMAR_PAGULINGAN
@@ -183,7 +199,9 @@ notations:
                 loop: false
     margapati:
         title: Margapati
-        subfolder: margapati
+        subfolder: .
+        folder_in: ./tests/data/notation/_integration_test/notations
+        folder_out_nonprod: ./tests/data/notation/_integration_test/output
         beat_at_end: false
         parts:
             full:
@@ -192,7 +210,9 @@ notations:
                 loop: false
     pendet:
         title: Pendet
-        subfolder: pendet
+        subfolder: .
+        folder_in: ./tests/data/notation/_integration_test/notations
+        folder_out_nonprod: ./tests/data/notation/_integration_test/output
         beat_at_end: true
         parts:
             full:
@@ -201,7 +221,9 @@ notations:
                 loop: false
     rejangdewa:
         title: Rejang Dewa
-        subfolder: rejang dewa
+        subfolder: .
+        folder_in: ./tests/data/notation/_integration_test/notations
+        folder_out_nonprod: ./tests/data/notation/_integration_test/output
         parts:
             full:
                 name: entire piece
@@ -210,7 +232,9 @@ notations:
         autocorrect_kempyung : false
     sekargendot:
         title: Sekar Gendot
-        subfolder: sekar gendot
+        subfolder: .
+        folder_in: ./tests/data/notation/_integration_test/notations
+        folder_out_nonprod: ./tests/data/notation/_integration_test/output
         instrumentgroup: SEMAR_PAGULINGAN
         beat_at_end: false
         autocorrect_kempyung : false
@@ -221,7 +245,9 @@ notations:
                 loop: false
     sinomladrang-sp:
         title: Sinom Ladrang
-        subfolder: sinom ladrang
+        subfolder: .
+        folder_in: ./tests/data/notation/_integration_test/notations
+        folder_out_nonprod: ./tests/data/notation/_integration_test/output
         instrumentgroup: SEMAR_PAGULINGAN
         beat_at_end: false
         parts:
@@ -231,7 +257,9 @@ notations:
                 loop: false
     sinomladrang-gk:
         title: Sinom Ladrang (GK)
-        subfolder: sinom ladrang
+        subfolder: .
+        folder_in: ./tests/data/notation/_integration_test/notations
+        folder_out_nonprod: ./tests/data/notation/_integration_test/output
         beat_at_end: false
         instrumentgroup: GONG_KEBYAR
         parts:
@@ -239,37 +267,3 @@ notations:
                 name: entire piece
                 file: Sinom Ladrang_GK_ubit4_font5.tsv
                 loop: false
-
-integration_test:
-    inputfolder: _integration_test/notations
-    outputfolder: _integration_test/output
-    notations:
-    - composition: test-semarpagulingan
-      part: full
-    - composition: test-gongkebyar
-      part: full
-    - composition: bapangselisir
-      part: full
-    - composition: cendrawasih
-      part: full
-    - composition: gilakdeng
-      part: full
-    - composition: godekmiring
-      part: full
-    - composition: legongmahawidya
-      part: full
-    - composition: lengker
-      part: full
-    - composition: margapati
-      part: full
-    - composition: pendet
-      part: full
-    - composition: rejangdewa
-      part: full
-    - composition: sekargendot
-      part: full
-    - composition: sinomladrang-sp
-      part: full
-    - composition: sinomladrang-gk
-      part: full
-

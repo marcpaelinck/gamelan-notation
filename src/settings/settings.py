@@ -360,8 +360,6 @@ def load_run_settings(notation_id: str = None, part_id: str = None) -> RunSettin
             # Aggregate errors by variable
             logger.error(str(e))
             exit()
-    else:
-        logger.info("Skipping reading of run settings")
 
     if notation_id and part_id:
         _RUN_SETTINGS.notation_id = notation_id

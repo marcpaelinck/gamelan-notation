@@ -25,10 +25,13 @@ def load_and_validate_run_settings(notation_id: str = None, part_id: str = None)
 
 
 def notation_to_midi(run_settings: RunSettings):
+    """Runs the parsers in a pipeline"""
     success = False
     if run_settings.options.notation_to_midi:
+
         if run_settings.fontversion is NotationFontVersion.BALIMUSIC5:
             font_parser = NotationTatsuParser(run_settings)
+            font_parser.open_logging()
         else:
             raise ValueError(f"Cannot parse font {run_settings.fontversion}.")
         notation = font_parser.parse_notation()
@@ -38,6 +41,7 @@ def notation_to_midi(run_settings: RunSettings):
             score = ScoreValidator(score).validate_score()
         if score:
             success = MidiGenerator(score).create_midifile()
+        font_parser.close_logging()
 
     if success and run_settings.options.notation_to_midi.save_corrected_to_file:
         score_to_notation_file(score)
