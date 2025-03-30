@@ -332,8 +332,11 @@ class DictToScoreConverter(ParserModel):
                 self.logerror(f"Could not cast {note_rec[NoteFields.SYMBOL]} to {position.value}")
             else:
                 notes.append(next_note)
-        notes = update_grace_notes_octaves(measure=notes)
-        notes = generate_tremolo(measure=notes, midi_settings=self.run_settings.midi, errorlogger=self.logerror)
+        try:
+            notes = update_grace_notes_octaves(measure=notes)
+            notes = generate_tremolo(measure=notes, midi_settings=self.run_settings.midi, errorlogger=self.logerror)
+        except ValueError as e:
+            self.logerror(str(e))
         return notes
 
     def _reverse_kempyung(self, beat: Beat):

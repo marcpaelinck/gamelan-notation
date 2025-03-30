@@ -1,27 +1,113 @@
 """
-Compares MIDI files contained in two folders and outputs the differences in a file. Only files with the same name are
+Compares MIDI files contained in two folders and outputs a report of the differences. Only files with the same name are
 compared. The comparison is performed by first creating a text (.txt) version of all .mid files which contains a
-readable version of the MIDI messages, and then comparing these text files.
-The output is stored in the first of the two folders.
+readable version of the MIDI messages, and then comparing these text files. This makes it easier to analyse the results.
+The report files are stored in the folder that is being compared to the reference folder.
 """
 
-import copy
 import difflib
 import filecmp
+import itertools
+import json
 import os
 import re
 from collections import defaultdict
 from glob import glob
+from io import TextIOWrapper
+from typing import Any
 
 from src.common.logger import get_logger
 from src.tools.print_midi_file import to_text, to_text_multiple_files
 
 LOGGER = get_logger(__name__)
 
+# ID values at beginning of line
+ABSTIME_ID = "abstime"  # Not used
+BEAT_ID = "beat_id"
+POSITION_ID = "position_id"
+# Message types
 META = "MetaMessage"
 NOTEON = "note_on"
 NOTEOFF = "note_off"
-TYPES = [META, NOTEON, NOTEOFF]
+MESSAGETYPES = [META, NOTEON, NOTEOFF]
+# Metamessage types
+MARKER = "marker"
+TRACK_NAME = "track_name"
+SET_TEMPO = "set_tempo"
+MIDI_PORT = "midi_port"
+END_OF_TRACK = "end_of_track"
+HELPINGHAND = "helpinghand"
+# Message attributes
+# In case of metamessage, TYPE is the metamessage type.
+# For type 'marker' the marker type is used (currently only HELPINGHAND)
+TYPE = "type"
+TYPES = [NOTEON, NOTEOFF, TRACK_NAME, SET_TEMPO, MIDI_PORT, END_OF_TRACK, HELPINGHAND]
+NAME = "name"
+CHANNEL = "channel"
+NOTE = "note"
+PITCH = "pitch"
+OCTAVE = "octave"
+VELOCITY = "velocity"
+TIME = "time"
+ABSTIME = "abstime"
+TEXT = "text"
+TEMPO = "tempo"
+PORT = "port"
+HH_ID = "hh_id"
+HH_TYPE = "hh_type"
+HH_TIMEUNTIL = "hh_timeuntil"
+HH_POSITION = "hh_position"
+HH_CHANNEL = "hh_channel"
+HH_NOTE = "hh_note"
+HH_PITCH = "hh_pitch"
+HH_OCTAVE = "hh_octave"
+HH_ISLAST = "hh_islast"
+# Match types for message attributes.
+ALWAYS = "always"  # attributes should always match.
+CLOSEST = "closest"  # numeric values only: find closest match. Max tolerated difference: see MIN_MAX_DIFF_DICT below.
+OPTIONAL = "optional"  # attributes should preferably match.
+# ATTRIBUTES_DICT contains message attributes for each (meta)type with an indication of the match type
+# See function `find_best_match` for more information about match types.
+# Because of the order of the match attempts, the CLOSEST values should be ordered in ascending order of preference
+# and OPTIONAL values in descending order. The best_matches algorithm will try to find an exact match with a higher
+# priority for attributes with a higher preference.
+ATTRIBUTES_DICT = {
+    NOTEON: {ALWAYS: [TYPE, POSITION_ID, CHANNEL], CLOSEST: [ABSTIME], OPTIONAL: [TIME, NOTE, VELOCITY]},
+    NOTEOFF: {ALWAYS: [TYPE, POSITION_ID, CHANNEL], CLOSEST: [ABSTIME], OPTIONAL: [TIME, NOTE, VELOCITY]},
+    SET_TEMPO: {ALWAYS: [TYPE, POSITION_ID], CLOSEST: [TEMPO, ABSTIME], OPTIONAL: [TIME]},
+    MIDI_PORT: {ALWAYS: [TYPE, POSITION_ID, PORT, TIME], CLOSEST: [], OPTIONAL: []},
+    END_OF_TRACK: {ALWAYS: [TYPE, POSITION_ID, TIME], CLOSEST: [], OPTIONAL: [TIME]},
+    HELPINGHAND: {
+        ALWAYS: [TYPE, POSITION_ID, TIME, HH_POSITION, HH_CHANNEL],
+        CLOSEST: [HH_TIMEUNTIL, ABSTIME],
+        OPTIONAL: [TIME, HH_ISLAST, HH_PITCH, HH_OCTAVE, HH_ID],
+    },
+}
+# Settings for findinng a 'close match'.
+#  Tuple value 1: the maximum difference between two value to still consider them as being equal.
+#  Tuple value 2: the maximum difference between two value that should be considered as a 'close' match.
+MIN_MAX_DIFF_DICT = {ABSTIME: (0, 30), TEMPO: (0, 10000), HH_TIMEUNTIL: (1, 30)}
+# DICT keys of the return values of the find_best_match function
+MATCH_ID = "match"
+MATCH_MESSAGE = "message"
+MATCH_APPROX_ATTR = "approximated"
+MATCH_IGNORED_ATTR = "ignored"
+# Summary entries
+ID = "id"
+SCORE = "score"
+DIFF = "diff"
+MATCH = "match"
+NOMATCH = "nomatch"
+NOMATCH_1 = "NO MATCH REF"
+NOMATCH_2 = "NO MATCH NEW"
+COUNT = "count"
+DETAILS = "details"
+
+
+def sorted_dict(unsorted: dict[str, Any]) -> dict[str, Any]:
+    """Returns the dict with sorted keys"""
+    sorted_keys = sorted(list(unsorted.keys()))
+    return {key: unsorted[key] for key in sorted_keys}
 
 
 def attr(line: str):
@@ -29,45 +115,113 @@ def attr(line: str):
     type_: str = next((m for m in match[0] if m), None)
     params = []
     if type_.startswith("note"):
+        # pylint: disable=line-too-long
         matcher = re.match(
-            r" *(?P<type>note_[a-z]{2,3}) channel=(?P<channel>[^ ]+) note=(?P<note>[^ ]+) velocity=(?P<velocity>[^ ]+) time=(?P<time>\d+) [ -]+(?P<abstime>\d+)$",
+            r" *\((?P<abstime>\d+),(?P<beat_id>\d+-\d+),(?P<position_id>\w*)\)[ -]+(?P<type>note_[a-z]{2,3}) channel=(?P<channel>[^ ]+) note=(?P<note>[^ ]+) velocity=(?P<velocity>[^ ]+) time=(?P<time>\d+) abstime=\d* *$",
             line,
         )
         params = matcher.groupdict() if matcher else {}
     else:
         # Metamessage. Determine type and set match string accordingly
         matcher = re.match(
-            r" *MetaMessage\('(?P<type>\w+)'(, text='(?P<text>[^']+)'|, tempo=(?P<tempo>\d+)|, port=(?P<port>\d+)){0,1}, time=(?P<time>\d+)\)[ -]+(?P<abstime>\d+)$",
-            # r" *MetaMessage\('(?P<type>\w+)', time=(?P<time>\d+)\)[ -]+(?P<abstime>\d+)$",
+            r" *\((?P<abstime>\d+),(?P<beat_id>\d+-\d+),(?P<position_id>\w*)\)[ -]+MetaMessage\('(?P<type>\w+)'(, text='(?P<text>[^']+)'|, name='(?P<name>\w+)'|, tempo=(?P<tempo>\d+)|, port=(?P<port>\d+)){0,1}, time=(?P<time>\d+)\) abstime=\d* *$",
             line,
         )
+        # pylint: enable=line-too-long
+        # Parse the message attributes
         params = matcher.groupdict() if matcher else {}
+        # Remove missing values and convert any numeric type to a numeric value
         params = {key: val for key, val in params.items() if val is not None}
+
+        if params[TYPE] == MARKER:
+            if HELPINGHAND in params[TEXT]:
+                # Parse the text parameter to a json object
+                # This will automatically convert number-like values to numbers
+                params[TYPE] = HELPINGHAND
+                hh_params: dict[str, Any] = json.loads(params[TEXT])
+                # Add prefix hh_ to all HelpingHand parameters and add them to the params list.
+                hh_params = {"hh_" + key: val for key, val in hh_params.items()}
+                hh_params[HH_TIMEUNTIL] = int(hh_params[HH_TIMEUNTIL])
+                del params[TEXT]
+                params |= hh_params
+            else:
+                raise ValueError("Unexpected text value for marker, text=%s" % params[TEXT])
+    params = {
+        key: eval(val) if isinstance(val, str) and bool(re.match(r"^-*\d+\.*\d*$", val)) else val
+        for key, val in params.items()
+    }
     return params
 
 
-def eval_match(line1, line2):
-    params1 = attr(line1)
-    params2 = attr(line2)
-    diff = {key: (val, params2.get(key, None)) for key, val in params1.items() if params2.get(key, None) != val}
-    return diff
+def find_best_match(
+    message: dict[str, str | int | float], msg_list: list[dict[str, str | int | float]]
+) -> tuple[int, tuple[str]]:
+    """Finds the best matching message in msg_list for the given message. A message is represented
+    as a dict {attribute: value}.
+    This method uses the definitions in ATTRIBUTES_DICT which contains the attribute names
+    of each message type, grouped in three categories:
+    - ALWAYS: these attributes should always match exactly.
+    - CLOSEST: (numeric values only) find closest match where the maximum deviation for each attribute
+             is given in MAX_DIFF_DICT.
+    - OPTIONAL: match as many of these attributes as possible.
+    Args:
+        message (dict[str, str  |  int  |  float]): _description_
+        msg_list (list[dict[str, str  |  int  |  float]]): _description_
+    Raises:
+        ValueError: if an unexpected message type is encountered.
+    Returns:
+        tuple[int, tuple[str]]: _description_
+    """
+    # Find the corresponding entry in the ATTRIBUTES_DICT dictionary.
+    if not message[TYPE] in ATTRIBUTES_DICT:
+        raise ValueError("Unexpected message type %s" % message[TYPE])
+    attributes = ATTRIBUTES_DICT[message[TYPE]]
+    # create combinations of n, n-1, ... 0  OPTIONAL attributes to match.
+    match_optional_combis = sum(
+        [list(itertools.combinations(attributes[OPTIONAL], i)) for i in range(len(attributes[OPTIONAL]), -1, -1)], []
+    )
+    # create combinations of 0,..,n DELTA attributes to approximmate.
+    close_match_combis = sum(
+        [list(itertools.combinations(attributes[CLOSEST], i)) for i in range(0, len(attributes[CLOSEST]) + 1)], []
+    )
+    # Reduce the search range by filtering the message list on ABSTIME
+    short_msg_list = [
+        (id, msg)
+        for id, msg in enumerate(msg_list)
+        if abs(message[ABSTIME] - msg[ABSTIME]) < MIN_MAX_DIFF_DICT[ABSTIME][1]
+    ]
+
+    for close_match_attributes, match_optional_attributes in itertools.product(
+        close_match_combis, match_optional_combis
+    ):
+        exact_match_attributes = set(attributes[ALWAYS]) | set(match_optional_attributes)
+        # equal_close_match_attributes are 'CLOSEST' attributes that should evaluate to 'equal'.
+        # See explanation of MIN_MAX_DIFF_DICT above.
+        equal_close_match_attributes = set(attributes[CLOSEST]) - set(close_match_attributes)
+        matches = [
+            (idx, msg)
+            for idx, msg in short_msg_list
+            if all(msg.get(a, None) == message[a] for a in exact_match_attributes)
+            and all(abs(msg.get(a, 1e8) - message[a]) <= MIN_MAX_DIFF_DICT[a][0] for a in equal_close_match_attributes)
+            and all(abs(msg.get(a, 1e8) - message[a]) <= MIN_MAX_DIFF_DICT[a][1] for a in close_match_attributes)
+        ]
+        if matches:
+            break
+    best = matches[0] if matches else None
+
+    # pylint: disable=undefined-loop-variable
+    if best:
+        return {
+            MATCH_ID: best[0],
+            MATCH_MESSAGE: best[1],
+            MATCH_APPROX_ATTR: list(close_match_attributes),
+            MATCH_IGNORED_ATTR: list(set(attributes[OPTIONAL]) - set(match_optional_attributes)),
+        }
+    # pylint: enable=undefined-loop-variable
+    return None
 
 
-def summarize(compare):
-    summary = defaultdict(lambda: 0)
-    for id, (_, old, new) in enumerate(compare):
-        for line, (matchid, score, nonmatches) in old:
-            if score == 1:
-                continue
-            if not matchid:
-                summary[("nomatch", attr(line)["type"])] += 1
-            else:
-                key = ("diff", attr(line)["type"], *tuple(nonmatches.keys()))
-                summary[key] += 1
-    return str(summary)
-
-
-def compare_two_files(file1: str, file2: str) -> str:
+def compare_file_contents(file1: str, file2: str) -> dict[tuple[str], tuple[dict[str, Any]], list[dict[str, Any]]]:
     """Compares two files and returns the differences in a unified diff format.
     Args:
         file1, file2 (_type_): path to the files
@@ -79,38 +233,57 @@ def compare_two_files(file1: str, file2: str) -> str:
         f1_lines = [
             line
             for line in f1.readlines()
-            if not "MetaMessage('marker', text='b_" in line and any(t in line for t in TYPES)
+            if not "MetaMessage('marker', text='b_" in line and any(t in line for t in MESSAGETYPES)
         ]
         f2_lines = [
             line
             for line in f2.readlines()
-            if not "MetaMessage('marker', text='b_" in line and any(t in line for t in TYPES)
+            if not "MetaMessage('marker', text='b_" in line and any(t in line for t in MESSAGETYPES)
         ]
-
-    matcher = difflib.SequenceMatcher(None, f1_lines, f2_lines)
+    matcher = difflib.SequenceMatcher(
+        None,
+        [l.split(" -- ")[1] for l in f1_lines],
+        [l.split(" -- ")[1] for l in f2_lines],
+    )
     opcodes = matcher.get_opcodes()
-    opcodes = [code for code in opcodes if code[0] != "equal"]
-    opcodes = [[c[0], f1_lines[c[1] : c[2]], f2_lines[c[3] : c[4]]] for c in opcodes]
-    compare = copy.deepcopy(opcodes)
-    for id, (_, old, new) in enumerate(opcodes):
-        for nn, line_n in enumerate(new):
-            best_matches = difflib.get_close_matches(line_n, old, n=1)
-            best_match = best_matches[0] if best_matches else None
-            ratio = difflib.SequenceMatcher(None, line_n, best_match).ratio()
-            no = next((nr for nr, line_o in enumerate(old) if line_o == best_match), None)
-            mismatch_o = eval_match(old[no], line_n) if no else None
-            mismatch_n = eval_match(line_n, old[no]) if no else None
-            compare[id][1][no] = [opcodes[id][1][no], (nn, ratio, mismatch_o)]
-            compare[id][2][nn] = [opcodes[id][2][nn], (no, ratio, mismatch_n)]
+    # Remove matched lines from f1_lines and f2_lines and parse the message types and attributes
+    f1_remain = [[attr(line), (c[3], c[4])] for c in opcodes if c[0] != "equal" for line in f1_lines[c[1] : c[2]]]
+    f2_remain = sum([f2_lines[c[3] : c[4]] for c in opcodes if c[0] != "equal"], [])
+    f2_remain = [attr(line) for line in f2_remain]
 
-        for no, line in enumerate(compare[id][1]):
-            if isinstance(line, str):
-                compare[id][1][no] = [compare[id][1][no], (None, 0, None)]
-    summary = summarize(compare)
-    return summary
+    report = defaultdict(list)
+
+    for _, (message1, _) in enumerate(f1_remain):
+        best_match = find_best_match(message1, f2_remain)
+        if best_match:
+            diff_group = tuple(best_match[MATCH_APPROX_ATTR] + best_match[MATCH_IGNORED_ATTR])
+            if diff_group:
+                # Only store partial matches
+                category = ("DIFF", message1[TYPE], diff_group)
+                # Mark the attributes that differ by converting the key to uppercase
+                message1 = {key.upper() if key in diff_group else key: val for key, val in message1.items()}
+                f2_match = {
+                    key.upper() if key in diff_group else key: val for key, val in best_match[MATCH_MESSAGE].items()
+                }
+                report[category].append((message1, [f2_match]))
+            f2_remain.pop(best_match[MATCH_ID])
+        else:
+            category = NOMATCH_1, message1[TYPE]
+            # report[category].append((message1, f2_remain_original[f2_match_range[0] : f2_match_range[1]]))
+            report[category].append((message1, []))
+    if f2_remain:
+        for msgtype in TYPES:
+            msglist = [msg for msg in f2_remain if msg[TYPE] == msgtype]
+            if msglist:
+                category = NOMATCH_2, msgtype
+                report[category].append((msglist, []))
+
+    return sorted_dict(report)
 
 
-def compare_directories(dir1: str, dir2: str, file_filter="*.txt"):
+def compare_directories(
+    dir1: str, dir2: str, file_filter="*.txt"
+) -> dict[tuple[str], tuple[dict[str, Any]], list[dict[str, Any]]]:
     """Compares all files with the same name in two folders.
     Args:
         dir1, dir2 (str): _description_
@@ -129,43 +302,58 @@ def compare_directories(dir1: str, dir2: str, file_filter="*.txt"):
 
     differences = {}
     for file in common_files:
+        LOGGER.info(f"Comparing {file}")
+
         file1 = os.path.join(dir1, file)
         file2 = os.path.join(dir2, file)
 
         if not filecmp.cmp(file1, file2, shallow=False):
-            differences[file] = compare_two_files(file1, file2)
+            differences[file] = compare_file_contents(file1, file2)
         else:
-            differences[file] = " No differences"
+            differences[file] = {"No differences": []}
 
-    return differences
+    return sorted_dict(differences)
 
 
-def compare_files(folderpath: str, file_old: str, file_new: str, outfile: str = "comparison.txt"):
-    """Compares two files
+def save_file_summary(stream: TextIOWrapper, summary: dict[str, dict[str, str]], detailed: bool) -> None:
+    tab0 = " " * 5
+    tab1 = " " * 10
+    tab2 = tab1 + "  - "
+    tab3a = tab1 + "  > "
+    tab3b = tab1 + "    "
+    for key, items in summary.items():
+        stream.write(tab0 + f"{key}{": " if items else ""}{len(items) if items else ""}\n")
+        if detailed:
+            for line1, lines2 in items:
+                stream.write(tab2 + f"{line1}\n")
+                for nr, line in enumerate(lines2):
+                    stream.write(f"{tab3a if nr==0 else tab3b}{line}\n")
+
+
+def compare_txt_files(
+    filepath_old: str,
+    filepath_new: str,
+):
+    """Compares two files. Result is stored in filename_out in the folder containing filepath_new
     Args:
         folderpath: (str): path containing the files
-        dir_old (str): First folder
-        dir_new (str): Second folder
-        folders (bool, optional): If False, paths to two separate files will be expected. Defaults to True.
+        filepath_old (str): First folder
+        filepath_new (str): Second folder
     """
-    # 1. convert midi files to text files
-    to_text(folderpath, file_old)
-    to_text(folderpath, file_new)
-
-    # 2. compare the text files
-    txt_old = os.path.splitext(file_old)[0] + ".txt"
-    txt_new = os.path.splitext(file_new)[0] + ".txt"
-    path1 = os.path.join(folderpath, txt_old)
-    path2 = os.path.join(folderpath, txt_new)
-    if not filecmp.cmp(path1, path2, shallow=False):
-        differences = compare_two_files(path1, path2)
+    # compare the text files
+    if not filecmp.cmp(filepath_old, filepath_new, shallow=False):
+        differences = compare_file_contents(filepath_old, filepath_new)
     else:
-        differences = ["No differences\n"]
+        differences = {("No differences"): tuple()}
 
-    # 3. save report to file
-    with open(os.path.join(folderpath, outfile), "w", encoding="utf-8") as outfile:
-        for line in differences:
-            outfile.write(line)
+    # save report to file
+    filepath_out = os.path.split(filepath_new)[0]
+    with open(os.path.join(filepath_out, "comparison.txt"), "w", encoding="utf-8") as outfile:
+        outfile.write(os.path.split(filepath_old)[1] + "\n")
+        save_file_summary(outfile, summary=differences, detailed=False)
+    with open(os.path.join(filepath_out, "comparison_details.txt"), "w", encoding="utf-8") as outfile:
+        outfile.write(os.path.split(filepath_old)[1] + "\n")
+        save_file_summary(outfile, summary=differences, detailed=True)
 
 
 def compare_all(ref_dir: str, other_dir: str):
@@ -190,19 +378,21 @@ def compare_all(ref_dir: str, other_dir: str):
 
     # 3. save report to file
     with open(os.path.join(other_dir, "comparison.txt"), "w", encoding="utf-8") as outfile:
-        if differences:
-            for file, diff in differences.items():
-                outfile.write(f"Differences in {file}:\n")
-                for line in diff:
-                    outfile.write(line)
-                outfile.write("\n")
-        else:
-            outfile.write("No differences found.")
+        for file, diff in differences.items():
+            outfile.write(f"Differences in {file}:\n")
+            save_file_summary(outfile, summary=diff, detailed=False)
+    with open(os.path.join(other_dir, "comparison_details.txt"), "w", encoding="utf-8") as outfile:
+        for file, diff in differences.items():
+            outfile.write(f"Differences in {file}:\n")
+            save_file_summary(outfile, summary=diff, detailed=True)
 
 
 if __name__ == "__main__":
     REF_DIR = "./tests/data/notation/_integration_test/reference"
     OTHER_DIR = "./tests/data/notation/_integration_test/output"
-    compare_all(REF_DIR, OTHER_DIR)
-    # file = "Bapang Selisir_full_GAMELAN1.txt"
-    # compare_two_files(os.path.join(REF_DIR, file), os.path.join(OTHER_DIR, file))
+    RUNALL = True
+    if RUNALL:
+        compare_all(REF_DIR, OTHER_DIR)
+    else:
+        FILENAME = "Sinom Ladrang (GK)_full_GAMELAN1.txt"
+        compare_txt_files(os.path.join(REF_DIR, FILENAME), os.path.join(OTHER_DIR, FILENAME))

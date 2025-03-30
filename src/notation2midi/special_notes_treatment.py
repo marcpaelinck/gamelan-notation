@@ -5,6 +5,14 @@ from src.common.constants import Stroke
 from src.settings.classes import SettingsMidiInfo
 
 
+def notes_to_notation(measure: list[Note]) -> str:
+    """Returns the concatenated symbols of the given list of notes"""
+    try:
+        return "".join([note.symbol for note in measure])
+    except:  # pylint: disable=bare-except
+        return ""
+
+
 def update_grace_notes_octaves(measure: list[Note]) -> list[Note]:
     """Updates the octave of any grace note found in measure. The octave is set by checking
         the note that follows the grace minimizing the 'interval' between both notes.
@@ -22,7 +30,7 @@ def update_grace_notes_octaves(measure: list[Note]) -> list[Note]:
     for note, nextnote in zip(measure.copy(), measure.copy()[1:] + [None]):
         if note.stroke == Stroke.GRACE_NOTE and note.is_melodic():
             if not nextnote or not nextnote.is_melodic:
-                raise ValueError("Grace note not followed by melodic note in %s" % measure)
+                raise ValueError("Grace note not followed by melodic note in %s" % notes_to_notation(measure))
             tones = Instrument.get_tones_within_range(note.to_tone(), note.position, match_octave=False)
             # pylint: disable=cell-var-from-loop
             nearest = sorted(tones, key=lambda x: abs(Instrument.interval(x, nextnote.to_tone())))[0]

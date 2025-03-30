@@ -235,17 +235,6 @@ class NotationTatsuParser(ParserModel):
                 note_chars = note_chars[len(next_note.symbol) :]
         return notes
 
-    def _replace_metadata_tags_with_positions_old(self, metadata_list: list[MetaDataRecord]) -> None:
-        """Translates the values of `position` or `positions` metadata attributes to a list of Position enum values.
-           Note that a tag can represent multiple values, e.g. 'gangsa' stands for four positions: polos and sangsih
-           positions for both pemade and kantilan.
-        Args:
-            metadata_list (list[dict]): list of records, each representing a metadata item
-        """
-        for meta in metadata_list:
-            if not isinstance(meta.positions, _MISSING_TYPE):
-                meta.positions = sum([InstrumentTag.get_positions(tag) for tag in meta.positions], [])
-
     def _replace_metadata_tags_with_positions(self, metadata_list: list[dict]) -> None:
         """Translates the values of `position` or `positions` metadata attributes to a list of Position enum values.
            Note that a tag can represent multiple values, e.g. 'gangsa' stands for four positions: polos and sangsih
@@ -322,13 +311,21 @@ class NotationTatsuParser(ParserModel):
         """
         if not staves:
             return {}
+        # There can be multiple staves with the same `position` value. In that case they will have different `pass`
+        # values. The staves first need to be grouped by position. We create a position dict for this, will also
+        # be used below to retrieve the correct ALL_POSITIONS value when a new Measure is created.
+        position_dict = {stave[ParserTag.POSITION]: stave[ParserTag.ALL_POSITIONS] for stave in staves}
+        staves_by_pos_pass = {
+            position: {int(stave[ParserTag.PASS]): stave for stave in staves if stave[ParserTag.POSITION] == position}
+            for position in position_dict.keys()
+        }
         # count only non-empty beats
         beat_count = max(len([beat for beat in stave[ParserTag.BEATS] if beat]) for stave in staves)
         beats = {
             BeatID(beat_seq + 1): {
-                stave[ParserTag.POSITION]: Measure(
-                    position=stave[ParserTag.POSITION],  # position,
-                    all_positions=stave[ParserTag.ALL_POSITIONS],  # positions,
+                position: Measure(
+                    position=position,
+                    all_positions=position_dict[position],  # positions,
                     passes={
                         stave[ParserTag.PASS]: (
                             Measure.Pass(
@@ -340,9 +337,10 @@ class NotationTatsuParser(ParserModel):
                                 ruletype=RuleType.UNISONO if len(stave[ParserTag.ALL_POSITIONS]) > 1 else None,
                             )
                         )
+                        for pass_, stave in position_staves.items()
                     },
                 )
-                for stave in staves
+                for position, position_staves in staves_by_pos_pass.items()
             }
             for beat_seq in range(beat_count)
         }
@@ -377,9 +375,10 @@ class NotationTatsuParser(ParserModel):
         # In case of an error, the current line will be skipped and the parser will be called again
         # on the remaining lines to log possible additional errors. In that case the value of ast
         # will be incomplete, therefore the program will halt after parsing the remainder of the file.
-        # Note: the -> `skip to` in combination with ^`` alert grammar statement does not work as expected.
-        #        The alert is not added to the node's parseinfo list but becomes part of the parsed expression.
-        #        This method also misses the accuracy of the parser's error messages.
+        # The reason for this approach is that the -> `skip to` in combination with ^`` alert grammar
+        # statement does not work as expected:
+        # - The alert is not added to the node's parseinfo list but becomes part of the parsed expression.
+        # - The alert logging misses the accuracy and relevance of the parser's error messages.
         self.loginfo(f"Using {self.model_source}.")
         ast = None
         line_offset = 0
@@ -447,15 +446,25 @@ class NotationTatsuParser(ParserModel):
 
             # Parse the metadata into MetaDataRecord objects
             gongan[ParserTag.METADATA] = [self._flatten_meta(meta) for meta in gongan[ParserTag.METADATA]]
-            self._replace_metadata_tags_with_positions(gongan[ParserTag.METADATA])
+            try:
+                self._replace_metadata_tags_with_positions(gongan[ParserTag.METADATA])
+            except ValueError as err:
+                self.logerror(str(err))
+                continue
             try:
                 gongan[ParserTag.METADATA] = [MetaDataRecord(**meta) for meta in gongan[ParserTag.METADATA]]
             except ValueError as err:
                 self.logerror(str(err))
+                continue
 
             # Look up the Position value for the 'free style' tags.
             # If the tag stands for multiple posiitions, create a copy of the stave for each position.
-            self._replace_stave_tags_with_positions(gongan[ParserTag.STAVES])
+            try:
+                self._replace_stave_tags_with_positions(gongan[ParserTag.STAVES])
+            except ValueError as err:
+                self.logerror(str(err))
+                continue
+
             for stave in gongan[ParserTag.STAVES]:
                 self.curr_line_nr = stave[ParserTag.LINE]
                 del stave[ParserTag.STAVES]  # remove superfluous key

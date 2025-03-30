@@ -122,7 +122,7 @@ class Instrument(BaseModel):
     @classmethod
     def get_tones_within_range(
         cls, tone: Tone, position: Position, extended_range: bool = False, match_octave=False
-    ) -> Tone | None:
+    ) -> list[Tone]:
         # The list is sorted by absolute distance to tone.octave in sequence 0, +1, -1, +2, -2
         return sorted(
             [
@@ -421,6 +421,12 @@ class Note(BaseModel):
     _VALID_POS_P_O_S_D_R: ClassVar[list[tuple[Position, Pitch, Octave, Stroke, Duration, Duration]]]
     VALIDNOTES: ClassVar[list["Note"]]
     _SYMBOL_TO_NOTE: ClassVar[dict[(Position, str), "Note"]]
+    # The following attributes uniquely define a note in VALIDNOTES
+    _POS_P_O_S_D_R: ClassVar[tuple[str]] = ("position", "pitch", "octave", "stroke", "duration", "rest_after")
+    # The following attributes may never be updated
+    _FORBIDDEN_UPDATE_ATTRIBUTES: ClassVar[tuple[str]] = ("midinote", "rootnote", "sample")
+    _ANY_DURATION_STROKES: ClassVar[tuple[Stroke]] = (Stroke.EXTENSION, Stroke.TREMOLO, Stroke.TREMOLO_ACCELERATING)
+    _ANY_SILENCEAFTER_STROKES: ClassVar[tuple[Stroke]] = (Stroke.SILENCE,)
     _POS_P_O_S_D_R_TO_NOTE: ClassVar[dict[tuple[Position, Pitch, Octave, Stroke, Duration, Duration], "Note"]] = None
     _FONT_SORTING_ORDER: ClassVar[dict[str, int]]
 
@@ -480,14 +486,14 @@ class Note(BaseModel):
         duration: float | None,
         rest_after: float | None,
     ) -> Optional["Note"]:
-        if stroke in [Stroke.EXTENSION, Stroke.TREMOLO, Stroke.TREMOLO_ACCELERATING]:
+        if stroke in cls._ANY_DURATION_STROKES:
             # accept any duration value
             return any(
                 key
                 for key in cls._VALID_POS_P_O_S_D_R
                 if key[:4] == (position, pitch, octave, stroke) and key[5] == rest_after
             )
-        if stroke == Stroke.SILENCE:
+        if stroke in cls._ANY_SILENCEAFTER_STROKES:
             # accept any silence value
             return any(
                 key for key in cls._VALID_POS_P_O_S_D_R if key[:5] == (position, pitch, octave, stroke, duration)
@@ -509,20 +515,37 @@ class Note(BaseModel):
         BaseModel.model_copy does not validate the input data.
         """
         update = update or {}
+        forbidden = set(update.keys()).intersection(set(self._FORBIDDEN_UPDATE_ATTRIBUTES))
+        if any(forbidden):
+            raise ValueError("Attempt to update one or more protected note value(s): %s" % forbidden)
+
         note_record = self.model_dump() | update
-        return Note(**note_record)
+        search_record = {key: note_record[key] for key in self._POS_P_O_S_D_R}
+        if search_record["stroke"] in self._ANY_DURATION_STROKES:
+            update |= {"duration": search_record["duration"]}
+            search_record["duration"] = 1
+        if search_record["stroke"] in self._ANY_SILENCEAFTER_STROKES:
+            update |= {"rest_after": search_record["rest_after"]}
+            search_record["rest_after"] = 1
+
+        valid_note = self._POS_P_O_S_D_R_TO_NOTE.get(tuple(search_record.values()), None)
+        if not valid_note:
+            raise ValueError(
+                f"Invalid combination {valid_note.pitch} OCT{valid_note.octave} {valid_note.stroke} "
+                f"{valid_note.duration} {valid_note.rest_after} for {valid_note.position}"
+            )
+        return super(Note, valid_note).model_copy(update=update) if valid_note else None
 
     def model_copy_x(
         self,
         **kwargs,
     ) -> Optional["Note"]:
         """Returns a note with the same attributes as the input note, except for the given parameters.
-           Returns None if the combination of POS_P_O_S_D_R parameters is not valid.
+           Raises an error if the combination of POS_P_O_S_D_R parameters is not valid.
         Returns:
             Optional[Note]: A copy of the note with updated parameters or None if invalid.
         """
-        note_record = self.model_dump() | kwargs
-        return Note(**note_record)
+        return self.model_copy(update=kwargs)
 
     @classmethod
     def get_whole_rest_note(cls, position: Position, resttype: Stroke):
@@ -701,7 +724,10 @@ class InstrumentTag(BaseModel):
     @classmethod
     def get_positions(cls, tag: str) -> list[Position]:
         taglist = re.split(cls._TAG_SEPARATORS, tag)
-        positions_groups = [cls._TAG_TO_INSTRUMENTTAG_LIST.get(t, None).positions for t in taglist]
+        try:
+            positions_groups = [cls._TAG_TO_INSTRUMENTTAG_LIST.get(t, None).positions for t in taglist]
+        except Exception as exc:
+            raise ValueError("Incorrect instrument position tag '%s'" % tag) from exc
         return sum(positions_groups, [])
 
     # @classmethod

@@ -329,7 +329,7 @@ class ScoreValidator(ParserModel):
             ignored_note_out_of_range.extend(corrected)
 
             # TODO temporary disabled
-            if False and self.score.settings.instrumentgroup == InstrumentGroup.GONG_KEBYAR:
+            if self.score.settings.instrumentgroup == InstrumentGroup.GONG_KEBYAR:
                 invalids, corrected, ignored = self._incorrect_kempyung(gongan, autocorrect=autocorrect)
                 remaining_incorrect_kempyung.extend(invalids)
                 corrected_invalid_kempyung.extend(corrected)

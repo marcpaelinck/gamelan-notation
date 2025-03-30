@@ -75,7 +75,8 @@ class MidiGenerator(ParserModel):
                 if self.part_info.markers.get(partinfo.name, None):
                     # Return if the part has already been registered
                     return
-                curr_time = track.current_time_in_millis()
+                # curr_time = track.current_time_in_millis()
+                curr_time = track.current_millitime
                 self.part_info.markers[partinfo.name] = int(curr_time)
 
         track = MidiTrackX(position, Preset.get_preset(position), self.run_settings)
@@ -95,10 +96,7 @@ class MidiGenerator(ParserModel):
             if self.run_settings.options.debug_logging:
                 track.comment(f"beat {beat.full_id} pass{beat.get_pass_counter()}")
             # Set new tempo.
-            # This is only needed in one track because this is a type 1 MIDI file which synchronizes the tracks.
-            if track.name == Position.KEMPLI and (
-                new_bpm := beat.get_changed_value(track.current_bpm, position, Beat.Change.Type.TEMPO)
-            ):
+            if new_bpm := beat.get_changed_value(track.current_bpm, position, Beat.Change.Type.TEMPO):
                 track.update_tempo(new_bpm or beat.get_bpm_start())
             # Set new dynamics
             if new_velocity := beat.get_changed_value(track.current_velocity, position, Beat.Change.Type.DYNAMICS):

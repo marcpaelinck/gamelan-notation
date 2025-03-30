@@ -13,9 +13,19 @@ def measure_to_str(notes: list[Note]) -> str:
     Returns:
         str: HTML/XML compatible representation of the notation.
     """
+
+    def get_symbol(note: Note):
+        """enables to generate a modified symbol"""
+        if note.stroke == Stroke.GRACE_NOTE:
+            # Remove any stroke modifier character
+            return note.symbol[0]
+        return note.symbol
+
     if not notes:
         return ""
-    notechars = "".join(note.symbol for note in notes).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    notechars = (
+        "".join(get_symbol(note) for note in notes).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    )
     return notechars
 
 
