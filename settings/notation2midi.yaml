@@ -2,7 +2,7 @@
 # The settings below (except for options) refer to values in the data.yaml file.
 # The font selection is defined in the details of the selected notation component (see data.yaml file).
 notation_id: legongmahawidya-gk
-part_id: pengawak
+part_id: full
 options:
   # Option autocorrect should be set in the input files. Default should be false.
   debug_logging: false
@@ -16,6 +16,6 @@ options:
     autocorrect : true
     save_corrected_to_file : false
     save_pdf_notation: true
-    save_midifile : true
+    save_midifile : false
     # If update_midiplayer_content==true, MIDI file is saved in midiplayer folder and content.json file is updated.
     # This setting is only effective if the runtype is RUN_ALL.

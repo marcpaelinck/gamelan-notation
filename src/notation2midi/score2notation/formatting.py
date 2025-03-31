@@ -278,6 +278,12 @@ class NotationTemplate:
             alignment=TA_LEFT,
         )
         self.metadataLabelCharStyle = '<font color="blue" size="9" face="Courier-Bold">'
+        self.gonganIDFontName = "Courier"
+        self.gonganIDFontSize = 7
+        self.gonganIDFontColor = "black"
+        self.gonganIdCharStyle = (
+            f'<font color="{self.gonganIDFontColor}" size="{self.gonganIDFontSize}" face="{self.gonganIDFontName}">'
+        )
 
         # metaFormatParameters
         # Parameters for function `ScoreToPDFConverter._append_single_metadata_type` which generates the metadata

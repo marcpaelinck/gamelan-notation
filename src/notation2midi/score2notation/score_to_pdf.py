@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import itertools
+import math
 import os
 import time
 from typing import Callable
@@ -116,12 +117,10 @@ class ScoreToPDFConverter(ParserModel):
             return sum(content.colwidths[c] for c in range(col1, col2 + 1))
 
         def span_overlap(a: tuple[int], b: tuple[int]):
-            # Determines of two 'SPAN' TableStyle items overlap.
-            # A 'SPAN' item has the format ('SPAN', (sc,sr), (ec,er))
-            # where sc,sr are the IDs of the first (starting) row and column
-            # and ec, er are the IDs of the last (end) row and column.
-            # This function is called for spans that combine cells on the same row,
-            # so sr=er and we only need to check the column overlap.
+            """Determines of two 'SPAN' TableStyle items overlap. A 'SPAN' item has the format ('SPAN', (sc,sr), (ec,er))
+            where sc,sr are the IDs of the first (starting) row and column and ec, er are the IDs of the last (end) row and
+            column. This function is called for spans that combine cells on the same row, so sr=er and we only need to
+            check the column overlap."""
             return min(a[2][0], b[2][0]) - max(a[1][0], b[1][0]) >= 0
 
         cell_alignment = "RIGHT" if parastyle.alignment in [TA_RIGHT, "RIGHT"] else "LEFT"
@@ -310,7 +309,11 @@ class ScoreToPDFConverter(ParserModel):
         return colwidths
 
     def _staves_to_tabledata(
-        self, staves: dict[Position, list[list[Note]]], pos_tags: dict[Position, str], add_overflow_col: bool
+        self,
+        staves: dict[Position, list[list[Note]]],
+        pos_tags: dict[Position, str],
+        gongan_id: int,
+        add_overflow_col: bool,
     ) -> list[list[Paragraph]]:
         """Converts the staves of a gongan to a table structure containing a string
            representation of the Note objects.
@@ -320,9 +323,24 @@ class ScoreToPDFConverter(ParserModel):
         Returns:
             list[list[Paragraph]]: The table structure containing the notation.
         """
+
+        def gongan_id_txt(gid: str, tag: str):
+            tagwidth = stringWidth(tag, self.template.tagStyle.fontName, self.template.tagStyle.fontSize)
+            remaining = self.TAG_COLWIDTH - tagwidth - 2 * self.template.cell_padding
+            nrcharpos = int(
+                10 * remaining / stringWidth("0" * 10, self.template.gonganIDFontName, self.template.gonganIDFontSize)
+            )
+            nrchars = int(math.log10(gid)) + 1
+            nrspaces = max(nrcharpos - nrchars, 0)
+            id_text = self.template.format_text(r"&nbsp;" * nrspaces + str(gid), self.template.gonganIdCharStyle)
+            return id_text
+
         data = list()
-        for position in sorted(list(pos_tags.keys()), key=lambda x: x.sequence):
-            row = [Paragraph(pos_tags[position], self.template.tagStyle)]
+        for count, position in enumerate(sorted(list(pos_tags.keys()), key=lambda x: x.sequence)):
+            pos_tag = pos_tags[position]
+            if count == 0:
+                pos_tag += gongan_id_txt(gongan_id, pos_tag)
+            row = [Paragraph(pos_tag, self.template.tagStyle)]
             data.append(row)
             for measure in staves[position]:
                 text = measure_to_str(measure)
@@ -362,7 +380,7 @@ class ScoreToPDFConverter(ParserModel):
 
             # Add the gongan notation
             pos_tags = aggregate_positions(gongan)
-            notation_data = self._staves_to_tabledata(staves, pos_tags, add_overflow_col=True)
+            notation_data = self._staves_to_tabledata(staves, pos_tags, gongan.id, add_overflow_col=True)
             row1, row2 = len(content.data), len(content.data) + len(notation_data) - 1
             content.append(
                 TableContent(
