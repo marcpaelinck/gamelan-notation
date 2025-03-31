@@ -8,7 +8,7 @@ import pandas as pd
 import regex
 from scipy.io import wavfile
 
-from src.common.classes import Note
+from src.common.classes import InstrumentTag, Note
 from src.common.constants import (
     InstrumentGroup,
     InstrumentType,
@@ -18,7 +18,6 @@ from src.common.constants import (
     Stroke,
 )
 from src.common.logger import get_logger
-from src.common.lookups import LOOKUP, InstrumentTag
 
 logger = get_logger(__name__)
 
@@ -197,11 +196,15 @@ def rename_notes_in_filenames(folderpath: str, group: InstrumentGroup, print_onl
         "Ugal": InstrumentType.UGAL,
     }
     filenotes = sum([[f"Ding {i}", f"Dong {i}", f"Deng {i}", f"Dung {i}", f"Dang {i}"] for i in range(1, 4)], [])
-    lookup = LOOKUP.POSITION_P_O_S_TO_NOTE
     lookup = {
-        instrtype: [pitch for (pitch, octave, stroke) in notes if octave and stroke == Stroke.OPEN]
-        for instrtype, notes in lookup.items()
-        if instrtype in instrdict.values()
+        instrtype: [
+            pitch
+            for position in Position
+            if position.instrumenttype == instrtype
+            for (pitch, octave, stroke) in Note.get_all_p_o_s(position)
+            if octave and stroke == Stroke.OPEN
+        ]
+        for instrtype in instrdict.values()
     }
     for instr_name, instr_type in instrdict.items():
         notedict = {filenotes[lookup[instr_type].index(note)]: note.value for note in lookup[instr_type]}

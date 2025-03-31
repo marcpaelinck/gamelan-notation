@@ -39,4 +39,4 @@ def to_text_multiple_files(files: list[str], folders: list[str]):
 
 
 if __name__ == "__main__":
-    to_text("./tests/data/notation/_integration_test/output", "Bapang Selisir_full_GAMELAN1.mid")
+    to_text("./data/midiplayer", "Legong Mahawidya GK_full_GAMELAN1.mid")

@@ -11,7 +11,6 @@ from src.settings.settings import load_run_settings
 
 class ValidNoteTester(unittest.TestCase):
 
-    @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
     def load_settings(self, group: InstrumentGroup) -> dict:
         if group is InstrumentGroup.GONG_KEBYAR:
             composition = "test-gongkebyar"
@@ -19,7 +18,7 @@ class ValidNoteTester(unittest.TestCase):
             composition = "test-semarpagulingan"
         else:
             raise ValueError(f"invalid instrument group {group}")
-        return load_run_settings({Yaml.COMPOSITION: composition, Yaml.PART_ID: "full"})
+        return load_run_settings(notation_id=composition, part_id="full")
 
     # Combinations that will be tested (contains both valid and invalid combinations)
     TRY_COMBINATIONS: list[dict[str, Any]] = [
@@ -39,6 +38,7 @@ class ValidNoteTester(unittest.TestCase):
         for rest_after in (0,)
     ]
     # fmt: off
+    # pylint: disable=line-too-long
     # Any combination of values from VALID_PITCH_OCTAVE and VALID_STROKE_DURATION for a given position is valid.
     VALID_PITCH_OCTAVE = {
         InstrumentGroup.SEMAR_PAGULINGAN: {
@@ -54,68 +54,82 @@ class ValidNoteTester(unittest.TestCase):
                                 (Pitch.BYONG, None)],
         },
     }
+    ANY = "any"
     VALID_STROKE_DURATION = {
         InstrumentGroup.SEMAR_PAGULINGAN: {
-            Position.PEMADE_POLOS: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
-                                    (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
-                                    (Stroke.TREMOLO_ACCELERATING, 1.0), (Stroke.NOROT, 1.0), (Stroke.GRACE_NOTE, 0.0)],
-            Position.JEGOGAN: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
-                                (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
-                                (Stroke.TREMOLO_ACCELERATING, 1.0)],
+            Position.PEMADE_POLOS: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5),
+                                    (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), (Stroke.TREMOLO, ANY),
+                                    (Stroke.TREMOLO_ACCELERATING, 1.0),  (Stroke.TREMOLO_ACCELERATING, ANY),  (Stroke.NOROT, 1.0), (Stroke.GRACE_NOTE, 0.0)],
+            Position.JEGOGAN: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5),
+                                (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0),  (Stroke.TREMOLO, ANY),
+                                (Stroke.TREMOLO_ACCELERATING, ANY)],
             Position.REYONG_1: [],
         },
         InstrumentGroup.GONG_KEBYAR: {
-            Position.PEMADE_POLOS: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
-                                    (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
-                                    (Stroke.TREMOLO_ACCELERATING, 1.0), (Stroke.NOROT, 1.0), (Stroke.GRACE_NOTE, 0.0)],
-            Position.JEGOGAN: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
-                                (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
-                                (Stroke.TREMOLO_ACCELERATING, 1.0)],
-            Position.REYONG_1: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
-                                (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
-                                (Stroke.TREMOLO_ACCELERATING, 1.0), (Stroke.GRACE_NOTE, 0.0)],
+            Position.PEMADE_POLOS: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5),
+                                    (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0),  (Stroke.TREMOLO, ANY),
+                                    (Stroke.TREMOLO_ACCELERATING, 1.0),  (Stroke.TREMOLO_ACCELERATING, ANY),  (Stroke.NOROT, 1.0), (Stroke.GRACE_NOTE, 0.0)],
+            Position.JEGOGAN: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5),
+                                (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0),  (Stroke.TREMOLO, ANY),
+                                (Stroke.TREMOLO_ACCELERATING, ANY)],
+            Position.REYONG_1: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5),
+                                (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0),  (Stroke.TREMOLO, ANY),
+                                (Stroke.TREMOLO_ACCELERATING, 1.0),  (Stroke.TREMOLO_ACCELERATING, ANY),  (Stroke.GRACE_NOTE, 0.0)]
         },
     }
+    # fmt: on
 
     @classmethod
-    def is_valid_combination(cls, group: InstrumentGroup, combination: dict[str, Any]) -> bool:
-        """Determines the expected validity of a combination from TRY_COMBINATIONS by comparing its values 
+    def is_valid_combination(
+        cls, group: InstrumentGroup, combination: dict[str, Any], anyduration: bool = False
+    ) -> bool:
+        """Determines the expected validity of a combination from TRY_COMBINATIONS by comparing its values
            with VALID_PITCH_OCTAVE and VALID_STROKE_DURATION.
         Args:
-            group (InstrumentGroup): 
+            group (InstrumentGroup):
             combination (dict[str, Any]): combination of pitch, octave, stroke, duration and rest_after, given as a record str->value
         """
         position = combination[NoteFields.POSITION.value]
-        return ((combination["pitch"], combination["octave"]) in cls.VALID_PITCH_OCTAVE[group][position]) and (
-                (combination["stroke"], combination["duration"]) in cls.VALID_STROKE_DURATION[group][position])
+        valid_pitch_octave = (combination["pitch"], combination["octave"]) in cls.VALID_PITCH_OCTAVE[group][position]
+        valid_stroke_duration = (
+            (combination["stroke"], combination["duration"]) in cls.VALID_STROKE_DURATION[group][position]
+            if not anyduration
+            else (combination["stroke"], cls.ANY) in cls.VALID_STROKE_DURATION[group][position]
+        )
+        return valid_pitch_octave and valid_stroke_duration
 
     def test_returns_only_valid_notes(self):
         """Tests each combination in TRY_COMBINATIONS. Check that only Note objects with valid combinations
-           of attributes can be created. Any invalid combination should raise an exception.
+        of attributes can be created. Any invalid combination should raise an exception.
         """
         for group in [InstrumentGroup.GONG_KEBYAR, InstrumentGroup.SEMAR_PAGULINGAN]:
             self.load_settings(group)
             for combination in self.TRY_COMBINATIONS:
-                note = Note.get_note(**combination) # returns None for invalid combinations
                 with self.subTest(combination=combination):
+                    note = Note.get_note(**combination)  # returns None for invalid combinations
                     if self.is_valid_combination(group, combination):
+                        is_valid = True
                         self.assertIsNotNone(note)
+                    elif self.is_valid_combination(group, combination, anyduration=True):
+                        is_valid = True
+                        self.assertIsNone(note)
+                    else:
+                        is_valid = False
+                    if is_valid:
                         try:
                             self.assertIsNotNone(Note(symbol="", **combination))
                         except ValueError:
-                            self.fail(f"Unexpected failure for a valid combination.")
+                            self.fail("Unexpected failure for a valid combination.")
                     else:
                         self.assertRaises(ValueError, Note, symbol="", **combination)
 
 
 class ToneTester(unittest.TestCase):
 
-    @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
     def load_settings_sp(self):
         # Create mock notation and converter for semar pagulingan score
         load_run_settings(notation_id="test-semarpagulingan", part_id="full")
 
-    @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
     def load_settings_gk(self):
         # Create mock notation and converter for gong kebyar score with beat at end
         load_run_settings(notation_id="test-gongkebyar", part_id="full")
@@ -143,7 +157,7 @@ class ToneTester(unittest.TestCase):
 
 
 class RuleTester(unittest.TestCase):
-    @patch("src.settings.settings.SETTINGSFOLDER", "./tests/settings")
+
     def setUp(self):
         # Create mock notation and converter for gong kebyar score with beat at end
         load_run_settings(notation_id="test-gongkebyar", part_id="full")
@@ -293,5 +307,7 @@ class RuleTester(unittest.TestCase):
     def test_apply_unisono_rule(self):
         for tone, position, all_positions, expected in self.data_shared_notation:
             with self.subTest(tone=tone, position=position, all_positions=all_positions):
-                cast_tone = Instrument.cast_to_position(tone, position, all_positions)
+                cast_tone = Instrument.cast_to_position(
+                    tone=tone, position=position, all_positions=all_positions, metadata=[]
+                )
                 self.assertEqual(cast_tone, expected)

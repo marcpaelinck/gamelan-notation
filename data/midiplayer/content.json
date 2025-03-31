@@ -98,11 +98,11 @@
                                 {"part": "entire piece", "file": "Bapang Selisir_full_GAMELAN1.mid", "loop": false, "markers": {}}
                         ]
                 }, 
-                {"title": "Legong Mahawidya GK", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Legong Mahawidya GK_full_GAMELAN1.pdf", "notation_version": "08-mar-2025", "parts": [
+                {"title": "Legong Mahawidya GK", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Legong Mahawidya GK_full_GAMELAN1.pdf", "notation_version": "30-mar-2025", "parts": [
                                 {"part": "entire piece", "file": "Legong Mahawidya GK_full_GAMELAN1.mid", "loop": false, "markers": {
-                                                "kawitan": 0.021691741310838623, 
-                                                "pengawak": 0.2557178885120445, 
-                                                "pengecet": 0.6573151288517842
+                                                "kawitan": 0.02806910745861959, 
+                                                "pengawak": 0.26151549410093633, 
+                                                "pengecet": 0.6582137577180625
                                         }
                                 }, 
                                 {"part": "pengawak", "file": "Legong Mahawidya GK_pengawak_GAMELAN1.mid", "loop": true, "markers": {}}, 

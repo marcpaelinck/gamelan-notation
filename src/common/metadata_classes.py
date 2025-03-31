@@ -1,13 +1,11 @@
 # pylint: disable=missing-class-docstring
-import json
 from typing import Any, ClassVar, Literal, Union
 
-import regex
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 from src.common.constants import DEFAULT, InstrumentType, NotationEnum, Position
 from src.settings.classes import RunSettings
-from src.settings.settings import add_run_settings_listener, get_run_settings
+from src.settings.settings import add_run_settings_listener
 from src.settings.utils import tag_to_position_dict
 
 
@@ -62,22 +60,16 @@ class MetaDataBaseModel(BaseModel):
         return f"{{{self.metatype} {defval} {' '.join([f'{key}={val}' for key, val in jsonval.items()])}}}".strip()
 
     @classmethod
-    def _initialize(cls, run_settings: RunSettings):
+    def initialize(cls, run_settings: RunSettings):
         print(
             f"(RE-)INITIALIZING METADATA BASE CLASS FOR COMPOSITION {run_settings.notation.title} - {run_settings.notation.part.name}"
         )
         cls._TAG_TO_POSITION = tag_to_position_dict(run_settings)
 
-    # @classmethod
-    # def build_class(cls):
-    #     run_settings = get_run_settings(cls._initialize)
-    #     cls._initialize(run_settings)
-
 
 # # INITIALIZE THE MetaDataBaseModel CLASS TO CREATE AND UPDATE THE TAG LOOKUP TABLE
 # ##############################################################################
-# MetaDataBaseModel.build_class()
-add_run_settings_listener(MetaDataBaseModel._initialize)
+add_run_settings_listener(MetaDataBaseModel.initialize)
 # ##############################################################################
 
 
@@ -120,13 +112,13 @@ class DynamicsMeta(GradualChangeMetadata):
         return abbr
 
     @classmethod
-    def _initialize(cls, run_settings: RunSettings):
+    def initialize(cls, run_settings: RunSettings):
         cls.DYNAMICS = run_settings.midi.dynamics
 
 
 # # ADD DynamicsMeta initialize method as listener to run_settings change
 # ##############################################################################
-add_run_settings_listener(DynamicsMeta._initialize)
+add_run_settings_listener(DynamicsMeta.initialize)
 # ##############################################################################
 
 

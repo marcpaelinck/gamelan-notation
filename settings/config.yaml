@@ -178,7 +178,7 @@ notations:
                 name: entire piece
                 file: Legong Mahawidya_font5_SP.tsv
                 loop: false
-    legongmahawidya_gk:
+    legongmahawidya-gk:
         title: Legong Mahawidya GK
         subfolder: legong mahawidya
         parts:

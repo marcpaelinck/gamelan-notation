@@ -63,7 +63,6 @@ import pickle
 import re
 import sys
 from collections import ChainMap
-from dataclasses import _MISSING_TYPE
 from typing import Any
 
 from tatsu import compile as tatsu_compile

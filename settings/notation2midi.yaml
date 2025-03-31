@@ -1,8 +1,8 @@
 ---
 # The settings below (except for options) refer to values in the data.yaml file.
 # The font selection is defined in the details of the selected notation component (see data.yaml file).
-notation_id: sinomladrang-gk
-part_id: full
+notation_id: legongmahawidya-gk
+part_id: pengawak
 options:
   # Option autocorrect should be set in the input files. Default should be false.
   debug_logging: false

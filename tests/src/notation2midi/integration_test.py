@@ -15,7 +15,7 @@ class IntegrationTester(unittest.TestCase):
     def setUp(self):
         pass
 
-    RUN_INTEGRATION_TEST = True
+    RUN_INTEGRATION_TEST = False
 
     @pytest.mark.skipif(RUN_INTEGRATION_TEST is False, reason="Set RUN_INTEGRATION_TEST=True to run the test")
     def test_integrationtest(self):

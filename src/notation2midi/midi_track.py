@@ -5,7 +5,7 @@ It is used by the MidiGenerator (score_to_midi module).
 from enum import Enum
 from typing import override
 
-from mido import Message, MetaMessage, MidiTrack, bpm2tempo, tempo2bpm
+from mido import Message, MetaMessage, MidiTrack, bpm2tempo
 from mido.messages import BaseMessage
 
 from src.common.classes import Note, Preset
@@ -45,8 +45,8 @@ class MidiTrackX(MidiTrack):
     ticktime_last_message: int = 0
     current_ticktime: int = 0
     # current and prev millitimes are used for the panggul animation
-    current_millitime: int = 0  # cumulative time in milliseconds of the latest message in the queue
-    prev_millitime: int = 0  # idem for the most recent helpinghand message in the queue
+    current_millitime: int = 0  # cumulative time in milliseconds of the last message in the queue
+    last_hh_millitime: int = 0  # idem for the most recent helpinghand message in the queue
     current_bpm: int = 0
     current_velocity: int
     TEMPO_TRACK_NAME = Position.KEMPLI.value  # Track that will hold the tempo MetaMessages.
@@ -214,8 +214,8 @@ class MidiTrackX(MidiTrack):
             pitch = note.pitch
             octave = note.octave
             # time_until = int(self.current_time_in_millis() - self.current_time_in_millis(self.last_helpinghand_msg))
-            time_until = int(self.current_millitime - self.prev_millitime)
-            self.prev_millitime = self.current_millitime
+            time_until = int(self.current_millitime - self.last_hh_millitime)
+            self.last_hh_millitime = self.current_millitime
         text = self.last_helpinghand_msg.text
         text = (
             text.replace("{pitch}", f"{pitch}")
