@@ -4,8 +4,7 @@ from src.common.classes import Beat, Gongan, Measure, Score
 from src.common.constants import DEFAULT, Position
 from src.common.metadata_classes import GonganType
 from src.notation2midi.score_validation import ScoreValidator
-from src.settings.constants import Yaml
-from src.settings.settings import _load_run_settings
+from src.settings.settings import Settings
 from tests.src.testutils import PositionNote
 
 
@@ -16,7 +15,7 @@ class ScoreValidationTester(unittest.TestCase):
 
     def setUp(self):
         # Create a sample gongan with one incorrect beat (PEMADE and SANGSIH are the same) and one correct beat
-        settings = _load_run_settings({Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART_ID: "full"})
+        settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
         P = PositionNote(Position.PEMADE_POLOS)
         S = PositionNote(Position.PEMADE_SANGSIH)
 

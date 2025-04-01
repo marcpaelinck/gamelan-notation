@@ -5,7 +5,7 @@ import pytest
 
 from src.notation2midi.main import main
 from src.settings.classes import RunType
-from src.settings.settings import _load_run_settings
+from src.settings.settings import Settings
 from src.tools.compare import compare_all
 
 
@@ -28,7 +28,7 @@ class IntegrationTester(unittest.TestCase):
            a report `comparison.txt` in the `output` folder."""
         # TODO improve the output to make the results easier to interpret.
         os.environ["GAMELAN_NOTATION_N2M_SETTINGS_PATH"] = "./tests/settings/notation2midi_integration_test.yaml"
-        run_settings = _load_run_settings(notation_id="integration_test", part_id="dummy")
+        run_settings = Settings.get(notation_id="integration_test", part_id="dummy")
         run_settings.options.notation_to_midi.runtype = RunType.RUN_ALL
         main()
         # The dummy notation `integration_test` contains the input and output folders for the compare_all function.
