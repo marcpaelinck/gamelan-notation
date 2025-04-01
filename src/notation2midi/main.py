@@ -11,16 +11,15 @@ from src.notation2midi.score2notation.score_to_pdf import ScoreToPDFConverter
 from src.notation2midi.score_to_midi import MidiGenerator
 from src.notation2midi.score_validation import ScoreValidator
 from src.settings.classes import RunSettings, RunType
-from src.settings.settings import get_run_settings, load_run_settings
+from src.settings.settings import Settings
 from src.settings.settings_validation import SettingsValidator
 
 logger = get_logger(__name__)
 
 
 def load_and_validate_run_settings(notation_id: str = None, part_id: str = None) -> RunSettings:
-    run_settings = load_run_settings(notation_id=notation_id, part_id=part_id)
-    if run_settings.options.validate_settings:
-        SettingsValidator(run_settings).validate_input_data()
+    run_settings = Settings.get(notation_id=notation_id, part_id=part_id)
+    SettingsValidator(run_settings).validate_input_data()
     return run_settings
 
 
@@ -68,24 +67,24 @@ def multiple_notations_to_midi(run_settings: RunSettings):
             not is_production_run or notation_info.include_in_production_run
         ):
             for part_key, _ in notation_info.parts.items():
-                run_settings = load_and_validate_run_settings(notation_id=notation_key, part_id=part_key)
+                run_settings = Settings.get(notation_id=notation_key, part_id=part_key)
                 notation_to_midi(run_settings)
 
 
-def single_run():
-    run_settings = load_and_validate_run_settings()
+def single_run(run_settings: RunSettings):
+    # run_settings = load_and_validate_run_settings()
     notation_to_midi(run_settings)
 
 
 def main():
-    run_settings = get_run_settings()
+    run_settings = load_and_validate_run_settings()
     if not run_settings.options.notation_to_midi.is_production_run or askyesno(
         "Warning", "Running production version. Continue?"
     ):
         if run_settings.options.notation_to_midi.runtype is RunType.RUN_ALL:
             multiple_notations_to_midi(run_settings)
         else:
-            single_run()
+            single_run(run_settings)
 
 
 if __name__ == "__main__":

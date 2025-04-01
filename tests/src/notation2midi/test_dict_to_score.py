@@ -28,7 +28,7 @@ from src.common.metadata_classes import (
 )
 from src.notation2midi.classes import MetaDataRecord
 from src.notation2midi.dict_to_score import DictToScoreConverter
-from src.settings.settings import load_run_settings
+from src.settings.settings import _load_run_settings
 
 
 class PositionNote:
@@ -157,14 +157,14 @@ class TestDictToScoreConverter(unittest.TestCase):
         pass
 
     def get_converter_sp(self):
-        settings = load_run_settings(notation_id="test-semarpagulingan", part_id="full")
+        settings = _load_run_settings(notation_id="test-semarpagulingan", part_id="full")
         mock_notation = MagicMock(spec=Notation)
         mock_notation.settings = settings
         mock_notation.notation_dict = get_notation()
         return DictToScoreConverter(mock_notation)
 
     def get_converter_beat_at_end(self):
-        settings = load_run_settings(notation_id="test_beat_at_end", part_id="full")
+        settings = _load_run_settings(notation_id="test_beat_at_end", part_id="full")
         mock_notation = MagicMock(spec=Notation)
         mock_notation.settings = settings
         mock_notation.notation_dict = get_notation()
@@ -289,7 +289,7 @@ class TestDictToScoreConverter(unittest.TestCase):
 
     def test_apply_metadata(self):
         # Add test for _apply_metadata method
-        load_run_settings()  # Needed to initialize classes
+        _load_run_settings()  # Needed to initialize classes
         beats = [
             create_beat(
                 1,
@@ -350,9 +350,6 @@ class TestDictToScoreConverter(unittest.TestCase):
 
     def test_complement_shorthand_pokok_measure(self):
         # Add test for _complement_shorthand_pokok_measure method
-        pass
-
-    def test_reverse_kempyung(self):
         pass
 
     def test_process_goto(self):

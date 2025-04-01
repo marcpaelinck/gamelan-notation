@@ -8,13 +8,13 @@ from src.notation2midi.score2notation.score_to_notation import (
     notelist_to_string,
 )
 from src.settings.constants import InstrumentFields, Yaml
-from src.settings.settings import load_run_settings
+from src.settings.settings import _load_run_settings
 
 
 class ScoreToNotationTester(unittest.TestCase):
 
     def setUp(self):
-        load_run_settings({Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART_ID: "full"})
+        _load_run_settings({Yaml.COMPOSITION: "test-gongkebyar", Yaml.PART_ID: "full"})
         self.symbol_to_note_lookup = {(note.position, note.symbol): note for note in Note.VALIDNOTES}
 
         self.notation_data = [

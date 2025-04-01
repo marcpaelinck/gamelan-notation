@@ -1,8 +1,12 @@
 import os
+import re
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any
+from typing import Any, Callable, ClassVar
 
+import numpy as np
+import pandas as pd
+import yaml
 from pydantic import BaseModel, Field
 
 from src.common.constants import (
@@ -20,8 +24,130 @@ from src.common.constants import (
     Octave,
     Pitch,
     Position,
+    RuleParameter,
+    RuleType,
+    RuleValue,
     Stroke,
 )
+from src.common.logger import get_logger
+from src.settings.constants import ENV_VAR_CONFIG_PATH, ENV_VAR_N2M_SETTINGS_PATH, Yaml
+
+logger = get_logger(__name__)
+
+# DATA contains information about the location of the settings data tables and how to format their contents.
+# Its structure enables to process each settings data table with the same generic code (function read_data).
+# The data is read from csv or tsv files in the settings subfolders `font`, `grammars`, `instruments`, ...
+# In the following explanation each table is expected to have been imported as a record-oriented list of dicts.
+# in the form [{"<col1_header>": <row1col1 value>}, "<col2_header>": <row1col2 value>,...}, ...]
+#
+# Structure of the DATA constant:
+# <table-key>: {"section": <top level key>, "folder": <key of data subfolder>, "filename": <key of file name>,
+#               "formats": <dict with formatting info>}
+#
+# <table-key> is the target attribute of src.settings.classes.Data that should contain the table content.
+# <top level key> refers to keys in settings/config.yaml that are direct children of the root.
+# <key of data subfolder> and <key of file name> are the sub-keys of <top level key> that contain the folder and
+#                         file name.
+# <dict with formatting info> is a dict that contains information about the formatting to apply to each individual
+#      record in the table. Each key of this dict corresponds with a record field name (=table column name).
+#      The values consist of a tuple with three elements that have the following meaning (the last item is optional):
+#         #0: <list of NotationEnum sublasses>: classes to which the (string) values should be cast. All Enum values
+#                                               in the list must be unique to avoid ambiguity.
+#         #1: <default value> for empty strings and missing values.
+#         #2: <post-processing function>. Applied after the above casting. It should accept the entire record as
+#             only argument.
+#      For numeric values the first member should be an empty list.
+#      Any field that does not occur in the "formats" section will be cast to str.
+DATA = {
+    "instruments": {
+        "section": "instruments",
+        "folder": "folder",
+        "filename": "instruments_file",
+        "formats": {
+            "group": ([InstrumentGroup], None),
+            "position": ([Position], None),
+            "instrumenttype": ([InstrumentType], None),
+            "position_range": ([Pitch], []),
+            "extended_position_range": ([Pitch], []),
+        },
+    },
+    "instrument_tags": {
+        "section": "instruments",
+        "folder": "folder",
+        "filename": "tags_file",
+        "formats": {
+            "groups": ([InstrumentGroup], None),
+            "positions": ([Position, RuleValue], None),
+        },
+    },
+    "rules": {
+        "section": "instruments",
+        "folder": "folder",
+        "filename": "rules_file",
+        "formats": {
+            "group": ([InstrumentGroup], None),
+            "ruletype": ([RuleType], None),
+            "positions": ([Position, RuleValue], None),
+            "parameter1": ([RuleParameter], []),
+            "value1": ([RuleValue, Pitch, Position], []),
+            "parameter2": ([RuleParameter], []),
+            "value2": ([RuleValue], []),
+        },
+    },
+    "midinotes": {
+        "section": "midi",
+        "folder": "folder",
+        "filename": "midi_definition_file",
+        "formats": {
+            "instrumentgroup": ([InstrumentGroup], None),
+            "instrumenttype": ([InstrumentType], None),
+            "positions": (
+                [Position],
+                None,
+                lambda record: (
+                    [p for p in Position if p.instrumenttype == record["instrumenttype"]]
+                    if not record["positions"]
+                    else record["positions"]
+                ),
+            ),
+            "pitch": ([Pitch], Pitch.NONE),
+            "octave": ([], None),
+            "stroke": ([Stroke], Stroke.NONE),
+            "midinote": (
+                [],
+                [],
+                lambda record: record["midinote"] if isinstance(record["midinote"], list) else [record["midinote"]],
+            ),
+        },
+    },
+    "presets": {
+        "section": "midi",
+        "folder": "folder",
+        "filename": "presets_file",
+        "formats": {
+            "instrumentgroup": ([InstrumentGroup], None),
+            "instrumenttype": ([InstrumentType], None),
+            "position": ([Position], None),
+            "bank": ([], None),
+            "preset": ([], None),
+            "channel": ([], None),
+            "port": ([], None),
+        },
+    },
+    "font": {
+        "section": "font",
+        "folder": "folder",
+        "filename": "file",
+        "formats": {
+            "pitch": ([Pitch], Pitch.NONE),
+            "octave": ([], None),
+            "stroke": ([Stroke], Stroke.NONE),
+            "duration": ([], None),
+            "rest_after": ([], None),
+            "modifier": ([Modifier], Modifier.NONE),
+        },
+    },
+}
 
 
 # RAW CLASSES FOR DATA FILE CONTENTS
@@ -313,7 +439,6 @@ class SettingsOptions(BaseModel):
         create_sf2_files: bool
 
     debug_logging: bool
-    validate_settings: bool
     notation_to_midi: NotationToMidiOptions | None = None
     soundfont: SoundfontOptions | None = None
 
@@ -341,12 +466,21 @@ class ConfigData(BaseModel):
 
 
 class RunSettings(BaseModel):
+    """Contains all configuration and settings data.
+    Do not instantiate this class, but call src.settings.settings.Settings.get(...)
+    to get a RunSettings instance."""
+
     midiversion: str | None = None
     notation_id: str | None = None
     part_id: str | None = None
     options: SettingsOptions
     configdata: ConfigData
     data: Data = None
+
+    def __init__(self):
+        """Initializes an instance and populates it from the config/settings yaml files in the settings folder."""
+        settings = self._load_run_settings()
+        super().__init__(**settings)  # pylint: disable=not-a-mapping
 
     @property
     def notation(self) -> SettingsNotationInfo:
@@ -408,3 +542,156 @@ class RunSettings(BaseModel):
     @property
     def pdf_out_filepath(self):
         return os.path.join(self.folder_out, self.pdf_out_file)
+
+    def _post_process(self, subdict: dict[str, Any], run_settings_dict: dict[str, Any] = None, curr_path: list = None):
+        """This function enables references to yaml key values using ${<yaml_path>} notation.
+        e.g.: ${notations.defaults.include_in_production_run}
+        The function substitutes these references with the corresponding yaml settings values.
+        Does not (yet) implement usage of references within a list structure.
+
+        Args:
+            subdict (dict[str, Any]): Part of a yaml stucture in Python format for which to substitute references.
+            run_settings_dict(dict[str, Any]): Full yaml structure in Python dict format.
+        """
+        found: re.Match
+        curr_path = curr_path or []
+
+        for key, value in subdict.items():
+            if isinstance(value, dict):
+                # Iterate through dict structures until a root node is found
+                sub_path = curr_path + [key]
+                subdict[key] = self._post_process(value, run_settings_dict or subdict, sub_path)
+            elif isinstance(value, str):
+                # Only implemented for key: str items. Does not operate on list structures (yet)
+                # Determine if a ${<yaml_path>} string ioccurs in the value.
+                while found := re.search(r"\$\{\{(?P<item>[\w\.]+)\}\}", value):
+                    keys = found.group("item").split(".")
+                    # Replace '_PARENT_' literal with current path. Should be the first item in the list.
+                    if keys[0].upper() == "_PARENT_":
+                        keys = curr_path + keys[1:]
+                    item = run_settings_dict
+                    for key1 in keys:
+                        item = item[key1]
+                    if found.group(0) == value:
+                        # Value is a reference to a key value.
+                        value = item
+                        break
+                    else:
+                        # Value is a string containing one or more ${...} references.
+                        # Substitute the sub-expression in the string.
+                        value = value.replace(found.group(0), item)
+                subdict[key] = value
+        return subdict
+
+    def _read_settings(self, filepath: str) -> dict:
+        """Retrieves settings from the given (YAML) file. The folder is retrieved from the environment.
+
+        Args:
+            filename (str): YAML file name.
+
+        Returns:
+            dict: dict containing all the settings contained in the file.
+        """
+        with open(filepath, "r", encoding="utf-8") as settingsfile:
+            return yaml.load(settingsfile, yaml.Loader)
+
+    def _read_data(self, settings_dict: dict, specs: dict) -> dict[str, list[dict[str, str]]]:
+        """Reads multiple data files into table-like dict structures. Columns that appear in the 'format' section
+        of the specs will be formatted accordingly.
+        Args:
+            settings_dict (dict): dict containing run settings
+            specs: (dict): dict containing information about the data to retrieve.
+                The values refer to keys in the settings dict. Format:
+                {<table1-key>:
+                    {"section": <top level key>, "folder": <key of data subfolder>, "filename": <key of file name>, "formats" : <formatting>},
+                <table2-key>: ...
+                }
+                where <formatting> is a tuple (list[<NotationEnum class>], <value if missing or none>)
+        Returns:
+            dict[str, list[dict[str, str]]]: dict table-key -> <list of records> where each record represents a row.
+        """
+        data = {}
+        for item, entry in specs.items():
+            category = entry["section"]
+            folder = settings_dict[category][entry["folder"]]
+            file = settings_dict[category][entry["filename"]]
+            filepath = os.path.join(folder, file)
+            data[item] = (
+                pd.read_csv(filepath, sep="\t", comment="#", dtype=str)
+                .replace([np.nan], [""], regex=False)
+                .to_dict(orient="records")
+            )
+            if "formats" in entry:
+                for fmtcolumn, formatting in entry["formats"].items():
+                    for record in data[item]:
+                        if fmtcolumn in record:
+                            if not record[fmtcolumn]:
+                                # format missing value
+                                record[fmtcolumn] = formatting[1]
+                            else:
+                                mapping = {
+                                    strval: val for fmt in formatting[0] for strval, val in fmt.member_map().items()
+                                }
+                                record[fmtcolumn] = eval(record[fmtcolumn] or formatting[1], mapping)
+                            # Apply formatting function if available
+                            if len(formatting) > 2:
+                                record[fmtcolumn] = formatting[2](record)
+        return data
+
+    def _validate_settings(self, data_dict: dict, run_settings_dict: dict) -> bool:
+        """Checks that the notation id and part id correspond with an entry in the config file (config.yaml).
+        Args:
+            data_dict (dict): _description_
+            run_settings_dict (dict): _description_
+        Returns:
+            bool: _description_
+        """
+        notation_id = run_settings_dict[Yaml.NOTATION_ID]
+        part_id = run_settings_dict[Yaml.PART_ID]
+        if not data_dict[Yaml.NOTATIONS].get(notation_id, None):
+            logger.error("Invalid composition name: %s", notation_id)
+            return False
+        if not data_dict[Yaml.NOTATIONS][Yaml.NOTATION_ID].get(part_id, None):
+            logger.error("Part %s not found in composition %s", part_id, notation_id)
+            return False
+        return True
+
+    def _load_run_settings(self):
+        """Retrieves the run settings from the run settings yaml file, enriched with information
+        from the data information yaml file.
+        Be aware that this method is called automatically when python first encounters an import statement that imports
+        src.common.classes (see the `_build_class` methods in that module). This is especially relevant for unit tests
+        that use separate YAML settings files.
+
+        Args:
+            notation_id: key value of the notation as it appears in the config.yaml file
+            part_id: key value of the part of the notation
+
+        Returns:
+            RunSettings: settings object
+        """
+        config_filepath = os.getenv(ENV_VAR_CONFIG_PATH)
+        settings_data_dict = self._read_settings(config_filepath)
+        # update each notation entry with the default settings
+        for key, notation_entry in settings_data_dict[Yaml.NOTATIONS].items():
+            if key == Yaml.DEFAULTS:
+                continue
+            settings_data_dict[Yaml.NOTATIONS][key] = settings_data_dict[Yaml.NOTATIONS][Yaml.DEFAULTS] | notation_entry
+        del settings_data_dict[Yaml.NOTATIONS][Yaml.DEFAULTS]
+        settings_data_dict = self._post_process(settings_data_dict)
+
+        settings_filepath = os.getenv(ENV_VAR_N2M_SETTINGS_PATH)
+        run_settings_dict = self._read_settings(settings_filepath)
+        run_settings_dict[Yaml.CONFIGDATA] = settings_data_dict
+        run_settings_dict[Yaml.DATA] = self._read_data(settings_data_dict, DATA)
+
+        return run_settings_dict
+        # try:
+        #     # _SETTINGS_DATA = SettingsData.model_validate(settings_data_dict)
+        #     self.model_validate(run_settings_dict)
+        # except ValidationError as e:
+        #     # Aggregate errors by variable
+        #     logger.error(str(e))
+        #     exit()
+
+        # self.Settings.get()

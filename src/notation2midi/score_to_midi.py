@@ -14,12 +14,8 @@ from src.common.constants import DEFAULT, Pitch, Position
 from src.common.metadata_classes import PartMeta
 from src.notation2midi.classes import ParserModel
 from src.notation2midi.midi_track import MidiTrackX, TimeUnit
-from src.settings.classes import PartForm
-from src.settings.settings import (
-    get_midiplayer_content,
-    get_run_settings,
-    update_midiplayer_content,
-)
+from src.settings.classes import PartForm, RunSettings
+from src.settings.settings import Settings
 
 
 class MidiGenerator(ParserModel):
@@ -141,7 +137,7 @@ class MidiGenerator(ParserModel):
         return {part: time / total_duration for part, time in sorted(list(markers.items()), key=lambda it: it[1])}
 
     def _update_midiplayer_content(self) -> None:
-        update_midiplayer_content(
+        Settings.update_midiplayer_content(
             title=self.run_settings.notation.title,
             group=self.run_settings.notation.instrumentgroup,
             partinfo=PartForm(
@@ -185,8 +181,8 @@ class MidiGenerator(ParserModel):
 
 
 if __name__ == "__main__":
-    run_settings = get_run_settings()
-    content = get_midiplayer_content()
+    run_settings = RunSettings()
+    content = Settings.get_midiplayer_content(run_settings.midiplayer.folder, run_settings.midiplayer.contentfile)
     str_content = content.model_dump_json(indent=4, serialize_as_any=True)
     datafolder = run_settings.notation.folder
     content_json = content.model_dump_json(indent=4, serialize_as_any=True)

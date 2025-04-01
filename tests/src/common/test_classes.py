@@ -6,7 +6,7 @@ from unittest.mock import patch
 from src.common.classes import Instrument, Note, Tone
 from src.common.constants import InstrumentGroup, Pitch, Position, RuleValue, Stroke
 from src.settings.constants import NoteFields, Yaml
-from src.settings.settings import load_run_settings
+from src.settings.settings import _load_run_settings
 
 
 class ValidNoteTester(unittest.TestCase):
@@ -18,7 +18,7 @@ class ValidNoteTester(unittest.TestCase):
             composition = "test-semarpagulingan"
         else:
             raise ValueError(f"invalid instrument group {group}")
-        return load_run_settings(notation_id=composition, part_id="full")
+        return _load_run_settings(notation_id=composition, part_id="full")
 
     # Combinations that will be tested (contains both valid and invalid combinations)
     TRY_COMBINATIONS: list[dict[str, Any]] = [
@@ -128,11 +128,11 @@ class ToneTester(unittest.TestCase):
 
     def load_settings_sp(self):
         # Create mock notation and converter for semar pagulingan score
-        load_run_settings(notation_id="test-semarpagulingan", part_id="full")
+        _load_run_settings(notation_id="test-semarpagulingan", part_id="full")
 
     def load_settings_gk(self):
         # Create mock notation and converter for gong kebyar score with beat at end
-        load_run_settings(notation_id="test-gongkebyar", part_id="full")
+        _load_run_settings(notation_id="test-gongkebyar", part_id="full")
 
     # fmt: off
     tone_range_data = [
@@ -160,7 +160,7 @@ class RuleTester(unittest.TestCase):
 
     def setUp(self):
         # Create mock notation and converter for gong kebyar score with beat at end
-        load_run_settings(notation_id="test-gongkebyar", part_id="full")
+        _load_run_settings(notation_id="test-gongkebyar", part_id="full")
 
     # fmt: off
     kempyung_tone_data = [

@@ -40,7 +40,7 @@ from src.notation2midi.score2notation.utils import (
     measure_to_str,
     stringWidth_fromNotes,
 )
-from src.settings.settings import update_midiplayer_content
+from src.settings.settings import Settings
 
 
 class ScoreToPDFConverter(ParserModel):
@@ -407,7 +407,7 @@ class ScoreToPDFConverter(ParserModel):
         notation_version = time.strftime(
             self.score.settings.pdf_converter.version_fmt, time.gmtime(modification_time)
         ).lower()
-        update_midiplayer_content(
+        Settings.update_midiplayer_content(
             title=self.run_settings.notation.title,
             group=self.run_settings.notation.instrumentgroup,
             pdf_file=self.score.settings.pdf_out_file,

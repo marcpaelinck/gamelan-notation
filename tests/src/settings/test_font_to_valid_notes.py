@@ -5,7 +5,7 @@ from unittest import TestCase
 from src.common.constants import InstrumentGroup, Pitch, Position, Stroke
 from src.settings.constants import NoteFields, Yaml
 from src.settings.font_to_valid_notes import get_note_records
-from src.settings.settings import load_run_settings
+from src.settings.settings import _load_run_settings
 
 FIELDS_IN_TUPLE = (
     NoteFields.POSITION,
@@ -27,7 +27,7 @@ class SettingsTester(TestCase):
         self,
     ) -> list[dict[str, Any]]:
         # Creates a list of valid notes for Semar Pagulingan
-        settings = load_run_settings(notation_id="test-semarpagulingan", part_id="full")
+        settings = _load_run_settings(notation_id="test-semarpagulingan", part_id="full")
         notes_sp = get_note_records(settings)
         return [{field.value: note[field] for field in FIELDS_IN_TUPLE} for note in notes_sp]
 
@@ -35,7 +35,7 @@ class SettingsTester(TestCase):
         self,
     ) -> list[dict[str, Any]]:
         # Creates a list of valid notes for  Gong Kebyar
-        settings = load_run_settings(notation_id="test-gongkebyar", part_id="full")
+        settings = _load_run_settings(notation_id="test-gongkebyar", part_id="full")
         notes_gk = get_note_records(settings)
         return [{field.value: note[field] for field in FIELDS_IN_TUPLE} for note in notes_gk]
 

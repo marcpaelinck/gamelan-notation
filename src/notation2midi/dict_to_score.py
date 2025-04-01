@@ -339,17 +339,6 @@ class DictToScoreConverter(ParserModel):
             self.logerror(str(e))
         return notes
 
-    def _reverse_kempyung(self, beat: Beat):
-        # Only applies to PEMADE_SANGSIH and KANTILAN_SANGSIH.
-        # Polos part is expected to be available.
-        for measure in beat.measures.values():
-            for pass_ in measure.passes.values():
-                if pass_.ruletype == RuleType.UNISONO:
-                    pass_.notes = [
-                        (note.get_kempyung(inverse=True) if note.transformation == RuleValue.EXACT_KEMPYUNG else note)
-                        for note in pass_.notes
-                    ]
-
     def _apply_metadata(self, gongan: Gongan) -> None:
         """Processes the metadata of a gongan into the object model.
 
@@ -552,7 +541,7 @@ class DictToScoreConverter(ParserModel):
                     beat.changes.update(beat.prev.changes)
 
     def _process_sequences(self):
-        """Translates the labels of the sequences into goto directives in the respective beats."""
+        """Translates the labels of the SEQUENCE metadata into goto directives in the respective beats."""
         for initial_gongan, sequence in self.score.flowinfo.sequences:
             gongan = initial_gongan
             for label in sequence.value:

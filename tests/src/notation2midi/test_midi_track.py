@@ -5,12 +5,12 @@ from mido import Message
 from src.common.classes import Preset
 from src.common.constants import Position
 from src.notation2midi.midi_track import MidiTrackX
-from src.settings.settings import get_run_settings
+from src.settings.settings import Settings
 
 
 class TestSpecialNotes(unittest.TestCase):
     def setUp(self):
-        self.run_settings = get_run_settings()
+        self.run_settings = Settings.get()
         position = Position.PEMADE_POLOS
         preset = Preset.get_preset(position)
         self.midi_track: MidiTrackX = MidiTrackX(position, preset, self.run_settings)

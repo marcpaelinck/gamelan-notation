@@ -81,7 +81,7 @@ from src.notation2midi.classes import (
 from src.settings.classes import RunSettings
 from src.settings.constants import FontFields, NoteFields
 from src.settings.font_to_valid_notes import get_note_records
-from src.settings.settings import get_run_settings
+from src.settings.settings import Settings
 
 # The following classes display meaningful names for the IDs
 # which will be used as key values in the output dict structure.
@@ -488,6 +488,6 @@ class NotationTatsuParser(ParserModel):
 
 
 if __name__ == "__main__":
-    settings = get_run_settings()
+    settings = Settings.get()
     parser = NotationTatsuParser(settings)
     print(parser.sorted_chars("i=,/"))

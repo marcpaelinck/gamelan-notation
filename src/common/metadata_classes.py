@@ -1,11 +1,11 @@
 # pylint: disable=missing-class-docstring
-from typing import Any, ClassVar, Literal, Union
+from typing import ClassVar, Literal, Union, override
 
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 from src.common.constants import DEFAULT, InstrumentType, NotationEnum, Position
 from src.settings.classes import RunSettings
-from src.settings.settings import add_run_settings_listener
+from src.settings.settings import RunSettingsListener
 from src.settings.utils import tag_to_position_dict
 
 
@@ -38,7 +38,7 @@ class Scope(NotationEnum):
     SCORE = "SCORE"
 
 
-class MetaDataBaseModel(BaseModel):
+class MetaDataBaseModel(BaseModel, RunSettingsListener):
     metatype: Literal[""]
     scope: Scope = Scope.GONGAN
     line: int = None
@@ -47,6 +47,13 @@ class MetaDataBaseModel(BaseModel):
     # name of the paramater whose value may appear in the notation without specifying the parameter
     DEFAULTPARAM: ClassVar[str]
     _TAG_TO_POSITION: dict[str, list[Position]]
+
+    @classmethod
+    @override
+    def cls_initialize(cls, run_settings: RunSettings):
+        """(Re-)initializes the class's _TAG_TO_POSITION lookup dict.
+        The method is called when new run settings are loaded."""
+        cls._TAG_TO_POSITION = tag_to_position_dict(run_settings)
 
     def model_dump_notation(self):
         jsonval = self.model_dump(exclude_defaults=True)
@@ -58,19 +65,6 @@ class MetaDataBaseModel(BaseModel):
         else:
             defval = ""
         return f"{{{self.metatype} {defval} {' '.join([f'{key}={val}' for key, val in jsonval.items()])}}}".strip()
-
-    @classmethod
-    def initialize(cls, run_settings: RunSettings):
-        print(
-            f"(RE-)INITIALIZING METADATA BASE CLASS FOR COMPOSITION {run_settings.notation.title} - {run_settings.notation.part.name}"
-        )
-        cls._TAG_TO_POSITION = tag_to_position_dict(run_settings)
-
-
-# # INITIALIZE THE MetaDataBaseModel CLASS TO CREATE AND UPDATE THE TAG LOOKUP TABLE
-# ##############################################################################
-add_run_settings_listener(MetaDataBaseModel.initialize)
-# ##############################################################################
 
 
 class GradualChangeMetadata(MetaDataBaseModel):
@@ -112,14 +106,8 @@ class DynamicsMeta(GradualChangeMetadata):
         return abbr
 
     @classmethod
-    def initialize(cls, run_settings: RunSettings):
+    def cls_initialize(cls, run_settings: RunSettings):
         cls.DYNAMICS = run_settings.midi.dynamics
-
-
-# # ADD DynamicsMeta initialize method as listener to run_settings change
-# ##############################################################################
-add_run_settings_listener(DynamicsMeta.initialize)
-# ##############################################################################
 
 
 class GonganMeta(MetaDataBaseModel):

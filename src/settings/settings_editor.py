@@ -4,7 +4,7 @@ from itertools import count
 from tkinter import ttk
 
 from src.settings.classes import RunType
-from src.settings.settings import load_run_settings
+from src.settings.settings import _load_run_settings
 
 
 class ItemType(StrEnum):
@@ -46,7 +46,7 @@ def create_menu():
     root = tk.Tk()
     root.title("JSON Viewer")
     root.geometry("600x400")
-    run_settings = load_run_settings()
+    run_settings = _load_run_settings()
     # Add a Frame for the Treeview
     frame = tk.Frame(root)
     frame.pack(fill=tk.BOTH, expand=True)
