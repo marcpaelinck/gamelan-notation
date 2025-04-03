@@ -7,6 +7,7 @@ from src.common.classes import Preset
 from src.common.constants import Position
 from src.notation2midi.midi_track import MidiTrackX
 from src.settings.settings import Settings
+from tests.conftest import BaseUnitTestCase
 
 
 def setUpModule():
@@ -14,7 +15,7 @@ def setUpModule():
     os.environ["GAMELAN_NOTATION_N2M_SETTINGS_PATH"] = "./tests/settings/notation2midi.yaml"
 
 
-class TestSpecialNotes(unittest.TestCase):
+class TestSpecialNotes(BaseUnitTestCase):
     def setUp(self):
         self.run_settings = Settings.get()
         position = Position.PEMADE_POLOS

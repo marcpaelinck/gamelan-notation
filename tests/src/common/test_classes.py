@@ -1,4 +1,3 @@
-import unittest
 from itertools import product
 from typing import Any
 
@@ -6,9 +5,10 @@ from src.common.classes import Instrument, Note, Tone
 from src.common.constants import InstrumentGroup, Pitch, Position, RuleValue, Stroke
 from src.settings.constants import NoteFields
 from src.settings.settings import Settings
+from tests.conftest import BaseUnitTestCase
 
 
-class ValidNoteTester(unittest.TestCase):
+class ValidNoteTester(BaseUnitTestCase):
 
     def load_settings(self, group: InstrumentGroup) -> dict:
         if group is InstrumentGroup.GONG_KEBYAR:
@@ -123,7 +123,7 @@ class ValidNoteTester(unittest.TestCase):
                         self.assertRaises(ValueError, Note, symbol="", **combination)
 
 
-class ToneTester(unittest.TestCase):
+class ToneTester(BaseUnitTestCase):
 
     def load_settings_sp(self):
         # Create mock notation and converter for semar pagulingan score
@@ -155,7 +155,7 @@ class ToneTester(unittest.TestCase):
                     )
 
 
-class RuleTester(unittest.TestCase):
+class RuleTester(BaseUnitTestCase):
 
     def setUp(self):
         # Create mock notation and converter for gong kebyar score with beat at end

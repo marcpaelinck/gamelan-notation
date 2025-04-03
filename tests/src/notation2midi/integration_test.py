@@ -1,5 +1,4 @@
 import os
-import unittest
 
 import pytest
 
@@ -7,9 +6,10 @@ from src.notation2midi.main import main
 from src.settings.classes import RunType
 from src.settings.settings import Settings
 from src.tools.compare import compare_all
+from tests.conftest import BaseUnitTestCase
 
 
-class IntegrationTester(unittest.TestCase):
+class IntegrationTester(BaseUnitTestCase):
     """Integration tests, run separately."""
 
     def setUp(self):

@@ -4,8 +4,7 @@ from os import path
 import pandas as pd
 
 from src.common.classes import Gongan, Note, Score
-from src.common.constants import ParserTag, Pitch, Position
-from src.notation2midi.notation_parser_tatsu import PassID
+from src.common.constants import ParserTag, Position
 from src.notation2midi.score2notation.utils import aggregate_positions, is_silent
 from src.settings.constants import InstrumentFields
 
