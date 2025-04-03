@@ -31,7 +31,7 @@ class TestUtils(BaseUnitTestCase):
             ({"id": 5, "metadata": [{"data": {"metatype": "GONGAN", "type": "gineman"}}]}, False),
         ]
         for record, expected in gongans:
-            with self.subTest(msg="subtest failed", record=record):
+            with self.subTest(record=record):
                 gongan = Gongan.model_validate(record)
                 self.assertTrue(has_kempli_beat(gongan) == expected, "Failed for gongan %s" % record["id"])
 
