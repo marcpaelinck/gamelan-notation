@@ -31,6 +31,20 @@
                 "-m"
             ],
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Unittest",
+            "type": "debugpy",
+            "cwd": "${workspaceFolder}",
+            "request": "launch",
+            "program": "${file}",
+            "env": {
+                "PYTHONPATH": "${workspaceRoot}"
+            },
+            "args": [
+            ],
+            "console": "integratedTerminal"
         }
+
     ]
 }

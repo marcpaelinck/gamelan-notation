@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from mido import Message
@@ -6,6 +7,11 @@ from src.common.classes import Preset
 from src.common.constants import Position
 from src.notation2midi.midi_track import MidiTrackX
 from src.settings.settings import Settings
+
+
+def setUpModule():
+    os.environ["GAMELAN_NOTATION_CONFIG_PATH"] = "./tests/settings/config.yaml"
+    os.environ["GAMELAN_NOTATION_N2M_SETTINGS_PATH"] = "./tests/settings/notation2midi.yaml"
 
 
 class TestSpecialNotes(unittest.TestCase):

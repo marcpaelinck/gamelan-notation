@@ -1,6 +1,7 @@
 # pylint: disable=missing-module-doctring
 # pylint: disable=missing-function-doctring
 # pylint: disable=protected-access
+import os
 import unittest
 from unittest.mock import MagicMock
 
@@ -20,6 +21,7 @@ from src.common.metadata_classes import (
     GoToMeta,
     KempliMeta,
     LabelMeta,
+    MetaData,
     MetaDataSwitch,
     OctavateMeta,
     SuppressMeta,
@@ -29,6 +31,7 @@ from src.common.metadata_classes import (
 from src.notation2midi.classes import MetaDataRecord
 from src.notation2midi.dict_to_score import DictToScoreConverter
 from src.settings.settings import Settings
+from tests.conftest import BaseUnitTestCase
 
 
 class PositionNote:
@@ -104,15 +107,13 @@ def create_beat(id: int = 1, content: dict[PositionNote, list[Note]] = None):
     return Beat(
         id=id,
         gongan_id=1,
-        bpm_start=60,
-        bpm_end=60,
+        bpm_start={-1: 60},
+        bpm_end={-1: 60},
         velocities_start={},
         velocities_end={},
         duration=4,
         changes={},
         measures=measures,
-        prev=None,
-        next=None,
         validation_ignore=[],
     )
 
@@ -151,7 +152,7 @@ def get_notation():
     return notation
 
 
-class TestDictToScoreConverter(unittest.TestCase):
+class TestDictToScoreConverter(BaseUnitTestCase):
 
     def setUp(self):
         pass
@@ -338,7 +339,7 @@ class TestDictToScoreConverter(unittest.TestCase):
             (SuppressMeta(metatype="SUPPRESS", positions=[Position.PEMADE_SANGSIH], beats=[2])),
             (WaitMeta(metatype="WAIT", seconds=2)),
         ]
-        gongan = Gongan(id=1, beats=beats, metadata=[LabelMeta(metatype="LABEL", name="LABEL1", beat=1)])
+        gongan = Gongan(id=1, beats=beats, metadata=[MetaData(data=LabelMeta(metatype="LABEL", name="LABEL1", beat=1))])
 
     def test_add_missing_measures(self):
         # Add test for _add_missing_measure method

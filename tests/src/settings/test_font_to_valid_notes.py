@@ -1,11 +1,11 @@
 from collections import defaultdict
 from typing import Any
-from unittest import TestCase
 
 from src.common.constants import InstrumentGroup, Pitch, Position, Stroke
 from src.settings.constants import NoteFields
 from src.settings.font_to_valid_notes import get_note_records
 from src.settings.settings import Settings
+from tests.conftest import BaseUnitTestCase
 
 FIELDS_IN_TUPLE = (
     NoteFields.POSITION,
@@ -17,7 +17,7 @@ FIELDS_IN_TUPLE = (
 )
 
 
-class SettingsTester(TestCase):
+class SettingsTester(BaseUnitTestCase):
 
     def to_tuple(self, note_records: list[dict[str, Any]]) -> list[tuple[Any]]:
         # Create a tuple containing the note fields that we want to test.

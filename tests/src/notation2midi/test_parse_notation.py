@@ -15,6 +15,7 @@ from src.common.metadata_classes import (
 from src.notation2midi.classes import MetaDataRecord
 from src.notation2midi.notation_parser_tatsu import NotationTatsuParser
 from src.settings.settings import Settings
+from tests.conftest import BaseUnitTestCase
 
 grammar_header = """
 @@grammar::METADATA
@@ -23,7 +24,7 @@ start  = "{"  @:metadata "}"  $  ;
 """
 
 
-class NotationParserTester(unittest.TestCase):
+class NotationParserTester(BaseUnitTestCase):
     def setUp(self):
         self.run_settings = Settings.get()
         self.parser = NotationTatsuParser(self.run_settings)

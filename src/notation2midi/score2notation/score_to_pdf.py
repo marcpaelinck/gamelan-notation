@@ -28,6 +28,7 @@ from src.common.metadata_classes import (
     TempoMeta,
 )
 from src.notation2midi.classes import ParserModel
+from src.notation2midi.notation_parser_tatsu import PassID
 from src.notation2midi.score2notation.formatting import (
     NotationTemplate,
     SpanType,
@@ -280,7 +281,9 @@ class ScoreToPDFConverter(ParserModel):
 
         return content
 
-    def _gongan_colwidths(self, staves: dict[Position, list[list[Note]]], include_overflow_col: bool) -> list[float]:
+    def _gongan_colwidths(
+        self, staves_dict: dict[tuple[Position, PassID], list[list[Note]]], include_overflow_col: bool
+    ) -> list[float]:
         """Calculates the column widths of the given gongan.
         Args:
             staves (dict[Position, list[list[Note]]]): the gongan as a dict Position -> measure
@@ -289,7 +292,7 @@ class ScoreToPDFConverter(ParserModel):
             list[float]: The column widths of the gongans.
         """
         beat_colwidths = None
-        for measures in staves.values():
+        for measures in staves_dict.values():
             if not beat_colwidths:
                 beat_colwidths = [0] * len(measures)
             for colnr, measure in enumerate(measures):
@@ -310,7 +313,7 @@ class ScoreToPDFConverter(ParserModel):
 
     def _staves_to_tabledata(
         self,
-        staves: dict[Position, list[list[Note]]],
+        staves_dict: dict[tuple[Position, PassID], list[list[Note]]],
         pos_tags: dict[Position, str],
         gongan_id: int,
         add_overflow_col: bool,
@@ -324,27 +327,36 @@ class ScoreToPDFConverter(ParserModel):
             list[list[Paragraph]]: The table structure containing the notation.
         """
 
-        def gongan_id_txt(gid: str, tag: str):
+        def gongan_id_txt(gid: int, tag: str) -> str:
+            """Returns the gongan id as text preceded by as many space chars as necessary to right-aligns
+            the id within the cell containing the tag. The gongan id will appended to the position tag
+            of the first stave of the gongan"""
+            # Calculate the available width between the position tag and the end of the cell.
+            # This is equal to the total cell width minus the width of the position tag.
             tagwidth = stringWidth(tag, self.template.tagStyle.fontName, self.template.tagStyle.fontSize)
-            remaining = self.TAG_COLWIDTH - tagwidth - 2 * self.template.cell_padding
+            avail_width = self.TAG_COLWIDTH - tagwidth - 2 * self.template.cell_padding
+            # Determine the number of characters needed to fill the available width using the
+            # gongan id's font size. The font should be monospaced.
+            # Then calculate the number of digits of the id and the number of preceding spaces.
             nrcharpos = int(
-                10 * remaining / stringWidth("0" * 10, self.template.gonganIDFontName, self.template.gonganIDFontSize)
+                10 * avail_width / stringWidth("0" * 10, self.template.gonganIDFontName, self.template.gonganIDFontSize)
             )
-            nrchars = int(math.log10(gid)) + 1
-            nrspaces = max(nrcharpos - nrchars, 0)
+            nr_digits = int(math.log10(gid)) + 1
+            nrspaces = max(nrcharpos - nr_digits, 0)
+            # Create the text. Use non-breaking spaces: reportlab seems to trim regular spaces.
             id_text = self.template.format_text(r"&nbsp;" * nrspaces + str(gid), self.template.gonganIdCharStyle)
             return id_text
 
-        data = list()
-        for count, position in enumerate(sorted(list(pos_tags.keys()), key=lambda x: x.sequence)):
-            pos_tag = pos_tags[position]
+        data = []
+        for count, ((position, passid), pos_tag) in enumerate(pos_tags.items()):
             if count == 0:
+                # Add gongan numbering next to first position tag
                 pos_tag += gongan_id_txt(gongan_id, pos_tag)
             row = [Paragraph(pos_tag, self.template.tagStyle)]
             data.append(row)
-            for measure in staves[position]:
+            for measure in staves_dict[position, passid]:
                 text = measure_to_str(measure)
-                para = Paragraph(text, self.template.notationStyle)
+                para = Paragraph(text, self.template.notationStyle) if text else ""
                 row.append(para)
             if add_overflow_col:
                 row.append("")
@@ -370,8 +382,8 @@ class ScoreToPDFConverter(ParserModel):
                 continue
 
             # Determine the column widths
-            staves = clean_staves(gongan)
-            colwidths = self._gongan_colwidths(staves, include_overflow_col=True)
+            staves_dict = clean_staves(gongan)
+            colwidths = self._gongan_colwidths(staves_dict, include_overflow_col=True)
 
             # Create an empty content container and add the metadata that should appear above
             # the gongan notation
@@ -380,26 +392,30 @@ class ScoreToPDFConverter(ParserModel):
 
             # Add the gongan notation
             pos_tags = aggregate_positions(gongan)
-            notation_data = self._staves_to_tabledata(staves, pos_tags, gongan.id, add_overflow_col=True)
-            row1, row2 = len(content.data), len(content.data) + len(notation_data) - 1
-            content.append(
-                TableContent(
-                    data=notation_data,
-                    colwidths=colwidths,
-                    # If gongan has no kempli beat, the beats will be separated by dotted lines.
-                    style=(
-                        self.template.notationTableStyle(row1, row2)
-                        if has_kempli_beat(gongan)
-                        else self.template.notationNoKempliTableStyle(row1, row2)
-                    ),
-                    template=self.template,
+            notation_data = self._staves_to_tabledata(staves_dict, pos_tags, gongan.id, add_overflow_col=True)
+            if notation_data:
+                row1, row2 = len(content.data), len(content.data) + len(notation_data) - 1
+                content.append(
+                    TableContent(
+                        data=notation_data,
+                        colwidths=colwidths,
+                        # If gongan has no kempli beat, the beats will be separated by dotted lines.
+                        style=(
+                            self.template.notationTableStyle(row1, row2)
+                            if has_kempli_beat(gongan)
+                            else self.template.notationNoKempliTableStyle(row1, row2)
+                        ),
+                        template=self.template,
+                    )
                 )
-            )
 
             # Add the metadata that should appear below gongan notation
             content = self._append_metadata(content, gongan, above_notation=False)
-            gongan_table = self.template.create_table(content)
-            self.story.append(gongan_table)
+
+            # Create and append the gongan table
+            if content.data:
+                gongan_table = self.template.create_table(content)
+                self.story.append(gongan_table)
         self.template.doc.build(self.story)
 
     def _update_midiplayer_content(self) -> None:

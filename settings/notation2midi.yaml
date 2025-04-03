@@ -1,16 +1,16 @@
 ---
 # The settings below (except for options) refer to values in the data.yaml file.
 # The font selection is defined in the details of the selected notation component (see data.yaml file).
-notation_id: lengker
-part_id: pengawak
+notation_id: pendet
+part_id: full
 options:
   # Option autocorrect should be set in the input files. Default should be false.
   debug_logging: false
   notation_to_midi:
     #  possible `runtype` values are RUN_SINGLE (uses `notation` value above) or RUN_ALL (uses `include_in_run_types` in data.yaml.).
-    runtype: RUN_ALL
+    runtype: RUN_SINGLE
     #  `production_run` determines the value of the output folder in the `notations` section
-    is_production_run: true
+    is_production_run: false
     detailed_validation_logging : false
     autocorrect : true
     save_corrected_to_file : false

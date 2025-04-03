@@ -5,10 +5,11 @@ from src.common.constants import DEFAULT, Position
 from src.common.metadata_classes import GonganType
 from src.notation2midi.score_validation import ScoreValidator
 from src.settings.settings import Settings
+from tests.conftest import BaseUnitTestCase
 from tests.src.testutils import PositionNote
 
 
-class ScoreValidationTester(unittest.TestCase):
+class ScoreValidationTester(BaseUnitTestCase):
     """Validator for the record to score parser"""
 
     # pylint: disable=protected-access
@@ -26,10 +27,10 @@ class ScoreValidationTester(unittest.TestCase):
                 Beat(
                     id=1,
                     gongan_id=1,
-                    bpm_start=[],
-                    bpm_end=[],
-                    velocities_start=[],
-                    velocities_end=[],
+                    bpm_start={},
+                    bpm_end={},
+                    velocities_start={},
+                    velocities_end={},
                     duration=10,
                     measures={
                         P.position: Measure(

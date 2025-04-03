@@ -8,9 +8,10 @@ from src.notation2midi.score2notation.score_to_notation import (
 )
 from src.settings.constants import InstrumentFields
 from src.settings.settings import Settings
+from tests.conftest import BaseUnitTestCase
 
 
-class ScoreToNotationTester(unittest.TestCase):
+class ScoreToNotationTester(BaseUnitTestCase):
 
     def setUp(self):
         Settings.get(notation_id="test-gongkebyar", part_id="full")
@@ -93,5 +94,5 @@ class ScoreToNotationTester(unittest.TestCase):
 
     def test_gongan_to_records(self):
         for gongan, expected in self.gongan_data:
-            with self.subTest(gongan=gongan):
-                self.assertEqual(gongan_to_records(gongan), expected)
+            with self.subTest(gongan=gongan.id):
+                self.assertEqual(gongan_to_records(gongan), expected, "Failed for gongan %s" % gongan.id)
