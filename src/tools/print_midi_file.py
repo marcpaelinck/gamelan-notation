@@ -1,6 +1,7 @@
 # pylint: disable=all
 import os
 import re
+import time
 
 from mido import MidiFile
 

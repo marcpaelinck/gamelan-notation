@@ -17,7 +17,7 @@ from io import TextIOWrapper
 from typing import Any
 
 from src.common.logger import get_logger
-from src.tools.print_midi_file import to_text, to_text_multiple_files
+from src.tools.print_midi_file import to_text_multiple_files
 
 LOGGER = get_logger(__name__)
 
@@ -302,8 +302,6 @@ def compare_directories(
 
     differences = {}
     for file in common_files:
-        LOGGER.info(f"Comparing {file}")
-
         file1 = os.path.join(dir1, file)
         file2 = os.path.join(dir2, file)
 
@@ -348,6 +346,7 @@ def compare_txt_files(
 
     # save report to file
     filepath_out = os.path.split(filepath_new)[0]
+    LOGGER.info("saving results")
     with open(os.path.join(filepath_out, "comparison.txt"), "w", encoding="utf-8") as outfile:
         outfile.write(os.path.split(filepath_old)[1] + "\n")
         save_file_summary(outfile, summary=differences, detailed=False)
@@ -364,23 +363,25 @@ def compare_all(ref_dir: str, other_dir: str):
         dir_new (_type_): Second folder
     """
     # 1. convert midi files to text files
-    LOGGER.info("Generating .TXT versions of each MIDI file")
     files = []
     for folder in [ref_dir, other_dir]:
         files.append(set([os.path.basename(path) for path in glob(os.path.join(folder, "*.mid"))]))
     filelist = files[0].intersection(files[1])
+    LOGGER.info("Generating .TXT versions of each MIDI file")
     to_text_multiple_files(filelist, [ref_dir, other_dir])
     # to_text_multiple_files(filelist, [dir_new])
 
     # 2. compare the text files
-    LOGGER.info("Generating differences report")
+    LOGGER.info("Comparing .TXT files in `reference` and `output` folder")
     differences = compare_directories(ref_dir, other_dir, "*.txt")
 
     # 3. save report to file
+    LOGGER.info("Saving summary report in comparison.txt")
     with open(os.path.join(other_dir, "comparison.txt"), "w", encoding="utf-8") as outfile:
         for file, diff in differences.items():
             outfile.write(f"Differences in {file}:\n")
             save_file_summary(outfile, summary=diff, detailed=False)
+    LOGGER.info("Saving detailed report in comparison_details.txt")
     with open(os.path.join(other_dir, "comparison_details.txt"), "w", encoding="utf-8") as outfile:
         for file, diff in differences.items():
             outfile.write(f"Differences in {file}:\n")

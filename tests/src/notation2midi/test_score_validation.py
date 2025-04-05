@@ -1,12 +1,11 @@
-import unittest
+# pylint: disable=missing-module-docstring, missing-class-docstring, missing-function-docstring, line-too-long, invalid-name
 
-from src.common.classes import Beat, Gongan, Measure, Score
+from src.common.classes import Score
 from src.common.constants import DEFAULT, Position
-from src.common.metadata_classes import GonganType
 from src.notation2midi.score_validation import ScoreValidator
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
-from tests.src.utils_for_tests import PositionNote
+from tests.src.utils_for_tests import PositionNote, create_gongan
 
 
 class ScoreValidationTester(BaseUnitTestCase):
@@ -20,66 +19,15 @@ class ScoreValidationTester(BaseUnitTestCase):
         P = PositionNote(Position.PEMADE_POLOS)
         S = PositionNote(Position.PEMADE_SANGSIH)
 
-        gongan = Gongan(
-            id=1,
-            gongantype=GonganType.REGULAR,
-            beats=[
-                Beat(
-                    id=1,
-                    gongan_id=1,
-                    bpm_start={},
-                    bpm_end={},
-                    velocities_start={},
-                    velocities_end={},
-                    duration=10,
-                    measures={
-                        P.position: Measure(
-                            position=P.position,
-                            all_positions=[P.position],
-                            passes={
-                                DEFAULT: Measure.Pass(
-                                    seq=DEFAULT,
-                                    notes=[
-                                        P.DONG0,
-                                        P.DENG0,
-                                        P.DUNG0,
-                                        P.DANG0,
-                                        P.DING1,
-                                        P.DONG1,
-                                        P.DENG1,
-                                        P.DUNG1,
-                                        P.DANG1,
-                                        P.DING2,
-                                    ],
-                                )
-                            },
-                        ),
-                        S.position: Measure(
-                            position=S.position,
-                            all_positions=[S.position],
-                            passes={
-                                DEFAULT: Measure.Pass(
-                                    seq=DEFAULT,
-                                    notes=[
-                                        S.DONG0,
-                                        S.DENG0,
-                                        S.DUNG0,
-                                        S.DANG0,
-                                        S.DING1,
-                                        S.DONG1,
-                                        S.DENG1,
-                                        S.DUNG1,
-                                        S.DANG1,
-                                        S.DING2,
-                                    ],
-                                )
-                            },
-                        ),
-                    },
-                    validation_ignore=[],
+        # fmt: off
+        gongan = create_gongan(
+                    1,
+                    {P.position: {DEFAULT: [[P.DONG0, P.DENG0, P.DUNG0, P.DANG0, P.DING1, P.DONG1, P.DENG1, P.DUNG1, P.DANG1, P.DING2]]},
+                     S.position: {DEFAULT: [[S.DONG0, S.DENG0, S.DUNG0, S.DANG0, S.DING1, S.DONG1, S.DENG1, S.DUNG1, S.DANG1, S.DING2]]}
+                    }
                 )
-            ],
-        )
+        # fmt: on
+
         self.sample_gk_score = Score(title="Test", gongans=[gongan], settings=settings)
 
     def test_incorrect_kempyung(self):
