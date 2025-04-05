@@ -17,9 +17,9 @@ from src.common.constants import (
     Position,
     Stroke,
 )
-from src.common.logger import get_logger
+from src.common.logger import Logging
 
-logger = get_logger(__name__)
+logger = Logging.get_logger(__name__)
 
 
 def get_all_tags():

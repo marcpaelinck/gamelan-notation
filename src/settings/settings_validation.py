@@ -5,11 +5,11 @@ import csv
 import pandas as pd
 
 from src.common.constants import Pitch
-from src.common.logger import get_logger
+from src.common.logger import Logging
 from src.notation2midi.classes import ParserModel
 from src.settings.constants import FontFields, MidiNotesFields
 
-logger = get_logger(__name__)
+logger = Logging.get_logger(__name__)
 
 
 class SettingsValidator(ParserModel):

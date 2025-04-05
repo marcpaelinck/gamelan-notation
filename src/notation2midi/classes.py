@@ -15,7 +15,7 @@ from src.common.constants import (
     Position,
     Stroke,
 )
-from src.common.logger import get_logger
+from src.common.logger import Logging
 from src.common.metadata_classes import (
     FrequencyType,
     GonganType,
@@ -81,7 +81,7 @@ class ParserModel:
     def __init__(self, parser_type: ParserType, run_settings: RunSettings):
         self.parser_type = parser_type
         self.run_settings = run_settings
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = Logging.get_logger(self.__class__.__name__)
 
     @classmethod
     def main(cls, func: Callable):

@@ -1,9 +1,5 @@
 import logging
-
-# List will collect all logging
-LOGGING = []  # TODO operational but not yet in use
-
-loggers: dict[str, logging.Logger] = {}
+import sys
 
 
 class CustomFormatter(logging.Formatter):
@@ -44,33 +40,80 @@ class CustomFormatter(logging.Formatter):
 
 
 class CustomHandler(logging.Handler):
-
-    def __init__(self):
+    def __init__(self, logging_storage: list[str]):
         super().__init__(level=logging.INFO)
         self.setFormatter(CustomFormatter(False))
+        self.logging_storage = logging_storage
 
     def emit(self, record):
         msg = self.format(record)
-        LOGGING.append(msg)
+        self.logging_storage.append(msg)
 
 
-def get_logger(name) -> logging.Logger:
-    if name in loggers:
-        # logging.getLogger is supposed to return previously created logger instances,
-        # but this doen't seem to work.
-        return loggers[name]
+class CustomLogger:
+    def __init__(self, name: str, handler: CustomHandler):
+        self.logger = logging.getLogger(name)
+        self.logger.setLevel(logging.INFO)
+        self.handler = logging.StreamHandler()
+        self.handler.setFormatter(CustomFormatter())
+        self.logger.addHandler(self.handler)
+        self.logger.addHandler(handler)
+        self.dot_count = 0
+        self.last_message_len = 0
 
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
-    handler = logging.StreamHandler()
-    handler.setFormatter(CustomFormatter())
-    logger.addHandler(handler)
-    logger.addHandler(CustomHandler())
-    loggers[name] = logger
-    return logger
+    def log(self, level: int, msg: object, *args, **kwargs):
+        self.logger.log(level, msg, *args, **kwargs)
+
+    def info(self, msg: object, *args, **kwargs):
+        self.logger.info(msg, *args, **kwargs)
+
+    def warning(self, msg: object, *args, **kwargs):
+        self.logger.info(msg, *args, **kwargs)
+
+    def error(self, msg: object, *args, **kwargs):
+        self.logger.info(msg, *args, **kwargs)
+
+    def log_progress(self, message=""):
+        """Logs the provided message and appends a dot, overwriting the previous line."""
+        if message:
+            # Clear the previous line by overwriting it with spaces.
+            clear_line = " " * self.last_message_len
+            self.handler.stream.write(f"\r{clear_line}\r{message}")
+            self.handler.stream.flush()  # ensure the output is shown immediately
+            self.last_message_len = len(message)
+            self.dot_count = 0  # reset dot count
+        else:
+            self.handler.stream.write(".")
+            self.handler.stream.flush()
+            self.dot_count += 1
+            self.last_message_len += 1  # consider the dot in the length calculation
+
+    def log_final(self, message, newline=False):
+        """Logs a final message without overwriting the line."""
+        clear_line = " " * self.last_message_len
+        self.handler.stream.write(f"\r{clear_line}\r{message}{'\n' if newline else ""}")  # newline to go to next line
+        self.handler.stream.flush()
+        self.last_message_len = 0
+        self.dot_count = 0
+
+
+class Logging:
+    # List will collect all logging
+    LOGGING = []  # TODO operational but not yet in use
+    loggers: dict[str, logging.Logger] = {}
+
+    @classmethod
+    def get_logger(cls, name: str) -> CustomLogger:
+        if name in cls.loggers:
+            # logging.getLogger is supposed to return previously created logger instances,
+            # but this doen't seem to work.
+            return cls.loggers[name]
+        logger = CustomLogger(name, CustomHandler(cls.LOGGING))
+        cls.loggers[name] = logger
+        return logger
 
 
 if __name__ == "__main__":
-    testlogger = get_logger("test")
+    testlogger = Logging.get_logger("test")
     testlogger.error("Foutmelding!")
-    print(LOGGING)
+    print(Logging.LOGGING)

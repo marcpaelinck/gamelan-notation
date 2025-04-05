@@ -16,10 +16,11 @@ from glob import glob
 from io import TextIOWrapper
 from typing import Any
 
-from src.common.logger import get_logger
-from src.tools.print_midi_file import to_text_multiple_files
+from mido import MidiFile
 
-LOGGER = get_logger(__name__)
+from src.common.logger import Logging
+
+LOGGER = Logging.get_logger(__name__)
 
 # ID values at beginning of line
 ABSTIME_ID = "abstime"  # Not used
@@ -102,6 +103,42 @@ NOMATCH_1 = "NO MATCH REF"
 NOMATCH_2 = "NO MATCH NEW"
 COUNT = "count"
 DETAILS = "details"
+
+
+def to_text(path, midifilename):
+    midifilepath = os.path.join(path, midifilename)
+    txtfilepath = os.path.splitext(midifilepath)[0] + ".txt"
+
+    mid = MidiFile(midifilepath)
+    beat = "00-0"
+    position = "X"
+    with open(txtfilepath, "w", encoding="utf-8") as csvfile:
+        for i, track in enumerate(mid.tracks):
+            clocktime = 0
+            csvfile.write("Track {}: {}".format(i, track.name) + "\n")
+            for msg in track:
+                do_write = True
+                match = re.findall(r"'marker', text='b_(\d+-\d+)'", str(msg))
+                if match:
+                    beat = match[0]
+                    do_write = False
+                else:
+                    match = re.findall(r"'track_name', name='(\w+)'", str(msg))
+                    if match:
+                        position = match[0]
+                        do_write = False
+                clocktime += msg.time
+                if do_write:
+                    csvfile.write(f"    ({clocktime},{beat},{position}) -- {str(msg)} abstime={clocktime}" + "\n")
+
+
+def to_text_multiple_files(files: list[str], folders: list[str]):
+    LOGGER.log_progress("")
+    for file in files:
+        for folder in folders:
+            LOGGER.log_progress()
+            to_text(folder, file)
+    LOGGER.log_final(message="")
 
 
 def sorted_dict(unsorted: dict[str, Any]) -> dict[str, Any]:
@@ -367,7 +404,7 @@ def compare_all(ref_dir: str, other_dir: str):
     for folder in [ref_dir, other_dir]:
         files.append(set([os.path.basename(path) for path in glob(os.path.join(folder, "*.mid"))]))
     filelist = files[0].intersection(files[1])
-    LOGGER.info("Generating .TXT versions of each MIDI file")
+    LOGGER.info("Generating .TXT files from MIDI files")
     to_text_multiple_files(filelist, [ref_dir, other_dir])
     # to_text_multiple_files(filelist, [dir_new])
 

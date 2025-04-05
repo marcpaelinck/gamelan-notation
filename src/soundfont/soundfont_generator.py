@@ -12,12 +12,12 @@ import pyautogui
 
 from src.common.classes import Note
 from src.common.constants import InstrumentType
-from src.common.logger import get_logger
+from src.common.logger import Logging
 from src.settings.classes import RunSettings
 from src.settings.settings import Settings
 from src.soundfont.soundfont_textfile import SoundfontTextfile
 
-logger = get_logger(__name__)
+logger = Logging.get_logger(__name__)
 
 
 def create_soundfont_definition_file(run_settings: RunSettings) -> None:

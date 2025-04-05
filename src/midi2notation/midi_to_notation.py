@@ -4,11 +4,11 @@ from itertools import batched, pairwise
 
 from mido import MidiFile
 
-from src.common.logger import get_logger
+from src.common.logger import Logging
 from src.midi2notation.classes import TimedMessage, TimingData
 from src.midi2notation.constants import MIDI_TO_COURIER, VALID_MIDI_MESSAGE_TYPES
 
-logger = get_logger(__name__)
+logger = Logging.get_logger(__name__)
 
 datafolder = ".\\data\\puspanjali\\"
 # datafolder = ".\\data\\cendrawasih\\"

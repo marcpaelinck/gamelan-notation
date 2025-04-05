@@ -2,9 +2,9 @@
 from enum import StrEnum
 from typing import Any
 
-from src.common.logger import get_logger
+from src.common.logger import Logging
 
-logger = get_logger(__name__)
+logger = Logging.get_logger(__name__)
 
 BPM = int
 Velocity = int

@@ -7,13 +7,13 @@ import time
 from typing import Callable
 
 from src.common.constants import InstrumentGroup
-from src.common.logger import get_logger
+from src.common.logger import Logging
 from src.settings.classes import Content, PartForm, RunSettings, Song
 from src.settings.utils import pretty_compact_json
 
 # from src.settings.utils import pretty_compact_json
 
-logger = get_logger(__name__)
+logger = Logging.get_logger(__name__)
 
 
 class RunSettingsListener:

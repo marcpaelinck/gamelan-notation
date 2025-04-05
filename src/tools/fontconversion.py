@@ -1,5 +1,4 @@
-"""Contains methods to convert the font of notation files from one version to the other.
-"""
+"""Contains methods to convert the font of notation files from one version to the other."""
 
 import codecs
 import csv
@@ -14,10 +13,10 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.cell.cell import Cell
 from openpyxl.styles import Font
 
-from src.common.logger import get_logger
+from src.common.logger import Logging
 from src.settings.settings import MARGAPATI4, MARGAPATI5, MARGAPATIREYONG3
 
-logger = get_logger(__name__)
+logger = Logging.get_logger(__name__)
 
 Symbol = str
 Path = str

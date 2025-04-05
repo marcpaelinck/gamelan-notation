@@ -29,10 +29,10 @@ from src.common.constants import (
     RuleValue,
     Stroke,
 )
-from src.common.logger import get_logger
+from src.common.logger import Logging
 from src.settings.constants import ENV_VAR_CONFIG_PATH, ENV_VAR_N2M_SETTINGS_PATH, Yaml
 
-logger = get_logger(__name__)
+logger = Logging.get_logger(__name__)
 
 # DATA contains information about the location of the settings data tables and how to format their contents.
 # Its structure enables to process each settings data table with the same generic code (function read_data).

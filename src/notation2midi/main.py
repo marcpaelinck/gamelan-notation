@@ -3,7 +3,7 @@
 from tkinter.messagebox import askyesno
 
 from src.common.constants import NotationFontVersion
-from src.common.logger import get_logger
+from src.common.logger import Logging
 from src.notation2midi.dict_to_score import DictToScoreConverter
 from src.notation2midi.notation_parser_tatsu import NotationTatsuParser
 from src.notation2midi.score2notation.score_to_notation import score_to_notation_file
@@ -14,7 +14,7 @@ from src.settings.classes import RunSettings, RunType
 from src.settings.settings import Settings
 from src.settings.settings_validation import SettingsValidator
 
-logger = get_logger(__name__)
+logger = Logging.get_logger(__name__)
 
 
 def load_and_validate_run_settings(notation_id: str = None, part_id: str = None) -> RunSettings:
