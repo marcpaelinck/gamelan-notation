@@ -1,4 +1,4 @@
-from src.common.classes import Note
+from src.common.classes import Gongan, Note
 from src.common.constants import Pitch, Position, RuleValue, Stroke
 
 
@@ -63,6 +63,14 @@ class PositionNote:
         return self.note(pitch=Pitch.DING, octave=2)
 
     @property
+    def BYONG(self):
+        return self.note(pitch=Pitch.BYONG, octave=None)
+
+    @property
+    def BYOT(self):
+        return self.note(pitch=Pitch.BYONG, octave=None, stroke=Stroke.ABBREVIATED)
+
+    @property
     def MUTEDSTRIKE(self):
         return self.note(pitch=Pitch.STRIKE, octave=None, stroke=Stroke.MUTED)
 
@@ -73,3 +81,41 @@ class PositionNote:
     @property
     def EXTENSION(self):
         return self.note(pitch=Pitch.NONE, octave=None, stroke=Stroke.EXTENSION)
+
+
+def create_gongan(g_id: int, staves: dict[str, dict[int, list[list[Note]]]]) -> Gongan:
+    """creates a gongan with multiple position and beats
+    Args:
+        g_id (int): gong id
+        position (str): string value of position (should resolve to Position type)
+        staves (dict[str, dict[int,list[list[Note]]]]): contains a list of measures for each position and pass.
+        Each measure is a list of Note objects which can be created with the PositionNote class.
+    """
+
+    nr_beats = max([len(measure) for pass_ in staves.values() for measure in pass_.values()])
+    beats = [
+        {
+            "id": b_id,
+            "gongan_id": g_id,
+            "bpm_start": {},
+            "bpm_end": {},
+            "velocities_start": {},
+            "velocities_end": {},
+            "duration": 0,
+            "measures": {},
+        }
+        for b_id in range(1, nr_beats + 1)
+    ]
+    for position, stave in staves.items():
+        for passid, measures in stave.items():
+            for beat_seq, measure in enumerate(measures):
+                pass_ = {"seq": passid, "notes": measure}
+                measure = {
+                    "position": position,
+                    "all_positions": [],
+                    "passes": {passid: pass_},
+                }
+                beats[beat_seq]["measures"] |= {position: measure}
+
+    gongan = {"id": g_id, "beats": beats}
+    return Gongan.model_validate(gongan)

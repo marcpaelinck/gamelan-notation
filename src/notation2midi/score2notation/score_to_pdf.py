@@ -39,7 +39,7 @@ from src.notation2midi.score2notation.utils import (
     clean_staves,
     has_kempli_beat,
     measure_to_str,
-    stringWidth_fromNotes,
+    string_width_from_notes,
 )
 from src.settings.settings import Settings
 
@@ -296,7 +296,7 @@ class ScoreToPDFConverter(ParserModel):
             if not beat_colwidths:
                 beat_colwidths = [0] * len(measures)
             for colnr, measure in enumerate(measures):
-                textwidth = stringWidth_fromNotes(
+                textwidth = string_width_from_notes(
                     measure, self.template.notationStyle.fontName, self.template.notationStyle.fontSize
                 )
                 beat_colwidths[colnr] = max(beat_colwidths[colnr], textwidth + 2 * self.template.cell_padding)

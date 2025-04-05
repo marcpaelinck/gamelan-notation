@@ -290,7 +290,7 @@ class TestDictToScoreConverter(BaseUnitTestCase):
 
     def test_apply_metadata(self):
         # Add test for _apply_metadata method
-        Settings.get()  # Needed to initialize classes
+        Settings.get(notation_id="test-gongkebyar", part_id="full")  # Needed to initialize classes
         beats = [
             create_beat(
                 1,

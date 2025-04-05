@@ -2,7 +2,7 @@ import os
 import re
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any, Callable, ClassVar
+from typing import Any
 
 import numpy as np
 import pandas as pd

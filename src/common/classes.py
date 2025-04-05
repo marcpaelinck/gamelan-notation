@@ -536,8 +536,8 @@ class Note(BaseModel, RunSettingsListener):
         valid_note = self._POS_P_O_S_D_R_TO_NOTE.get(tuple(search_record.values()), None)
         if not valid_note:
             raise ValueError(
-                f"Invalid combination {valid_note.pitch} OCT{valid_note.octave} {valid_note.stroke} "
-                f"{valid_note.duration} {valid_note.rest_after} for {valid_note.position}"
+                ("Invalid combination %s OCT%s %s " % (valid_note.pitch, valid_note.octave, valid_note.stroke))
+                + ("%s %s for %s" % ({valid_note.duration}, {valid_note.rest_after}, {valid_note.position}))
             )
         return super(Note, valid_note).model_copy(update=update) if valid_note else None
 
@@ -897,7 +897,7 @@ class Gongan(BaseModel):
     # Gongans in the input file are separated from each other by an empty line.
     id: int
     beats: list[Beat] = Field(default_factory=list)
-    beat_duration: int = 4
+    beat_duration: float = 4
     gongantype: GonganType = GonganType.REGULAR
     metadata: list[MetaData] = Field(default_factory=list)
     comments: list[str] = Field(default_factory=list)

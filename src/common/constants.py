@@ -178,7 +178,6 @@ class Pitch(NotationEnum):
     DAING = "DAING"
     DENGDING = "DENGDING"
     BYONG = "BYONG"
-    BYOT = "BYOT"
     KA = "KA"
     PAK = "PAK"
     DE = "DE"

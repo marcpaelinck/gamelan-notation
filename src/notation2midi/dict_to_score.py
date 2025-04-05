@@ -60,6 +60,9 @@ from src.notation2midi.special_notes_treatment import (
 )
 from src.settings.constants import NoteFields
 
+# pylint incorrectly reports an error when Pydantic fields are pre-assigned with the Field function
+# pylint disable = no - member
+
 
 class DictToScoreConverter(ParserModel):
     """Parser that converts the results of the notation parser into a Score object.

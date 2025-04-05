@@ -17,7 +17,7 @@ def setUpModule():
 
 class TestSpecialNotes(BaseUnitTestCase):
     def setUp(self):
-        self.run_settings = Settings.get()
+        self.run_settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
         position = Position.PEMADE_POLOS
         preset = Preset.get_preset(position)
         self.midi_track: MidiTrackX = MidiTrackX(position, preset, self.run_settings)

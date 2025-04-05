@@ -26,7 +26,7 @@ start  = "{"  @:metadata "}"  $  ;
 
 class NotationParserTester(BaseUnitTestCase):
     def setUp(self):
-        self.run_settings = Settings.get()
+        self.run_settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
         self.parser = NotationTatsuParser(self.run_settings)
 
     metadata = [

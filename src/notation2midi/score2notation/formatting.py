@@ -1,4 +1,3 @@
-# pylint: disable=no-member
 """Formatting settings and instructions for the ScoreToPDFConverter.
 The code uses the Platypus library of ReportLab.
 See https://docs.reportlab.com/reportlab/userguide/ch5_platypus/.
@@ -42,6 +41,7 @@ from src.common.metadata_classes import (
 from src.notation2midi.score2notation.utils import to_aggregated_tags
 from src.settings.classes import RunSettings
 
+# pylint: disable=no-member
 # pylint: disable=invalid-name
 # pylint: disable=missing-function-docstring
 

@@ -6,7 +6,7 @@ from src.common.metadata_classes import GonganType
 from src.notation2midi.score_validation import ScoreValidator
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
-from tests.src.testutils import PositionNote
+from tests.src.utils_for_tests import PositionNote
 
 
 class ScoreValidationTester(BaseUnitTestCase):

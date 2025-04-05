@@ -66,7 +66,7 @@ class Settings:
             cls.RUN_SETTINGS.part_id = part_id
 
         logger.info(
-            "Loading run settings for composition " "%s - %s",
+            "Loading run settings for composition %s - %s",
             cls.RUN_SETTINGS.notation.title,
             cls.RUN_SETTINGS.notation.part.name,
         )
@@ -89,7 +89,7 @@ class Settings:
             RunSettings: settings object
         """
         if listener:
-            cls.RUN_SETTINGS_LISTENERS.add(listener)  # pylint: disable=no-member
+            cls.RUN_SETTINGS_LISTENERS.add(listener)
 
     @classmethod
     def _temp_update_me(cls, content: Content):
@@ -191,9 +191,8 @@ class Settings:
                 logger.info("Existing part %s updated for MIDI player content", part.part)
             else:
                 if partinfo.file:
-                    # pylint: disable=no-member
-                    # pylint gets confused by assignment of Field() to Pydantic member Song.parts
-                    player_song.parts.append(partinfo)
+                    # pylint gets confused by Pydantic Field() assignment to Song.part in Song class definition.
+                    player_song.parts.append(partinfo)  # pylint: disable=no-member
                     logger.info("New part %s created for MIDI player content", partinfo.part)
                 else:
                     logger.error(
