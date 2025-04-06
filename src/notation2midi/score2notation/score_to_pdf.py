@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import itertools
 import math
-import os
-import time
 from typing import Callable
 
 from reportlab.lib.enums import TA_RIGHT
@@ -41,7 +39,6 @@ from src.notation2midi.score2notation.utils import (
     measure_to_str,
     string_width_from_notes,
 )
-from src.settings.settings import Settings
 
 
 class ScoreToPDFConverter(ParserModel):
@@ -418,25 +415,28 @@ class ScoreToPDFConverter(ParserModel):
                 self.story.append(gongan_table)
         self.template.doc.build(self.story)
 
-    def _update_midiplayer_content(self) -> None:
-        modification_time = os.path.getmtime(self.score.settings.pdf_out_filepath)
-        notation_version = time.strftime(
-            self.score.settings.pdf_converter.version_fmt, time.gmtime(modification_time)
-        ).lower()
-        Settings.update_midiplayer_content(
-            title=self.run_settings.notation.title,
-            group=self.run_settings.notation.instrumentgroup,
-            pdf_file=self.score.settings.pdf_out_file,
-            notation_version=notation_version,
-        )
+    # def _update_midiplayer_content(self) -> None:
+    #     modification_time = os.path.getmtime(self.score.settings.pdf_out_filepath)
+    #     notation_version = time.strftime(
+    #         self.score.settings.pdf_converter.version_fmt, time.gmtime(modification_time)
+    #     ).lower()
+    #     Settings.update_midiplayer_content(
+    #         title=self.run_settings.notation.title,
+    #         group=self.run_settings.notation.instrumentgroup,
+    #         pdf_file=self.score.settings.pdf_out_file,
+    #         notation_version=notation_version,
+    #     )
 
     @ParserModel.main
     def create_notation(self):
         """Main method, creates the PDF notation file"""
         self._convert_to_pdf()
         self.logger.info("Notation file saved as %s", self.template.filepath)
-        if self.run_settings.options.notation_to_midi.is_production_run:
-            self._update_midiplayer_content()
+        if self.has_errors:
+            return None
+        return self.score.settings.pdf_out_file
+        # if self.run_settings.options.notation_to_midi.is_production_run:
+        #     self._update_midiplayer_content()
 
 
 if __name__ == "__main__":

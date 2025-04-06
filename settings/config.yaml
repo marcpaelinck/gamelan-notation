@@ -58,6 +58,7 @@ grammar:
     fontfile: font5.ebnf
 pdf_converter:
     folder: ./settings/pdf_converter
+    # Date format in PDF document header
     version_fmt: "%d-%b-%Y"
     fonts:
         Courier New: COUR.TTF
@@ -81,6 +82,8 @@ notations:
     defaults:
         instrumentgroup: GONG_KEBYAR
         folder_in: ./data/notation/${{_PARENT_.subfolder}}
+        # Formatting for version id, using last modification date of the input file.
+        version_fmt: "%d-%b-%Y"
         folder_out_nonprod: ./data/notation/${{_PARENT_.subfolder}}
         folder_out_prod: ${{midiplayer.folder}}
         midi_out_file_pattern: !!str "${{_PARENT_.title}}_{part_id}_${{midi.midiversion}}.mid"

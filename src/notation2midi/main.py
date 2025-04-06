@@ -5,6 +5,7 @@ from tkinter.messagebox import askyesno
 from src.common.constants import NotationFontVersion
 from src.common.logger import Logging
 from src.notation2midi.dict_to_score import DictToScoreConverter
+from src.notation2midi.export_to_midiplayer import MidiPlayerExportAgent
 from src.notation2midi.notation_parser_tatsu import NotationTatsuParser
 from src.notation2midi.score2notation.score_to_notation import score_to_notation_file
 from src.notation2midi.score2notation.score_to_pdf import ScoreToPDFConverter
@@ -30,17 +31,20 @@ def notation_to_midi(run_settings: RunSettings):
 
         if run_settings.fontversion is NotationFontVersion.BALIMUSIC5:
             font_parser = NotationTatsuParser(run_settings)
-            font_parser.open_logging()
         else:
             raise ValueError(f"Cannot parse font {run_settings.fontversion}.")
         notation = font_parser.parse_notation()
         if notation:
-            score = DictToScoreConverter(notation).create_score()
+            dict2score = DictToScoreConverter(notation)
+            score = dict2score.create_score()
         if score:
-            score = ScoreValidator(score).validate_score()
+            scorevalidator = ScoreValidator(score)
+            score = scorevalidator.validate_score()
         if score:
-            success = MidiGenerator(score).create_midifile()
-        font_parser.close_logging()
+            midigenerator = MidiGenerator(score)
+            part = midigenerator.create_midifile()
+            midiplayerexporter = MidiPlayerExportAgent(part)
+            success = midiplayerexporter.update_midiplayer_content()
 
     if success and run_settings.options.notation_to_midi.save_corrected_to_file:
         score_to_notation_file(score)
@@ -49,8 +53,10 @@ def notation_to_midi(run_settings: RunSettings):
         and run_settings.options.notation_to_midi.save_pdf_notation
         and run_settings.part_id in run_settings.notation.generate_pdf_part_ids
     ):
-        ScoreToPDFConverter(score).create_notation()
-    logger.info("")
+        scoretopdfconverter = ScoreToPDFConverter(score)
+        pdf_filename = scoretopdfconverter.create_notation()
+        midiplayerexporter = MidiPlayerExportAgent(pdf_file=pdf_filename)
+        midiplayerexporter.update_midiplayer_content()
 
 
 def multiple_notations_to_midi(run_settings: RunSettings):
@@ -77,6 +83,10 @@ def single_run(run_settings: RunSettings):
 
 
 def main():
+    logger.open_logging("NOTATION2MIDI")
+    run_settings = Settings.get()
+    logger.open_logging(f"{run_settings.notation.title} - {run_settings.notation.part.name}")
+    SettingsValidator(run_settings).validate_input_data()
     run_settings = load_and_validate_run_settings()
     if not run_settings.options.notation_to_midi.is_production_run or askyesno(
         "Warning", "Running production version. Continue?"
@@ -85,6 +95,7 @@ def main():
             multiple_notations_to_midi(run_settings)
         else:
             single_run(run_settings)
+    logger.close_logging()
 
 
 if __name__ == "__main__":

@@ -3,8 +3,6 @@ Keeps track of the number of time each beat was passed and processes the flow (G
 Main method: create_midifile()
 """
 
-import os
-import pprint
 import sys
 
 from mido import MidiFile
@@ -14,8 +12,7 @@ from src.common.constants import DEFAULT, Pitch, Position
 from src.common.metadata_classes import PartMeta
 from src.notation2midi.classes import ParserModel
 from src.notation2midi.midi_track import MidiTrackX, TimeUnit
-from src.settings.classes import PartForm, RunSettings
-from src.settings.settings import Settings
+from src.settings.classes import PartForm
 
 
 class MidiGenerator(ParserModel):
@@ -136,20 +133,16 @@ class MidiGenerator(ParserModel):
         """
         return {part: time / total_duration for part, time in sorted(list(markers.items()), key=lambda it: it[1])}
 
-    def _update_midiplayer_content(self) -> None:
-        Settings.update_midiplayer_content(
-            title=self.run_settings.notation.title,
-            group=self.run_settings.notation.instrumentgroup,
-            partinfo=PartForm(
-                part=self.part_info.part,
-                file=self.part_info.file,
-                loop=self.part_info.loop,
-                markers=self.sorted_markers_millis_to_frac(self.part_info.markers, self.score.midifile_duration),
-            ),
+    def _get_part_info(self) -> None:
+        return PartForm(
+            part=self.part_info.part,
+            file=self.part_info.file,
+            loop=self.part_info.loop,
+            markers=self.sorted_markers_millis_to_frac(self.part_info.markers, self.score.midifile_duration),
         )
 
     @ParserModel.main
-    def create_midifile(self) -> bool:
+    def create_midifile(self) -> PartForm:
         """Generates the MIDI content and saves it to file.
 
         Return:
@@ -170,21 +163,11 @@ class MidiGenerator(ParserModel):
             midifile.save(self.run_settings.midi_out_filepath)
             self.logger.info("File saved as %s", self.run_settings.midi_out_filepath)
 
-            if (
-                self.run_settings.options.notation_to_midi.update_midiplayer_content
-                and self.run_settings.notation.include_in_production_run
-            ):
-                # Test files should never be logged in the midiplayer content file
-                self._update_midiplayer_content()
+        if self.has_errors:
+            return None
 
-        return True
+        return self._get_part_info()
 
 
 if __name__ == "__main__":
-    run_settings = RunSettings()
-    content = Settings.get_midiplayer_content(run_settings.midiplayer.folder, run_settings.midiplayer.contentfile)
-    str_content = content.model_dump_json(indent=4, serialize_as_any=True)
-    datafolder = run_settings.notation.folder
-    content_json = content.model_dump_json(indent=4, serialize_as_any=True)
-    with open(os.path.join(datafolder, "content_test.json"), "w", encoding="utf-8") as contentfile:
-        pprint.pprint(content_json, stream=contentfile, width=250)
+    pass

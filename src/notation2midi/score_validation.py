@@ -274,7 +274,6 @@ class ScoreValidator(ParserModel):
         Args:
             score (Score): the score to analyze.
         """
-        self.logger.info("--- SCORE VALIDATION ---")
         corrected_beat_lengths = []
         ignored_beat_lengths = []
         remaining_bad_beat_lengths = []

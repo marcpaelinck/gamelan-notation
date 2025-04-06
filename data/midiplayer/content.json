@@ -151,10 +151,6 @@
                                 }
                         ]
                 }, 
-                {"title": "Janger", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Janger_full_GAMELAN1.pdf", "notation_version": "01-apr-2025", "parts": [
-                                {"part": "entire piece", "file": "Janger_full_GAMELAN1.mid", "loop": true, "markers": {}}
-                        ]
-                }, 
                 {"title": "Legong Mahawidya SP", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Legong Mahawidya SP_full_GAMELAN1.pdf", "notation_version": "01-apr-2025", "parts": [
                                 {"part": "entire piece", "file": "Legong Mahawidya SP_full_GAMELAN1.mid", "loop": false, "markers": {
                                                 "kawitan": 0.021691741310838623, 
@@ -171,6 +167,10 @@
                                                 "Part 3": 0.5078609244631049
                                         }
                                 }
+                        ]
+                }, 
+                {"title": "Janger", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Janger_full_GAMELAN1.pdf", "notation_version": "04-apr-2025", "parts": [
+                                {"part": "entire piece", "file": "Janger_full_GAMELAN1.mid", "loop": false, "markers": {}}
                         ]
                 }], 
         "instrumentgroups": {

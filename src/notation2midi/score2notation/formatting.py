@@ -123,10 +123,7 @@ class NotationTemplate:
         self.run_settings = run_settings
         self.title = self.run_settings.notation.title
         self.filepath = self.run_settings.pdf_out_filepath
-        last_modif_epoch = os.path.getmtime(self.run_settings.notation_filepath)
-        self.datestamp = (
-            datetime.fromtimestamp(last_modif_epoch).strftime(run_settings.pdf_converter.version_fmt).lower()
-        )
+        self.datestamp = self.run_settings.notation_datetime.strftime(run_settings.pdf_converter.version_fmt).lower()
         self.current_tempo = -1
         self.doc = self._doc_template()
         self.styles = getSampleStyleSheet()

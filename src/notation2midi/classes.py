@@ -107,7 +107,7 @@ class ParserModel:
         """To be called by the main program before the first parsing step.
         Adds an empty line followed by a title line"""
         title_text = f"NOTATION2MIDI: {self.run_settings.notation.title}"
-        separator = "-" * int(50 - len(title_text) // 2)
+        separator = "=" * int(50 - len(title_text) // 2)
         title = f"{separator} {title_text} {separator}"
         self.logger.info("")
         self.logger.info(title)

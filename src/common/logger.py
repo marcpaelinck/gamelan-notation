@@ -1,8 +1,9 @@
 import logging
-import sys
 
 
 class CustomFormatter(logging.Formatter):
+    """Formats time and adds colors to logging depending on logging level"""
+
     grey = "\x1b[38;20m"
     yellow = "\x1b[33;20m"
     red = "\x1b[31;20m"
@@ -40,6 +41,8 @@ class CustomFormatter(logging.Formatter):
 
 
 class CustomHandler(logging.Handler):
+    """Uses the CustomFormatter and saves logging to a list (not in use yet)."""
+
     def __init__(self, logging_storage: list[str]):
         super().__init__(level=logging.INFO)
         self.setFormatter(CustomFormatter(False))
@@ -51,6 +54,8 @@ class CustomHandler(logging.Handler):
 
 
 class CustomLogger:
+    """Logger with added 'progress bar' facility (dots)"""
+
     def __init__(self, name: str, handler: CustomHandler):
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.INFO)
@@ -96,16 +101,34 @@ class CustomLogger:
         self.last_message_len = 0
         self.dot_count = 0
 
+    def open_logging(self, message: str):
+        """To be called by the main program before the first parsing step.
+        Adds an empty line followed by a title line"""
+        separator = "=" * int(50 - len(message) // 2)
+        title = f"{separator} {message} {separator}"
+        # self.logger.info("")
+        self.logger.info(title)
+
+    def close_logging(self):
+        """To be called by the main program after the last parsing step.
+        Draws a double line (===) followed by an empty line"""
+        self.logger.info("=" * 102)
+        self.logger.info("")
+
 
 class Logging:
+    """Static class, should be used to create a logger for a specific module."""
+
     # List will collect all logging
     LOGGING = []  # TODO operational but not yet in use
     loggers: dict[str, logging.Logger] = {}
 
     @classmethod
     def get_logger(cls, name: str) -> CustomLogger:
+        """Returns a new logger or an existing one if a logger with the given name already exists.
+        Module name should be passed as argument."""
         if name in cls.loggers:
-            # logging.getLogger is supposed to return previously created logger instances,
+            # logging.getLogger is supposed to avoid creating multiple loggers with the same name,
             # but this doen't seem to work.
             return cls.loggers[name]
         logger = CustomLogger(name, CustomHandler(cls.LOGGING))
@@ -114,6 +137,7 @@ class Logging:
 
 
 if __name__ == "__main__":
+    # For testing
     testlogger = Logging.get_logger("test")
-    testlogger.error("Foutmelding!")
+    testlogger.error("Error!")
     print(Logging.LOGGING)

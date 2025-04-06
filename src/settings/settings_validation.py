@@ -28,10 +28,10 @@ class SettingsValidator(ParserModel):
         ]
         duplicates = font_df[font_df.duplicated(groupby, keep=False)].groupby(groupby)[FontFields.SYMBOL].apply(list)
         if duplicates.size > 0:
-            logger.warning("DUPLICATE CHARACTER VALUES:")
-            logger.warning(duplicates)
+            self.logwarning("DUPLICATE CHARACTER VALUES:")
+            self.logwarning(duplicates)
         else:
-            logger.info("NO DUPLICATE CHARACTER VALUES FOUND.")
+            self.loginfo("NO DUPLICATE CHARACTER VALUES FOUND.")
 
     def _check_font_midi_match(self) -> None:
         """Checks the consistency of the font definition settings file and the midi settings file.
@@ -64,10 +64,12 @@ class SettingsValidator(ParserModel):
         )
         missing = merged[merged[FontFields.PITCH].isna()]
         if missing.size > 0:
-            logger.warning("MIDI NOTES MISSING A CHARACTER EQUIVALENT IN THE FONT DEFINITION FOR %s:", instrumentgroup)
-            logger.warning(missing[midi_keys].drop_duplicates())
+            self.logwarning("MIDI NOTES MISSING A CHARACTER EQUIVALENT IN THE FONT DEFINITION FOR %s:", instrumentgroup)
+            self.logwarning(missing[midi_keys].drop_duplicates())
         else:
-            logger.info("ALL MIDI NOTES HAVE A CORRESPONDING CHARACTER IN THE FONT DEFINITION FOR %s.", instrumentgroup)
+            self.loginfo(
+                "ALL MIDI NOTES HAVE A CORRESPONDING CHARACTER IN THE FONT DEFINITION FOR %s.", instrumentgroup
+            )
 
         # 2. Find notes without corresponding midi value.
         merged = font_df.merge(
@@ -75,15 +77,16 @@ class SettingsValidator(ParserModel):
         )
         missing = merged[merged[MidiNotesFields.PITCH].isna() & ~(merged[FontFields.PITCH] == Pitch.NONE.value)]
         if missing.size > 0:
-            logger.info("-------------------------------------")
-            logger.warning("CHARACTERS IN THE FONT DEFINITION MISSING A MIDI NOTE EQUIVALENT FOR %s:", instrumentgroup)
-            logger.warning(missing[font_keys].drop_duplicates())
+            self.loginfo("")
+            self.logwarning("CHARACTERS IN THE FONT DEFINITION MISSING A MIDI NOTE EQUIVALENT FOR %s:", instrumentgroup)
+            self.logwarning(missing[font_keys].drop_duplicates())
         else:
-            logger.info("ALL CHARACTERS HAVE A CORRESPONDING NOTE IN THE MIDINOTES DEFINITION FOR %s.", instrumentgroup)
+            self.loginfo(
+                "ALL CHARACTERS HAVE A CORRESPONDING NOTE IN THE MIDINOTES DEFINITION FOR %s.", instrumentgroup
+            )
 
     @ParserModel.main
     def validate_input_data(self):
         """Main method which performs the validation."""
         self._check_unique_character_values()
-        logger.info("-------------------------------------")
         self._check_font_midi_match()

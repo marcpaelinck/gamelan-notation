@@ -1,6 +1,7 @@
 import os
 import re
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
@@ -389,8 +390,8 @@ class SettingsMidiPlayerInfo(BaseModel):
 
 class SettingsPdfConverterInfo(BaseModel):
     folder: str
-    version_fmt: str
     fonts: dict[str, str] = Field(default_factory=dict)
+    version_fmt: str
 
 
 class SettingsNotationInfo(BaseModel):
@@ -404,6 +405,7 @@ class SettingsNotationInfo(BaseModel):
     instrumentgroup: InstrumentGroup
     fontversion: NotationFontVersion
     parts: dict[str, NotationPart] = Field(default_factory=dict)
+    version_fmt: str
     folder_in: str
     folder_out_nonprod: str
     folder_out_prod: str
@@ -516,15 +518,15 @@ class RunSettings(BaseModel):
         return self.notation.fontversion
 
     @property
-    def midi_out_file(self):
+    def midi_out_file(self) -> str:
         return self.notation.midi_out_file_pattern.format(title=self.notation.title, part_id=self.part_id)
 
     @property
-    def pdf_out_file(self):
+    def pdf_out_file(self) -> str:
         return self.notation.pdf_out_file_pattern.format(title=self.notation.title, part_id=self.part_id)
 
     @property
-    def folder_out(self):
+    def folder_out(self) -> str:
         return (
             self.notation.folder_out_prod
             if self.options.notation_to_midi.is_production_run
@@ -532,16 +534,33 @@ class RunSettings(BaseModel):
         )
 
     @property
-    def notation_filepath(self):
+    def notation_filepath(self) -> str:
         return os.path.join(self.notation.folder_in, self.notation.parts[self.part_id].file)
 
     @property
-    def midi_out_filepath(self):
+    def midi_out_filepath(self) -> str:
         return os.path.join(self.folder_out, self.midi_out_file)
 
     @property
-    def pdf_out_filepath(self):
+    def pdf_out_filepath(self) -> str:
         return os.path.join(self.folder_out, self.pdf_out_file)
+
+    @property
+    def notation_datetime(self) -> datetime:
+        """Returns the last modification date of the input file"""
+        try:
+            modification_time = os.path.getmtime(self.notation_filepath)
+        except OSError:
+            return None
+        return datetime.fromtimestamp(modification_time)
+
+    @property
+    def notation_version(self) -> str:
+        """Returns the last modification date of the input file"""
+        notation_dt = self.notation_datetime
+        if notation_dt:
+            return notation_dt.strftime(self.notation.version_fmt).lower()
+        return ""
 
     def _post_process(self, subdict: dict[str, Any], run_settings_dict: dict[str, Any] = None, curr_path: list = None):
         """This function enables references to yaml key values using ${<yaml_path>} notation.
