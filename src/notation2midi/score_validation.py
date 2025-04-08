@@ -15,10 +15,12 @@ from src.common.constants import (
     Stroke,
 )
 from src.common.metadata_classes import GonganType, ValidationProperty
-from src.notation2midi.classes import ParserModel
+from src.notation2midi.classes import Agent
 
 
-class ScoreValidator(ParserModel):
+class ScoreValidationAgent(Agent):
+
+    EXPECTED_INPUT = Agent.InputType.SCORE
 
     POSITIONS_AUTOCORRECT_UNEQUAL_MEASURES = [
         Position.UGAL,
@@ -33,7 +35,7 @@ class ScoreValidator(ParserModel):
     ]
 
     def __init__(self, score: Score):
-        super().__init__(self.ParserType.VALIDATOR, score.settings)
+        super().__init__(self.AgentType.VALIDATOR, score.settings)
         self.score = score
 
     def _invalid_beat_lengths(self, gongan: Gongan, autocorrect: bool) -> tuple[list[tuple[BeatId, Duration]]]:
@@ -262,13 +264,7 @@ class ScoreValidator(ParserModel):
                         )
         return invalids, corrected, ignored
 
-    @ParserModel.main
-    def validate_score(
-        self,
-        # autocorrect: bool = False,
-        # save_corrected: bool = False,
-        # detailed_logging: bool = False,
-    ) -> None:
+    def _main(self) -> None:
         """Performs consistency checks and prints results.
 
         Args:

@@ -146,6 +146,10 @@ notations:
                 name: entire piece
                 file: Gilak Deng.tsv
                 loop: false
+            kotekan:
+                name: kotekan gangsa
+                file: Gilak Deng_kotekan_gangsa.tsv
+                loop: true
     godekmiring:
         title: Godek Miring
         subfolder: godek miring

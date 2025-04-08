@@ -51,7 +51,7 @@ from src.common.metadata_classes import (
     ValidationProperty,
     WaitMeta,
 )
-from src.notation2midi.classes import MetaDataRecord, NoteRecord, ParserModel
+from src.notation2midi.classes import Agent, MetaDataRecord, NoteRecord
 from src.notation2midi.special_notes_treatment import (
     generate_tremolo,
     update_grace_notes_octaves,
@@ -62,12 +62,13 @@ from src.settings.constants import NoteFields
 # pylint disable = no - member
 
 
-class DictToScoreConverter(ParserModel):
+class ScoreCreatorAgent(Agent):
     """Parser that converts the results of the notation parser into a Score object.
     This parser uses 'knowledge' about the instruments and idiom of the music to interpret the notation.
     It also processes the metadata.
     """
 
+    EXPECTED_INPUT = Agent.InputType.NOTATION
     notation: Notation = None
     score: Score = None
 
@@ -82,7 +83,7 @@ class DictToScoreConverter(ParserModel):
     default_velocity: Velocity
 
     def __init__(self, notation: Notation):
-        super().__init__(self.ParserType.SCOREGENERATOR, notation.settings)
+        super().__init__(self.AgentType.SCOREGENERATOR, notation.settings)
         self.notation = notation
         self.default_velocity = self.run_settings.midi.dynamics[self.run_settings.midi.default_dynamics]
 
@@ -803,8 +804,7 @@ class DictToScoreConverter(ParserModel):
         # Add kempli beats
         self._add_missing_measures(add_kempli=True)
 
-    @ParserModel.main
-    def create_score(self):
+    def _main(self):
         """This method does all the work.
         All settings are read from the (YAML) settings files.
         """

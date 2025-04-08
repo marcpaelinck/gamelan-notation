@@ -1,32 +1,19 @@
 import os
 import time
+from typing import override
 
-from src.notation2midi.classes import ParserModel
+from src.notation2midi.classes import Agent
 from src.settings.classes import Content, PartForm, Song
 from src.settings.settings import Settings
 from src.settings.utils import pretty_compact_json
 
 
-class MidiPlayerExportAgent(ParserModel):
+class MidiPlayerExportAgent(Agent):
 
-    #     title=self.run_settings.notation.title,
-    # group=self.run_settings.notation.instrumentgroup,
-    # pdf_file=self.score.settings.pdf_out_file,
-    # notation_version=notation_version,
-
-    # def _update_midiplayer_content(self) -> None:
-    #     Settings.update_midiplayer_content(
-    #         title=self.run_settings.notation.title,
-    #         group=self.run_settings.notation.instrumentgroup,
-    #         partinfo=PartForm(
-    #             part=self.part_info.part,
-    #             file=self.part_info.file,
-    #             loop=self.part_info.loop,
-    #             markers=self.sorted_markers_millis_to_frac(self.part_info.markers, self.score.midifile_duration),
-    #         ),
+    EXPECTED_INPUT = Agent.InputType.PART
 
     def __init__(self, part: PartForm = None, pdf_file: str = None):
-        super().__init__(self.ParserType.SCOREGENERATOR, Settings.get())
+        super().__init__(self.AgentType.SCOREGENERATOR, Settings.get())
         self.part_info = part
         self.pdf_file = pdf_file
 
@@ -77,8 +64,8 @@ class MidiPlayerExportAgent(ParserModel):
         # return temp_update_me(Content.model_validate_json(playercontent))
         return Content.model_validate_json(playercontent)
 
-    @ParserModel.main
-    def update_midiplayer_content(self) -> None:
+    @override
+    def _main(self) -> None:
         """Updates the information given in Part in the content.json file of the midi player.
 
         Args:
@@ -134,6 +121,7 @@ class MidiPlayerExportAgent(ParserModel):
                         "Please run again with run-option `save_midifile` set.",
                         self.part_info.part,
                     )
+        content.songs = sorted(content.songs, key=lambda s: s.title)
         self._save_midiplayer_content(content, settings.midiplayer.folder, settings.midiplayer.contentfile)
 
         if self.has_errors:

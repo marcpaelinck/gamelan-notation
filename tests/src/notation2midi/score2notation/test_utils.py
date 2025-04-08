@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 from src.common.classes import Gongan, Score
 from src.common.constants import Position, Stroke
-from src.notation2midi.score2notation.score_to_pdf import ScoreToPDFConverter
+from src.notation2midi.score2notation.score_to_pdf import PDFGeneratorAgent
 from src.notation2midi.score2notation.utils import (
     aggregate_positions,
     clean_staves,
@@ -62,7 +62,7 @@ class TestUtils(BaseUnitTestCase):
                 self.assertEqual(clean_staves(gongan), expected)
 
     def test_string_width_from_notes(self):
-        ScoreToPDFConverter(score=self.mock_score())  # Needed to register the notation font
+        PDFGeneratorAgent(score=self.mock_score())  # Needed to register the notation font
         P = PositionNote(position=Position.PEMADE_SANGSIH)
         DING2G = P.DING1.model_copy_x(stroke=Stroke.GRACE_NOTE, octave=2, duration=0)
         DING2M = P.DING2.model_copy_x(stroke=Stroke.MUTED)

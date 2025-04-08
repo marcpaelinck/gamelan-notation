@@ -72,12 +72,7 @@ from tatsu.util import asjson
 
 from src.common.classes import InstrumentTag, Measure, Notation, Note
 from src.common.constants import NotationDict, ParserTag, Position, RuleType
-from src.notation2midi.classes import (
-    MetaDataRecord,
-    NamedIntID,
-    NoteRecord,
-    ParserModel,
-)
+from src.notation2midi.classes import Agent, MetaDataRecord, NamedIntID, NoteRecord
 from src.settings.classes import RunSettings
 from src.settings.constants import FontFields, NoteFields
 from src.settings.font_to_valid_notes import get_note_records
@@ -106,13 +101,14 @@ class PassID(NamedIntID):
 # pylint enable=missing-class-docstring
 
 
-class NotationTatsuParser(ParserModel):
+class NotationParserAgent(Agent):
     """Parser that converts notation documents into a hierarchical dict structure. It uses the
     Tatsu library in combination with ebnf grammar files.
     The parser has no 'knowledge' about the instruments and idiom of the music. It only checks the
     basic structure of the notation as described in the grammar files and reports any syntax error.
     """
 
+    EXPECTED_INPUT = Agent.InputType.RUNSETTINGS
     run_settings: RunSettings
     grammar_model: str
     model_source: str
@@ -120,7 +116,7 @@ class NotationTatsuParser(ParserModel):
     _symbol_to_note: dict[str, NoteRecord]
 
     def __init__(self, run_settings: RunSettings):
-        super().__init__(self.ParserType.NOTATIONPARSER, run_settings)
+        super().__init__(self.AgentType.NOTATIONPARSER, run_settings)
         self.run_settings = run_settings
         self.grammar_model = self._create_notation_grammar_model(self.run_settings, from_pickle=False, pickle_it=False)
         # Initialize _font_dict lookup dict
@@ -347,8 +343,7 @@ class NotationTatsuParser(ParserModel):
 
         return beats
 
-    @ParserModel.main
-    def parse_notation(self, notation: str | None = None) -> NotationDict:
+    def _main(self, notation: str | None = None) -> NotationDict:
         """parses the notation into a record structure. The entire document is parsed.
            If a parsing error is encountered, the error is logged and the parser skips
            to the next line.
@@ -490,5 +485,5 @@ class NotationTatsuParser(ParserModel):
 
 if __name__ == "__main__":
     settings = Settings.get()
-    parser = NotationTatsuParser(settings)
+    parser = NotationParserAgent(settings)
     print(parser.sorted_chars("i=,/"))

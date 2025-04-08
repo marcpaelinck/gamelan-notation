@@ -2,7 +2,7 @@
 
 from src.common.classes import Score
 from src.common.constants import DEFAULT, Position
-from src.notation2midi.score_validation import ScoreValidator
+from src.notation2midi.score_validation import ScoreValidationAgent
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
 from tests.src.utils_for_tests import PositionNote, create_gongan
@@ -31,7 +31,7 @@ class ScoreValidationTester(BaseUnitTestCase):
         self.sample_gk_score = Score(title="Test", gongans=[gongan], settings=settings)
 
     def test_incorrect_kempyung(self):
-        validator = ScoreValidator(self.sample_gk_score)
+        validator = ScoreValidationAgent(self.sample_gk_score)
         invalids, corrected, ignored = validator._incorrect_kempyung(self.sample_gk_score.gongans[0], autocorrect=True)
 
         self.assertEqual(len(invalids), 0)

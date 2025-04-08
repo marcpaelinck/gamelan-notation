@@ -25,7 +25,7 @@ from src.common.metadata_classes import (
     SequenceMeta,
     TempoMeta,
 )
-from src.notation2midi.classes import ParserModel
+from src.notation2midi.classes import Agent
 from src.notation2midi.notation_parser_tatsu import PassID
 from src.notation2midi.score2notation.formatting import (
     NotationTemplate,
@@ -41,8 +41,10 @@ from src.notation2midi.score2notation.utils import (
 )
 
 
-class ScoreToPDFConverter(ParserModel):
+class PDFGeneratorAgent(Agent):
     """PDF generator"""
+
+    EXPECTED_INPUT = Agent.InputType.SCORE
 
     TAG_COLWIDTH = 2.3 * cm
     basicparastyle = None
@@ -51,7 +53,7 @@ class ScoreToPDFConverter(ParserModel):
     H = 1
 
     def __init__(self, score: Score):
-        super().__init__(self.ParserType.SCORETOPDF, score.settings)
+        super().__init__(self.AgentType.SCORETOPDF, score.settings)
         self.score = score
         self.template = NotationTemplate(self.score.settings)
         self.current_tempo = -1
@@ -427,8 +429,7 @@ class ScoreToPDFConverter(ParserModel):
     #         notation_version=notation_version,
     #     )
 
-    @ParserModel.main
-    def create_notation(self):
+    def _main(self):
         """Main method, creates the PDF notation file"""
         self._convert_to_pdf()
         self.logger.info("Notation file saved as %s", self.template.filepath)

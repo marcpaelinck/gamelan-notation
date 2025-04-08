@@ -13,7 +13,7 @@ from src.common.metadata_classes import (
     ValidationProperty,
 )
 from src.notation2midi.classes import MetaDataRecord
-from src.notation2midi.notation_parser_tatsu import NotationTatsuParser
+from src.notation2midi.notation_parser_tatsu import NotationParserAgent
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
 
@@ -27,7 +27,7 @@ start  = "{"  @:metadata "}"  $  ;
 class NotationParserTester(BaseUnitTestCase):
     def setUp(self):
         self.run_settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
-        self.parser = NotationTatsuParser(self.run_settings)
+        self.parser = NotationParserAgent(self.run_settings)
 
     metadata = [
         [
@@ -267,7 +267,7 @@ class NotationParserTester(BaseUnitTestCase):
         for metanotation, expected in self.metadata:
             with self.subTest(notation=metanotation):
                 gongan = "ugal\t\n"  # need to append dummy gongan to create valid notation
-                notation = self.parser.parse_notation("metadata\t" + metanotation + "\n\n" + gongan)
+                notation = self.parser.run("metadata\t" + metanotation + "\n\n" + gongan)
                 self.assertEqual(notation.notation_dict[-1][ParserTag.METADATA][0], expected)
 
     # Tests for range_str_to_list

@@ -10,18 +10,20 @@ from mido import MidiFile
 from src.common.classes import Beat, Preset, Score
 from src.common.constants import DEFAULT, Pitch, Position
 from src.common.metadata_classes import PartMeta
-from src.notation2midi.classes import ParserModel
+from src.notation2midi.classes import Agent
 from src.notation2midi.midi_track import MidiTrackX, TimeUnit
 from src.settings.classes import PartForm
 
 
-class MidiGenerator(ParserModel):
+class MidiGeneratorAgent(Agent):
     """This Parser creates a MIDI file based on a Score objects."""
+
+    EXPECTED_INPUT = Agent.InputType.SCORE
 
     part_info: PartForm = None
 
     def __init__(self, score: Score):
-        super().__init__(self.ParserType.MIDIGENERATOR, score.settings)
+        super().__init__(self.AgentType.MIDIGENERATOR, score.settings)
         self.score = score
         self.part_info = PartForm(
             part=self.run_settings.notation.part.name,
@@ -141,8 +143,7 @@ class MidiGenerator(ParserModel):
             markers=self.sorted_markers_millis_to_frac(self.part_info.markers, self.score.midifile_duration),
         )
 
-    @ParserModel.main
-    def create_midifile(self) -> PartForm:
+    def _main(self) -> PartForm:
         """Generates the MIDI content and saves it to file.
 
         Return:

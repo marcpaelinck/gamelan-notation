@@ -4,23 +4,23 @@ from tkinter.messagebox import askyesno
 
 from src.common.constants import NotationFontVersion
 from src.common.logger import Logging
-from src.notation2midi.dict_to_score import DictToScoreConverter
+from src.notation2midi.dict_to_score import ScoreCreatorAgent
 from src.notation2midi.export_to_midiplayer import MidiPlayerExportAgent
-from src.notation2midi.notation_parser_tatsu import NotationTatsuParser
+from src.notation2midi.notation_parser_tatsu import NotationParserAgent
 from src.notation2midi.score2notation.score_to_notation import score_to_notation_file
-from src.notation2midi.score2notation.score_to_pdf import ScoreToPDFConverter
-from src.notation2midi.score_to_midi import MidiGenerator
-from src.notation2midi.score_validation import ScoreValidator
+from src.notation2midi.score2notation.score_to_pdf import PDFGeneratorAgent
+from src.notation2midi.score_to_midi import MidiGeneratorAgent
+from src.notation2midi.score_validation import ScoreValidationAgent
 from src.settings.classes import RunSettings, RunType
 from src.settings.settings import Settings
-from src.settings.settings_validation import SettingsValidator
+from src.settings.settings_validation import SettingsValidationAgent
 
 logger = Logging.get_logger(__name__)
 
 
 def load_and_validate_run_settings(notation_id: str = None, part_id: str = None) -> RunSettings:
     run_settings = Settings.get(notation_id=notation_id, part_id=part_id)
-    SettingsValidator(run_settings).validate_input_data()
+    SettingsValidationAgent(run_settings).run()
     return run_settings
 
 
@@ -30,21 +30,21 @@ def notation_to_midi(run_settings: RunSettings):
     if run_settings.options.notation_to_midi:
 
         if run_settings.fontversion is NotationFontVersion.BALIMUSIC5:
-            font_parser = NotationTatsuParser(run_settings)
+            font_parser = NotationParserAgent(run_settings)
         else:
             raise ValueError(f"Cannot parse font {run_settings.fontversion}.")
-        notation = font_parser.parse_notation()
+        notation = font_parser.run()
         if notation:
-            dict2score = DictToScoreConverter(notation)
-            score = dict2score.create_score()
+            dict2score = ScoreCreatorAgent(notation)
+            score = dict2score.run()
         if score:
-            scorevalidator = ScoreValidator(score)
-            score = scorevalidator.validate_score()
+            scorevalidator = ScoreValidationAgent(score)
+            score = scorevalidator.run()
         if score:
-            midigenerator = MidiGenerator(score)
-            part = midigenerator.create_midifile()
+            midigenerator = MidiGeneratorAgent(score)
+            part = midigenerator.run()
             midiplayerexporter = MidiPlayerExportAgent(part)
-            success = midiplayerexporter.update_midiplayer_content()
+            success = midiplayerexporter.run()
 
     if success and run_settings.options.notation_to_midi.save_corrected_to_file:
         score_to_notation_file(score)
@@ -53,10 +53,10 @@ def notation_to_midi(run_settings: RunSettings):
         and run_settings.options.notation_to_midi.save_pdf_notation
         and run_settings.part_id in run_settings.notation.generate_pdf_part_ids
     ):
-        scoretopdfconverter = ScoreToPDFConverter(score)
-        pdf_filename = scoretopdfconverter.create_notation()
+        scoretopdfconverter = PDFGeneratorAgent(score)
+        pdf_filename = scoretopdfconverter.run()
         midiplayerexporter = MidiPlayerExportAgent(pdf_file=pdf_filename)
-        midiplayerexporter.update_midiplayer_content()
+        midiplayerexporter.run()
 
 
 def multiple_notations_to_midi(run_settings: RunSettings):
@@ -74,19 +74,20 @@ def multiple_notations_to_midi(run_settings: RunSettings):
         ):
             for part_key, _ in notation_info.parts.items():
                 run_settings = Settings.get(notation_id=notation_key, part_id=part_key)
+                logger.open_logging(f"{run_settings.notation.title} - {run_settings.notation.part.name}")
                 notation_to_midi(run_settings)
 
 
 def single_run(run_settings: RunSettings):
     # run_settings = load_and_validate_run_settings()
+    logger.open_logging(f"{run_settings.notation.title} - {run_settings.notation.part.name}")
     notation_to_midi(run_settings)
 
 
 def main():
     logger.open_logging("NOTATION2MIDI")
     run_settings = Settings.get()
-    logger.open_logging(f"{run_settings.notation.title} - {run_settings.notation.part.name}")
-    SettingsValidator(run_settings).validate_input_data()
+    SettingsValidationAgent(run_settings).run()
     run_settings = load_and_validate_run_settings()
     if not run_settings.options.notation_to_midi.is_production_run or askyesno(
         "Warning", "Running production version. Continue?"

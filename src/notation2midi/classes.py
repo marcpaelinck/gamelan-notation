@@ -2,11 +2,11 @@
 
 import logging
 from dataclasses import _MISSING_TYPE, MISSING, dataclass, fields
-from enum import StrEnum
+from enum import Enum, StrEnum
 from types import UnionType
-from typing import Any, Callable, Generator
+from typing import Any, Generator
 
-from src.common.classes import Beat, Gongan, Measure, Score
+from src.common.classes import Beat, Gongan, Measure, Notation, Score
 from src.common.constants import (
     DynamicLevel,
     InstrumentType,
@@ -23,7 +23,7 @@ from src.common.metadata_classes import (
     Scope,
     ValidationProperty,
 )
-from src.settings.classes import RunSettings
+from src.settings.classes import Part, RunSettings
 
 
 class NamedIntID(int):
@@ -55,11 +55,11 @@ class NamedIntID(int):
         return self.repr
 
 
-class ParserModel:
+class Agent:
     """Base class for the classes that each perform a step of the conversion
     from notation to MIDI/PDF/TXT output. It provides a uniform logging format."""
 
-    class ParserType(StrEnum):
+    class AgentType(StrEnum):
         """Used by the logger to determine the source of a warning or error message."""
 
         SETTINGSVALIDATOR = "VALIDATING RUN SETTINGS"
@@ -69,7 +69,19 @@ class ParserModel:
         MIDIGENERATOR = "GENERATING MIDI FILE"
         SCORETOPDF = "CONVERTING SCORE TO PDF NOTATION"
 
-    parser_type: ParserType
+    class InputType(Enum):
+        """Used by the logger to determine the source of a warning or error message."""
+
+        NONE = None
+        RUNSETTINGS = RunSettings
+        NOTATION = Notation
+        SCORE = Score
+        PART = Part
+
+    # Redefine this constant in each subclass
+    EXPECTED_INPUT = InputType.NONE
+
+    agent_type: AgentType
     run_settings = None
     curr_gongan_id: int = None
     curr_beat_id: int = None
@@ -78,33 +90,26 @@ class ParserModel:
     log_msgs: dict[int, str] = {logging.ERROR: [], logging.WARNING: []}
     logger = None
 
-    def __init__(self, parser_type: ParserType, run_settings: RunSettings):
-        self.parser_type = parser_type
+    def __init__(self, agent_type: AgentType, run_settings: RunSettings):
+        self.agent_type = agent_type
         self.run_settings = run_settings
         self.logger = Logging.get_logger(self.__class__.__name__)
 
-    @classmethod
-    def main(cls, func: Callable):
-        """Decorator for main parser function. Add a @ParserModel.main decorator
-        to the main method of each subclass. This will take care of
-        of logging before the start and after the end of the method."""
+    # Override this function. It should be the main entry point of the agent
+    # and should return the agent's output.
+    def _main(self) -> Any: ...
 
-        def wrapper(*args, **kwargs):
-            self = args[0]
-            separator = "-" * int(50 - len(self.parser_type.value) // 2)
-            title = f"{separator} {self.parser_type.value} {separator}"
-            self.logger.info(title)
+    def run(self):
+        """Runs the _main method of the subclassed agent."""
 
-            result = func(*args, **kwargs)
-
-            # sep_length = len(title)
-            # self.logger.info("=" * sep_length)
-            return result
-
-        return wrapper
+        separator = "-" * int(50 - len(self.agent_type.value) // 2)
+        title = f"{separator} {self.agent_type.value} {separator}"
+        self.logger.info(title)
+        result = self._main()  # pylint: disable=assignment-from-no-return
+        return result
 
     def open_logging(self):
-        """To be called by the main program before the first parsing step.
+        """To be called by the pipeline manager before running the pipeline.
         Adds an empty line followed by a title line"""
         title_text = f"NOTATION2MIDI: {self.run_settings.notation.title}"
         separator = "=" * int(50 - len(title_text) // 2)
@@ -113,7 +118,7 @@ class ParserModel:
         self.logger.info(title)
 
     def close_logging(self):
-        """To be called by the main program after the last parsing step.
+        """To be called by the pipeline manager after running the pipeline.
         Draws a double line (===) followed by an empty line"""
         self.logger.info("=" * 102)
         self.logger.info("")
@@ -185,17 +190,17 @@ class ParserModel:
 
     @property
     def has_errors(self):
-        """Determines if any errors were encountered during parsing"""
+        """Determines if any errors were encountered during the agent's process"""
         return len(self.log_msgs[logging.ERROR]) > 0
 
     @property
     def has_warnings(self):
-        """Determines if any warnings were encountered during parsing"""
+        """Determines if any warnings were encountered during the agent's process"""
         return len(self.log_msgs[logging.WARNING]) > 0
 
 
 # The classes below are record-like structures that are used to store the intermediate
-# results of the notation parser. These records will be parsed to the final object model in
+# results of the notation parser step. These records will be parsed to the final object model in
 # the dict_to_score step. This enables the parsing logic and the object model logic to be
 # applied separately, which makes the code easier to understand and to maintain.
 

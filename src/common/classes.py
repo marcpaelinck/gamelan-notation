@@ -807,8 +807,8 @@ class Beat(BaseModel):
     duration: float
     changes: dict[Change.Type, dict[PassSequence, Change]] = Field(default_factory=lambda: defaultdict(dict))
     measures: dict[Position, Measure] = Field(default_factory=dict)
-    prev: "Beat" = Field(default=None, repr=False)  # previous beat in the score
-    next: "Beat" = Field(default=None, repr=False)  # next beat in the score
+    prev: Optional["Beat"] = Field(default=None, repr=False)  # previous beat in the score
+    next: Optional["Beat"] = Field(default=None, repr=False)  # next beat in the score
     # TODO GOTO REMOVE
     goto: dict[PassSequence, "Beat"] = Field(
         default_factory=dict

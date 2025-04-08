@@ -2,6 +2,7 @@
 It is used by the MidiGenerator (score_to_midi module).
 """
 
+import json
 from enum import Enum
 from typing import override
 
@@ -37,10 +38,11 @@ class MidiTrackX(MidiTrack):
     bank: int
     preset: int
     animate_helpinghand: bool
+    first_helpinghand_msg: MetaMessage = None
     # The next attribute keeps track of the end message of the last note.
     # The time of this message will be delayed if an extension note is encountered.
     last_note: Note = None
-    last_helpinghand_msg: Message = None
+    last_helpinghand_msg: MetaMessage = None
     last_noteoff_msgs: list[Message] = []
     ticktime_last_message: int = 0
     current_ticktime: int = 0
@@ -80,6 +82,7 @@ class MidiTrackX(MidiTrack):
         self.set_channel_bank_and_preset()
         self.update_tempo(60)  # set default tempo, needed for initial silence
         self.last_helpinghand_msg = self._append_helpinghand_message()
+        self.first_helpinghand_msg = self.last_helpinghand_msg
 
     @override
     def append(self, message: BaseMessage, **kwargs):
@@ -188,7 +191,7 @@ class MidiTrackX(MidiTrack):
 
     def _append_helpinghand_message(self):
         if not self.animate_helpinghand:
-            return
+            return None
         # Add a message to animate the 'helping hand' (moving arrow).
         # The pitch, octave and time_until values will be updated when the next note is processed.
         text = (
@@ -207,13 +210,19 @@ class MidiTrackX(MidiTrack):
             return
         # Edit the previous helping hand message with the current note information.
         if is_last:
-            pitch = "NONE"
-            octave = 0
-            time_until = 0
+            # if self.run_settings.notation.part.loop:
+            first_msg_json = json.loads(self.first_helpinghand_msg.text)
+            time_until = int(self.current_millitime - self.last_hh_millitime)
+            pitch = first_msg_json["pitch"]
+            octave = first_msg_json["octave"]
+            time_until = first_msg_json["timeuntil"] + int(self.current_millitime - self.last_hh_millitime)
+            # else:
+            #     pitch = "NONE"
+            #     octave = 0
+            #     time_until = 0
         else:
             pitch = note.pitch
             octave = note.octave
-            # time_until = int(self.current_time_in_millis() - self.current_time_in_millis(self.last_helpinghand_msg))
             time_until = int(self.current_millitime - self.last_hh_millitime)
             self.last_hh_millitime = self.current_millitime
         text = self.last_helpinghand_msg.text

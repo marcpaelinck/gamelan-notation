@@ -29,7 +29,7 @@ from src.common.metadata_classes import (
     WaitMeta,
 )
 from src.notation2midi.classes import MetaDataRecord
-from src.notation2midi.dict_to_score import DictToScoreConverter
+from src.notation2midi.dict_to_score import ScoreCreatorAgent
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
 
@@ -162,18 +162,18 @@ class TestDictToScoreConverter(BaseUnitTestCase):
         mock_notation = MagicMock(spec=Notation)
         mock_notation.settings = settings
         mock_notation.notation_dict = get_notation()
-        return DictToScoreConverter(mock_notation)
+        return ScoreCreatorAgent(mock_notation)
 
     def get_converter_beat_at_end(self):
         settings = Settings.get(notation_id="test_beat_at_end", part_id="full")
         mock_notation = MagicMock(spec=Notation)
         mock_notation.settings = settings
         mock_notation.notation_dict = get_notation()
-        return DictToScoreConverter(mock_notation)
+        return ScoreCreatorAgent(mock_notation)
 
     def test_create_score(self):
         converter = self.get_converter_sp()
-        score = converter.create_score()
+        score = converter.run()
         self.assertIsInstance(score, Score)
         self.assertEqual(
             converter.score.gongans[0].beats[0].measures[Position.PEMADE_POLOS],
@@ -192,7 +192,7 @@ class TestDictToScoreConverter(BaseUnitTestCase):
 
     def test_has_kempli_beat(self):
         converter = self.get_converter_sp()
-        score = converter.create_score()
+        score = converter.run()
         self.assertFalse(converter._has_kempli_beat(score.gongans[0]))
         self.assertTrue(converter._has_kempli_beat(score.gongans[1]))
 
@@ -201,7 +201,7 @@ class TestDictToScoreConverter(BaseUnitTestCase):
         for getter in [self.get_converter_sp, self.get_converter_beat_at_end]:
             converter = getter()
             converter._move_beat_to_start = MagicMock(return_value=None)
-            converter.create_score()
+            converter.run()
             if getter == self.get_converter_beat_at_end:
                 converter._move_beat_to_start.assert_called_once()
             else:
@@ -212,7 +212,7 @@ class TestDictToScoreConverter(BaseUnitTestCase):
         #   gongan1: iuea
         #   gongan2: ioeu
         converter = self.get_converter_beat_at_end()
-        converter.create_score()
+        converter.run()
         # Assert that the content of the first gongan was shifted by one note and that a silence
         # was added at the beginning.
         self.assertEqual(

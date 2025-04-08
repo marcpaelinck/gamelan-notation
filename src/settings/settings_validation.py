@@ -6,17 +6,19 @@ import pandas as pd
 
 from src.common.constants import Pitch
 from src.common.logger import Logging
-from src.notation2midi.classes import ParserModel
+from src.notation2midi.classes import Agent
 from src.settings.constants import FontFields, MidiNotesFields
 
 logger = Logging.get_logger(__name__)
 
 
-class SettingsValidator(ParserModel):
+class SettingsValidationAgent(Agent):
     """Validates the definition files in the settings folder."""
 
+    EXPECTED_INPUT = Agent.InputType.RUNSETTINGS
+
     def __init__(self, run_settings: dict):
-        super().__init__(ParserModel.ParserType.SETTINGSVALIDATOR, run_settings)
+        super().__init__(Agent.AgentType.SETTINGSVALIDATOR, run_settings)
 
     def _check_unique_character_values(self) -> None:
         """Analyzes the font definition setting and detects characters that have the same
@@ -85,8 +87,7 @@ class SettingsValidator(ParserModel):
                 "ALL CHARACTERS HAVE A CORRESPONDING NOTE IN THE MIDINOTES DEFINITION FOR %s.", instrumentgroup
             )
 
-    @ParserModel.main
-    def validate_input_data(self):
+    def _main(self):
         """Main method which performs the validation."""
         self._check_unique_character_values()
         self._check_font_midi_match()
