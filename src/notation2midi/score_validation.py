@@ -1,6 +1,6 @@
 import math
 from itertools import product
-from typing import Any
+from typing import Any, override
 
 from src.common.classes import Beat, Gongan, Note, Score
 from src.common.constants import (
@@ -16,11 +16,14 @@ from src.common.constants import (
 )
 from src.common.metadata_classes import GonganType, ValidationProperty
 from src.notation2midi.classes import Agent
+from src.settings.classes import RunSettings
 
 
 class ScoreValidationAgent(Agent):
 
-    EXPECTED_INPUT = Agent.InputType.SCORE
+    AGENT_TYPE = Agent.AgentType.SCOREVALIDATOR
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.SCORE)
+    RETURN_TYPE = Agent.InputOutputType.SCORE
 
     POSITIONS_AUTOCORRECT_UNEQUAL_MEASURES = [
         Position.UGAL,
@@ -34,9 +37,14 @@ class ScoreValidationAgent(Agent):
         (Position.KANTILAN_POLOS, Position.KANTILAN_SANGSIH),
     ]
 
-    def __init__(self, score: Score):
-        super().__init__(self.AgentType.VALIDATOR, score.settings)
+    def __init__(self, run_settings: RunSettings, score: Score):
+        super().__init__(run_settings)
         self.score = score
+
+    @override
+    @classmethod
+    def run_condition_satisfied(cls, run_settings: RunSettings):
+        return run_settings.options.notation_to_midi
 
     def _invalid_beat_lengths(self, gongan: Gongan, autocorrect: bool) -> tuple[list[tuple[BeatId, Duration]]]:
         """Checks the length of beats in "regular" gongans. The length should be a power of 2.
@@ -264,6 +272,7 @@ class ScoreValidationAgent(Agent):
                         )
         return invalids, corrected, ignored
 
+    @override
     def _main(self) -> None:
         """Performs consistency checks and prints results.
 

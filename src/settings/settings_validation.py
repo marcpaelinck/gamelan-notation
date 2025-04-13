@@ -1,12 +1,14 @@
 """Validates the definitions in the settings folder"""
 
 import csv
+from typing import override
 
 import pandas as pd
 
 from src.common.constants import Pitch
 from src.common.logger import Logging
 from src.notation2midi.classes import Agent
+from src.settings.classes import RunSettings
 from src.settings.constants import FontFields, MidiNotesFields
 
 logger = Logging.get_logger(__name__)
@@ -15,10 +17,14 @@ logger = Logging.get_logger(__name__)
 class SettingsValidationAgent(Agent):
     """Validates the definition files in the settings folder."""
 
-    EXPECTED_INPUT = Agent.InputType.RUNSETTINGS
+    AGENT_TYPE = Agent.AgentType.SETTINGSVALIDATOR
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS,)
+    RETURN_TYPE = None
 
-    def __init__(self, run_settings: dict):
-        super().__init__(Agent.AgentType.SETTINGSVALIDATOR, run_settings)
+    @override
+    @classmethod
+    def run_condition_satisfied(cls, run_settings: RunSettings):
+        return True
 
     def _check_unique_character_values(self) -> None:
         """Analyzes the font definition setting and detects characters that have the same
@@ -87,6 +93,7 @@ class SettingsValidationAgent(Agent):
                 "ALL CHARACTERS HAVE A CORRESPONDING NOTE IN THE MIDINOTES DEFINITION FOR %s.", instrumentgroup
             )
 
+    @override
     def _main(self):
         """Main method which performs the validation."""
         self._check_unique_character_values()

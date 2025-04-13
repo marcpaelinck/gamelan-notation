@@ -2,11 +2,11 @@
 
 import logging
 from dataclasses import _MISSING_TYPE, MISSING, dataclass, fields
-from enum import Enum, StrEnum
+from enum import StrEnum
 from types import UnionType
 from typing import Any, Generator
 
-from src.common.classes import Beat, Gongan, Measure, Notation, Score
+from src.common.classes import Beat, Gongan, Measure, Score
 from src.common.constants import (
     DynamicLevel,
     InstrumentType,
@@ -23,7 +23,7 @@ from src.common.metadata_classes import (
     Scope,
     ValidationProperty,
 )
-from src.settings.classes import Part, RunSettings
+from src.settings.classes import RunSettings
 
 
 class NamedIntID(int):
@@ -57,7 +57,11 @@ class NamedIntID(int):
 
 class Agent:
     """Base class for the classes that each perform a step of the conversion
-    from notation to MIDI/PDF/TXT output. It provides a uniform logging format."""
+    from notation to MIDI/PDF/TXT output. It provides a uniform logging format.
+    IMPORTANT: when subclassing this class, override the _main and _run_condition
+               methods and if required also the __init__ method. In the latter case
+               call the __init__ method of the Agent main class using super().__init__(...).
+    """
 
     class AgentType(StrEnum):
         """Used by the logger to determine the source of a warning or error message."""
@@ -65,23 +69,27 @@ class Agent:
         SETTINGSVALIDATOR = "VALIDATING RUN SETTINGS"
         NOTATIONPARSER = "PARSING NOTATION TO DICT"
         SCOREGENERATOR = "CONVERTING DICT TO SCORE"
-        VALIDATOR = "VALIDATING SCORE"
+        SCOREVALIDATOR = "VALIDATING SCORE"
+        NOTATIONGENERATOR = "CREATING CORRECTED NOTATION"
         MIDIGENERATOR = "GENERATING MIDI FILE"
-        SCORETOPDF = "CONVERTING SCORE TO PDF NOTATION"
+        PDFGENERATOR = "CONVERTING SCORE TO PDF NOTATION"
+        MIDIPLAYERPARTUPDATER = "UPDATING PART INFO IN MIDI PLAYER CONTENT"
+        MIDIPLAYERPDFUPDATER = "UPDATING PDF INFO IN MIDI PLAYER CONTENT"
 
-    class InputType(Enum):
+    class InputOutputType(StrEnum):
         """Used by the logger to determine the source of a warning or error message."""
 
-        NONE = None
-        RUNSETTINGS = RunSettings
-        NOTATION = Notation
-        SCORE = Score
-        PART = Part
+        RUNSETTINGS = "run_settings"
+        NOTATION = "notation"
+        SCORE = "score"
+        PART = "part"
+        PDFFILE = "pdf_file"
 
-    # Redefine this constant in each subclass
-    EXPECTED_INPUT = InputType.NONE
+    # Define these constants in each subclass
+    AGENT_TYPE: AgentType
+    EXPECTED_INPUT_TYPES: tuple[InputOutputType] | None
+    RETURN_TYPE: InputOutputType | None
 
-    agent_type: AgentType
     run_settings = None
     curr_gongan_id: int = None
     curr_beat_id: int = None
@@ -90,20 +98,28 @@ class Agent:
     log_msgs: dict[int, str] = {logging.ERROR: [], logging.WARNING: []}
     logger = None
 
-    def __init__(self, agent_type: AgentType, run_settings: RunSettings):
-        self.agent_type = agent_type
+    def __init__(self, run_settings: RunSettings):
         self.run_settings = run_settings
         self.logger = Logging.get_logger(self.__class__.__name__)
 
+    # pylint: disable=unused-argument,missing-function-docstring
+
+    # Override this function. It should return True if the _main function
+    # should be executed when called.
+    @classmethod
+    def run_condition_satisfied(cls, run_settings: RunSettings) -> bool: ...
+
     # Override this function. It should be the main entry point of the agent
     # and should return the agent's output.
+    # It should not have any argument except self.
     def _main(self) -> Any: ...
 
-    def run(self):
-        """Runs the _main method of the subclassed agent."""
+    # pylint: enable=unused-argument,missing-function-docstring
 
-        separator = "-" * int(50 - len(self.agent_type.value) // 2)
-        title = f"{separator} {self.agent_type.value} {separator}"
+    def run(self) -> Any:
+        """Runs the _main method of the subclassed agent."""
+        separator = "-" * int(50 - len(self.AGENT_TYPE.value) // 2)
+        title = f"{separator} {self.AGENT_TYPE.value} {separator}"
         self.logger.info(title)
         result = self._main()  # pylint: disable=assignment-from-no-return
         return result

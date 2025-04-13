@@ -6,6 +6,7 @@ Main method: convert_notation_to_midi()
 
 from dataclasses import _MISSING_TYPE, asdict
 from statistics import mode
+from typing import override
 
 from pydantic import ValidationError
 
@@ -56,6 +57,7 @@ from src.notation2midi.special_notes_treatment import (
     generate_tremolo,
     update_grace_notes_octaves,
 )
+from src.settings.classes import RunSettings
 from src.settings.constants import NoteFields
 
 # pylint incorrectly reports an error when Pydantic fields are pre-assigned with the Field function
@@ -68,7 +70,10 @@ class ScoreCreatorAgent(Agent):
     It also processes the metadata.
     """
 
-    EXPECTED_INPUT = Agent.InputType.NOTATION
+    AGENT_TYPE = Agent.AgentType.SCOREGENERATOR
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.NOTATION)
+    RETURN_TYPE = Agent.InputOutputType.SCORE
+
     notation: Notation = None
     score: Score = None
 
@@ -82,8 +87,8 @@ class ScoreCreatorAgent(Agent):
 
     default_velocity: Velocity
 
-    def __init__(self, notation: Notation):
-        super().__init__(self.AgentType.SCOREGENERATOR, notation.settings)
+    def __init__(self, run_settings: RunSettings, notation: Notation):
+        super().__init__(run_settings)
         self.notation = notation
         self.default_velocity = self.run_settings.midi.dynamics[self.run_settings.midi.default_dynamics]
 
@@ -92,6 +97,11 @@ class ScoreCreatorAgent(Agent):
             settings=notation.settings,
             instrument_positions=self._get_all_positions(notation.notation_dict),
         )
+
+    @override
+    @classmethod
+    def run_condition_satisfied(cls, run_settings: RunSettings):
+        return run_settings.options.notation_to_midi
 
     def _get_all_positions(self, notation_dict: NotationDict) -> set[Position]:
         all_instruments = [

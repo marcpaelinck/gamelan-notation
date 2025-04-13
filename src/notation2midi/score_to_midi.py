@@ -4,6 +4,7 @@ Main method: create_midifile()
 """
 
 import sys
+from typing import override
 
 from mido import MidiFile
 
@@ -12,24 +13,31 @@ from src.common.constants import DEFAULT, Pitch, Position
 from src.common.metadata_classes import PartMeta
 from src.notation2midi.classes import Agent
 from src.notation2midi.midi_track import MidiTrackX, TimeUnit
-from src.settings.classes import PartForm
+from src.settings.classes import PartForm, RunSettings
 
 
 class MidiGeneratorAgent(Agent):
     """This Parser creates a MIDI file based on a Score objects."""
 
-    EXPECTED_INPUT = Agent.InputType.SCORE
+    AGENT_TYPE = Agent.AgentType.MIDIGENERATOR
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.SCORE)
+    RETURN_TYPE = Agent.InputOutputType.PART
 
     part_info: PartForm = None
 
-    def __init__(self, score: Score):
-        super().__init__(self.AgentType.MIDIGENERATOR, score.settings)
+    def __init__(self, run_settings: RunSettings, score: Score):
+        super().__init__(run_settings)
         self.score = score
         self.part_info = PartForm(
             part=self.run_settings.notation.part.name,
             file=self.run_settings.midi_out_file,
             loop=self.run_settings.notation.part.loop,
         )
+
+    @override
+    @classmethod
+    def run_condition_satisfied(cls, run_settings: RunSettings):
+        return run_settings.options.notation_to_midi and run_settings.options.notation_to_midi.save_midifile
 
     def _add_attenuation_time(self, tracks: list[MidiTrackX], seconds: int) -> None:
         """Extends the duration of the final note in each channel to avoid an abrupt ending of the audio.
@@ -143,6 +151,7 @@ class MidiGeneratorAgent(Agent):
             markers=self.sorted_markers_millis_to_frac(self.part_info.markers, self.score.midifile_duration),
         )
 
+    @override
     def _main(self) -> PartForm:
         """Generates the MIDI content and saves it to file.
 
@@ -160,9 +169,8 @@ class MidiGeneratorAgent(Agent):
             self._add_attenuation_time(midifile.tracks, seconds=self.run_settings.midi.silence_seconds_after_end)
         self.score.midifile_duration = int(midifile.length * 1000)
 
-        if self.run_settings.options.notation_to_midi.save_midifile:
-            midifile.save(self.run_settings.midi_out_filepath)
-            self.logger.info("File saved as %s", self.run_settings.midi_out_filepath)
+        midifile.save(self.run_settings.midi_out_filepath)
+        self.logger.info("File saved as %s", self.run_settings.midi_out_filepath)
 
         if self.has_errors:
             return None

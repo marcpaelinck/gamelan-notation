@@ -705,12 +705,3 @@ class RunSettings(BaseModel):
         run_settings_dict[Yaml.DATA] = self._read_data(settings_data_dict, DATA)
 
         return run_settings_dict
-        # try:
-        #     # _SETTINGS_DATA = SettingsData.model_validate(settings_data_dict)
-        #     self.model_validate(run_settings_dict)
-        # except ValidationError as e:
-        #     # Aggregate errors by variable
-        #     logger.error(str(e))
-        #     exit()
-
-        # self.Settings.get()

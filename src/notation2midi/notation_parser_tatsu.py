@@ -63,7 +63,7 @@ import pickle
 import re
 import sys
 from collections import ChainMap
-from typing import Any
+from typing import Any, override
 
 from tatsu import compile as tatsu_compile
 from tatsu.exceptions import FailedParse
@@ -71,7 +71,13 @@ from tatsu.model import ParseModel
 from tatsu.util import asjson
 
 from src.common.classes import InstrumentTag, Measure, Notation, Note
-from src.common.constants import NotationDict, ParserTag, Position, RuleType
+from src.common.constants import (
+    NotationDict,
+    NotationFontVersion,
+    ParserTag,
+    Position,
+    RuleType,
+)
 from src.notation2midi.classes import Agent, MetaDataRecord, NamedIntID, NoteRecord
 from src.settings.classes import RunSettings
 from src.settings.constants import FontFields, NoteFields
@@ -108,7 +114,10 @@ class NotationParserAgent(Agent):
     basic structure of the notation as described in the grammar files and reports any syntax error.
     """
 
-    EXPECTED_INPUT = Agent.InputType.RUNSETTINGS
+    AGENT_TYPE = Agent.AgentType.NOTATIONPARSER
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS,)
+    RETURN_TYPE = Agent.InputOutputType.NOTATION
+
     run_settings: RunSettings
     grammar_model: str
     model_source: str
@@ -116,7 +125,7 @@ class NotationParserAgent(Agent):
     _symbol_to_note: dict[str, NoteRecord]
 
     def __init__(self, run_settings: RunSettings):
-        super().__init__(self.AgentType.NOTATIONPARSER, run_settings)
+        super().__init__(run_settings)
         self.run_settings = run_settings
         self.grammar_model = self._create_notation_grammar_model(self.run_settings, from_pickle=False, pickle_it=False)
         # Initialize _font_dict lookup dict
@@ -129,6 +138,11 @@ class NotationParserAgent(Agent):
             )
             for note in note_records
         }
+
+    @override
+    @classmethod
+    def run_condition_satisfied(cls, run_settings: RunSettings):
+        return True
 
     def sorted_chars(self, chars: str) -> str:
         """Sorts the characters of a note symbol in a unique and deterministic order.
@@ -343,6 +357,7 @@ class NotationParserAgent(Agent):
 
         return beats
 
+    @override
     def _main(self, notation: str | None = None) -> NotationDict:
         """parses the notation into a record structure. The entire document is parsed.
            If a parsing error is encountered, the error is logged and the parser skips
@@ -353,6 +368,10 @@ class NotationParserAgent(Agent):
             NotationDict: dict containing a structured representation of the notation.
             See the beginning of this module for a description.
         """
+        if not self.run_settings.fontversion is NotationFontVersion.BALIMUSIC5:
+            self.logerror("Cannot parse font %s.", self.run_settings.fontversion)
+            return None
+
         if notation:
             self.loginfo("Parsing notation from string")
         else:

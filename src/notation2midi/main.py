@@ -2,12 +2,14 @@
 
 from tkinter.messagebox import askyesno
 
-from src.common.constants import NotationFontVersion
 from src.common.logger import Logging
 from src.notation2midi.dict_to_score import ScoreCreatorAgent
-from src.notation2midi.export_to_midiplayer import MidiPlayerExportAgent
+from src.notation2midi.export_to_midiplayer import (
+    MidiPlayerUpdatePartAgent,
+    MidiPlayerUpdatePdfAgent,
+)
 from src.notation2midi.notation_parser_tatsu import NotationParserAgent
-from src.notation2midi.score2notation.score_to_notation import score_to_notation_file
+from src.notation2midi.pipeline import PipeLine
 from src.notation2midi.score2notation.score_to_pdf import PDFGeneratorAgent
 from src.notation2midi.score_to_midi import MidiGeneratorAgent
 from src.notation2midi.score_validation import ScoreValidationAgent
@@ -17,85 +19,64 @@ from src.settings.settings_validation import SettingsValidationAgent
 
 logger = Logging.get_logger(__name__)
 
-
-def load_and_validate_run_settings(notation_id: str = None, part_id: str = None) -> RunSettings:
-    run_settings = Settings.get(notation_id=notation_id, part_id=part_id)
-    SettingsValidationAgent(run_settings).run()
-    return run_settings
-
-
-def notation_to_midi(run_settings: RunSettings):
-    """Runs the parsers in a pipeline"""
-    success = False
-    if run_settings.options.notation_to_midi:
-
-        if run_settings.fontversion is NotationFontVersion.BALIMUSIC5:
-            font_parser = NotationParserAgent(run_settings)
-        else:
-            raise ValueError(f"Cannot parse font {run_settings.fontversion}.")
-        notation = font_parser.run()
-        if notation:
-            dict2score = ScoreCreatorAgent(notation)
-            score = dict2score.run()
-        if score:
-            scorevalidator = ScoreValidationAgent(score)
-            score = scorevalidator.run()
-        if score:
-            midigenerator = MidiGeneratorAgent(score)
-            part = midigenerator.run()
-            midiplayerexporter = MidiPlayerExportAgent(part)
-            success = midiplayerexporter.run()
-
-    if success and run_settings.options.notation_to_midi.save_corrected_to_file:
-        score_to_notation_file(score)
-    if (
-        success
-        and run_settings.options.notation_to_midi.save_pdf_notation
-        and run_settings.part_id in run_settings.notation.generate_pdf_part_ids
-    ):
-        scoretopdfconverter = PDFGeneratorAgent(score)
-        pdf_filename = scoretopdfconverter.run()
-        midiplayerexporter = MidiPlayerExportAgent(pdf_file=pdf_filename)
-        midiplayerexporter.run()
+PIPE = [
+    # SettingsValidationAgent,
+    NotationParserAgent,
+    ScoreCreatorAgent,
+    ScoreValidationAgent,
+    MidiGeneratorAgent,
+    PDFGeneratorAgent,
+    MidiPlayerUpdatePartAgent,
+    MidiPlayerUpdatePdfAgent,
+]
 
 
-def multiple_notations_to_midi(run_settings: RunSettings):
+def run_pipeline(run_settings: RunSettings):
+    """Creates a single notation which is determined by the settings `notation_id` and `part_id`
+    in notation2midi.yaml.
+    Args:
+        run_settings (RunSettings): Settings and configuration.
+    """
+    logger.open_logging(f"{run_settings.notation.title} - {run_settings.notation.part.name}")
+    pipeline = PipeLine(run_settings=run_settings, pipe=PIPE)
+    pipeline.execute()
+
+
+def run_multiple_pipelines(run_settings: RunSettings):
     """Creates multiple notations
 
     Args:
-        notations (list[tuple[str, str]]): list of (composition, part) pairs
+        run_settings (RunSettings): list of (composition, part) pairs
     """
-    notation_list = list(run_settings.configdata.notations.items())
     runtype = run_settings.options.notation_to_midi.runtype
     is_production_run = run_settings.options.notation_to_midi.is_production_run
+
+    # Create a list of the notation entries that should be processed, based on
+    # their include_in_run_types and include_in_production_run attributes.
+    notation_list = [
+        (notation_key, notation_info)
+        for notation_key, notation_info in run_settings.configdata.notations.items()
+        if runtype in notation_info.include_in_run_types
+        and (not is_production_run or notation_info.include_in_production_run)
+    ]
+    # Run the pipeline for each part of each song.
     for notation_key, notation_info in notation_list:
-        if runtype in notation_info.include_in_run_types and (
-            not is_production_run or notation_info.include_in_production_run
-        ):
-            for part_key, _ in notation_info.parts.items():
-                run_settings = Settings.get(notation_id=notation_key, part_id=part_key)
-                logger.open_logging(f"{run_settings.notation.title} - {run_settings.notation.part.name}")
-                notation_to_midi(run_settings)
-
-
-def single_run(run_settings: RunSettings):
-    # run_settings = load_and_validate_run_settings()
-    logger.open_logging(f"{run_settings.notation.title} - {run_settings.notation.part.name}")
-    notation_to_midi(run_settings)
+        for part_key, _ in notation_info.parts.items():
+            run_settings = Settings.get(notation_id=notation_key, part_id=part_key)
+            run_pipeline(run_settings)
 
 
 def main():
     logger.open_logging("NOTATION2MIDI")
     run_settings = Settings.get()
     SettingsValidationAgent(run_settings).run()
-    run_settings = load_and_validate_run_settings()
     if not run_settings.options.notation_to_midi.is_production_run or askyesno(
         "Warning", "Running production version. Continue?"
     ):
         if run_settings.options.notation_to_midi.runtype is RunType.RUN_ALL:
-            multiple_notations_to_midi(run_settings)
+            run_multiple_pipelines(run_settings)
         else:
-            single_run(run_settings)
+            run_pipeline(run_settings)
     logger.close_logging()
 
 

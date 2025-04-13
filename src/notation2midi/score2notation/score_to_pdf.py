@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import itertools
 import math
-from typing import Callable
+from typing import Callable, override
 
 from reportlab.lib.enums import TA_RIGHT
 from reportlab.lib.styles import ParagraphStyle
@@ -39,12 +39,15 @@ from src.notation2midi.score2notation.utils import (
     measure_to_str,
     string_width_from_notes,
 )
+from src.settings.classes import RunSettings
 
 
 class PDFGeneratorAgent(Agent):
     """PDF generator"""
 
-    EXPECTED_INPUT = Agent.InputType.SCORE
+    AGENT_TYPE = Agent.AgentType.PDFGENERATOR
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.SCORE)
+    RETURN_TYPE = Agent.InputOutputType.PDFFILE
 
     TAG_COLWIDTH = 2.3 * cm
     basicparastyle = None
@@ -52,14 +55,23 @@ class PDFGeneratorAgent(Agent):
     W = 0
     H = 1
 
-    def __init__(self, score: Score):
-        super().__init__(self.AgentType.SCORETOPDF, score.settings)
+    def __init__(self, run_settings: RunSettings, score: Score):
+        super().__init__(run_settings)
         self.score = score
         self.template = NotationTemplate(self.score.settings)
         self.current_tempo = -1
         self.current_dynamics = -1  # Not used currently
         registerFont(TTFont("Bali Music 5", self.run_settings.configdata.font.ttf_filepath))
         self.story = []
+
+    @override
+    @classmethod
+    def run_condition_satisfied(cls, run_settings: RunSettings):
+        return (
+            run_settings.options.notation_to_midi
+            and run_settings.options.notation_to_midi.save_pdf_notation
+            and run_settings.part_id in run_settings.notation.generate_pdf_part_ids
+        )
 
     def _append_single_metadata_type(
         self,
@@ -429,6 +441,7 @@ class PDFGeneratorAgent(Agent):
     #         notation_version=notation_version,
     #     )
 
+    @override
     def _main(self):
         """Main method, creates the PDF notation file"""
         self._convert_to_pdf()

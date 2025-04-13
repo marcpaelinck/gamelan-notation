@@ -9,6 +9,7 @@ start
     $
     ;
 *)
+
 metadata
     =
     @:(dynamicsmeta |
@@ -51,7 +52,7 @@ partmeta = metatype:'PART' {('name'|'value') '='} name:strvalue ;
     
 repeatmeta = metatype:'REPEAT' {('count'|'value') '='} count:intvalue ;
     
-sequencemeta = metatype:'SEQUENCE' {'value' '='} value:strlistvalue ;
+sequencemeta = metatype:'SEQUENCE' {'value' '='} value:strlistvalue_multiline ;
     
 suppressmeta = metatype:'SUPPRESS' {('positions'|'value') '='} positions:strlistvalue  parameters:suppressmetaparameters ;
 suppressmetaparameters = {[','] @:(beats_parm | passes_parm)} ;
@@ -85,4 +86,6 @@ intvalue = /\d+/ ;
 floatvalue = /\d+\.{0,1}\d*/ ;
 boolvalue = 'true' | 'false' ;
 strlistvalue = '[' @+:strvalue {',' @+:strvalue}* ']' ;
+sp_nl = /(?m)[ \t\n\r]*/ ;  (* Extended space, including new line. (?m) allows multiline parsing. Default is single line *)
+strlistvalue_multiline = '[' @+:strvalue {sp_nl ',' sp_nl @+:strvalue}* sp_nl ']' ;
 intlistvalue = '[' @+:intvalue {',' @+:intvalue}* ']' ;
