@@ -267,20 +267,30 @@ class NotationParserAgent(Agent):
         Args:
             staves (list[dict]): list of records, each representing a stave
         """
-        additional_staves = []
+
+        def split_passes(pass_tag: str | int) -> list[int]:
+            if isinstance(pass_tag, int):
+                return [pass_tag]
+            passes = [int(p) for p in pass_tag.split("-")]
+            return [PassID(p) for p in range(passes[0], passes[-1] + 1)]
+
+        multiple_staves = []
         for stave in staves:
             tag = stave[ParserTag.POSITION][ParserTag.TAG]
-            positions = stave[ParserTag.ALL_POSITIONS] = InstrumentTag.get_positions(tag)
-            pass_sequence = PassID(int(stave[ParserTag.POSITION][ParserTag.PASS]))
-            stave[ParserTag.POSITION] = positions[0]
-            stave[ParserTag.PASS] = pass_sequence
-            for position in stave[ParserTag.ALL_POSITIONS][1:]:
-                # Create a copy of the stave for each additional position
-                newstave = copy.deepcopy(stave)
-                newstave[ParserTag.POSITION] = position
-                newstave[ParserTag.PASS] = pass_sequence
-                additional_staves.append(newstave)
-        staves.extend(additional_staves)
+            stave[ParserTag.ALL_POSITIONS] = InstrumentTag.get_positions(tag)
+            pass_sequences = split_passes(stave[ParserTag.POSITION][ParserTag.PASS])
+            # PassID(int(stave[ParserTag.POSITION][ParserTag.PASS]))
+            # stave[ParserTag.POSITION] = positions[0]
+            # stave[ParserTag.PASS] = pass_sequence
+            for position in stave[ParserTag.ALL_POSITIONS]:
+                for pass_seq in pass_sequences:
+                    # Create a copy of the stave for each additional position
+                    newstave = copy.deepcopy(stave)
+                    newstave[ParserTag.POSITION] = position
+                    newstave[ParserTag.PASS] = pass_seq
+                    multiple_staves.append(newstave)
+        staves.clear()
+        staves.extend(multiple_staves)
 
     def _passes_str_to_list(self, rangestr: str) -> list[int]:
         """Converts a pass indicator following a position tag to a list of passes.

@@ -18,15 +18,6 @@
                                 }
                         ]
                 }, 
-                {"title": "Dance Improvisation", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Dance Improvisation_full_GAMELAN1.pdf", "notation_version": "01-apr-2025", "parts": [
-                                {"part": "entire piece", "file": "Dance Improvisation_full_GAMELAN1.mid", "loop": false, "markers": {
-                                                "Part 1": 0.02544457128847141, 
-                                                "Part 2": 0.19373041472889005, 
-                                                "Part 3": 0.5104161079996016
-                                        }
-                                }
-                        ]
-                }, 
                 {"title": "Gilak Deng", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Gilak Deng_full_GAMELAN1.pdf", "notation_version": "01-apr-2025", "parts": [
                                 {"part": "entire piece", "file": "Gilak Deng_full_GAMELAN1.mid", "loop": false, "markers": {}}, 
                                 {"part": "kotekan gangsa", "file": "Gilak Deng_kotekan_GAMELAN1.mid", "loop": true, "markers": {}}
@@ -47,6 +38,15 @@
                 }, 
                 {"title": "Janger", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Janger_full_GAMELAN1.pdf", "notation_version": "04-apr-2025", "parts": [
                                 {"part": "entire piece", "file": "Janger_full_GAMELAN1.mid", "loop": false, "markers": {}}
+                        ]
+                }, 
+                {"title": "Kahyangan", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Kahyangan_full_GAMELAN1.pdf", "notation_version": "14-apr-2025", "parts": [
+                                {"part": "entire piece", "file": "Kahyangan_full_GAMELAN1.mid", "loop": false, "markers": {
+                                                "kawitan": 0.02544457128847141, 
+                                                "pengawak": 0.19373041472889005, 
+                                                "pengecet": 0.5104161079996016
+                                        }
+                                }
                         ]
                 }, 
                 {"title": "Legong Mahawidya GK", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Legong Mahawidya GK_full_GAMELAN1.pdf", "notation_version": "01-apr-2025", "parts": [

@@ -119,7 +119,7 @@ class MidiPlayerUpdatePartAgent(MidiPlayerUpdateAgentModel):
 class MidiPlayerUpdatePdfAgent(MidiPlayerUpdateAgentModel):
     """Updates the PDF info in the content.json file in the midiplayer data folder."""
 
-    AGENT_TYPE = Agent.AgentType.MIDIPLAYERPARTUPDATER
+    AGENT_TYPE = Agent.AgentType.MIDIPLAYERPDFUPDATER
     EXPECTED_INPUT_TYPES = (
         Agent.InputOutputType.RUNSETTINGS,
         Agent.InputOutputType.PDFFILE,
@@ -149,6 +149,7 @@ class MidiPlayerUpdatePdfAgent(MidiPlayerUpdateAgentModel):
         player_song: Song = next((song_ for song_ in content.songs if song_.title == song_title), None)
         if player_song:
             player_song.pdf = self.pdf_file
+            player_song.notation_version = self.run_settings.notation_version
         else:
             # Create a new song entry
             # TODO create components of Song

@@ -178,7 +178,7 @@ def aggregate_positions(gongan: Gongan) -> dict[tuple[Position, PassID], str]:
             for note1, note2 in zip(notes1, notes2)
         )
 
-    def try_to_aggregate(positions: list[Position], passid: PassID, aggregate_tag: str) -> bool:
+    def try_to_aggregate_pos(positions: list[Position], passid: PassID, aggregate_tag: str) -> bool:
         """Determines if the notation is identical for all of the given positions for the given pass.
         In that case, updates the pos_pass_tags dict.
         """
@@ -199,6 +199,40 @@ def aggregate_positions(gongan: Gongan) -> dict[tuple[Position, PassID], str]:
             return True
         return False
 
+    def aggregate_passes() -> None:
+        """Determines if the notation is identical for consecutive passes of the same position.
+        In that case groups the passes and updates the pos_pass_tags dict.
+        """
+        # Create a dict {pos -> [passes]} for positions with multiple passes (excluding the DEFAULT pass).
+        pos_pass_dict = {
+            pos: [int(pass_id) for p, pass_id in pos_pass_tags if pass_id > 0 and p == pos] for pos, _ in pos_pass_tags
+        }
+        pos_pass_dict = {pos: passes for pos, passes in pos_pass_dict.items() if len(passes) > 1}
+
+        for position, passes in pos_pass_dict.items():
+            # create groups (size >1) of staves that are the same for consecutive passes
+            groups = []
+            first = passes[0]
+            nextpass = None
+            for currpass, nextpass in zip(passes, passes[1:]):
+                if first != currpass and not all(
+                    same(beat.get_notes(position, currpass), beat.get_notes(position, nextpass))
+                    for beat in gongan.beats
+                ):
+                    # Reached last pass of a group with size >1.
+                    groups.append([first, currpass])
+                    first = nextpass
+            # Create the last group if its size is >1.
+            if nextpass == passes[-1] and first != nextpass:
+                groups.append([first, nextpass])
+            # Process the groups: keep only the first stave of each group and modify the pass indicator of its tag.
+            for group in groups:
+                pos_pass_tags[position, group[0]] = (
+                    pos_pass_tags[position, group[0]].split(":")[0] + f":{group[0]}-{group[1]}"
+                )
+                for passid in range(group[0] + 1, group[1] + 1):
+                    del pos_pass_tags[position, passid]
+
     # Try to aggregate positions that have the same notation.
     GANGSA_P = [Position.PEMADE_POLOS, Position.KANTILAN_POLOS]
     GANGSA_S = [Position.PEMADE_SANGSIH, Position.KANTILAN_SANGSIH]
@@ -208,11 +242,12 @@ def aggregate_positions(gongan: Gongan) -> dict[tuple[Position, PassID], str]:
     REYONG = REYONG_13 + REYONG_24
     passids = set(pid for _, pid in pos_pass_combis)
     for passid in passids:
-        if not try_to_aggregate(GANGSA, passid, "GANGSA"):
-            try_to_aggregate(GANGSA_P, passid, "GANGSA_P")
-            try_to_aggregate(GANGSA_S, passid, "GANGSA_S")
-        if not try_to_aggregate(REYONG, passid, "REYONG"):
-            try_to_aggregate(REYONG_13, passid, "REYONG_13")
-            try_to_aggregate(REYONG_24, passid, "REYONG_24")
+        if not try_to_aggregate_pos(GANGSA, passid, "GANGSA"):
+            try_to_aggregate_pos(GANGSA_P, passid, "GANGSA_P")
+            try_to_aggregate_pos(GANGSA_S, passid, "GANGSA_S")
+        if not try_to_aggregate_pos(REYONG, passid, "REYONG"):
+            try_to_aggregate_pos(REYONG_13, passid, "REYONG_13")
+            try_to_aggregate_pos(REYONG_24, passid, "REYONG_24")
 
+    aggregate_passes()
     return pos_pass_tags

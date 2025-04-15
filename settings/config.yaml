@@ -122,13 +122,13 @@ notations:
                 name: entire piece
                 file: Cendrawasih_complete_font5.tsv
                 loop: false
-    danceimprovisation:
-        title: Dance Improvisation
-        subfolder: dance improvisation
+    kahyangan:
+        title: Kahyangan
+        subfolder: kahyangan
         parts:
             full:
                 name: entire piece
-                file: dance_improvisation_font5.tsv
+                file: Kahyangan_font5.tsv
                 loop: false
     janger:
         title: Janger

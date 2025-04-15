@@ -340,7 +340,7 @@ class PDFGeneratorAgent(Agent):
 
         def gongan_id_txt(gid: int, tag: str) -> str:
             """Returns the gongan id as text preceded by as many space chars as necessary to right-aligns
-            the id within the cell containing the tag. The gongan id will appended to the position tag
+            the id within the cell containing the tag. The gongan id will be appended to the position tag
             of the first stave of the gongan"""
             # Calculate the available width between the position tag and the end of the cell.
             # This is equal to the total cell width minus the width of the position tag.
@@ -429,18 +429,6 @@ class PDFGeneratorAgent(Agent):
                 self.story.append(gongan_table)
         self.template.doc.build(self.story)
 
-    # def _update_midiplayer_content(self) -> None:
-    #     modification_time = os.path.getmtime(self.score.settings.pdf_out_filepath)
-    #     notation_version = time.strftime(
-    #         self.score.settings.pdf_converter.version_fmt, time.gmtime(modification_time)
-    #     ).lower()
-    #     Settings.update_midiplayer_content(
-    #         title=self.run_settings.notation.title,
-    #         group=self.run_settings.notation.instrumentgroup,
-    #         pdf_file=self.score.settings.pdf_out_file,
-    #         notation_version=notation_version,
-    #     )
-
     @override
     def _main(self):
         """Main method, creates the PDF notation file"""
@@ -449,8 +437,6 @@ class PDFGeneratorAgent(Agent):
         if self.has_errors:
             return None
         return self.score.settings.pdf_out_file
-        # if self.run_settings.options.notation_to_midi.is_production_run:
-        #     self._update_midiplayer_content()
 
 
 if __name__ == "__main__":
