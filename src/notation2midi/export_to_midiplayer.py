@@ -1,5 +1,4 @@
 import os
-import time
 from typing import override
 
 from src.notation2midi.classes import Agent

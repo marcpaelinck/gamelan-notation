@@ -14,8 +14,8 @@ from src.common.constants import (
     Position,
     Stroke,
 )
-from src.common.metadata_classes import GonganType, ValidationProperty
 from src.notation2midi.classes import Agent
+from src.notation2midi.metadata_classes import GonganType, ValidationProperty
 from src.settings.classes import RunSettings
 
 

@@ -35,7 +35,7 @@ from src.common.constants import (
     Stroke,
     Velocity,
 )
-from src.common.metadata_classes import (
+from src.notation2midi.metadata_classes import (
     AutoKempyungMeta,
     FrequencyType,
     GonganType,

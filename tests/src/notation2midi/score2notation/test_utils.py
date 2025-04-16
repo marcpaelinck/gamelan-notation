@@ -3,14 +3,12 @@ from unittest.mock import MagicMock
 
 from src.common.classes import Gongan, Score
 from src.common.constants import Position, Stroke
-from src.notation2midi.score2notation.score_to_pdf import PDFGeneratorAgent
 from src.notation2midi.score2notation.utils import (
     aggregate_positions,
     clean_staves,
     has_kempli_beat,
     is_silent,
-    measure_to_str,
-    string_width_from_notes,
+    measure_to_str_rml_safe,
     to_aggregated_tags,
 )
 from src.settings.settings import Settings
@@ -47,7 +45,7 @@ class TestUtils(BaseUnitTestCase):
         ]
         for name, measure, expected in measures:
             with self.subTest(id=name):
-                self.assertEqual(measure_to_str(measure), expected)
+                self.assertEqual(measure_to_str_rml_safe(measure), expected)
 
     def test_clean_staves(self):
         U = PositionNote(position=Position.UGAL)
@@ -60,26 +58,6 @@ class TestUtils(BaseUnitTestCase):
         for gongan, expected in gongans:
             with self.subTest(gongan_id=gongan.id):
                 self.assertEqual(clean_staves(gongan), expected)
-
-    def test_string_width_from_notes(self):
-        PDFGeneratorAgent(score=self.mock_score())  # Needed to register the notation font
-        P = PositionNote(position=Position.PEMADE_SANGSIH)
-        DING2G = P.DING1.model_copy_x(stroke=Stroke.GRACE_NOTE, octave=2, duration=0)
-        DING2M = P.DING2.model_copy_x(stroke=Stroke.MUTED)
-        DING1X = P.DING2.model_copy_x(symbol="")
-        font = "Bali Music 5", 10
-        measures = [
-            # (test name, measure, expected width expressed in number of notes)
-            ("No modifs", [P.DING1, P.DUNG1, P.DANG1, P.DING2], 4),
-            ("Grace note", [P.DING1, P.DUNG1, P.DANG1, DING2G], 3),
-            ("Muted+pitch", [P.DING1, P.DUNG1, P.DANG1, DING2M], 4),
-            ("Grace & Muted+pitch", [P.DING1, DING2G, P.DANG1, DING2M], 3),
-            ("Missing symbol", [P.DING1, P.DUNG1, DING1X, DING1X], 2),
-        ]
-        for test_id, measure, width_in_notes in measures:
-            with self.subTest(test=test_id):
-                refwidth = string_width_from_notes([P.DING1] * width_in_notes, *font)
-                self.assertEqual(string_width_from_notes(measure, *font), refwidth)
 
     def test_to_aggregated_tags(self):
         positions = [

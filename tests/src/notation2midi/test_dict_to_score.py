@@ -16,7 +16,9 @@ from src.common.constants import (
     RuleValue,
     Stroke,
 )
-from src.common.metadata_classes import (
+from src.notation2midi.classes import MetaDataRecord
+from src.notation2midi.dict_to_score import ScoreCreatorAgent
+from src.notation2midi.metadata_classes import (
     DynamicsMeta,
     GoToMeta,
     KempliMeta,
@@ -28,8 +30,6 @@ from src.common.metadata_classes import (
     TempoMeta,
     WaitMeta,
 )
-from src.notation2midi.classes import MetaDataRecord
-from src.notation2midi.dict_to_score import ScoreCreatorAgent
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
 

@@ -1,14 +1,16 @@
-from reportlab.pdfbase.pdfmetrics import stringWidth
+import html
 
 from src.common.classes import Gongan, Note
 from src.common.constants import Pitch, Position, Stroke
-from src.common.metadata_classes import GonganType, MetaDataSwitch
+from src.notation2midi.metadata_classes import GonganType, MetaDataSwitch
 from src.notation2midi.notation_parser_tatsu import PassID
 
 
-def measure_to_str(notes: list[Note]) -> str:
+def measure_to_str_rml_safe(notes: list[Note]) -> str:
     """Converts the note objects to notation symbols.
-    Replaces characters that are incompatible with HTML/XML content to compatible strings.
+    Replaces characters that are incompatible with RML content to compatible strings.
+    RML is an XML-style markup language used by ReportLab.
+    See https://docs.reportlab.com/rmlfornewbies/
     Args:
         notes (list[Note]): Content that should be converted.
     Returns:
@@ -24,9 +26,10 @@ def measure_to_str(notes: list[Note]) -> str:
 
     if not notes:
         return ""
-    notechars = (
-        "".join(get_symbol(note) for note in notes).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    )
+    # notechars = (
+    #     "".join(get_symbol(note) for note in notes).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    # )
+    notechars = html.escape("".join(get_symbol(note) for note in notes))
     return notechars
 
 
@@ -70,22 +73,6 @@ def clean_staves(gongan: Gongan) -> dict[tuple[Position, PassID], list[list[Note
     # Remove staves that are completely empty
     staves = {key: measures for key, measures in staves.items() if any(measure for measure in measures)}
     return staves
-
-
-def string_width_from_notes(measure: list[Note], font_name: str, font_size: int) -> int:
-    """Determines the width of a notation string. This function ignores diacritics which should have
-       no effect on the note width. This avoids incorrect results from the stringWidth method which
-       does not process multiple diacritic symbols correctly. This is possibly due to the use of negative
-       character widths in the `Bali Font 5` font.
-    Args:
-        measure (list[Note]): Notes for which to determine the width of the notation.
-        fontName (str):
-        fontSize (int):
-    Returns:
-        int: the width in points.
-    """
-    # Select the first character of the note's symbol: this discards any diacritic character.
-    return stringWidth("".join(n.symbol[0] if n.symbol else "" for n in measure), font_name, font_size)
 
 
 def to_aggregated_tags(positions: list[Position]) -> list[str]:

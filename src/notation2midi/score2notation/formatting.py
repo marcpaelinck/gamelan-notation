@@ -5,9 +5,8 @@ See https://docs.reportlab.com/reportlab/userguide/ch5_platypus/.
 
 from __future__ import annotations
 
-import os
+import html
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
 
 from reportlab.lib import colors
@@ -28,7 +27,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-from src.common.metadata_classes import (
+from src.notation2midi.metadata_classes import (
     DynamicsMeta,
     GoToMeta,
     LabelMeta,
@@ -51,7 +50,14 @@ class SpanType(Enum):  # pylint: disable=missing-class-docstring
     LAST_CELL = 2
 
 
-@dataclass
+class RowType(Enum):
+    EMPTY = 0
+    METADATA = 1
+    COMMENT = 2
+    NOTATION = 3
+
+
+@dataclass(frozen=True)
 class TableContent:
     """Convenience class that enables to build up the contents of a table
     row by row before creating an actual Table object.
@@ -63,9 +69,15 @@ class TableContent:
     """
 
     data: list[list[str | Paragraph]] = field(default_factory=list)
+    rowtypes: list[RowType] = field(default_factory=list)
     style: list[tuple] = field(default_factory=list)
-    colwidths: list[float] = field(default_factory=list)
+    colwidths: list[float] = field(default_factory=list)  # in pt
+    rowheights: list[float] = field(default_factory=list)  # in pt
     template: NotationTemplate = None
+
+    def __post__init__(self):
+        if not len(self.data) == len(self.rowtypes) == len(self.rowheights):
+            raise ValueError("Number of elements in `data`, `rowtypes`, and `rowheights` do not match.")
 
     def append(self, content: TableContent):
         """Appends the content of a TableContent.
@@ -78,9 +90,11 @@ class TableContent:
         if not len(content.colwidths) == len(self.colwidths):
             raise ValueError("Number of columns does not match")
         self.data.extend(content.data)
+        self.rowtypes.extend(content.rowtypes)
+        self.rowheights.extend(content.rowheights)
         self.style.extend(content.style)
 
-    def append_empty_row(self, col_span: list[int], parastyle: ParagraphStyle = None) -> TableContent:
+    def append_empty_row(self, col_span: list[int], rowtype: RowType, parastyle: ParagraphStyle = None) -> TableContent:
         """Adds an empty row to the tablecontent.
         Args:
             content (TableContent): the content to which a row should be added.
@@ -97,15 +111,25 @@ class TableContent:
             else self.template.metadataTableLAStyle(rownr, rownr)
         )
         # Add span information to the style list.
+        _, rowheight = NotationTemplate.cell_width_height("quick fox", parastyle=parastyle)
         if col_span[0] != col_span[1]:
             tablestyle.add("SPAN", (col_span[0], len(self.data)), (col_span[1], len(self.data)))
-        self.data.append([Paragraph("", style=parastyle)] * len(self.colwidths))
-        self.style.extend(tablestyle.getCommands())
+        self.append(
+            TableContent(
+                data=[[Paragraph("", style=parastyle)] * len(self.colwidths)],
+                rowtypes=[rowtype],
+                colwidths=self.colwidths,
+                rowheights=[rowheight],
+                style=tablestyle.getCommands(),
+            )
+        )
         return self
 
 
 class NotationTemplate:
-    """This class contains all the formatting definitions for the PDF export."""
+    """This class contains all the formatting definitions for the PDF export.
+    All text is formatted using Table objects. This facilitates horizontal alignment
+    and enables to keep lines together on the same page by disallowing tables to be split."""
 
     pagesize = A4
     page_width = pagesize[0]
@@ -115,8 +139,8 @@ class NotationTemplate:
     top_margin = 0.5 * cm
     bottom_margin = 1 * cm
     body_top_margin = 2.1 * cm
-    cell_padding = 0.1 * cm  # Left and right padding
-    table_row_height = 0.38 * cm
+    cell_padding_LR = 0.1 * cm  # Left and right padding
+    cell_padding_TB = 0 * cm  # Top and bottom padding (not needed due to `leading` attribute of para styles.)
     table_space_after = 0.5 * cm
 
     def __init__(self, run_settings: RunSettings):
@@ -129,6 +153,10 @@ class NotationTemplate:
         self.styles = getSampleStyleSheet()
         registerFont(TTFont("Bali Music 5", self.run_settings.configdata.font.ttf_filepath))
         self._init_styles()
+        self.notation_row_height = max(
+            self.cell_width_height(html.escape("a,a<a="), self.notationStyle)[1],
+            self.cell_width_height("quick fox", self.tagStyle)[1],
+        )
 
     @property
     def _body_frame(self) -> Frame:
@@ -298,47 +326,47 @@ class NotationTemplate:
                 "col_span": -1,
                 "spantype": SpanType.LAST_CELL,
                 "parastyle": self.metadataPartStyle,
-                "formatter": self._simple_formatter,
+                "formatter": self._simple_formatter_rml_safe,
             },
             TempoMeta: {
                 "cellnr": "first_beat",
                 "col_span": "beat_count",
                 "spantype": SpanType.RANGE,
                 "parastyle": self.metadataDefaultStyle,
-                "formatter": self._gradual_change_formatter,
+                "formatter": self._gradual_change_formatter_rml_safe,
             },
             DynamicsMeta: {
                 "cellnr": "first_beat",
                 "col_span": "beat_count",
                 "spantype": SpanType.RANGE,
                 "parastyle": self.metadataDefaultStyle,
-                "formatter": self._gradual_change_formatter,
+                "formatter": self._gradual_change_formatter_rml_safe,
             },
             LabelMeta: {
                 "cellnr": "beat",
                 # "col_span": -1,
                 # "spantype": SpanType.LAST_CELL,
                 "parastyle": self.metadataLabelStyle,
-                "formatter": self._simple_formatter,
+                "formatter": self._simple_formatter_rml_safe,
             },
             RepeatMeta: {
                 "cellnr": -2,  # right-aligned starting from the last beat. Column -1 is the overflow column.
                 "parastyle": self.metadataGotoStyle,
                 "before": "repeat ",
                 "after": "X",
-                "formatter": self._simple_formatter,
+                "formatter": self._simple_formatter_rml_safe,
             },
             GoToMeta: {
                 "cellnr": "from_beat",
                 "parastyle": self.metadataGotoStyle,
-                "formatter": self._list_formatter,
+                "formatter": self._list_formatter_rml_safe,
                 "before": "go to ",
             },
             SequenceMeta: {
                 "col_span": -1,
                 "spantype": SpanType.LAST_CELL,
                 "parastyle": self.metadataSequenceStyle,
-                "formatter": self._list_formatter,
+                "formatter": self._list_formatter_rml_safe,
                 "before": "sequence: ",
             },
         }
@@ -351,8 +379,8 @@ class NotationTemplate:
             ("FONT", (0, row1), (-1, row2), "Helvetica", 9, 11),
             ("TEXTCOLOR", (0, row1), (-1, row2), colors.black),
             ("ALIGNMENT", (0, row1), (-1, row2), "LEFT"),
-            ("LEFTPADDING", (0, row1), (-1, row2), self.cell_padding),
-            ("RIGHTPADDING", (0, row1), (-1, row2), self.cell_padding),
+            ("LEFTPADDING", (0, row1), (-1, row2), self.cell_padding_LR),
+            ("RIGHTPADDING", (0, row1), (-1, row2), self.cell_padding_LR),
             ("BOTTOMPADDING", (0, row1), (-1, row2), 0),
             ("TOPPADDING  ", (0, row1), (-1, row2), 0),
             ("VALIGN", (0, row1), (-1, row2), "MIDDLE"),
@@ -364,8 +392,8 @@ class NotationTemplate:
             ("FONT", (0, row1), (-1, row2), "Helvetica", 9, 11),
             ("TEXTCOLOR", (0, row1), (-1, row2), colors.black),
             ("ALIGNMENT", (0, row1), (-1, row2), "LEFT"),
-            ("LEFTPADDING", (0, row1), (-1, row2), self.cell_padding),
-            ("RIGHTPADDING", (0, row1), (-1, row2), self.cell_padding),
+            ("LEFTPADDING", (0, row1), (-1, row2), self.cell_padding_LR),
+            ("RIGHTPADDING", (0, row1), (-1, row2), self.cell_padding_LR),
             ("BOTTOMPADDING", (0, row1), (-1, row2), 0),
             ("TOPPADDING  ", (0, row1), (-1, row2), 0),
             ("VALIGN", (0, row1), (-1, row2), "MIDDLE"),
@@ -376,8 +404,8 @@ class NotationTemplate:
             ("FONT", (0, row1), (-1, row2), "Helvetica", 9, 11),
             ("TEXTCOLOR", (0, row1), (-1, row2), colors.blue),
             ("ALIGNMENT", (0, row1), (-1, row2), "LEFT"),
-            ("LEFTPADDING", (0, row1), (-1, row2), self.cell_padding),
-            ("RIGHTPADDING", (0, row1), (-1, row2), self.cell_padding),
+            ("LEFTPADDING", (0, row1), (-1, row2), self.cell_padding_LR),
+            ("RIGHTPADDING", (0, row1), (-1, row2), self.cell_padding_LR),
             ("BOTTOMPADDING", (0, row1), (-1, row2), 0),
             ("TOPPADDING  ", (0, row1), (-1, row2), 0),
             ("VALIGN", (0, row1), (-1, row2), "MIDDLE"),
@@ -388,8 +416,8 @@ class NotationTemplate:
             ("FONT", (0, row1), (-1, row2), "Helvetica", 9, 11),
             ("TEXTCOLOR", (0, row1), (-1, row2), colors.blue),
             ("ALIGNMENT", (0, row1), (-1, row2), "RIGHT"),
-            ("LEFTPADDING", (0, row1), (-1, row2), self.cell_padding),
-            ("RIGHTPADDING", (0, row1), (-1, row2), self.cell_padding),
+            ("LEFTPADDING", (0, row1), (-1, row2), self.cell_padding_LR),
+            ("RIGHTPADDING", (0, row1), (-1, row2), self.cell_padding_LR),
             ("BOTTOMPADDING", (0, row1), (-1, row2), 0),
             ("TOPPADDING  ", (0, row1), (-1, row2), 0),
             ("VALIGN", (0, row1), (-1, row2), "MIDDLE"),
@@ -403,13 +431,14 @@ class NotationTemplate:
             data=content.data,
             colWidths=content.colwidths,
             style=content.style,
-            rowHeights=self.table_row_height,
+            # rowHeights=[self.table_row_height * lines + 2 * self.cell_padding_TB for lines in content.rowheights],
+            rowHeights=content.rowheights,
             splitByRow=False,  # dont'split the table over multiple pages
             hAlign="LEFT",  # align table with the left margin
             spaceAfter=self.table_space_after,
         )
 
-    def format_text(self, text: str, charstyle: str):
+    def format_text_rml_safe(self, text: str, charstyle: str):
         """Applies a HTML character format to the text"""
         if charstyle:
             return f"{charstyle}{text}</font>"
@@ -489,7 +518,7 @@ class NotationTemplate:
         return template
 
     @classmethod
-    def _simple_formatter(
+    def _simple_formatter_rml_safe(
         cls,
         meta: MetaDataBaseModel,
         before: str = "",
@@ -505,9 +534,9 @@ class NotationTemplate:
             charstyle (CharacterStyle, optional): Character style for the added text. Defaults to `metadatastyle`.
         """
         value = getattr(meta, meta.DEFAULTPARAM)
-        return f"{before}{value}{after}"
+        return html.escape(f"{before}{value}{after}")
 
-    def _list_formatter(
+    def _list_formatter_rml_safe(
         self,
         meta: MetaDataBaseModel,
         before: str = "",
@@ -526,10 +555,10 @@ class NotationTemplate:
         """
         value = getattr(meta, meta.DEFAULTPARAM)
         value_ = ", ".join(value) if isinstance(value, list) else value
-        value_ = self.format_text(value_, self.metadataLabelCharStyle)
-        return f"{before}{value_}{after}"
+        value_ = self.format_text_rml_safe(value_, self.metadataLabelCharStyle)
+        return f"{html.escape(before)}{value_}{html.escape(after)}"
 
-    def _gradual_change_formatter(self, meta: MetaDataBaseModel) -> str:
+    def _gradual_change_formatter_rml_safe(self, meta: MetaDataBaseModel) -> str:
         """Formatter for GradualChangeMetadata subclasses. These values can include a range of beats to which the
            metadata applies. Called for TEMPO and DYNAMICS metadata which can gradually change over several beats.
            The value will be preceded or followed by a dotted line that will reach to the right margine of the
@@ -561,4 +590,26 @@ class NotationTemplate:
         elif meta.metatype == "DYNAMICS":
             position_tags = to_aggregated_tags(meta.positions)
             value_ = f"{", ".join(position_tags)}{": " if position_tags else ""}{"{dots}"}{value}"
-        return value_
+        return html.escape(value_)
+
+    @classmethod
+    def cell_width_height(cls, rml_safe_text: str, parastyle: ParagraphStyle, width: int = 10e6) -> tuple[int]:
+        """Calculates the required cell dimensions for the given text and available width (in pt).
+        The function takes text wrapping and cell padding into account and returns the actual width and height
+        of the text.
+        The default value for `width` will return the actual text width + cell padding (10e6 pt > 138.000 inches).
+        Args:
+            rml_safe_text (str): the text to evaluate. The text should be rml safe (formatted with html.escape).
+            parastyle (ParagraphStyle): style to apply to the text.
+            width (int, optional): available width. Defaults to 10e6.
+        Returns:
+            tuple[int]: _description_
+        """
+        if rml_safe_text == "":
+            return 0, 0
+        height = 10e6
+        avail_width = width - 2 * cls.cell_padding_LR
+        para = Paragraph(rml_safe_text, parastyle)
+        act_h = para.wrap(avail_width, height)[1] + 2 * cls.cell_padding_TB
+        act_w = max(para.getActualLineWidths0()) + 2 * cls.cell_padding_LR
+        return (act_w, act_h)

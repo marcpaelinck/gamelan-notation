@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import itertools
 import math
 from typing import Callable, override
@@ -15,7 +16,8 @@ from reportlab.platypus import Paragraph, TableStyle
 
 from src.common.classes import Gongan, Note, Score
 from src.common.constants import Position
-from src.common.metadata_classes import (
+from src.notation2midi.classes import Agent
+from src.notation2midi.metadata_classes import (
     DynamicsMeta,
     GoToMeta,
     LabelMeta,
@@ -25,10 +27,10 @@ from src.common.metadata_classes import (
     SequenceMeta,
     TempoMeta,
 )
-from src.notation2midi.classes import Agent
 from src.notation2midi.notation_parser_tatsu import PassID
 from src.notation2midi.score2notation.formatting import (
     NotationTemplate,
+    RowType,
     SpanType,
     TableContent,
 )
@@ -36,8 +38,7 @@ from src.notation2midi.score2notation.score_to_notation import aggregate_positio
 from src.notation2midi.score2notation.utils import (
     clean_staves,
     has_kempli_beat,
-    measure_to_str,
-    string_width_from_notes,
+    measure_to_str_rml_safe,
 )
 from src.settings.classes import RunSettings
 
@@ -120,6 +121,7 @@ class PDFGeneratorAgent(Agent):
         Returns:
             TableContent:
         """
+
         colwidths = content.colwidths[:-1]  # Available columns excluding the overflow column
         all_colwidths = content.colwidths
         cellspans = []
@@ -164,13 +166,14 @@ class PDFGeneratorAgent(Agent):
                 col_range = (cellnr_, cellnr_)
 
             # Add 'passes' information if available
-            if "passes" in meta.model_fields:
+            if "passes" in meta.__class__.model_fields:
                 if meta.passes:
                     if any(p for p in meta.passes if p > 0):
                         value += f" (pass {','.join(str(p) for p in meta.passes)})"
+
             # merge additional empty cells if necessary to accommondate the text width
-            textwidth = stringWidth(value.format(dots=""), parastyle.fontName, parastyle.fontSize)
-            delta = 0.2 * cm
+            textwidth, _ = self.template.cell_width_height(value.format(dots=""), parastyle=parastyle)
+            delta = 2 * self.template.cell_padding_LR
             span_range = col_range
             if span_width(*col_range) < textwidth + delta:
                 # Merge the cell with empty adjacent cells if possible until the required width is reached.
@@ -200,12 +203,19 @@ class PDFGeneratorAgent(Agent):
             else:
                 dots = ""
 
+            # Determine the required cell height
+            available_width = sum(all_colwidths[c] for c in range(span_range[0], span_range[1] + 1))
+            _, rowheight = self.template.cell_width_height(
+                value.format(dots=dots), parastyle=parastyle, width=available_width
+            )
+
             # Create a new row for the table content
-            value = Paragraph(value.format(dots=dots), parastyle)
-            row = [value if i == cellnr_ else "" for i in range(len(colwidths))]
+            para = Paragraph(value.format(dots=dots), parastyle)
+            row = [para if i == cellnr_ else "" for i in range(len(colwidths))]
 
             # Check if the current row can be merged with the previous row by determining if their contents overlap.
-            if content.data:
+            # Only merge if the previous row contains metadata.
+            if content.data and content.rowtypes[-1] is RowType.METADATA:
                 prevrow_spans = [
                     cmd for cmd in content.style if cmd[0] == "SPAN" and cmd[1][1] == len(content.data) - 1
                 ]
@@ -216,13 +226,18 @@ class PDFGeneratorAgent(Agent):
                 if not content_overlap and not overlapping_spans:
                     # Merge the contents of both rows, replace the previous row with the merge result.
                     row = [c1 or c2 for c1, c2 in zip(content.data.pop(), row)]
+                    rowheight = max(content.rowheights.pop(), rowheight)
                     if span:
                         span_tolist = list(span)
                         span_tolist[1:] = [(el[0], el[1] - 1) for el in span[1:]]
                         span = tuple(span_tolist)
             if span:
                 cellspans.append(span)
-            content.data.append(row)
+            content.append(
+                TableContent(
+                    data=[row], rowtypes=[RowType.METADATA], colwidths=content.colwidths, rowheights=[rowheight]
+                )
+            )
 
         # Update the table style list.
         last_row = len(content.data) - 1
@@ -232,7 +247,7 @@ class PDFGeneratorAgent(Agent):
             else self.template.metadataTableLAStyle(first_row, last_row)
         ) + cellspans
         tablestyle = TableStyle(style_cmds)
-        content.style.extend(tablestyle.getCommands())
+        content.append(TableContent(colwidths=content.colwidths, style=tablestyle.getCommands()))
 
         return content
 
@@ -244,8 +259,10 @@ class PDFGeneratorAgent(Agent):
         """
         for comment in comments:
             if not comment.startswith("#"):
-                content.append_empty_row(col_span=[1, -1], parastyle=self.template.basicparaStyle)
-                content.data[-1][1] = Paragraph(text=f"{comment}", style=self.template.commentStyle)
+                content.append_empty_row(
+                    col_span=[1, -1], rowtype=RowType.COMMENT, parastyle=self.template.basicparaStyle
+                )
+                content.data[-1][1] = Paragraph(text=html.escape(f"{comment}"), style=self.template.commentStyle)
         return content
 
     def _append_metadata(self, content: TableContent, gongan: Gongan, above_notation: bool) -> TableContent:
@@ -284,7 +301,7 @@ class PDFGeneratorAgent(Agent):
                 if metalist := metadict.get(metatype, None):
                     if metatype is SequenceMeta:
                         content.append_empty_row(
-                            col_span=[1, -1], parastyle=self.template.basicparaStyle
+                            col_span=[1, -1], rowtype=RowType.EMPTY, parastyle=self.template.basicparaStyle
                         )  # add an empty row as a separator
                     content = self._append_single_metadata_type(
                         content, metalist=metalist, **self.template.metaFormatParameters[metatype]
@@ -307,10 +324,10 @@ class PDFGeneratorAgent(Agent):
             if not beat_colwidths:
                 beat_colwidths = [0] * len(measures)
             for colnr, measure in enumerate(measures):
-                textwidth = string_width_from_notes(
-                    measure, self.template.notationStyle.fontName, self.template.notationStyle.fontSize
-                )
-                beat_colwidths[colnr] = max(beat_colwidths[colnr], textwidth + 2 * self.template.cell_padding)
+                text = measure_to_str_rml_safe(measure)
+                textwidth, _ = self.template.cell_width_height(text, parastyle=self.template.notationStyle)
+                beat_colwidths[colnr] = max(beat_colwidths[colnr], textwidth)
+            # Determine the remaining available width and assign it to the rightmost column (overflow column)
             # pylint: disable=protected-access
             overflow_colwidth = (
                 [max(self.template.doc.pageTemplates[0].frames[0]._aW - sum(beat_colwidths) - self.TAG_COLWIDTH, 0)]
@@ -338,14 +355,14 @@ class PDFGeneratorAgent(Agent):
             list[list[Paragraph]]: The table structure containing the notation.
         """
 
-        def gongan_id_txt(gid: int, tag: str) -> str:
+        def gongan_id_txt_rml_safe(gid: int, tag: str) -> str:
             """Returns the gongan id as text preceded by as many space chars as necessary to right-aligns
             the id within the cell containing the tag. The gongan id will be appended to the position tag
             of the first stave of the gongan"""
             # Calculate the available width between the position tag and the end of the cell.
             # This is equal to the total cell width minus the width of the position tag.
             tagwidth = stringWidth(tag, self.template.tagStyle.fontName, self.template.tagStyle.fontSize)
-            avail_width = self.TAG_COLWIDTH - tagwidth - 2 * self.template.cell_padding
+            avail_width = self.TAG_COLWIDTH - tagwidth - 2 * self.template.cell_padding_LR
             # Determine the number of characters needed to fill the available width using the
             # gongan id's font size. The font should be monospaced.
             # Then calculate the number of digits of the id and the number of preceding spaces.
@@ -355,18 +372,20 @@ class PDFGeneratorAgent(Agent):
             nr_digits = int(math.log10(gid)) + 1
             nrspaces = max(nrcharpos - nr_digits, 0)
             # Create the text. Use non-breaking spaces: reportlab seems to trim regular spaces.
-            id_text = self.template.format_text(r"&nbsp;" * nrspaces + str(gid), self.template.gonganIdCharStyle)
+            id_text = self.template.format_text_rml_safe(
+                r"&nbsp;" * nrspaces + str(gid), self.template.gonganIdCharStyle
+            )
             return id_text
 
         data = []
         for count, ((position, passid), pos_tag) in enumerate(pos_tags.items()):
             if count == 0:
                 # Add gongan numbering next to first position tag
-                pos_tag += gongan_id_txt(gongan_id, pos_tag)
+                pos_tag += gongan_id_txt_rml_safe(gongan_id, pos_tag)
             row = [Paragraph(pos_tag, self.template.tagStyle)]
             data.append(row)
             for measure in staves_dict[position, passid]:
-                text = measure_to_str(measure)
+                text = measure_to_str_rml_safe(measure)
                 para = Paragraph(text, self.template.notationStyle) if text else ""
                 row.append(para)
             if add_overflow_col:
@@ -409,7 +428,10 @@ class PDFGeneratorAgent(Agent):
                 content.append(
                     TableContent(
                         data=notation_data,
+                        rowtypes=[RowType.NOTATION] * len(notation_data),
                         colwidths=colwidths,
+                        rowheights=[self.template.notation_row_height + self.template.cell_padding_TB * 2]
+                        * len(notation_data),
                         # If gongan has no kempli beat, the beats will be separated by dotted lines.
                         style=(
                             self.template.notationTableStyle(row1, row2)

@@ -10,8 +10,8 @@ from mido import MidiFile
 
 from src.common.classes import Beat, Preset, Score
 from src.common.constants import DEFAULT, Pitch, Position
-from src.common.metadata_classes import PartMeta
 from src.notation2midi.classes import Agent
+from src.notation2midi.metadata_classes import PartMeta
 from src.notation2midi.midi_track import MidiTrackX, TimeUnit
 from src.settings.classes import PartForm, RunSettings
 

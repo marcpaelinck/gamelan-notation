@@ -6,13 +6,13 @@ import unittest
 
 from src.common.classes import Position
 from src.common.constants import DynamicLevel, ParserTag
-from src.common.metadata_classes import (
+from src.notation2midi.classes import MetaDataRecord
+from src.notation2midi.metadata_classes import (
     GonganType,
     MetaDataSwitch,
     Scope,
     ValidationProperty,
 )
-from src.notation2midi.classes import MetaDataRecord
 from src.notation2midi.notation_parser_tatsu import NotationParserAgent
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase

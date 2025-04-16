@@ -3,13 +3,13 @@
 from tkinter.messagebox import askyesno
 
 from src.common.logger import Logging
+from src.common.pipeline import PipeLine
 from src.notation2midi.dict_to_score import ScoreCreatorAgent
 from src.notation2midi.export_to_midiplayer import (
     MidiPlayerUpdatePartAgent,
     MidiPlayerUpdatePdfAgent,
 )
 from src.notation2midi.notation_parser_tatsu import NotationParserAgent
-from src.notation2midi.pipeline import PipeLine
 from src.notation2midi.score2notation.score_to_pdf import PDFGeneratorAgent
 from src.notation2midi.score_to_midi import MidiGeneratorAgent
 from src.notation2midi.score_validation import ScoreValidationAgent

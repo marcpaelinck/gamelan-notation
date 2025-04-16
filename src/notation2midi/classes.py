@@ -16,7 +16,7 @@ from src.common.constants import (
     Stroke,
 )
 from src.common.logger import Logging
-from src.common.metadata_classes import (
+from src.notation2midi.metadata_classes import (
     FrequencyType,
     GonganType,
     MetaDataSwitch,

@@ -224,7 +224,7 @@ def convert_to_wav_pcm(filepath_in: str, filepath_out: str):
 
 
 def parse_metadata(meta: str):
-    from src.common.metadata_classes import MetaDataType
+    from src.notation2midi.metadata_classes import MetaDataType
 
     meta = meta.strip()
     membertypes = MetaDataType.__dict__["__args__"]

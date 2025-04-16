@@ -31,9 +31,11 @@ from src.common.constants import (
     Stroke,
     Velocity,
 )
-from src.common.metadata_classes import (
+from src.notation2midi.classes import Agent, MetaDataRecord, NoteRecord
+from src.notation2midi.metadata_classes import (
     AutoKempyungMeta,
     DynamicsMeta,
+    FrequencyType,
     GonganMeta,
     GonganType,
     GoToMeta,
@@ -52,7 +54,6 @@ from src.common.metadata_classes import (
     ValidationProperty,
     WaitMeta,
 )
-from src.notation2midi.classes import Agent, MetaDataRecord, NoteRecord
 from src.notation2midi.special_notes_treatment import (
     generate_tremolo,
     update_grace_notes_octaves,
@@ -357,6 +358,17 @@ class ScoreCreatorAgent(Agent):
             self.logerror(str(e))
         return notes
 
+    def process_goto(
+        self, frombeat: Beat, tobeat: Beat, pass_nr: int, frequency: FrequencyType = FrequencyType.ALWAYS
+    ) -> None:
+        frombeat.goto[pass_nr] = tobeat  # TODO GOTO REMOVE
+        goto_item = Beat.GoTo(
+            beat=tobeat,
+            passes=[pass_nr],
+            frequency=frequency,
+        )
+        frombeat.goto_[pass_nr] = goto_item
+
     def _apply_metadata(self, gongan: Gongan) -> None:
         """Processes the metadata of a gongan into the object model.
 
@@ -365,17 +377,14 @@ class ScoreCreatorAgent(Agent):
             gongan (Gongan): The gongan to which the metadata applies.
         """
 
-        def process_goto(gongan: Gongan, goto: MetaData) -> None:
+        def process_goto_meta(gongan: Gongan, goto: MetaData) -> None:
             for rep in goto.data.passes:
-                gongan.beats[goto.data.beat_seq].goto[rep] = self.score.flowinfo.labels[
-                    goto.data.label
-                ]  # TODO GOTO REMOVE
-                goto_item = Beat.GoTo(
-                    beat=self.score.flowinfo.labels[goto.data.label],
-                    passes=goto.data.passes,
+                self.process_goto(
+                    frombeat=gongan.beats[goto.data.beat_seq],
+                    tobeat=self.score.flowinfo.labels[goto.data.label],
+                    pass_nr=rep,
                     frequency=goto.data.frequency,
                 )
-                gongan.beats[goto.data.beat_seq].goto_[rep] = goto_item
 
         metadata = gongan.metadata.copy() + self.score.global_metadata
         haslabel = False  # Will be set to true if the gongan has a metadata Label tag.
@@ -391,7 +400,7 @@ class ScoreCreatorAgent(Agent):
                 case GoToMeta():
                     # Add goto info to the beat
                     if self.score.flowinfo.labels.get(meta.data.label, None):
-                        process_goto(gongan, meta)
+                        process_goto_meta(gongan, meta)
                     else:
                         # Label not yet encountered: store GoTo obect in flowinfo
                         self.score.flowinfo.gotos[meta.data.label].append((gongan, meta))
@@ -414,7 +423,7 @@ class ScoreCreatorAgent(Agent):
                     # Process any GoTo pointing to this label
                     goto: MetaData
                     for gongan_, goto in self.score.flowinfo.gotos[meta.data.name]:
-                        process_goto(gongan_, goto)
+                        process_goto_meta(gongan_, goto)
                 case OctavateMeta():
                     for beat in gongan.beats:
                         if meta.data.instrument in beat.measures.keys():
@@ -567,8 +576,7 @@ class ScoreCreatorAgent(Agent):
                 to_beat = self.score.flowinfo.labels[label]
                 # TODO GOTO modify, also for frequency = ALWAYS
                 pass_nr = max([p for p in from_beat.goto.keys()] or [0]) + 1  # Select next available pass
-                from_beat.goto[pass_nr] = to_beat  # TODO GOTO delete
-                from_beat.goto_[pass_nr] = Beat.GoTo(beat=to_beat, passes=[pass_nr], frequency=sequence.frequency)
+                self.process_goto(frombeat=from_beat, tobeat=to_beat, pass_nr=pass_nr, frequency=sequence.frequency)
                 gongan = self.score.gongans[to_beat.gongan_seq]
 
     @classmethod
