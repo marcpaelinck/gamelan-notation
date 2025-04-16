@@ -407,7 +407,7 @@ class PDFGeneratorAgent(Agent):
             comment_table = self.template.create_table(content)
             self.story.append(comment_table)
 
-        for gongan in self.score.gongans:
+        for gongan in self.gongan_iterator(self.score):
             if not gongan.beats:
                 continue
 
