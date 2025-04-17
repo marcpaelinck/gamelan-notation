@@ -40,7 +40,7 @@ midi:
         # The effect of two consecutive tremolo notes is that these notes will be alternated throughout the pattern.
         # e.g. consecutive acc tremolo notes DONG and DENG will result in a pattern DONG-DENG-DONG-DENG etc. with as many notes as the 
         # length of `accelerating_pattern`. The total duration will be the same as the duration of a single acc tremolo note.
-        # accelerating_pattern - relative duration of the notes in 1/base_note_time. E.g. if base_note_time=24, then 24 is a standard note duration.
+        # accelerating_pattern - relative duration of the notes in midi ticks. E.g. if base_note_time=24, then 24 is a standard note duration.
         #                        The list should contain an even number of values so that alternating note patterns end on the second note.
         # accelerating_velocity - MIDI velocity value (0-127) for each note. The number of values should match that of `accelerating_pattern`.
         notes_per_quarternote: 3
