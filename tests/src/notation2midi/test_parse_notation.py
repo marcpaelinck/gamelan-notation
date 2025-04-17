@@ -2,8 +2,6 @@
 Tests for the Tatsu based notation parser
 """
 
-import unittest
-
 from src.common.classes import Position
 from src.common.constants import DynamicLevel, ParserTag
 from src.notation2midi.classes import MetaDataRecord
@@ -22,6 +20,8 @@ grammar_header = """
 
 start  = "{"  @:metadata "}"  $  ;
 """
+
+# pylint: disable=protected-access
 
 
 class NotationParserTester(BaseUnitTestCase):
@@ -267,7 +267,7 @@ class NotationParserTester(BaseUnitTestCase):
         for metanotation, expected in self.metadata:
             with self.subTest(notation=metanotation):
                 gongan = "ugal\t\n"  # need to append dummy gongan to create valid notation
-                notation = self.parser.run("metadata\t" + metanotation + "\n\n" + gongan)
+                notation = self.parser._main(notation="metadata\t" + metanotation + "\n\n" + gongan)
                 self.assertEqual(notation.notation_dict[-1][ParserTag.METADATA][0], expected)
 
     # Tests for range_str_to_list

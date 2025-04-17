@@ -67,6 +67,8 @@ notations:
     defaults:
         instrumentgroup: GONG_KEBYAR
         folder_in: ./tests/data/notation/${{_PARENT_.subfolder}}
+        # Formatting for version id, using last modification date of the input file.
+        version_fmt: "%d-%b-%Y"
         folder_out_nonprod: ./tests/data/notation/${{_PARENT_.subfolder}}
         folder_out_prod: ${{midiplayer.folder}}
         midi_out_file_pattern: !!str "${{_PARENT_.title}}_{part_id}_${{midi.midiversion}}.mid"

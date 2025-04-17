@@ -2,20 +2,19 @@
 
 from src.common.classes import Note
 from src.common.constants import DEFAULT, Position
-from src.notation2midi.score2notation.score_to_notation import (
-    gongan_to_records,
-    notelist_to_string,
-)
+from src.notation2midi.score2notation.score_to_notation import ScoreToNotationAgent
 from src.settings.constants import InstrumentFields
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
 from tests.src.utils_for_tests import PositionNote, create_gongan
 
+# pylint: disable=protected-access
+
 
 class ScoreToNotationTester(BaseUnitTestCase):
 
     def setUp(self):
-        Settings.get(notation_id="test-gongkebyar", part_id="full")
+        self.settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
         self.symbol_to_note_lookup = {(note.position, note.symbol): note for note in Note.VALIDNOTES}
 
         self.notation_data = [
@@ -49,12 +48,14 @@ class ScoreToNotationTester(BaseUnitTestCase):
         # fmt: on
 
     def test_notelist_to_string(self):
+        agent = ScoreToNotationAgent(self.settings, None)
         for chars, expected in self.notation_data:
             with self.subTest(chars=chars):
                 char_list = [self.symbol_to_note_lookup[(Position.PEMADE_POLOS, c)] for c in chars]
-                self.assertEqual(notelist_to_string(char_list), expected)
+                self.assertEqual(agent._notelist_to_string(char_list), expected)
 
     def test_gongan_to_records(self):
+        agent = ScoreToNotationAgent(self.settings, None)
         for gongan, expected in self.gongan_data:
             with self.subTest(gongan=gongan.id):
-                self.assertEqual(gongan_to_records(gongan), expected, "Failed for gongan %s" % gongan.id)
+                self.assertEqual(agent._gongan_to_records(gongan), expected, "Failed for gongan %s" % gongan.id)

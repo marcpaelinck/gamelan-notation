@@ -1,7 +1,3 @@
-# pylint: disable=missing-module-doctring
-# pylint: disable=missing-function-doctring
-# pylint: disable=protected-access
-import os
 import unittest
 from unittest.mock import MagicMock
 
@@ -32,6 +28,11 @@ from src.notation2midi.metadata_classes import (
 )
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
+
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=protected-access
+# pylint: disable=invalid-name
 
 
 class PositionNote:
@@ -162,14 +163,14 @@ class TestDictToScoreConverter(BaseUnitTestCase):
         mock_notation = MagicMock(spec=Notation)
         mock_notation.settings = settings
         mock_notation.notation_dict = get_notation()
-        return ScoreCreatorAgent(mock_notation)
+        return ScoreCreatorAgent(settings, mock_notation)
 
     def get_converter_beat_at_end(self):
         settings = Settings.get(notation_id="test_beat_at_end", part_id="full")
         mock_notation = MagicMock(spec=Notation)
         mock_notation.settings = settings
         mock_notation.notation_dict = get_notation()
-        return ScoreCreatorAgent(mock_notation)
+        return ScoreCreatorAgent(settings, mock_notation)
 
     def test_create_score(self):
         converter = self.get_converter_sp()

@@ -104,6 +104,8 @@ NOMATCH_2 = "NO MATCH NEW"
 COUNT = "count"
 DETAILS = "details"
 
+NO_DIFFERENCES = {"No differences": tuple()}
+
 
 def to_text(path, midifilename):
     midifilepath = os.path.join(path, midifilename)
@@ -320,7 +322,7 @@ def compare_file_contents(file1: str, file2: str) -> dict[tuple[str], tuple[dict
 
 def compare_directories(
     dir1: str, dir2: str, file_filter="*.txt"
-) -> dict[tuple[str], tuple[dict[str, Any]], list[dict[str, Any]]]:
+) -> dict[str, dict[tuple[str] | str, tuple[dict[str, Any]], list[dict[str, Any]]]]:
     """Compares all files with the same name in two folders.
     Args:
         dir1, dir2 (str): _description_
@@ -328,7 +330,7 @@ def compare_directories(
         file_filter (str, optional): Defaults to "*.txt".
 
     Returns:
-        _type_: _description_
+        dict[tuple[str], tuple[dict[str, Any]], list[dict[str, Any]]]: _description_
     """
     dir1_files = glob(os.path.join(dir1, file_filter))
     dir2_files = glob(os.path.join(dir2, file_filter))
@@ -345,7 +347,7 @@ def compare_directories(
         if not filecmp.cmp(file1, file2, shallow=False):
             differences[file] = compare_file_contents(file1, file2)
         else:
-            differences[file] = {"No differences": []}
+            differences[file] = NO_DIFFERENCES
 
     return sorted_dict(differences)
 
@@ -379,7 +381,7 @@ def compare_txt_files(
     if not filecmp.cmp(filepath_old, filepath_new, shallow=False):
         differences = compare_file_contents(filepath_old, filepath_new)
     else:
-        differences = {("No differences"): tuple()}
+        differences = NO_DIFFERENCES
 
     # save report to file
     filepath_out = os.path.split(filepath_new)[0]
@@ -392,7 +394,7 @@ def compare_txt_files(
         save_file_summary(outfile, summary=differences, detailed=True)
 
 
-def compare_all(ref_dir: str, other_dir: str):
+def compare_all(ref_dir: str, other_dir: str) -> bool:
     """Compares all matching midi files in two directories
        or compares two files.
     Args:
@@ -411,6 +413,7 @@ def compare_all(ref_dir: str, other_dir: str):
     # 2. compare the text files
     LOGGER.info("Comparing .TXT files in `reference` and `output` folder")
     differences = compare_directories(ref_dir, other_dir, "*.txt")
+    no_differences_found = all(diff == NO_DIFFERENCES for diff in differences.values())
 
     # 3. save report to file
     LOGGER.info("Saving summary report in comparison.txt")
@@ -423,6 +426,8 @@ def compare_all(ref_dir: str, other_dir: str):
         for file, diff in differences.items():
             outfile.write(f"Differences in {file}:\n")
             save_file_summary(outfile, summary=diff, detailed=True)
+
+    return no_differences_found
 
 
 if __name__ == "__main__":

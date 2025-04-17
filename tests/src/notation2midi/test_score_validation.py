@@ -15,7 +15,7 @@ class ScoreValidationTester(BaseUnitTestCase):
 
     def setUp(self):
         # Create a sample gongan with one incorrect beat (PEMADE and SANGSIH are the same) and one correct beat
-        settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
+        self.settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
         P = PositionNote(Position.PEMADE_POLOS)
         S = PositionNote(Position.PEMADE_SANGSIH)
 
@@ -28,10 +28,10 @@ class ScoreValidationTester(BaseUnitTestCase):
                 )
         # fmt: on
 
-        self.sample_gk_score = Score(title="Test", gongans=[gongan], settings=settings)
+        self.sample_gk_score = Score(title="Test", gongans=[gongan], settings=self.settings)
 
     def test_incorrect_kempyung(self):
-        validator = ScoreValidationAgent(self.sample_gk_score)
+        validator = ScoreValidationAgent(self.settings, self.sample_gk_score)
         invalids, corrected, ignored = validator._incorrect_kempyung(self.sample_gk_score.gongans[0], autocorrect=True)
 
         self.assertEqual(len(invalids), 0)
