@@ -123,7 +123,7 @@ notations:
                 file: Cendrawasih_complete_font5.tsv
                 loop: false
     kahyangan:
-        title: Kahyangan
+        title: Kahyangan (dance improv.)
         subfolder: kahyangan
         parts:
             full:

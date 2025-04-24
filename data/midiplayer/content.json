@@ -116,7 +116,7 @@
                                 }
                         ]
                 }, 
-                {"title": "Rejang Dewa", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Rejang Dewa_full_GAMELAN1.pdf", "notation_version": "01-apr-2025", "parts": [
+                {"title": "Rejang Dewa", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Rejang Dewa_full_GAMELAN1.pdf", "notation_version": "23-apr-2025", "parts": [
                                 {"part": "entire piece", "file": "Rejang Dewa_full_GAMELAN1.mid", "loop": false, "markers": {
                                                 "reyong intro": 0.007458215348509973, 
                                                 "pengawak": 0.06968459207291151, 
