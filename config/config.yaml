@@ -4,14 +4,14 @@
 # All other sections refer to subfolders and files in the `data` folder.
 
 instruments: 
-    folder: ./settings/instruments
+    folder: ./config/instruments
     instruments_file: instruments.tsv
     tags_file: instrumenttags.tsv
     rules_file: rules.tsv
     # shorthand_notation: instruments for which silence and extension symbols may be omitted
     shorthand_notation: [UGAL, CALUNG, JEGOGAN, GONGS, KEMPLI]
 midi:
-    folder: ./settings/midi
+    folder: ./config/midi
     midi_definition_file: gamelan_midinotes1.tsv
     presets_file: gamelan_presets1.tsv
     midiversion: GAMELAN1
@@ -47,17 +47,17 @@ midi:
         accelerating_pattern: [48, 40, 32, 26, 22, 18, 14, 10, 10, 10, 10, 10]
         accelerating_velocity: [100, 100, 100, 100, 100, 100, 100, 90, 80, 70, 60, 50]
 font:
-    folder: ./settings/font
+    folder: ./config/font
     file: balimusic5font.tsv
     ttf_file: bali-music-5.ttf
 grammar:
-    folder: ./settings/grammars
+    folder: ./config/grammars
     notationfile: notation.ebnf
     metadatafile: metadata.ebnf
     picklefile: notation_model.pickle
     fontfile: font5.ebnf
 pdf_converter:
-    folder: ./settings/pdf_converter
+    folder: ./config/pdf_converter
     # Date format in PDF document header
     version_fmt: "%d-%b-%Y"
     fonts:

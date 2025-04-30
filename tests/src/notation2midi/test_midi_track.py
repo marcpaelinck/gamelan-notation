@@ -1,5 +1,4 @@
 import os
-import unittest
 
 from mido import Message
 
@@ -11,8 +10,8 @@ from tests.conftest import BaseUnitTestCase
 
 
 def setUpModule():
-    os.environ["GAMELAN_NOTATION_CONFIG_PATH"] = "./tests/settings/config.yaml"
-    os.environ["GAMELAN_NOTATION_N2M_SETTINGS_PATH"] = "./tests/settings/notation2midi.yaml"
+    os.environ["GAMELAN_NOTATION_CONFIG_PATH"] = "./tests/config/config.yaml"
+    os.environ["GAMELAN_NOTATION_N2M_SETTINGS_PATH"] = "./tests/config/notation2midi.yaml"
 
 
 class TestSpecialNotes(BaseUnitTestCase):

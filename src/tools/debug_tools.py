@@ -34,7 +34,7 @@ def get_all_tags():
 
 
 def map_positions():
-    instrumenttag_dict = pd.read_csv("./settings/instrumenttags_1.csv", sep="\t").to_dict(orient="records")
+    instrumenttag_dict = pd.read_csv("./config/instrumenttags_1.csv", sep="\t").to_dict(orient="records")
     tag0 = InstrumentTag.model_validate(instrumenttag_dict[0])
     tags = [InstrumentTag.model_validate(tag) for tag in instrumenttag_dict]
     mapping_r = [
@@ -115,7 +115,7 @@ def map_positions():
     logger.info([t.tag for t in tags if not t.positions])
     tags_df = pd.DataFrame.from_records(tags_dict)
     tags_df.sort_values(by="tag", key=lambda col: col.str.lower())
-    tags_df.to_csv("./settings/instrumenttags.csv", sep="\t", index=False)
+    tags_df.to_csv("./config/instrumenttags.csv", sep="\t", index=False)
 
 
 def merge_parts(datapath: str, basefile: str, mergefile: str, resultfile: str):

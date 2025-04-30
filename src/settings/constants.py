@@ -17,7 +17,7 @@ class SStrEnum(StrEnum):
 
 
 class PresetsFields(SStrEnum):
-    """settings/midi/presets.tsv"""
+    """config/midi/presets.tsv"""
 
     INSTRUMENTGROUP = "instrumentgroup"
     INSTRUMENTTYPE = "instrumenttype"
@@ -29,7 +29,7 @@ class PresetsFields(SStrEnum):
 
 
 class MidiNotesFields(SStrEnum):
-    """settings/midi/gamelan_midinotes<nr>.tsv"""
+    """config/midi/gamelan_midinotes<nr>.tsv"""
 
     INSTRUMENTGROUP = "instrumentgroup"
     INSTRUMENTTYPE = "instrumenttype"
@@ -44,7 +44,7 @@ class MidiNotesFields(SStrEnum):
 
 
 class FontFields(SStrEnum):
-    """settings/font/balimusic<nr>font.tsv"""
+    """config/font/balimusic<nr>font.tsv"""
 
     SYMBOL = "symbol"
     UNICODE = "unicode"
@@ -78,7 +78,7 @@ class NoteFields(SStrEnum):
 
 
 class InstrumentFields(SStrEnum):
-    """settings/instruments/instruments.tsv"""
+    """config/instruments/instruments.tsv"""
 
     GROUP = "group"
     INSTRUMENT = "instrument"
@@ -88,7 +88,7 @@ class InstrumentFields(SStrEnum):
 
 
 class InstrumentTagFields(SStrEnum):
-    """settings/instruments/instrumenttags.tsv"""
+    """config/instruments/instrumenttags.tsv"""
 
     TAG = "tag"
     ADDITION = "addition"
@@ -98,7 +98,7 @@ class InstrumentTagFields(SStrEnum):
 
 
 class RuleFields(SStrEnum):
-    """settings/instruments/rules.tsv"""
+    """config/instruments/rules.tsv"""
 
     GROUP = "group"
     RULETYPE = "ruletype"

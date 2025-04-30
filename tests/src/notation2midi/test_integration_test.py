@@ -24,13 +24,13 @@ class IntegrationTester(BaseUnitTestCase):
         """
         NOTE: this test typically takes between 30 seconds and a minute to run.
         1. Runs the src.notation2midi.main.main() function for all notations marked RUN_ALL in
-           tests/settings/config.yaml and saves the MIDI files in the `data/notation/_integration_test/output` folder.
+           tests/config/config.yaml and saves the MIDI files in the `data/notation/_integration_test/output` folder.
         2. Creates a text version of each MIDI file in the same folder.
         3. Compares these with the corresponding files in the `reference` folder and saves a report
            `comparison.txt` and `comparison details.txt` in the `output` folder.
         The content of file comparison.txt should be checked manually.
         """
-        os.environ["GAMELAN_NOTATION_N2M_SETTINGS_PATH"] = "./tests/settings/notation2midi_integration_test.yaml"
+        os.environ["GAMELAN_NOTATION_N2M_SETTINGS_PATH"] = "./tests/config/notation2midi_integration_test.yaml"
         # The dummy notation item `integration_test` in config.yaml contains the input and output folders
         # for the compare_all function.
         run_settings = Settings.get(notation_id="integration_test", part_id="dummy")

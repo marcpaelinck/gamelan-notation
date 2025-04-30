@@ -46,7 +46,7 @@ logger = Logging.get_logger(__name__)
 #               "formats": <dict with formatting info>}
 #
 # <table-key> is the target attribute of src.settings.classes.Data that should contain the table content.
-# <top level key> refers to keys in settings/config.yaml that are direct children of the root.
+# <top level key> refers to keys in config/config.yaml that are direct children of the root.
 # <key of data subfolder> and <key of file name> are the sub-keys of <top level key> that contain the folder and
 #                         file name.
 # <dict with formatting info> is a dict that contains information about the formatting to apply to each individual

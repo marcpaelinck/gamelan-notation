@@ -14,7 +14,6 @@ from openpyxl.cell.cell import Cell
 from openpyxl.styles import Font
 
 from src.common.logger import Logging
-from src.settings.settings import MARGAPATI4, MARGAPATI5, MARGAPATIREYONG3
 
 logger = Logging.get_logger(__name__)
 
@@ -307,13 +306,12 @@ def substitutefont_all_xlsx_files(
         substitutefont_xlsx_file(filepath, savepath, fontreplacepair, find_replace_pairs)
 
 
-SYMBOLREPLACETABLEPATH = "./settings/convert4to5font.tsv"
+SYMBOLREPLACETABLEPATH = "./config/convert4to5font.tsv"
 
 XL_FOLDERPATH = "C:/Users/marcp/Documents/administratie/_VRIJETIJD_REIZEN/Gamelangroepen/Studiemateriaal/Muzieknotatie"
 XL_SAVEFOLDERPATH = (
     "C:/Users/marcp/Documents/administratie/_VRIJETIJD_REIZEN/Gamelangroepen/Studiemateriaal/Muzieknotatie/balimusic5"
 )
-TSV_SETTING = MARGAPATIREYONG3
 if __name__ == "__main__":
     # substitutefont_tsv_file(
     #     filepath=os.path.join(TSV_SETTING.datapath, TSV_SETTING.infilename),
