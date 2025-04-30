@@ -268,7 +268,7 @@ class ScoreCreatorAgent(Agent):
             )
             if not note:
                 # Most common error is wrong octave. Find similar symbols with the correct octave.
-                any_oct_symbol = note_record + ",<"
+                any_oct_symbol = note_record.symbol + ",<"
                 alternatives = [
                     n.symbol
                     for n in Note.VALIDNOTES

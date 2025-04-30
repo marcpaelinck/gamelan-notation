@@ -246,6 +246,14 @@ notations:
                 name: entire piece
                 file: Margapati_font5.tsv
                 loop: false
+    merahputih:
+        title: Merah Putih
+        subfolder: merah putih
+        parts:
+            full:
+                name: entire piece (loop)
+                file: Merah Putih.tsv
+                loop: true
     pendet:
         title: Pendet
         subfolder: pendet
@@ -263,6 +271,14 @@ notations:
                 name: entire piece
                 file: Puspa Mekar.tsv
                 loop: false
+            kawitan:
+                name: kawitan
+                file: Puspa Mekar kawitan.tsv
+                loop: true
+            pengecet1:
+                name: pengecet 1
+                file: Puspa mekar pengecet1.tsv
+                loop: true
     rejangdewa:
         title: Rejang Dewa
         subfolder: rejang dewa

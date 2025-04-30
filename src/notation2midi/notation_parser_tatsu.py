@@ -234,7 +234,7 @@ class NotationParserAgent(Agent):
         for note_chars in measure:
             try:
                 next_note = self._parse_generic_note(note_chars, position)
-            except ValueError as e:
+            except (ValueError, KeyError) as e:
                 self.logerror(str(e))
             if not next_note:
                 self.logerror(f"Could not parse {note_chars[0]} from {measure} for {position.value}")

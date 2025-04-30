@@ -98,6 +98,10 @@
                                 {"part": "entire piece", "file": "Margapati_full_GAMELAN1.mid", "loop": false, "markers": {}}
                         ]
                 }, 
+                {"title": "Merah Putih", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Merah Putih_full_GAMELAN1.pdf", "notation_version": "28-apr-2025", "parts": [
+                                {"part": "entire piece (loop)", "file": "Merah Putih_full_GAMELAN1.mid", "loop": true, "markers": {}}
+                        ]
+                }, 
                 {"title": "Pendet", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Pendet_full_GAMELAN1.pdf", "notation_version": "01-apr-2025", "parts": [
                                 {"part": "entire piece", "file": "Pendet_full_GAMELAN1.mid", "loop": false, "markers": {
                                                 "kawitan": 0.1712440510908799, 
@@ -107,13 +111,16 @@
                                 }
                         ]
                 }, 
-                {"title": "Puspa Mekar", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Puspa Mekar_full_GAMELAN1.pdf", "notation_version": "01-apr-2025", "parts": [
+                {"title": "Puspa Mekar", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Puspa Mekar_full_GAMELAN1.pdf", "notation_version": "29-apr-2025", "parts": [
                                 {"part": "entire piece", "file": "Puspa Mekar_full_GAMELAN1.mid", "loop": false, "markers": {
-                                                "kawitan": 0.007461053301764788, 
-                                                "pengawak": 0.3185571317721494, 
-                                                "pengecet": 0.6518175125843099
+                                                "kawitan": 0.004929710543829235, 
+                                                "pengawak": 0.21047892137933302, 
+                                                "pengecet 1": 0.4306726590037055, 
+                                                "Pengecet 2": 0.6216923696296965
                                         }
-                                }
+                                }, 
+                                {"part": "kawitan", "file": "Puspa Mekar_kawitan_GAMELAN1.mid", "loop": true, "markers": {}}, 
+                                {"part": "pengecet 1", "file": "Puspa Mekar_pengecet1_GAMELAN1.mid", "loop": true, "markers": {}}
                         ]
                 }, 
                 {"title": "Rejang Dewa", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Rejang Dewa_full_GAMELAN1.pdf", "notation_version": "23-apr-2025", "parts": [
