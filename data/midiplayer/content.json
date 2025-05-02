@@ -111,7 +111,7 @@
                                 }
                         ]
                 }, 
-                {"title": "Puspa Mekar", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Puspa Mekar_full_GAMELAN1.pdf", "notation_version": "29-apr-2025", "parts": [
+                {"title": "Puspa Mekar", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Puspa Mekar_full_GAMELAN1.pdf", "notation_version": "01-may-2025", "parts": [
                                 {"part": "entire piece", "file": "Puspa Mekar_full_GAMELAN1.mid", "loop": false, "markers": {
                                                 "kawitan": 0.004929710543829235, 
                                                 "pengawak": 0.21047892137933302, 
@@ -123,14 +123,14 @@
                                 {"part": "pengecet 1", "file": "Puspa Mekar_pengecet1_GAMELAN1.mid", "loop": true, "markers": {}}
                         ]
                 }, 
-                {"title": "Rejang Dewa", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Rejang Dewa_full_GAMELAN1.pdf", "notation_version": "23-apr-2025", "parts": [
+                {"title": "Rejang Dewa", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Rejang Dewa_full_GAMELAN1.pdf", "notation_version": "01-may-2025", "parts": [
                                 {"part": "entire piece", "file": "Rejang Dewa_full_GAMELAN1.mid", "loop": false, "markers": {
                                                 "reyong intro": 0.007458215348509973, 
                                                 "pengawak": 0.06968459207291151, 
                                                 "pengecet": 0.6809872688264
                                         }
                                 }, 
-                                {"part": "intro", "file": "Rejang Dewa_intro_GAMELAN1.mid", "loop": false, "markers": {}}, 
+                                {"part": "intro", "file": "Rejang Dewa_intro_GAMELAN1.mid", "loop": true, "markers": {}}, 
                                 {"part": "pengawak", "file": "Rejang Dewa_pengawak_GAMELAN1.mid", "loop": true, "markers": {}}, 
                                 {"part": "pengecet", "file": "Rejang Dewa_pengecet_GAMELAN1.mid", "loop": true, "markers": {
                                                 "Pengecet": 0.020834056738081183

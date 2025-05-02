@@ -1,5 +1,6 @@
 from src.common.classes import Gongan, Note
 from src.common.constants import Pitch, Position, RuleValue, Stroke
+from src.notation2midi.metadata_classes import MetaData
 
 
 class PositionNote:
@@ -83,7 +84,7 @@ class PositionNote:
         return self.note(pitch=Pitch.NONE, octave=None, stroke=Stroke.EXTENSION)
 
 
-def create_gongan(g_id: int, staves: dict[str, dict[int, list[list[Note]]]]) -> Gongan:
+def create_gongan(g_id: int, staves: dict[str, dict[int, list[list[Note]]]], metadata: list[MetaData] = None) -> Gongan:
     """creates a gongan with multiple position and beats
     Args:
         g_id (int): gong id
@@ -91,7 +92,8 @@ def create_gongan(g_id: int, staves: dict[str, dict[int, list[list[Note]]]]) -> 
         staves (dict[str, dict[int,list[list[Note]]]]): contains a list of measures for each position and pass.
         Each measure is a list of Note objects which can be created with the PositionNote class.
     """
-
+    if metadata is None:
+        metadata = []
     nr_beats = max([len(measure) for pass_ in staves.values() for measure in pass_.values()])
     beats = [
         {
@@ -117,5 +119,5 @@ def create_gongan(g_id: int, staves: dict[str, dict[int, list[list[Note]]]]) -> 
                 }
                 beats[beat_seq]["measures"] |= {position: measure}
 
-    gongan = {"id": g_id, "beats": beats}
+    gongan = {"id": g_id, "beats": beats, "metadata": metadata}
     return Gongan.model_validate(gongan)

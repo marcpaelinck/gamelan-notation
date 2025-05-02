@@ -1,7 +1,7 @@
 ---
 # SETTINGS FILE FOR NOTATION2MIDI
 # The settings below (except for options) refer to values in the data.yaml file.
-notation_id: puspamekar
+notation_id: rejangdewa
 part_id: full
 options:
   debug_logging: false
@@ -18,6 +18,6 @@ options:
     # `save_corrected_to_file`: true - saves a new version of the input file after processing it. Will include autocorrections.
     save_corrected_to_file : false
     save_pdf_notation: true
-    save_midifile : true
+    save_midifile : false
     # If update_midiplayer_content==true, MIDI file is saved in midiplayer folder and content.json file is updated.
     # This setting is only effective if the runtype is RUN_ALL.

@@ -450,7 +450,7 @@ class NotationTemplate:
             canvas (Canvas):
             document (_type_):
         """
-        notation_webpage = "https://swarasanti.nl/music-notation/"
+        notation_webpage = self.run_settings.pdf_converter.notation_webpage
         headerHeight = 1.5 * cm
         hyperlink_ypos = 1.0 * cm
         lineDistance = 2  # distance between header text bottom and separator line

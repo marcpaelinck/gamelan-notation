@@ -1,3 +1,5 @@
+"""Utilities to format instrument samples in order to include them in a SoundFont file"""
+
 import json
 import os
 from glob import glob
@@ -9,14 +11,7 @@ import regex
 from scipy.io import wavfile
 
 from src.common.classes import InstrumentTag, Note
-from src.common.constants import (
-    InstrumentGroup,
-    InstrumentType,
-    Modifier,
-    Pitch,
-    Position,
-    Stroke,
-)
+from src.common.constants import InstrumentType, Modifier, Pitch, Position, Stroke
 from src.common.logger import Logging
 
 logger = Logging.get_logger(__name__)
@@ -35,7 +30,6 @@ def get_all_tags():
 
 def map_positions():
     instrumenttag_dict = pd.read_csv("./config/instrumenttags_1.csv", sep="\t").to_dict(orient="records")
-    tag0 = InstrumentTag.model_validate(instrumenttag_dict[0])
     tags = [InstrumentTag.model_validate(tag) for tag in instrumenttag_dict]
     mapping_r = [
         (
@@ -156,7 +150,7 @@ def merge_parts(datapath: str, basefile: str, mergefile: str, resultfile: str):
     # Concatenate both tables
     new_df = pd.concat([base_df, merge_df], ignore_index=True)
     # Sort the new table
-    new_df["tagid"] = new_df["tag"].apply(lambda tag: sortingorder.index(tag))
+    new_df["tagid"] = new_df["tag"].apply(sortingorder.index)
     new_df.sort_values(by=["gongannr", "tagid"], inplace=True, ignore_index=True)
     # Add empty lines between gongans
     mask = new_df["gongannr"].ne(new_df["gongannr"].shift(-1))
@@ -167,8 +161,8 @@ def merge_parts(datapath: str, basefile: str, mergefile: str, resultfile: str):
     new_df.to_csv(path.join(datapath, resultfile), sep="\t", index=False, header=False)
 
 
-def rename_files(folderpath: str, filter: str, findtext: str, replacetext: str, print_only: bool = True):
-    filelist = glob(path.join(folderpath, filter))
+def rename_files(folderpath: str, filefilter: str, findtext: str, replacetext: str, print_only: bool = True):
+    filelist = glob(path.join(folderpath, filefilter))
     if isinstance(findtext, str) and isinstance(replacetext, str):
         findtext = [findtext]
         replacetext = [replacetext]
@@ -186,9 +180,9 @@ def rename_files(folderpath: str, filter: str, findtext: str, replacetext: str, 
         logger.info("No files were renamed (print_only==True)")
 
 
-def rename_notes_in_filenames(folderpath: str, group: InstrumentGroup, print_only: bool = True):
-    # In the filenames of Bali Gamelan Samples, Ding 1 is always the first note in an instrument's range.
-    # This function renames the files according to the (relative) naming in this application.
+def rename_notes_in_filenames(folderpath: str, print_only: bool = True):
+    """In the filenames of Bali Gamelan Samples, Ding 1 is always the first note in an instrument's range.
+    This function renames the files according to the (relative) naming in this application."""
     instrdict = {
         "Kantil": InstrumentType.KANTILAN,
         "Pemade": InstrumentType.PEMADE,
@@ -210,7 +204,7 @@ def rename_notes_in_filenames(folderpath: str, group: InstrumentGroup, print_onl
         notedict = {filenotes[lookup[instr_type].index(note)]: note.value for note in lookup[instr_type]}
         rename_files(
             folderpath,
-            filter=f"*{instr_name}*.wav",
+            filefilter=f"*{instr_name}*.wav",
             findtext=list(notedict.keys()),
             replacetext=list(notedict.values()),
             print_only=print_only,
@@ -240,12 +234,12 @@ def parse_metadata(meta: str):
     keyword_pattern = r"{ *([A-Z]+)"
     match = regex.match(keyword_pattern, meta)
     if not match:
-        raise Exception("Could not determine metadata type.")
+        raise ValueError("Could not determine metadata type.")
     meta_keyword = match.group(1)
     # Try to retrieve the corresponding fields
     fields = field_dict.get(meta_keyword, None)
     if not fields:
-        raise Exception(f"Invalid keyword {meta_keyword}.")
+        raise ValueError(f"Invalid keyword {meta_keyword}.")
 
     # Create a match pattern for the parameter values
     value_pattern_list = [
@@ -264,7 +258,7 @@ def parse_metadata(meta: str):
     # Validate the general structure (accept any parameter name)
     match = regex.fullmatch(full_metadata_pattern, meta)
     if not match:
-        raise Exception("Invalid metadata format. Are the parameters separated by commas?")
+        raise ValueError("Invalid metadata format. Are the parameters separated by commas?")
 
     # Create a pattern requiring valid parameter nammes exclusively.
     single_param_pattern = f"(?: *(?P<parameter>{'|'.join(fields)})" + r" *= *" + value_pattern + " *)"
@@ -273,7 +267,7 @@ def parse_metadata(meta: str):
     # Validate the parameter names.
     match = regex.fullmatch(full_metadata_pattern, meta)
     if not match:
-        raise Exception(
+        raise ValueError(
             f"The metadata contains illegal patterns for {meta_keyword}. Valid values are {', '.join(field_dict[fields])}."
         )
 
@@ -286,9 +280,9 @@ def parse_metadata(meta: str):
 
     # create a json string
     parameters = [f'"{p}": {pv.sub(r'"\1\2"', v)}' for p, v in zip(*groups)]
-    str = f'{{"metatype": "{meta_keyword}", {" ,".join(parameters)}}}'
+    strjson = f'{{"metatype": "{meta_keyword}", {" ,".join(parameters)}}}'
 
-    return json.loads(str)
+    return json.loads(strjson)
 
 
 if __name__ == "__main__":

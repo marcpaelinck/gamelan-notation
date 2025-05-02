@@ -3,6 +3,11 @@ from unittest.mock import MagicMock
 
 from src.common.classes import Gongan, Score
 from src.common.constants import Position, Stroke
+from src.notation2midi.metadata_classes import (
+    AutoKempyungMeta,
+    MetaData,
+    MetaDataSwitch,
+)
 from src.notation2midi.score2notation.utils import (
     aggregate_positions,
     clean_staves,
@@ -133,8 +138,11 @@ class TestUtils(BaseUnitTestCase):
         R4 = PositionNote(position=Position.REYONG_4)
         gongans = [
             (
+                # Polos and sangsih are the same -> aggregate polos and sangsih separately:
+                # sangsih should be kempyung of polos in order to aggregate polos and sangsih
+                # because 'autokempyung' is set by default.
                 create_gongan(
-                    1,
+                    0,
                     {
                         PP.position: {-1: [[PP.DANG0, PP.DING1]]},
                         PS.position: {-1: [[PS.DANG0, PS.DING1]]},
@@ -142,16 +150,58 @@ class TestUtils(BaseUnitTestCase):
                         KS.position: {-1: [[KS.DANG0, KS.DING1]]},
                     },
                 ),
+                {(Position.PEMADE_POLOS, -1): "GANGSA_P", (Position.PEMADE_SANGSIH, -1): "GANGSA_S"},
+            ),
+            (
+                # Polos and sangsih are the same and no autokempyung -> aggregate all
+                create_gongan(
+                    1,
+                    {
+                        PP.position: {-1: [[PP.DANG0, PP.DING2]]},
+                        PS.position: {-1: [[PS.DANG0, PS.DING2]]},
+                        KP.position: {-1: [[KP.DANG0, KP.DING2]]},
+                        KS.position: {-1: [[KS.DANG0, KS.DING2]]},
+                    },
+                    metadata=[MetaData(data=AutoKempyungMeta(metatype="AUTOKEMPYUNG", status=MetaDataSwitch.OFF))],
+                ),
                 {(Position.PEMADE_POLOS, -1): "GANGSA"},
             ),
             (
+                # Sangsih is kempyung of polos -> aggregate all gangsa
                 create_gongan(
                     2,
                     {
-                        PP.position: {-1: [[PP.DANG0, PP.DING1]]},
-                        PS.position: {-1: [[PS.DANG0, PS.DING1]]},
-                        KP.position: {-1: [[KP.DANG0, KP.DING1]]},
-                        KS.position: {-1: [[KS.DENG0, KS.DING1]]},
+                        PP.position: {-1: [[PP.DANG0, PP.DING2]]},
+                        PS.position: {-1: [[PS.DENG1, PS.DING2]]},
+                        KP.position: {-1: [[KP.DANG0, KP.DING2]]},
+                        KS.position: {-1: [[KS.DENG1, KS.DING2]]},
+                    },
+                ),
+                {(Position.PEMADE_POLOS, -1): "GANGSA"},
+            ),
+            (
+                # Sangsih is kempyung of polos and no autokempyung -> aggregate polos and sangsih separately
+                create_gongan(
+                    3,
+                    {
+                        PP.position: {-1: [[PP.DANG0, PP.DING2]]},
+                        PS.position: {-1: [[PS.DENG1, PS.DING2]]},
+                        KP.position: {-1: [[KP.DANG0, KP.DING2]]},
+                        KS.position: {-1: [[KS.DENG1, KS.DING2]]},
+                    },
+                    metadata=[MetaData(data=AutoKempyungMeta(metatype="AUTOKEMPYUNG", status=MetaDataSwitch.OFF))],
+                ),
+                {(Position.PEMADE_POLOS, -1): "GANGSA_P", (Position.PEMADE_SANGSIH, -1): "GANGSA_S"},
+            ),
+            (
+                # Pemade and kantilan polos are same, pemade and kantilan sangsih differ
+                create_gongan(
+                    4,
+                    {
+                        PP.position: {-1: [[PP.DANG0, PP.DING2]]},
+                        PS.position: {-1: [[PS.DUNG1, PS.DING2]]},
+                        KP.position: {-1: [[KP.DANG0, KP.DING2]]},
+                        KS.position: {-1: [[KS.DENG0, KS.DING2]]},
                     },
                 ),
                 {
@@ -162,41 +212,41 @@ class TestUtils(BaseUnitTestCase):
             ),
             (
                 create_gongan(
-                    3,
-                    {
-                        PP.position: {-1: [[PP.DING1, PP.DING1]]},
-                        PS.position: {-1: [[PS.DING1, PS.DONG1]]},
-                        KP.position: {-1: [[KP.DANG0, KP.DING1]]},
-                        KS.position: {-1: [[KS.DENG0, KS.DING1]]},
-                    },
-                ),
-                {
-                    (Position.PEMADE_POLOS, -1): "PEMADE_P",
-                    (Position.PEMADE_SANGSIH, -1): "PEMADE_S",
-                    (Position.KANTILAN_POLOS, -1): "KANTILAN_P",
-                    (Position.KANTILAN_SANGSIH, -1): "KANTILAN_S",
-                },
-            ),
-            (
-                create_gongan(
-                    4,
-                    {
-                        PP.position: {-1: [[PP.DING1, PP.DING1]]},
-                        PS.position: {-1: [[PS.DING1, PS.DONG1]]},
-                        KP.position: {-1: [[KP.DANG0, KP.DING1]]},
-                        KS.position: {-1: [[KS.DENG0, KS.DING1]]},
-                    },
-                ),
-                {
-                    (Position.PEMADE_POLOS, -1): "PEMADE_P",
-                    (Position.PEMADE_SANGSIH, -1): "PEMADE_S",
-                    (Position.KANTILAN_POLOS, -1): "KANTILAN_P",
-                    (Position.KANTILAN_SANGSIH, -1): "KANTILAN_S",
-                },
-            ),
-            (
-                create_gongan(
                     5,
+                    {
+                        PP.position: {-1: [[PP.DING1, PP.DING1]]},
+                        PS.position: {-1: [[PS.DING1, PS.DONG1]]},
+                        KP.position: {-1: [[KP.DANG0, KP.DING1]]},
+                        KS.position: {-1: [[KS.DENG0, KS.DING1]]},
+                    },
+                ),
+                {
+                    (Position.PEMADE_POLOS, -1): "PEMADE_P",
+                    (Position.PEMADE_SANGSIH, -1): "PEMADE_S",
+                    (Position.KANTILAN_POLOS, -1): "KANTILAN_P",
+                    (Position.KANTILAN_SANGSIH, -1): "KANTILAN_S",
+                },
+            ),
+            (
+                create_gongan(
+                    6,
+                    {
+                        PP.position: {-1: [[PP.DING1, PP.DING1]]},
+                        PS.position: {-1: [[PS.DING1, PS.DONG1]]},
+                        KP.position: {-1: [[KP.DANG0, KP.DING1]]},
+                        KS.position: {-1: [[KS.DENG0, KS.DING1]]},
+                    },
+                ),
+                {
+                    (Position.PEMADE_POLOS, -1): "PEMADE_P",
+                    (Position.PEMADE_SANGSIH, -1): "PEMADE_S",
+                    (Position.KANTILAN_POLOS, -1): "KANTILAN_P",
+                    (Position.KANTILAN_SANGSIH, -1): "KANTILAN_S",
+                },
+            ),
+            (
+                create_gongan(
+                    7,
                     {
                         R1.position: {-1: [[R1.BYONG, R1.BYONG]]},
                         R2.position: {-1: [[R2.BYOT, R2.BYOT]]},
@@ -211,7 +261,7 @@ class TestUtils(BaseUnitTestCase):
             ),
             (
                 create_gongan(
-                    6,
+                    8,
                     {
                         R1.position: {-1: [[R1.BYONG, R1.BYONG]]},
                         R2.position: {-1: [[R2.BYONG, R2.BYONG]]},
@@ -225,7 +275,7 @@ class TestUtils(BaseUnitTestCase):
             ),
             (
                 create_gongan(
-                    7,
+                    9,
                     {
                         R1.position: {1: [[R1.BYONG, R1.BYONG]]},
                         R2.position: {1: [[R2.BYONG, R2.BYONG]]},

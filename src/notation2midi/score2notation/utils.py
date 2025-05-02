@@ -1,6 +1,9 @@
-import html
+"""Utility functions for the conversion of a Score object to a PDF notation file."""
 
-from src.common.classes import Gongan, Note
+import html
+from functools import partial
+
+from src.common.classes import Gongan, Instrument, Note
 from src.common.constants import Pitch, Position, Stroke
 from src.notation2midi.metadata_classes import GonganType, MetaDataSwitch
 from src.notation2midi.notation_parser_tatsu import PassID
@@ -122,6 +125,61 @@ def is_silent(gongan: Gongan, position: Position, passid: PassID) -> bool:  # he
     return no_occurrence or all_rests
 
 
+def same(note1: Note, note2: Note) -> bool:
+    """Compares two notes.
+    Args:
+        notes1 (list[Note]): first note to compare.
+        notes2 (list[Note]): second note to compare.
+    Returns:
+        bool: True if both notes have the same pitch, octave, stroke, duration, rest after and velocity.
+    """
+    return (
+        note1.pitch == note2.pitch
+        and note1.octave == note2.octave
+        and note1.stroke == note2.stroke
+        and note1.duration == note2.duration
+        and note1.rest_after == note2.rest_after
+        and note1.velocity == note2.velocity
+    )
+
+
+def equivalent(note1: Note, note2: Note, positions: list[Position], metadata) -> bool:
+    """Determines if two notes correspond with each other by applying if instrument transformation rules
+       to cast the notes to each other's position.
+       Returns true if the notes are equivalent, e.g. if a sangsih note is the kempyung of a polos note.
+    Args:
+        notes1 (list[Note]): first note to compare.
+        notes2 (list[Note]): second note to compare.
+        positions (list[Position]): positions that should be involved in the instrument rules.
+    Returns:
+        bool: True if the notes are equivalent
+    """
+    if note2.is_melodic():
+        tone2cast = Instrument.cast_to_position(
+            note2.to_tone(), position=note1.position, all_positions=positions, metadata=metadata
+        )
+        if not tone2cast:
+            return False
+        note2cast = note2.model_copy_x(pitch=tone2cast.pitch, octave=tone2cast.octave, position=note1.position)
+    else:
+        note2cast = note2.model_copy_x(position=note1.position)
+    return same(note1, note2cast)
+
+
+def compare(notes1: list[Note], notes2: list[Note], comparator: callable) -> bool:
+    """Compares two lists of notes by using the given comparator function.
+    Args:
+        notes1 (list[Note]): first list of notes.
+        notes2 (list[Note]): second list of notes.
+        comparator (callable): function that takes two Note objects as arguments and returns True if both notes match.
+    Returns:
+        bool: True if all the notes in both listss give a match.
+    """
+    if len(notes1) != len(notes2):
+        return False
+    return all(comparator(note1, note2) for note1, note2 in zip(notes1, notes2))
+
+
 def aggregate_positions(gongan: Gongan) -> dict[tuple[Position, PassID], str]:
     """Returns a dict that maps positions to labels ('tags'). Groups certain positions with identical staves:
        GANGSA_P, GANGSA_S, GANGSA, REYONG_13, REYONG_24 and REYONG.
@@ -131,7 +189,6 @@ def aggregate_positions(gongan: Gongan) -> dict[tuple[Position, PassID], str]:
     Returns:
         dict[Position, list[str]]: The 'position-to-tag' dict.
     """
-
     # pos_pass_tags maps (position, pas) pairs to short tag values. It contains only the non-silent positions
     # that occur in the gongan. The pass number is appended to the tags of non-default passes that differ
     # from the default stave. The KEMPLI is omitted.
@@ -154,26 +211,26 @@ def aggregate_positions(gongan: Gongan) -> dict[tuple[Position, PassID], str]:
         if is_silent(gongan, position, passid):
             del pos_pass_tags[position, passid]
 
-    def same(notes1: list[Note], notes2: list[Note]) -> bool:
-        return all(
-            note1.pitch == note2.pitch
-            and note1.octave == note2.octave
-            and note1.stroke == note2.stroke
-            and note1.duration == note2.duration
-            and note1.rest_after == note2.rest_after
-            and note1.velocity == note2.velocity
-            for note1, note2 in zip(notes1, notes2)
-        )
-
     def try_to_aggregate_pos(positions: list[Position], passid: PassID, aggregate_tag: str) -> bool:
         """Determines if the notation is identical for all of the given positions for the given pass.
         In that case, updates the pos_pass_tags dict.
+        Args:
+            positions (list[Position]): positions for which to aggregate the notation.
+            passid (PassID): the pass for which to aggregate the positions.
+            aggregate_tag (str): the instrument tag that should be used for the aggregated notation.
+        Returns:
+            bool: True if aggregation is possible.
         """
         # Check if all positions occur in the gongan after removing empty staves
         if not all((pos, passid) in pos_pass_tags.keys() for pos in positions):
             return False
+        # Determine if all measures of the given positions are equivalent
+        comparator = partial(equivalent, positions=positions, metadata=gongan.metadata)
         all_positions_have_same_notation = all(
-            all(same(beat.get_notes(pos, passid), beat.get_notes(positions[0], passid)) for beat in gongan.beats)
+            all(
+                compare(beat.get_notes(pos, passid), beat.get_notes(positions[0], passid), comparator)
+                for beat in gongan.beats
+            )
             for pos in positions
         )
         if all_positions_have_same_notation:
@@ -203,7 +260,7 @@ def aggregate_positions(gongan: Gongan) -> dict[tuple[Position, PassID], str]:
             nextpass = None
             for currpass, nextpass in zip(passes, passes[1:]):
                 if first != currpass and not all(
-                    same(beat.get_notes(position, currpass), beat.get_notes(position, nextpass))
+                    compare(beat.get_notes(position, currpass), beat.get_notes(position, nextpass), same)
                     for beat in gongan.beats
                 ):
                     # Reached last pass of a group with size >1.
@@ -220,14 +277,17 @@ def aggregate_positions(gongan: Gongan) -> dict[tuple[Position, PassID], str]:
                 for passid in range(group[0] + 1, group[1] + 1):
                     del pos_pass_tags[position, passid]
 
-    # Try to aggregate positions that have the same notation.
+    # Define the possible combinations of positions for which aggregation should be considered.
+    # pylint: disable = invalid-name
     GANGSA_P = [Position.PEMADE_POLOS, Position.KANTILAN_POLOS]
     GANGSA_S = [Position.PEMADE_SANGSIH, Position.KANTILAN_SANGSIH]
     GANGSA = GANGSA_P + GANGSA_S
     REYONG_13 = [Position.REYONG_1, Position.REYONG_3]
     REYONG_24 = [Position.REYONG_2, Position.REYONG_4]
     REYONG = REYONG_13 + REYONG_24
+    # pylint: enable = invalid-name
     passids = set(pid for _, pid in pos_pass_combis)
+    # Try aggregating on the highest level first.
     for passid in passids:
         if not try_to_aggregate_pos(GANGSA, passid, "GANGSA"):
             try_to_aggregate_pos(GANGSA_P, passid, "GANGSA_P")
@@ -236,5 +296,6 @@ def aggregate_positions(gongan: Gongan) -> dict[tuple[Position, PassID], str]:
             try_to_aggregate_pos(REYONG_13, passid, "REYONG_13")
             try_to_aggregate_pos(REYONG_24, passid, "REYONG_24")
 
+    # Aggregate similar passes
     aggregate_passes()
     return pos_pass_tags

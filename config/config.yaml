@@ -64,6 +64,7 @@ pdf_converter:
         Courier New: COUR.TTF
         Arial: ARIBLK.TTF
         BaliMusic5: bali-music-5.ttf
+    notation_webpage: https://swarasanti.nl/music-notation/
 samples:
     folder: ./data/samples
     subfolder: gamelan
@@ -290,7 +291,7 @@ notations:
             intro:
                 name: intro
                 file: rejang dewa intro_font5.tsv
-                loop: false
+                loop: true
             pengawak:
                 name: pengawak
                 file: rejang dewa pengawak_font5.tsv

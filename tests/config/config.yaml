@@ -47,6 +47,7 @@ pdf_converter:
         Courier New: COUR.TTF
         Arial: ARIBLK.TTF
         BaliMusic5: bali-music-5.ttf
+    notation_webpage: https://swarasanti.nl/music-notation/
 samples:
     folder: ./data/samples
     subfolder: gamelan

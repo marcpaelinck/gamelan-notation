@@ -392,6 +392,7 @@ class SettingsPdfConverterInfo(BaseModel):
     folder: str
     fonts: dict[str, str] = Field(default_factory=dict)
     version_fmt: str
+    notation_webpage: str
 
 
 class SettingsNotationInfo(BaseModel):
