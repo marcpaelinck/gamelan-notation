@@ -65,8 +65,6 @@ pdf_converter:
         Arial: ARIBLK.TTF
         BaliMusic5: bali-music-5.ttf
     notation_webpage: https://swarasanti.nl/music-notation/
-    # TODO should be derived from font definition file
-    octave_diacritics: [",", "<"]
     # Do not print octave diacritics, as they are redundant for these positions
     omit_octave_diacritics: [REYONG_1, REYONG_2, REYONG_3, REYONG_4]
 samples:

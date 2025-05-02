@@ -393,7 +393,6 @@ class SettingsPdfConverterInfo(BaseModel):
     fonts: dict[str, str] = Field(default_factory=dict)
     version_fmt: str
     notation_webpage: str
-    octave_diacritics: list[str]
     omit_octave_diacritics: list[Position]
 
 

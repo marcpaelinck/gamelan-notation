@@ -216,7 +216,7 @@ class Stroke(NotationEnum):
 
 
 class Modifier(NotationEnum):
-    # The order of the values should comply to the
+    # The order of the values should correspond with the
     # standardized sequence for the font characters:
     # 1. NONE (=pitch character)
     # 2. octave modifiers

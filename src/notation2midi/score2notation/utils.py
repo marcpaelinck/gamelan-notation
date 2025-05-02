@@ -1,6 +1,7 @@
 """Utility functions for the conversion of a Score object to a PDF notation file."""
 
 import html
+import re
 from functools import partial
 
 from src.common.classes import Gongan, Instrument, Note
@@ -18,29 +19,25 @@ def measure_to_str_rml_safe(
     See https://docs.reportlab.com/rmlfornewbies/
     Args:
         notes (list[Note]): Content that should be converted.
+        omit_octave_diacritics (list[Position]): positions for which to omit octave indicator
+         octave_diacritics (list[str]): list of octave diacritics
     Returns:
         str: HTML/XML compatible representation of the notation.
     """
 
-    def get_symbol(note: Note):
-        """enables to generate a modified symbol"""
+    def format_symbol(note: Note):
+        """Returns the formatted note symbol"""
         if note.stroke == Stroke.GRACE_NOTE:
             # Remove any stroke modifier character
             return note.symbol[0]
         if note.position in omit_octave_diacritics:
             # Remove octave modifier character for given positions
-            symbol = note.symbol
-            for char in octave_diacritics:
-                symbol = symbol.replace(char, "")
-            return symbol
+            return re.sub(f"[{"".join(octave_diacritics)}]", "", note.symbol)
         return note.symbol
 
     if not notes:
         return ""
-    # notechars = (
-    #     "".join(get_symbol(note) for note in notes).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    # )
-    notechars = html.escape("".join(get_symbol(note) for note in notes))
+    notechars = html.escape("".join(format_symbol(note) for note in notes))
     return notechars
 
 
