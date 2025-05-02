@@ -48,6 +48,8 @@ pdf_converter:
         Arial: ARIBLK.TTF
         BaliMusic5: bali-music-5.ttf
     notation_webpage: https://swarasanti.nl/music-notation/
+    octave_diacritics: [",", "<"]
+    omit_octave_diacritics: [REYONG_1, REYONG_2, REYONG_3, REYONG_4]
 samples:
     folder: ./data/samples
     subfolder: gamelan

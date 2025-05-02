@@ -28,7 +28,7 @@ class TestUtils(BaseUnitTestCase):
     """Test case for the src.notation2midi.score2notation.utils module"""
 
     def setUp(self):
-        Settings.get(notation_id="test-gongkebyar", part_id="full")
+        self.settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
 
     @classmethod
     def mock_score(cls):
@@ -50,7 +50,7 @@ class TestUtils(BaseUnitTestCase):
         ]
         for name, measure, expected in measures:
             with self.subTest(id=name):
-                self.assertEqual(measure_to_str_rml_safe(measure), expected)
+                self.assertEqual(measure_to_str_rml_safe(measure, [], []), expected)
 
     def test_clean_staves(self):
         U = PositionNote(position=Position.UGAL)

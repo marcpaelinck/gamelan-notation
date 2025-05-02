@@ -9,7 +9,9 @@ from src.notation2midi.metadata_classes import GonganType, MetaDataSwitch
 from src.notation2midi.notation_parser_tatsu import PassID
 
 
-def measure_to_str_rml_safe(notes: list[Note]) -> str:
+def measure_to_str_rml_safe(
+    notes: list[Note], omit_octave_diacritics: list[Position], octave_diacritics: list[str]
+) -> str:
     """Converts the note objects to notation symbols.
     Replaces characters that are incompatible with RML content to compatible strings.
     RML is an XML-style markup language used by ReportLab.
@@ -25,6 +27,12 @@ def measure_to_str_rml_safe(notes: list[Note]) -> str:
         if note.stroke == Stroke.GRACE_NOTE:
             # Remove any stroke modifier character
             return note.symbol[0]
+        if note.position in omit_octave_diacritics:
+            # Remove octave modifier character for given positions
+            symbol = note.symbol
+            for char in octave_diacritics:
+                symbol = symbol.replace(char, "")
+            return symbol
         return note.symbol
 
     if not notes:

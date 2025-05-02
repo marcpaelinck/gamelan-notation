@@ -324,7 +324,11 @@ class PDFGeneratorAgent(Agent):
             if not beat_colwidths:
                 beat_colwidths = [0] * len(measures)
             for colnr, measure in enumerate(measures):
-                text = measure_to_str_rml_safe(measure)
+                text = measure_to_str_rml_safe(
+                    measure,
+                    self.run_settings.pdf_converter.omit_octave_diacritics,
+                    self.run_settings.pdf_converter.octave_diacritics,
+                )
                 textwidth, _ = self.template.cell_width_height(text, parastyle=self.template.notationStyle)
                 beat_colwidths[colnr] = max(beat_colwidths[colnr], textwidth)
             # Determine the remaining available width and assign it to the rightmost column (overflow column)
@@ -385,7 +389,11 @@ class PDFGeneratorAgent(Agent):
             row = [Paragraph(pos_tag, self.template.tagStyle)]
             data.append(row)
             for measure in staves_dict[position, passid]:
-                text = measure_to_str_rml_safe(measure)
+                text = measure_to_str_rml_safe(
+                    measure,
+                    self.run_settings.pdf_converter.omit_octave_diacritics,
+                    self.run_settings.pdf_converter.octave_diacritics,
+                )
                 para = Paragraph(text, self.template.notationStyle) if text else ""
                 row.append(para)
             if add_overflow_col:
