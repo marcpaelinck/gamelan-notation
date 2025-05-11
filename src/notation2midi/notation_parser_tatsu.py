@@ -196,7 +196,7 @@ class NotationParserAgent(Agent):
         self,
         symbol: str,
         position: Position,
-    ) -> "Note":
+    ) -> NoteRecord:
         """Parses the given notation symbol to a NoteRecord object.
            The note is generic in the sense that it is not bound to an instument type.
            This binding will be performed in a later step of the pipeline (dict_to_score).

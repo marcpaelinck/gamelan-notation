@@ -28,6 +28,7 @@ from src.common.constants import (
     PassSequence,
     Pitch,
     Position,
+    RuleValue,
     Stroke,
     Velocity,
 )
@@ -391,6 +392,9 @@ class ScoreCreatorAgent(Agent):
         for meta in sorted(metadata, key=lambda x: x.data.processingorder):
             self.curr_line_nr = meta.data.line
             match meta.data:
+                case AutoKempyungMeta():
+                    # This metadata item is used in Instrument.cast_to_position to select the correct casting method.
+                    continue
                 case GonganMeta():
                     # TODO: how to safely synchronize all instruments starting from next regular gongan?
                     gongan.gongantype = meta.data.type
@@ -413,9 +417,6 @@ class ScoreCreatorAgent(Agent):
                             # Default is all beats
                             if beat.id in meta.data.beats or not meta.data.beats:
                                 beat.has_kempli_beat = False
-                case AutoKempyungMeta():
-                    # This metadata item is used in Instrument.cast_to_position to select the correct casting method.
-                    continue
                 case LabelMeta():
                     # Add the label to flowinfo
                     haslabel = True
@@ -425,27 +426,30 @@ class ScoreCreatorAgent(Agent):
                     for gongan_, goto in self.score.flowinfo.gotos[meta.data.name]:
                         process_goto_meta(gongan_, goto)
                 case OctavateMeta():
+                    positions = [pos for pos in Position if pos.instrumenttype is meta.data.instrument]
                     for beat in gongan.beats:
-                        if meta.data.instrument in beat.measures.keys():
-                            for pass_ in self.pass_iterator(beat.measures[meta.data.instrument]):
-                                notes = pass_.notes
-                                for idx, note in enumerate(notes):
-                                    if note.octave is not None:
-                                        oct_note = Note.get_note(
-                                            note.position,
-                                            note.pitch,
-                                            note.octave + meta.data.octaves,
-                                            note.stroke,
-                                            note.duration,
-                                            note.rest_after,
-                                        )
-                                        if oct_note:
-                                            notes[idx] = oct_note
-                                        else:
-                                            self.logerror(
-                                                "could not octavate note %s%s with %s octave for %s."
-                                                % (note.pitch, note.octave, meta.data.octaves, meta.data.instrument)
+                        for position in positions:
+                            if position in beat.measures.keys():
+                                for pass_ in self.pass_iterator(beat.measures[position]):
+                                    notes = pass_.notes
+                                    for idx, note in enumerate(notes):
+                                        if note.octave is not None:
+                                            oct_note = Note.get_note(
+                                                note.position,
+                                                note.pitch,
+                                                note.octave + meta.data.octaves,
+                                                note.stroke,
+                                                note.duration,
+                                                note.rest_after,
                                             )
+                                            if oct_note:
+                                                oct_note = oct_note.model_copy_x(transformation=RuleValue.SAME_PITCH)
+                                                notes[idx] = oct_note
+                                            else:
+                                                self.logerror(
+                                                    "could not octavate note %s%s with %s octave for %s."
+                                                    % (note.pitch, note.octave, meta.data.octaves, position)
+                                                )
                 case PartMeta():
                     pass
                 case RepeatMeta():

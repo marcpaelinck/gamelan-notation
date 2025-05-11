@@ -123,11 +123,11 @@
                                 {"part": "pengecet 1", "file": "Puspa Mekar_pengecet1_GAMELAN1.mid", "loop": true, "markers": {}}
                         ]
                 }, 
-                {"title": "Rejang Dewa", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Rejang Dewa_full_GAMELAN1.pdf", "notation_version": "01-may-2025", "parts": [
+                {"title": "Rejang Dewa", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Rejang Dewa_full_GAMELAN1.pdf", "notation_version": "04-may-2025", "parts": [
                                 {"part": "entire piece", "file": "Rejang Dewa_full_GAMELAN1.mid", "loop": false, "markers": {
-                                                "reyong intro": 0.007458215348509973, 
-                                                "pengawak": 0.06968459207291151, 
-                                                "pengecet": 0.6809872688264
+                                                "reyong intro": 0.007433562534844824, 
+                                                "pengawak": 0.07275971009106114, 
+                                                "pengecet": 0.682041751842904
                                         }
                                 }, 
                                 {"part": "intro", "file": "Rejang Dewa_intro_GAMELAN1.mid", "loop": true, "markers": {}}, 
