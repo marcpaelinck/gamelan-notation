@@ -242,6 +242,8 @@ MetaDataType = Union[
 # that will automatically cast a parsed value to the correct ....Meta class. The class selection for casting is based
 # on the value of field 'metatype'. Use MetaData.validate_python() to parse a dict value or MetaData.validate_json()
 # to parse a json string value.
+# See the tip at the end of this section: https://docs.pydantic.dev/latest/concepts/unions/#nested-discriminated-unions
+# See also documentation about TypeAdapter: https://docs.pydantic.dev/latest/api/type_adapter/#TypeAdapter
 MetaData = Annotated[
     Union[
         DynamicsMeta,
