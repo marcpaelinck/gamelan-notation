@@ -251,9 +251,9 @@ class Instrument(BaseModel, RunSettingsListener):
         autokempyung = True
         for meta in metadata:
             if (
-                isinstance(meta.data, AutoKempyungMeta)
-                and meta.data.status == MetaDataSwitch.OFF
-                and (not meta.data.positions or position in meta.data.positions)
+                isinstance(meta, AutoKempyungMeta)
+                and meta.status == MetaDataSwitch.OFF
+                and (not meta.positions or position in meta.positions)
             ):
                 autokempyung = False
 
@@ -536,8 +536,14 @@ class Note(BaseModel, RunSettingsListener):
         valid_note = self._POS_P_O_S_D_R_TO_NOTE.get(tuple(search_record.values()), None)
         if not valid_note:
             raise ValueError(
-                ("Invalid combination %s OCT%s %s " % (valid_note.pitch, valid_note.octave, valid_note.stroke))
-                + ("%s %s for %s" % ({valid_note.duration}, {valid_note.rest_after}, {valid_note.position}))
+                (
+                    "Invalid combination %s OCT%s %s "
+                    % (search_record["pitch"], search_record["octave"], search_record["stroke"])
+                )
+                + (
+                    "%s %s for %s"
+                    % ({search_record["duration"]}, {search_record["rest_after"]}, {search_record["position"]})
+                )
             )
         return super(Note, valid_note).model_copy(update=update) if valid_note else None
 
@@ -904,7 +910,7 @@ class Gongan(BaseModel):
     _pass_: PassSequence = 0  # Counts the number of times the gongan is passed during generation of MIDI file.
 
     def get_metadata(self, cls: MetaDataType):
-        return next((meta.data for meta in self.metadata if isinstance(meta.data, cls)), None)
+        return next((meta for meta in self.metadata if isinstance(meta, cls)), None)
 
 
 @dataclass

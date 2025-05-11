@@ -1,17 +1,17 @@
 ---
 # SETTINGS FILE FOR NOTATION2MIDI
 # The settings below (except for options) refer to values in the data.yaml file.
-notation_id: rejangdewa
+notation_id: cendrawasih
 part_id: full
 options:
   debug_logging: false
   notation_to_midi:
     # `runtype`: possible values are RUN_SINGLE (`notation_id` and `part_id` values above are used)
     #            and RUN_ALL (processes all notations in `config.yaml` that have RUN_ALL in `include_in_run_types`.).
-    runtype: RUN_SINGLE
+    runtype: RUN_ALL
     # `is_production_run`: false - output is saved in the subfolder of the `notation` data folder specified in config.yaml.
     #                      true  - output is saved in the `midiplayer` data folder and the `content.json` file is updated.
-    is_production_run: false
+    is_production_run: true
     detailed_validation_logging : false
     # `autocorrect`: true - the validation step will perform some minor corrections such as incorrect kempyung in sangsih part.
     autocorrect : true

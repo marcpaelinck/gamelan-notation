@@ -31,7 +31,7 @@ from src.notation2midi.metadata_classes import (
     DynamicsMeta,
     GoToMeta,
     LabelMeta,
-    MetaDataBaseModel,
+    MetaData,
     PartMeta,
     RepeatMeta,
     SequenceMeta,
@@ -520,14 +520,14 @@ class NotationTemplate:
     @classmethod
     def _simple_formatter_rml_safe(
         cls,
-        meta: MetaDataBaseModel,
+        meta: MetaData,
         before: str = "",
         after: str = "",
     ) -> str:
         """Simple formatter for metadata. Adds the value to the given paragraph.
         Args:
             value (Any): Value that should be written. If missing, the metadata DEFAULTPARAM attribute will be used.
-            meta (MetaDataBaseModel): Metadata object.
+            meta (MetaData): Metadata object.
             before (str, optional): Text that should precede the value. Defaults to "".
             after (str, optional): Text that should follow the value. Defaults to "".
             paragraph (Paragraph, optional): The paragraph to which the value should be written. Defaults to None.
@@ -538,7 +538,7 @@ class NotationTemplate:
 
     def _list_formatter_rml_safe(
         self,
-        meta: MetaDataBaseModel,
+        meta: MetaData,
         before: str = "",
         after: str = "",
     ) -> str:
@@ -547,7 +547,7 @@ class NotationTemplate:
         Args:
             value (typing.Any): Value that should be written. If missing, the metadata DEFAULTPARAM attribute will
                                 be used.
-            meta (MetaDataBaseModel): Metadata object.
+            meta (MetaData): Metadata object.
             before (str, optional): Text that should precede the value. Defaults to "".
             after (str, optional): Text that should follow the value. Defaults to "".
             paragraph (Paragraph, optional): The paragraph to which the value should be written. Defaults to None.
@@ -558,7 +558,7 @@ class NotationTemplate:
         value_ = self.format_text_rml_safe(value_, self.metadataLabelCharStyle)
         return f"{html.escape(before)}{value_}{html.escape(after)}"
 
-    def _gradual_change_formatter_rml_safe(self, meta: MetaDataBaseModel) -> str:
+    def _gradual_change_formatter_rml_safe(self, meta: MetaData) -> str:
         """Formatter for GradualChangeMetadata subclasses. These values can include a range of beats to which the
            metadata applies. Called for TEMPO and DYNAMICS metadata which can gradually change over several beats.
            The value will be preceded or followed by a dotted line that will reach to the right margine of the
@@ -566,7 +566,7 @@ class NotationTemplate:
         Args:
             value (typing.Any): Value that should be written. If missing, the metadata DEFAULTPARAM attribute will
                                 be used.
-            meta (MetaDataBaseModel): Metadata object.
+            meta (MetaData): Metadata object.
             before (str, optional): Text that should precede the value. Defaults to "".
             after (str, optional): Text that should follow the value. Defaults to "".
             paragraph (Paragraph, optional): The paragraph to which the value should be written. Defaults to None.

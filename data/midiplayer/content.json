@@ -1,6 +1,6 @@
 {
         "songs": [
-                {"title": "Bapang Selisir", "instrumentgroup": "SEMAR_PAGULINGAN", "display": true, "pdf": "Bapang Selisir_full_GAMELAN1.pdf", "notation_version": "01-apr-2025", "parts": [
+                {"title": "Bapang Selisir", "instrumentgroup": "SEMAR_PAGULINGAN", "display": true, "pdf": "Bapang Selisir_full_GAMELAN1.pdf", "notation_version": "26-feb-2025", "parts": [
                                 {"part": "entire piece", "file": "Bapang Selisir_full_GAMELAN1.mid", "loop": false, "markers": {}}
                         ]
                 }, 
@@ -8,7 +8,7 @@
                                 {"part": "entire piece", "file": "Bapang Selisir (gong kebyar)_full_GAMELAN1.mid", "loop": false, "markers": {}}
                         ]
                 }, 
-                {"title": "Cendrawasih", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Cendrawasih_full_GAMELAN1.pdf", "notation_version": "01-apr-2025", "parts": [
+                {"title": "Cendrawasih", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Cendrawasih_full_GAMELAN1.pdf", "notation_version": "11-may-2025", "parts": [
                                 {"part": "entire piece", "file": "Cendrawasih_full_GAMELAN1.mid", "loop": false, "markers": {
                                                 "pepeson": 0.06827279634396652, 
                                                 "pengawak": 0.29231541226767066, 
@@ -18,12 +18,12 @@
                                 }
                         ]
                 }, 
-                {"title": "Gilak Deng", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Gilak Deng_full_GAMELAN1.pdf", "notation_version": "01-apr-2025", "parts": [
+                {"title": "Gilak Deng", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Gilak Deng_full_GAMELAN1.pdf", "notation_version": "07-apr-2025", "parts": [
                                 {"part": "entire piece", "file": "Gilak Deng_full_GAMELAN1.mid", "loop": false, "markers": {}}, 
                                 {"part": "kotekan gangsa", "file": "Gilak Deng_kotekan_GAMELAN1.mid", "loop": true, "markers": {}}
                         ]
                 }, 
-                {"title": "Godek Miring", "instrumentgroup": "SEMAR_PAGULINGAN", "display": true, "pdf": "Godek Miring_full_GAMELAN1.pdf", "notation_version": "01-apr-2025", "parts": [
+                {"title": "Godek Miring", "instrumentgroup": "SEMAR_PAGULINGAN", "display": true, "pdf": "Godek Miring_full_GAMELAN1.pdf", "notation_version": "04-jan-2025", "parts": [
                                 {"part": "entire piece", "file": "Godek Miring_full_GAMELAN1.mid", "loop": false, "markers": {
                                                 "kawitan": 0.03495567571434533, 
                                                 "pengawak": 0.23828998277105776, 
@@ -49,7 +49,16 @@
                                 }
                         ]
                 }, 
-                {"title": "Legong Mahawidya GK", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Legong Mahawidya GK_full_GAMELAN1.pdf", "notation_version": "01-apr-2025", "parts": [
+                {"title": "Kahyangan (dance improv.)", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Kahyangan (dance improv.)_full_GAMELAN1.pdf", "notation_version": "17-apr-2025", "parts": [
+                                {"part": "entire piece", "file": "Kahyangan (dance improv.)_full_GAMELAN1.mid", "loop": false, "markers": {
+                                                "kawitan": 0.02544457128847141, 
+                                                "pengawak": 0.19373041472889005, 
+                                                "pengecet": 0.5104161079996016
+                                        }
+                                }
+                        ]
+                }, 
+                {"title": "Legong Mahawidya GK", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Legong Mahawidya GK_full_GAMELAN1.pdf", "notation_version": "19-mar-2025", "parts": [
                                 {"part": "entire piece", "file": "Legong Mahawidya GK_full_GAMELAN1.mid", "loop": false, "markers": {
                                                 "kawitan": 0.02806910745861959, 
                                                 "pengawak": 0.26151549410093633, 
@@ -64,7 +73,7 @@
                                 }
                         ]
                 }, 
-                {"title": "Legong Mahawidya SP", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Legong Mahawidya SP_full_GAMELAN1.pdf", "notation_version": "01-apr-2025", "parts": [
+                {"title": "Legong Mahawidya SP", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Legong Mahawidya SP_full_GAMELAN1.pdf", "notation_version": "09-mar-2025", "parts": [
                                 {"part": "entire piece", "file": "Legong Mahawidya SP_full_GAMELAN1.mid", "loop": false, "markers": {
                                                 "kawitan": 0.02806910745861959, 
                                                 "pengawak": 0.32644867669652433, 
@@ -94,7 +103,7 @@
                                 }
                         ]
                 }, 
-                {"title": "Margapati", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Margapati_full_GAMELAN1.pdf", "notation_version": "01-apr-2025", "parts": [
+                {"title": "Margapati", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Margapati_full_GAMELAN1.pdf", "notation_version": "04-jan-2025", "parts": [
                                 {"part": "entire piece", "file": "Margapati_full_GAMELAN1.mid", "loop": false, "markers": {}}
                         ]
                 }, 
@@ -102,16 +111,16 @@
                                 {"part": "entire piece (loop)", "file": "Merah Putih_full_GAMELAN1.mid", "loop": true, "markers": {}}
                         ]
                 }, 
-                {"title": "Pendet", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Pendet_full_GAMELAN1.pdf", "notation_version": "01-apr-2025", "parts": [
+                {"title": "Pendet", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Pendet_full_GAMELAN1.pdf", "notation_version": "18-apr-2025", "parts": [
                                 {"part": "entire piece", "file": "Pendet_full_GAMELAN1.mid", "loop": false, "markers": {
-                                                "kawitan": 0.1712440510908799, 
-                                                "pengawak": 0.25664629455870297, 
-                                                "pengecet": 0.7084802069332793
+                                                "kawitan": 0.1683970772824379, 
+                                                "pengawak": 0.2690047298813789, 
+                                                "pengecet": 0.7133267940714386
                                         }
                                 }
                         ]
                 }, 
-                {"title": "Puspa Mekar", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Puspa Mekar_full_GAMELAN1.pdf", "notation_version": "01-may-2025", "parts": [
+                {"title": "Puspa Mekar", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Puspa Mekar_full_GAMELAN1.pdf", "notation_version": "29-apr-2025", "parts": [
                                 {"part": "entire piece", "file": "Puspa Mekar_full_GAMELAN1.mid", "loop": false, "markers": {
                                                 "kawitan": 0.004929710543829235, 
                                                 "pengawak": 0.21047892137933302, 
@@ -123,7 +132,7 @@
                                 {"part": "pengecet 1", "file": "Puspa Mekar_pengecet1_GAMELAN1.mid", "loop": true, "markers": {}}
                         ]
                 }, 
-                {"title": "Rejang Dewa", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Rejang Dewa_full_GAMELAN1.pdf", "notation_version": "04-may-2025", "parts": [
+                {"title": "Rejang Dewa", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Rejang Dewa_full_GAMELAN1.pdf", "notation_version": "04-jan-2025", "parts": [
                                 {"part": "entire piece", "file": "Rejang Dewa_full_GAMELAN1.mid", "loop": false, "markers": {
                                                 "reyong intro": 0.007433562534844824, 
                                                 "pengawak": 0.07275971009106114, 
@@ -139,7 +148,7 @@
                                 {"part": "pengawak reyong", "file": "Rejang Dewa_pengawak-reyong_GAMELAN1.mid", "loop": true, "markers": {}}
                         ]
                 }, 
-                {"title": "Sekar Gendot", "instrumentgroup": "SEMAR_PAGULINGAN", "display": true, "pdf": "Sekar Gendot_full_GAMELAN1.pdf", "notation_version": "01-apr-2025", "parts": [
+                {"title": "Sekar Gendot", "instrumentgroup": "SEMAR_PAGULINGAN", "display": true, "pdf": "Sekar Gendot_full_GAMELAN1.pdf", "notation_version": "06-mar-2025", "parts": [
                                 {"part": "entire piece", "file": "Sekar Gendot_full_GAMELAN1.mid", "loop": false, "markers": {
                                                 "kawitan": 0.0054694621695533276, 
                                                 "pengawak": 0.132154968094804, 
@@ -163,7 +172,7 @@
                                 }
                         ]
                 }, 
-                {"title": "Sinom Ladrang", "instrumentgroup": "SEMAR_PAGULINGAN", "display": true, "pdf": "Sinom Ladrang_full_GAMELAN1.pdf", "notation_version": "01-apr-2025", "parts": [
+                {"title": "Sinom Ladrang", "instrumentgroup": "SEMAR_PAGULINGAN", "display": true, "pdf": "Sinom Ladrang_full_GAMELAN1.pdf", "notation_version": "30-mar-2025", "parts": [
                                 {"part": "entire piece", "file": "Sinom Ladrang_full_GAMELAN1.mid", "loop": false, "markers": {
                                                 "pengawak": 0.14914473563723604, 
                                                 "pengecet": 0.6403723238649891
@@ -173,7 +182,7 @@
                                 {"part": "pengecet", "file": "Sinom Ladrang_pengecet_GAMELAN1.mid", "loop": true, "markers": {}}
                         ]
                 }, 
-                {"title": "Sinom Ladrang (GK)", "instrumentgroup": "GONG_KEBYAR", "display": false, "pdf": "Sinom Ladrang (GK)_full_GAMELAN1.pdf", "notation_version": "01-apr-2025", "parts": [
+                {"title": "Sinom Ladrang (GK)", "instrumentgroup": "GONG_KEBYAR", "display": false, "pdf": "Sinom Ladrang (GK)_full_GAMELAN1.pdf", "notation_version": "30-mar-2025", "parts": [
                                 {"part": "entire piece", "file": "Sinom Ladrang (GK)_full_GAMELAN1.mid", "loop": false, "markers": {
                                                 "pengawak": 0.2672615186863838, 
                                                 "pengecet": 0.6902971171494418

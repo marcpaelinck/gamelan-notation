@@ -313,7 +313,7 @@ class TestDictToScoreConverter(BaseUnitTestCase):
                 },
             ),
         ]
-        return Gongan(id=gongan_id, beats=beats, metadata=[MetaData(data=meta) for meta in meta_list])
+        return Gongan(id=gongan_id, beats=beats, metadata=meta_list)
 
     def test_apply_meta(self):
         # Test for _apply_metadata method
@@ -338,7 +338,7 @@ class TestDictToScoreConverter(BaseUnitTestCase):
                 expected := {
                     Beat.Change.Type.DYNAMICS: {
                         -1: Beat.Change(
-                            new_value=gongan.metadata[0].data.value,
+                            new_value=gongan.metadata[0].value,
                             positions=[Position.PEMADE_POLOS, Position.PEMADE_SANGSIH],
                             incremental=False,
                         )

@@ -237,10 +237,11 @@ MetaDataType = Union[
     WaitMeta,
 ]
 
+
 # The following two statements create a MetaData class that will automatically cast a parsed value
 # to the correct ....Meta class. The class selection is based on the value of field 'metatype'.
 # Use MetaData.validate_python() to parse a dict value or MetaData.validate_json() to parse a json string value.
-MetaData_ = Annotated[
+MetaData = Annotated[
     Union[
         DynamicsMeta,
         GonganMeta,
@@ -259,20 +260,20 @@ MetaData_ = Annotated[
     ],
     Field(discriminator="metatype"),
 ]
-MetaDataAdapter = TypeAdapter(MetaData_)
+MetaDataAdapter = TypeAdapter(MetaData)
 
 
-class MetaData(BaseModel):
-    data: MetaDataType = Field(..., discriminator="metatype")
+# class MetaData(BaseModel):
+#     data: MetaDataType = Field(..., discriminator="metatype")
 
-    @classmethod
-    def __get_all_subtype_fieldnames__(cls):
-        membertypes = list(MetaDataType.__dict__.values())[4]
-        return {fieldname for member in membertypes for fieldname in member.model_fields.keys()}
+#     @classmethod
+#     def __get_all_subtype_fieldnames__(cls):
+#         membertypes = list(MetaDataType.__dict__.values())[4]
+#         return {fieldname for member in membertypes for fieldname in member.model_fields.keys()}
 
-    @classmethod
-    def __is_list__(cls, value):
-        return value.startswith("[") and value.endswith("]")
+#     @classmethod
+#     def __is_list__(cls, value):
+#         return value.startswith("[") and value.endswith("]")
 
 
 if __name__ == "__main__":

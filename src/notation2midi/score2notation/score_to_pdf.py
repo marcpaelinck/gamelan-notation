@@ -21,6 +21,7 @@ from src.notation2midi.metadata_classes import (
     DynamicsMeta,
     GoToMeta,
     LabelMeta,
+    MetaData,
     MetaDataBaseModel,
     PartMeta,
     RepeatMeta,
@@ -84,7 +85,7 @@ class PDFGeneratorAgent(Agent):
     def _append_single_metadata_type(
         self,
         content: TableContent,
-        metalist: list[MetaDataBaseModel],
+        metalist: list[MetaData],
         cellnr: int | str = 1,
         spantype: SpanType = SpanType.LAST_CELL,
         col_span: int | str | None = None,
@@ -138,10 +139,10 @@ class PDFGeneratorAgent(Agent):
             return sum(content.colwidths[c] for c in range(col1, col2 + 1))
 
         def span_overlap(a: tuple[int], b: tuple[int]):
-            """Determines of two 'SPAN' TableStyle items overlap. A 'SPAN' item has the format ('SPAN', (sc,sr), (ec,er))
-            where sc,sr are the IDs of the first (starting) row and column and ec, er are the IDs of the last (end) row and
-            column. This function is called for spans that combine cells on the same row, so sr=er and we only need to
-            check the column overlap."""
+            """Determines if two 'SPAN' TableStyle items overlap. A 'SPAN' item has the format
+            ('SPAN', (sc,sr), (ec,er)) where sc,sr are the IDs of the first (starting) row and column and ec, er are
+            the IDs of the last (end) row and column. This function is called for spans that combine cells on the same
+            row, so sr=er and we only need to check the column overlap."""
             return min(a[2][0], b[2][0]) - max(a[1][0], b[1][0]) >= 0
 
         cell_alignment = "RIGHT" if parastyle.alignment in [TA_RIGHT, "RIGHT"] else "LEFT"
@@ -281,10 +282,9 @@ class PDFGeneratorAgent(Agent):
             gongan (Gongan): the gongan to which the metadata belongs
             above_notation (bool): Selects which metadata to generate
         """
-        metaclasses = {meta.data.__class__ for meta in gongan.metadata}
+        metaclasses = {meta.__class__ for meta in gongan.metadata}
         metadict = {
-            metaclass: [meta.data for meta in gongan.metadata if meta.data.__class__ == metaclass]
-            for metaclass in metaclasses
+            metaclass: [meta for meta in gongan.metadata if meta.__class__ == metaclass] for metaclass in metaclasses
         }
         if above_notation:
             # Content that should occur before the notation part of the gongan

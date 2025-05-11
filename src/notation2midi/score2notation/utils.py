@@ -113,8 +113,8 @@ def has_kempli_beat(gongan: Gongan) -> bool:
         bool: True if there is a kempli beat, otherwise False
     """
     return not any(
-        (meta.data.metatype == "KEMPLI" and meta.data.status is MetaDataSwitch.OFF)
-        or (meta.data.metatype == "GONGAN" and meta.data.type is not GonganType.REGULAR)
+        (meta.metatype == "KEMPLI" and meta.status is MetaDataSwitch.OFF)
+        or (meta.metatype == "GONGAN" and meta.type is not GonganType.REGULAR)
         for meta in gongan.metadata
     )
 
@@ -165,9 +165,15 @@ def equivalent(note1: Note, note2: Note, positions: list[Position], metadata) ->
         )
         if not tone2cast:
             return False
-        note2cast = note2.model_copy_x(pitch=tone2cast.pitch, octave=tone2cast.octave, position=note1.position)
+        try:
+            note2cast = note2.model_copy_x(pitch=tone2cast.pitch, octave=tone2cast.octave, position=note1.position)
+        except ValueError:
+            return False
     else:
-        note2cast = note2.model_copy_x(position=note1.position)
+        try:
+            note2cast = note2.model_copy_x(position=note1.position)
+        except ValueError:
+            return False
     return same(note1, note2cast)
 
 
