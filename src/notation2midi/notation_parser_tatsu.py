@@ -183,7 +183,7 @@ class NotationParserAgent(Agent):
 
     def _flatten_meta(self, metadict: dict) -> dict:
         # The json_dict contains the first parameter and its value, and a key "parameters" with a list of dicts
-        # other parameters + values. E.g.
+        # containing the other parameters + values. E.g.
         # {"meta": "DYNAMICS", "value": "f", "parameters": [{"positions": ["gangsa"]}, {"first_beat": 13}]}
         # We need to flatten this structure before parsing it into a MetaData object.
         parms = metadict.get("parameters", [])

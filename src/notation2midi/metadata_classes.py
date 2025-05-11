@@ -240,8 +240,8 @@ MetaDataType = Union[
 
 # The following two statements generate a MetaData object that can be used for typing, and a MetaDataAdapter class
 # that will automatically cast a parsed value to the correct ....Meta class. The class selection for casting is based
-# on the value of field 'metatype'. Use MetaData.validate_python() to parse a dict value or MetaData.validate_json()
-# to parse a json string value.
+# on the value of field 'metatype'. Use MetaDataAdapter.validate_python() to parse a dict value or
+# MetaDataAdapter.validate_json() to parse a json string value.
 # See the tip at the end of this section: https://docs.pydantic.dev/latest/concepts/unions/#nested-discriminated-unions
 # See also documentation about TypeAdapter: https://docs.pydantic.dev/latest/api/type_adapter/#TypeAdapter
 MetaData = Annotated[
@@ -263,8 +263,5 @@ MetaData = Annotated[
     ],
     Field(discriminator="metatype"),
 ]
-MetaDataAdapter = TypeAdapter(MetaData)
 
-if __name__ == "__main__":
-    metadata = MetaDataAdapter.validate_python({"metatype": "REPEAT"})
-    print(metadata)
+MetaDataAdapter = TypeAdapter(MetaData)
