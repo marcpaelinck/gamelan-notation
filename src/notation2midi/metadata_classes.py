@@ -238,9 +238,10 @@ MetaDataType = Union[
 ]
 
 
-# The following two statements create a MetaData class that will automatically cast a parsed value
-# to the correct ....Meta class. The class selection is based on the value of field 'metatype'.
-# Use MetaData.validate_python() to parse a dict value or MetaData.validate_json() to parse a json string value.
+# The following two statements generate a MetaData object that can be used for typing, and a MetaDataAdapter class
+# that will automatically cast a parsed value to the correct ....Meta class. The class selection for casting is based
+# on the value of field 'metatype'. Use MetaData.validate_python() to parse a dict value or MetaData.validate_json()
+# to parse a json string value.
 MetaData = Annotated[
     Union[
         DynamicsMeta,
@@ -261,20 +262,6 @@ MetaData = Annotated[
     Field(discriminator="metatype"),
 ]
 MetaDataAdapter = TypeAdapter(MetaData)
-
-
-# class MetaData(BaseModel):
-#     data: MetaDataType = Field(..., discriminator="metatype")
-
-#     @classmethod
-#     def __get_all_subtype_fieldnames__(cls):
-#         membertypes = list(MetaDataType.__dict__.values())[4]
-#         return {fieldname for member in membertypes for fieldname in member.model_fields.keys()}
-
-#     @classmethod
-#     def __is_list__(cls, value):
-#         return value.startswith("[") and value.endswith("]")
-
 
 if __name__ == "__main__":
     metadata = MetaDataAdapter.validate_python({"metatype": "REPEAT"})
