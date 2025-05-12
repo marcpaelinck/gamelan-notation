@@ -414,7 +414,7 @@ class SettingsNotationInfo(BaseModel):
     midi_out_file_pattern: str
     pdf_out_file_pattern: str
     # IDs of the parts for which to generate a PDF notation document
-    generate_pdf_part_ids: list[str] = Field(default_factory=list)
+    generate_pdf_part_id: str
     beat_at_end: bool
     autocorrect_kempyung: bool
     # run types that should include this composition

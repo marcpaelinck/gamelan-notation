@@ -83,13 +83,9 @@ class MidiPlayerUpdatePartAgent(MidiPlayerUpdateAgentModel):
                     instrumentgroup=self.run_settings.instrumentgroup,
                     display=True,
                     pfd=None,
-                    notation_version=self.run_settings.notation_version,
                 )
             )
             self.loginfo("New song %s created for MIDI player content", player_song.title)
-
-        if self.run_settings.notation_id == "full":
-            player_song.notation_version = self.run_settings.notation_version
 
         # pylint: disable=not-an-iterable
         # pylint gets confused by assignment of Field() to Pydantic member Song.parts
@@ -135,6 +131,7 @@ class MidiPlayerUpdatePdfAgent(MidiPlayerUpdateAgentModel):
         return (
             run_settings.options.notation_to_midi.is_production_run
             and run_settings.options.notation_to_midi.save_pdf_notation
+            and run_settings.part_id == run_settings.notation.generate_pdf_part_id
         )
 
     @override
@@ -162,9 +159,6 @@ class MidiPlayerUpdatePdfAgent(MidiPlayerUpdateAgentModel):
                 )
             )
             self.loginfo("New song %s created for MIDI player content", player_song.title)
-
-        if self.run_settings.notation_id == "full":
-            player_song.notation_version = self.run_settings.notation_version
 
         content.songs = sorted(content.songs, key=lambda s: s.title)
         self._save_midiplayer_content(

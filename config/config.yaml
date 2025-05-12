@@ -91,8 +91,8 @@ notations:
         folder_out_prod: ${{midiplayer.folder}}
         midi_out_file_pattern: !!str "${{_PARENT_.title}}_{part_id}_${{midi.midiversion}}.mid"
         pdf_out_file_pattern: !!str "${{_PARENT_.title}}_{part_id}_${{midi.midiversion}}.pdf"
-        # parts for which to generate a PDF notation document
-        generate_pdf_part_ids: [full]
+        # part for which to generate a PDF notation document
+        generate_pdf_part_id: full
         beat_at_end: false
         autocorrect_kempyung : true
         fontversion: BaliMusic5

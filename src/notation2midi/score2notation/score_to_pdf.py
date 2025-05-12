@@ -22,7 +22,6 @@ from src.notation2midi.metadata_classes import (
     GoToMeta,
     LabelMeta,
     MetaData,
-    MetaDataBaseModel,
     PartMeta,
     RepeatMeta,
     SequenceMeta,
@@ -77,9 +76,8 @@ class PDFGeneratorAgent(Agent):
     @classmethod
     def run_condition_satisfied(cls, run_settings: RunSettings):
         return (
-            run_settings.options.notation_to_midi
-            and run_settings.options.notation_to_midi.save_pdf_notation
-            and run_settings.part_id in run_settings.notation.generate_pdf_part_ids
+            run_settings.options.notation_to_midi.save_pdf_notation
+            and run_settings.part_id == run_settings.notation.generate_pdf_part_id
         )
 
     def _append_single_metadata_type(
