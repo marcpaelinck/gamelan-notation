@@ -99,10 +99,12 @@ def create_gongan(g_id: int, staves: dict[str, dict[int, list[list[Note]]]], met
         {
             "id": b_id,
             "gongan_id": g_id,
-            "bpm_start": {},
-            "bpm_end": {},
-            "velocities_start": {},
-            "velocities_end": {},
+            "flow": {
+                "bpm_start": {},
+                "bpm_end": {},
+                "velocities_start": {},
+                "velocities_end": {},
+            },
             "duration": 0,
             "measures": {},
         }

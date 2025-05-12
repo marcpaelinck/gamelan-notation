@@ -8,7 +8,7 @@ from typing import override
 
 from mido import MidiFile
 
-from src.common.classes import Beat, Preset, Score
+from src.common.classes import Beat, Flow, Preset, Score
 from src.common.constants import DEFAULT, Pitch, Position
 from src.notation2midi.classes import Agent
 from src.notation2midi.metadata_classes import PartMeta
@@ -65,9 +65,9 @@ class MidiGeneratorAgent(Agent):
         def reset_pass_counters():
             for gongan in self.score.gongans:
                 for beat in gongan.beats:
-                    beat.reset_pass_counter()
-                    if beat.repeat:
-                        beat.repeat.reset_countdown()
+                    beat.flow.reset_pass_counter()
+                    if beat.flow.repeat:
+                        beat.flow.repeat.reset_countdown()
 
         def store_part_info(beat: Beat):
             # current_time_in_millis might be incorrect if the beat consists of only silences.
@@ -95,35 +95,35 @@ class MidiGeneratorAgent(Agent):
                 track.marker(f"b_{beat.full_id}")
             # If a new part is encountered, store timestamp and name in the midiplayer_data section of the score
             store_part_info(beat)
-            beat.incr_pass_counter()
+            beat.flow.incr_pass_counter()
             if self.run_settings.options.debug_logging:
-                track.comment(f"beat {beat.full_id} pass{beat.get_pass_counter()}")
+                track.comment(f"beat {beat.full_id} pass{beat.flow.get_pass_counter()}")
             # Set new tempo.
-            if new_bpm := beat.get_changed_value(track.current_bpm, position, Beat.Change.Type.TEMPO):
-                track.update_tempo(new_bpm or beat.get_bpm_start())
+            if new_bpm := beat.flow.get_changed_value(track.current_bpm, position, Flow.Change.Type.TEMPO):
+                track.update_tempo(new_bpm or beat.flow.get_bpm_start())
             # Set new dynamics
-            if new_velocity := beat.get_changed_value(track.current_velocity, position, Beat.Change.Type.DYNAMICS):
-                track.update_dynamics(new_velocity or beat.get_velocity_start(position))
+            if new_velocity := beat.flow.get_changed_value(track.current_velocity, position, Flow.Change.Type.DYNAMICS):
+                track.update_dynamics(new_velocity or beat.flow.get_velocity_start(position))
 
             # Process individual notes.
             try:
                 # TODO: create function Beat.next_beat_in_flow()
                 pass_ = beat.measures[position].passes.get(
-                    beat.get_pass_counter(), beat.measures[position].passes[DEFAULT]
+                    beat.flow.get_pass_counter(), beat.measures[position].passes[DEFAULT]
                 )
             except KeyError:
                 self.logerror(f"No measure found for {position} in beat {beat.full_id}. Program halted.")
                 sys.exit()
             for note in pass_.notes:
                 track.add_note(note)
-            if beat.repeat and beat.repeat.get_countdown() > 0:
-                beat.repeat.decr_countdown()
-                beat = beat.repeat.goto  # TODO GOTO modify, also for freq type
+            if beat.flow.repeat and beat.flow.repeat.get_countdown() > 0:
+                beat.flow.repeat.decr_countdown()
+                beat = beat.flow.repeat.goto  # TODO GOTO modify, also for freq type
             else:
-                if beat.repeat:
-                    beat.repeat.reset_countdown()
-                beat = beat.goto.get(
-                    beat.get_pass_counter(), beat.goto.get(DEFAULT, beat.next)
+                if beat.flow.repeat:
+                    beat.flow.repeat.reset_countdown()
+                beat = beat.flow.goto.get(
+                    beat.flow.get_pass_counter(), beat.flow.goto.get(DEFAULT, beat.next)
                 )  # TODO GOTO modify, also for freq type
 
         track.finalize()

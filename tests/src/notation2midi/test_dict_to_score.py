@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
 
-from src.common.classes import Beat, Gongan, Measure, Notation, Note, Score
+from src.common.classes import Beat, Flow, Gongan, Measure, Notation, Note, Score
 from src.common.constants import (
     DEFAULT,
     DynamicLevel,
@@ -113,10 +113,7 @@ def create_beat(beat_id: int = 1, content: dict[PositionNote, list[Note]] = None
     return Beat(
         id=beat_id,
         gongan_id=1,
-        bpm_start={-1: 60},
-        bpm_end={-1: 60},
-        velocities_start={},
-        velocities_end={},
+        flow=Flow(bpm_start={-1: 60}, bpm_end={-1: 60}, velocities_start={}, velocities_end={}),
         duration=4,
         measures=measures,
     )
@@ -336,8 +333,8 @@ class TestDictToScoreConverter(BaseUnitTestCase):
                 ),
                 value := lambda: gongan.beats[0].changes,
                 expected := {
-                    Beat.Change.Type.DYNAMICS: {
-                        -1: Beat.Change(
+                    Flow.Change.Type.DYNAMICS: {
+                        -1: Flow.Change(
                             new_value=gongan.metadata[0].value,
                             positions=[Position.PEMADE_POLOS, Position.PEMADE_SANGSIH],
                             incremental=False,

@@ -7,7 +7,7 @@ from src.common.logger import Logging
 logger = Logging.get_logger(__name__)
 
 BPM = int
-Velocity = int
+VelocityInt = int
 PassSequence = int
 Duration = int
 BeatId = str

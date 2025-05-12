@@ -33,7 +33,7 @@ from src.common.constants import (
     RuleType,
     RuleValue,
     Stroke,
-    Velocity,
+    VelocityInt,
 )
 from src.notation2midi.metadata_classes import (
     AutoKempyungMeta,
@@ -763,6 +763,44 @@ class Measure:
 # it points to itself through the `next`, `prev` and `goto` fields,
 # which would otherwise cause an "Infinite recursion" error.
 class Beat(BaseModel):
+    id: int
+    gongan_id: int
+    duration: float
+    measures: dict[Position, Measure] = Field(default_factory=dict)
+    prev: Optional["Beat"] = Field(default=None, repr=False)  # previous beat in the score
+    next: Optional["Beat"] = Field(default=None, repr=False)  # next beat in the score
+    has_kempli_beat: bool = True
+    validation_ignore: list[ValidationProperty] = Field(default_factory=list)
+    flow: "Flow"
+
+    @computed_field
+    @property
+    def full_id(self) -> str:
+        return f"{int(self.gongan_id)}-{self.id}"
+
+    @computed_field
+    @property
+    def gongan_seq(self) -> int:
+        # Returns the pythonic sequence id (numbered from 0)
+        return self.gongan_id - 1
+
+    def get_notes(self, position: Position, pass_seq: int = DEFAULT, none=None):
+        # Convenience function for a much-used query.
+        # Especially useful for list comprehensions
+        if pass_ := self.get_pass(position=position, pass_seq=pass_seq):
+            return pass_.notes
+        return none
+
+    def get_pass(self, position: Position, pass_seq: int = DEFAULT):
+        # Convenience function for a much-used query.
+        # Especially useful for list comprehensions
+        if not position in self.measures.keys():  # pylint: disable=no-member
+            return None
+        else:
+            return self.measures[position].passes[pass_seq]
+
+
+class Flow(BaseModel):
     class Change(BaseModel):
         # BaseModel contains a method to translate a list-like string to an actual list.
         class Type(StrEnum):
@@ -804,39 +842,20 @@ class Beat(BaseModel):
             """returns the countdown counter"""
             return self._countdown
 
-    id: int
-    gongan_id: int
     bpm_start: dict[PassSequence, BPM]  # tempo at beginning of beat (can vary per pass)
     bpm_end: dict[PassSequence, BPM]  # tempo at end of beat (can vary per pass)
-    velocities_start: dict[PassSequence, dict[Position, Velocity]]  # Same for velocity, specified per position
-    velocities_end: dict[PassSequence, dict[Position, Velocity]]
-    duration: float
+    velocities_start: dict[PassSequence, dict[Position, VelocityInt]]  # Same for velocity, specified per position
+    velocities_end: dict[PassSequence, dict[Position, VelocityInt]]
     changes: dict[Change.Type, dict[PassSequence, Change]] = Field(default_factory=lambda: defaultdict(dict))
-    measures: dict[Position, Measure] = Field(default_factory=dict)
-    prev: Optional["Beat"] = Field(default=None, repr=False)  # previous beat in the score
-    next: Optional["Beat"] = Field(default=None, repr=False)  # next beat in the score
     # TODO GOTO REMOVE
     goto: dict[PassSequence, "Beat"] = Field(
         default_factory=dict
     )  # next beat to be played according to the flow (GOTO metadata)
-    goto_: dict[PassSequence, "Beat.GoTo"] = Field(
+    goto_: dict[PassSequence, "Flow.GoTo"] = Field(
         default_factory=dict
     )  # next beat to be played according to the flow (GOTO metadata)
-    has_kempli_beat: bool = True
     repeat: Repeat = None
-    validation_ignore: list[ValidationProperty] = Field(default_factory=list)
     _pass_: PassSequence = 0  # Counts the number of times the beat is passed during generation of MIDI file.
-
-    @computed_field
-    @property
-    def full_id(self) -> str:
-        return f"{int(self.gongan_id)}-{self.id}"
-
-    @computed_field
-    @property
-    def gongan_seq(self) -> int:
-        # Returns the pythonic sequence id (numbered from 0)
-        return self.gongan_id - 1
 
     def next_beat_in_flow(self, pass_seq=None):
         # TODO GOTO CHANGE
@@ -853,14 +872,14 @@ class Beat(BaseModel):
         return velocities_start[position]
 
     def get_changed_value(
-        self, current_value: BPM | Velocity, position: Position, changetype: Change.Type
-    ) -> BPM | Velocity | None:
+        self, current_value: BPM | VelocityInt, position: Position, changetype: Change.Type
+    ) -> BPM | VelocityInt | None:
         # Generic function, returns either a BPM or a Velocity value for the current beat.
         # Returns None if the value for the current beat is the same as that of the previous beat.
         # In case of a gradual change over several measures, calculates the value for the current beat.
         change_list = self.changes[changetype]
         change = change_list.get(self._pass_, change_list.get(DEFAULT, None))
-        if change and changetype is Beat.Change.Type.DYNAMICS and position not in change.positions:
+        if change and changetype is Flow.Change.Type.DYNAMICS and position not in change.positions:
             change = None
         if change and change.new_value != current_value:
             if change.incremental:
@@ -869,20 +888,13 @@ class Beat(BaseModel):
                 return change.new_value
         return None
 
-    def get_pass(self, position: Position, pass_seq: int = DEFAULT):
-        # Convenience function for a much-used query.
-        # Especially useful for list comprehensions
-        if not position in self.measures.keys():  # pylint: disable=no-member
-            return None
-        else:
-            return self.measures[position].passes[pass_seq]
-
-    def get_notes(self, position: Position, pass_seq: int = DEFAULT, none=None):
-        # Convenience function for a much-used query.
-        # Especially useful for list comprehensions
-        if pass_ := self.get_pass(position=position, pass_seq=pass_seq):
-            return pass_.notes
-        return none
+    # def get_pass(self, position: Position, pass_seq: int = DEFAULT):
+    #     # Convenience function for a much-used query.
+    #     # Especially useful for list comprehensions
+    #     if not position in self.measures.keys():  # pylint: disable=no-member
+    #         return None
+    #     else:
+    #         return self.measures[position].passes[pass_seq]
 
     def reset_pass_counter(self) -> None:
         """(re-)initializes the pass counter"""
