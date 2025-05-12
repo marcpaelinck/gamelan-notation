@@ -317,6 +317,9 @@ def compare_file_contents(file1: str, file2: str) -> dict[tuple[str], tuple[dict
                 category = NOMATCH_2, msgtype
                 report[category].append((msglist, []))
 
+    if not report:
+        report = NO_DIFFERENCES
+
     return sorted_dict(report)
 
 

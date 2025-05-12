@@ -331,7 +331,7 @@ class TestDictToScoreConverter(BaseUnitTestCase):
                         )
                     ],
                 ),
-                value := lambda: gongan.beats[0].changes,
+                value := lambda: gongan.beats[0].flow.changes,
                 expected := {
                     Flow.Change.Type.DYNAMICS: {
                         -1: Flow.Change(
