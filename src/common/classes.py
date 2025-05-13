@@ -759,9 +759,6 @@ class Measure:
         )
 
 
-# Note: Beat is intentionally not a Pydantic subclass because
-# it points to itself through the `next`, `prev` and `goto` fields,
-# which would otherwise cause an "Infinite recursion" error.
 class Beat(BaseModel):
     id: int
     gongan_id: int
@@ -772,6 +769,10 @@ class Beat(BaseModel):
     has_kempli_beat: bool = True
     validation_ignore: list[ValidationProperty] = Field(default_factory=list)
     flow: "Flow"
+
+    @override
+    def model_post_init(self, context: Any) -> None:  # pylint: disable=arguments-differ
+        self.flow.beat = self
 
     @computed_field
     @property
@@ -784,23 +785,13 @@ class Beat(BaseModel):
         # Returns the pythonic sequence id (numbered from 0)
         return self.gongan_id - 1
 
-    def get_notes(self, position: Position, pass_seq: int = DEFAULT, none=None):
-        # Convenience function for a much-used query.
-        # Especially useful for list comprehensions
-        if pass_ := self.get_pass(position=position, pass_seq=pass_seq):
-            return pass_.notes
-        return none
-
-    def get_pass(self, position: Position, pass_seq: int = DEFAULT):
-        # Convenience function for a much-used query.
-        # Especially useful for list comprehensions
-        if not position in self.measures.keys():  # pylint: disable=no-member
-            return None
-        else:
-            return self.measures[position].passes[pass_seq]
-
 
 class Flow(BaseModel):
+    class FlowType(StrEnum):
+        GOTO = auto()
+        REPEAT = auto()
+        SEQUENCE = auto()
+
     class Change(BaseModel):
         # BaseModel contains a method to translate a list-like string to an actual list.
         class Type(StrEnum):
@@ -842,6 +833,7 @@ class Flow(BaseModel):
             """returns the countdown counter"""
             return self._countdown
 
+    beat: Beat | None = None  # The beat to which this flow object belongs: value is set by Beat.model_post_init
     bpm_start: dict[PassSequence, BPM]  # tempo at beginning of beat (can vary per pass)
     bpm_end: dict[PassSequence, BPM]  # tempo at end of beat (can vary per pass)
     velocities_start: dict[PassSequence, dict[Position, VelocityInt]]  # Same for velocity, specified per position
@@ -855,19 +847,26 @@ class Flow(BaseModel):
         default_factory=dict
     )  # next beat to be played according to the flow (GOTO metadata)
     repeat: Repeat = None
-    _pass_: PassSequence = 0  # Counts the number of times the beat is passed during generation of MIDI file.
+    # _goto_pass_: PassSequence = 0  # Counts the number of times the beat is passed during generation of MIDI file.
+    # _loop_pass_: PassSequence = 0  # Counts the number of times the beat is passed during generation of MIDI file.
+    # _sequence_pass_: PassSequence = 0  # Counts the number of times the beat is passed during generation of MIDI file.
+    pass_counter_: defaultdict[FlowType, int] = Field(default_factory=lambda: defaultdict(lambda: 0))
 
-    def next_beat_in_flow(self, pass_seq=None):
+    def next_beat_in_flow(self, pass_seq: PassSequence = None):
         # TODO GOTO CHANGE
-        return self.goto.get(pass_seq or self._pass_, self.goto.get(DEFAULT, self.next))  # pylint: disable=no-member
+        # pylint: disable=no-member
+        return self.goto.get(pass_seq or self.pass_counter_[Flow.FlowType.GOTO], self.goto.get(DEFAULT, self.next))
+        # pylint: enable=no-member
 
     def get_bpm_start(self):
         # Return tempo at start of beat for the current pass.
-        return self.bpm_start.get(self._pass_, self.bpm_start.get(DEFAULT, None))
+        return self.bpm_start.get(self.pass_counter_[Flow.FlowType.GOTO], self.bpm_start.get(DEFAULT, None))
 
     def get_velocity_start(self, position):
         # Return velocity at start of beat for the current pass.
-        velocities_start = self.velocities_start.get(self._pass_, self.velocities_start.get(DEFAULT, None))
+        velocities_start = self.velocities_start.get(
+            self.pass_counter_[Flow.FlowType.GOTO], self.velocities_start.get(DEFAULT, None)
+        )
         # NOTE intentionally causing Exception if position not in velocities_start
         return velocities_start[position]
 
@@ -878,7 +877,7 @@ class Flow(BaseModel):
         # Returns None if the value for the current beat is the same as that of the previous beat.
         # In case of a gradual change over several measures, calculates the value for the current beat.
         change_list = self.changes[changetype]
-        change = change_list.get(self._pass_, change_list.get(DEFAULT, None))
+        change = change_list.get(self.pass_counter_[Flow.FlowType.GOTO], change_list.get(DEFAULT, None))
         if change and changetype is Flow.Change.Type.DYNAMICS and position not in change.positions:
             change = None
         if change and change.new_value != current_value:
@@ -888,25 +887,32 @@ class Flow(BaseModel):
                 return change.new_value
         return None
 
-    # def get_pass(self, position: Position, pass_seq: int = DEFAULT):
-    #     # Convenience function for a much-used query.
-    #     # Especially useful for list comprehensions
-    #     if not position in self.measures.keys():  # pylint: disable=no-member
-    #         return None
-    #     else:
-    #         return self.measures[position].passes[pass_seq]
+    def get_pass(self, position: Position, pass_seq: int = DEFAULT):
+        # Convenience function for a much-used query.
+        # Especially useful for list comprehensions
+        if not position in self.beat.measures.keys():  # pylint: disable=no-member
+            return None
+        else:
+            return self.beat.measures[position].passes[pass_seq]
 
-    def reset_pass_counter(self) -> None:
+    def get_notes(self, position: Position, pass_seq: int = DEFAULT, none=None):
+        # Convenience function for a much-used query.
+        # Especially useful for list comprehensions
+        if pass_ := self.get_pass(position=position, pass_seq=pass_seq):
+            return pass_.notes
+        return none
+
+    def reset_pass_counter(self, flowtype: FlowType) -> None:
         """(re-)initializes the pass counter"""
-        self._pass_ = 0
+        self.pass_counter_[flowtype] = 0
 
-    def incr_pass_counter(self) -> None:
+    def incr_pass_counter(self, flowtype: FlowType) -> None:
         """increments the pass counter"""
-        self._pass_ += 1
+        self.pass_counter_[flowtype] += 1
 
-    def get_pass_counter(self) -> int:
+    def get_pass_counter(self, flowtype: FlowType) -> int:
         """returns the pass counter"""
-        return self._pass_
+        return self.pass_counter_[flowtype]
 
 
 class Gongan(BaseModel):

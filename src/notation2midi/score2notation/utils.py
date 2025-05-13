@@ -123,9 +123,9 @@ def is_silent(gongan: Gongan, position: Position, passid: PassID) -> bool:  # he
     """True if all the measures for the position/passid combination contain only notes with
     EXTENSION and/or SILENCE Stroke values.
     """
-    no_occurrence = sum((beat.get_notes(position, passid, none=[]) for beat in gongan.beats), []) == []
+    no_occurrence = sum((beat.flow.get_notes(position, passid, none=[]) for beat in gongan.beats), []) == []
     all_rests = all(
-        note.pitch == Pitch.NONE for beat in gongan.beats for note in beat.get_notes(position, passid, none=[])
+        note.pitch == Pitch.NONE for beat in gongan.beats for note in beat.flow.get_notes(position, passid, none=[])
     )
     return no_occurrence or all_rests
 
@@ -239,7 +239,7 @@ def aggregate_positions(gongan: Gongan) -> dict[tuple[Position, PassID], str]:
         comparator = partial(equivalent, positions=positions, metadata=gongan.metadata)
         all_positions_have_same_notation = all(
             all(
-                compare(beat.get_notes(pos, passid), beat.get_notes(positions[0], passid), comparator)
+                compare(beat.flow.get_notes(pos, passid), beat.flow.get_notes(positions[0], passid), comparator)
                 for beat in gongan.beats
             )
             for pos in positions
@@ -271,7 +271,7 @@ def aggregate_positions(gongan: Gongan) -> dict[tuple[Position, PassID], str]:
             nextpass = None
             for currpass, nextpass in zip(passes, passes[1:]):
                 if first != currpass and not all(
-                    compare(beat.get_notes(position, currpass), beat.get_notes(position, nextpass), same)
+                    compare(beat.flow.get_notes(position, currpass), beat.flow.get_notes(position, nextpass), same)
                     for beat in gongan.beats
                 ):
                     # Reached last pass of a group with size >1.

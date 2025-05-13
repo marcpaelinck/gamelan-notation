@@ -55,7 +55,7 @@ class ScoreToNotationAgent(Agent):
                     InstrumentFields.POSITION: pos_tags.get((position, passid), position)
                     + (f":{passid}" if passid > 0 else "")
                 }
-                | {beat.id: self._notelist_to_string(beat.get_notes(position)) for beat in gongan.beats}
+                | {beat.id: self._notelist_to_string(beat.flow.get_notes(position)) for beat in gongan.beats}
                 for (position, passid) in pos_tags.keys()
                 if any(position in beat.measures for beat in gongan.beats)
                 and not (is_silent(gongan=gongan, position=position, passid=passid))

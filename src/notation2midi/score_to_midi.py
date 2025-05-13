@@ -65,13 +65,13 @@ class MidiGeneratorAgent(Agent):
         def reset_pass_counters():
             for gongan in self.score.gongans:
                 for beat in gongan.beats:
-                    beat.flow.reset_pass_counter()
+                    beat.flow.reset_pass_counter(Flow.FlowType.GOTO)
                     if beat.flow.repeat:
                         beat.flow.repeat.reset_countdown()
 
         def store_part_info(beat: Beat):
             # current_time_in_millis might be incorrect if the beat consists of only silences.
-            if all(note.pitch == Pitch.NONE for note in beat.get_notes(position, DEFAULT)):
+            if all(note.pitch == Pitch.NONE for note in beat.flow.get_notes(position, DEFAULT)):
                 return
             gongan = self.score.gongans[beat.gongan_seq]
             if partinfo := gongan.get_metadata(PartMeta):
@@ -95,9 +95,9 @@ class MidiGeneratorAgent(Agent):
                 track.marker(f"b_{beat.full_id}")
             # If a new part is encountered, store timestamp and name in the midiplayer_data section of the score
             store_part_info(beat)
-            beat.flow.incr_pass_counter()
+            beat.flow.incr_pass_counter(Flow.FlowType.GOTO)
             if self.run_settings.options.debug_logging:
-                track.comment(f"beat {beat.full_id} pass{beat.flow.get_pass_counter()}")
+                track.comment(f"beat {beat.full_id} pass{beat.flow.get_pass_counter(Flow.FlowType.GOTO)}")
             # Set new tempo.
             if new_bpm := beat.flow.get_changed_value(track.current_bpm, position, Flow.Change.Type.TEMPO):
                 track.update_tempo(new_bpm or beat.flow.get_bpm_start())
@@ -109,7 +109,7 @@ class MidiGeneratorAgent(Agent):
             try:
                 # TODO: create function Beat.next_beat_in_flow()
                 pass_ = beat.measures[position].passes.get(
-                    beat.flow.get_pass_counter(), beat.measures[position].passes[DEFAULT]
+                    beat.flow.get_pass_counter(Flow.FlowType.GOTO), beat.measures[position].passes[DEFAULT]
                 )
             except KeyError:
                 self.logerror(f"No measure found for {position} in beat {beat.full_id}. Program halted.")
@@ -123,7 +123,7 @@ class MidiGeneratorAgent(Agent):
                 if beat.flow.repeat:
                     beat.flow.repeat.reset_countdown()
                 beat = beat.flow.goto.get(
-                    beat.flow.get_pass_counter(), beat.flow.goto.get(DEFAULT, beat.next)
+                    beat.flow.get_pass_counter(Flow.FlowType.GOTO), beat.flow.goto.get(DEFAULT, beat.next)
                 )  # TODO GOTO modify, also for freq type
 
         track.finalize()
