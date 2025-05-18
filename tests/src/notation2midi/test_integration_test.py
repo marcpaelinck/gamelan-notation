@@ -42,7 +42,7 @@ class IntegrationTester(BaseUnitTestCase):
         compare_dict = run_settings.folder_out
         run_settings.options.notation_to_midi.runtype = RunType.RUN_ALL
         if self.RUN_SMALL_TEST:
-            run_settings = Settings.get(notation_id="bapangselisir_integration_test_small", part_id="full")
+            run_settings = Settings.get(notation_id="godekmiring_integration_test_small", part_id="full")
             run_settings.options.notation_to_midi.runtype = RunType.RUN_SINGLE
         main()  # Converts the notations whose setting `include_in_run_types` contains value RUN_ALL.
         no_differences = compare_all(ref_dir=reference_dict, other_dir=compare_dict)

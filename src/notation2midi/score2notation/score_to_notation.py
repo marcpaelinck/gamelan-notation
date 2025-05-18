@@ -4,9 +4,10 @@ from typing import override
 
 import pandas as pd
 
-from src.common.classes import Gongan, Note, Score
+from src.common.classes import Gongan, Note
 from src.common.constants import ParserTag, Position
 from src.notation2midi.classes import Agent
+from src.notation2midi.execution import Score
 from src.notation2midi.score2notation.utils import aggregate_positions, is_silent
 from src.settings.classes import RunSettings
 from src.settings.constants import InstrumentFields
@@ -55,7 +56,7 @@ class ScoreToNotationAgent(Agent):
                     InstrumentFields.POSITION: pos_tags.get((position, passid), position)
                     + (f":{passid}" if passid > 0 else "")
                 }
-                | {beat.id: self._notelist_to_string(beat.execution.get_notes(position)) for beat in gongan.beats}
+                | {beat.id: self._notelist_to_string(beat.get_notes(position)) for beat in gongan.beats}
                 for (position, passid) in pos_tags.keys()
                 if any(position in beat.measures for beat in gongan.beats)
                 and not (is_silent(gongan=gongan, position=position, passid=passid))

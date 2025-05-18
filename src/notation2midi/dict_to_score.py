@@ -10,18 +10,7 @@ from typing import override
 
 from pydantic import ValidationError
 
-from src.common.classes import (
-    Beat,
-    Gongan,
-    GoTo,
-    Instrument,
-    Loop,
-    Measure,
-    Notation,
-    Note,
-    Score,
-    Tone,
-)
+from src.common.classes import Beat, Gongan, Instrument, Measure, Notation, Note, Tone
 from src.common.constants import (
     DEFAULT,
     Duration,
@@ -35,6 +24,7 @@ from src.common.constants import (
     VelocityInt,
 )
 from src.notation2midi.classes import Agent, MetaDataRecord, NoteRecord
+from src.notation2midi.execution import ExecutionManager, GoTo, Loop, Score
 from src.notation2midi.metadata_classes import (
     AutoKempyungMeta,
     DynamicsMeta,
@@ -80,6 +70,7 @@ class ScoreCreatorAgent(Agent):
 
     notation: Notation = None
     score: Score = None
+    exec_mgr: ExecutionManager = None
 
     POSITIONS_EXPAND_MEASURES = [
         Position.UGAL,
@@ -100,7 +91,10 @@ class ScoreCreatorAgent(Agent):
             title=self.run_settings.notation.title,
             settings=notation.settings,
             instrument_positions=self._get_all_positions(notation.notation_dict),
+            execution_manager=ExecutionManager(),
         )
+        self.exec_mgr = self.score.execution_manager
+        x = 1
 
     @override
     @classmethod
@@ -219,7 +213,7 @@ class ScoreCreatorAgent(Agent):
         prevstrokes = {
             # We select the default pass because pass_seq might not be the corresponding sequence in prev_beat
             # as a consequence of the flow of the score that will be created in a later stage.
-            pos: (prev_beat.execution.get_notes(pos, DEFAULT)[-1].stroke if prev_beat else silence)
+            pos: (prev_beat.get_notes(pos, DEFAULT)[-1].stroke if prev_beat else silence)
             for pos in positions
         }
         # Remark: the resttype is EXTENSION if the previous stroke is MUTED or ABBREVIATED.
@@ -360,9 +354,9 @@ class ScoreCreatorAgent(Agent):
         self, frombeat: Beat, tobeat: Beat, passes: list[int] | None = None, cycle: int | None = None
     ) -> None:
         tobeat_dict = {passnr: tobeat for passnr in passes} if passes else {DEFAULT: tobeat}
-        frombeat.execution.goto.to_beat |= tobeat_dict
+        self.exec_mgr.execution(frombeat).goto.to_beat |= tobeat_dict
         if cycle:
-            frombeat.execution.goto.cycle = cycle
+            self.exec_mgr.execution(frombeat).goto.cycle = cycle
 
     def _apply_metadata(self, gongan: Gongan) -> None:
         """Processes the metadata of a gongan into the object model.
@@ -447,7 +441,9 @@ class ScoreCreatorAgent(Agent):
                 case PartMeta():
                     pass
                 case RepeatMeta():
-                    gongan.beats[-1].execution.loop = Loop(to_beat=gongan.beats[0], iterations=meta.count + 1)
+                    self.exec_mgr.execution(gongan.beats[-1]).loop = Loop(
+                        to_beat=gongan.beats[0], iterations=meta.count + 1
+                    )
                 case SequenceMeta():
                     self.score.flowinfo.sequences.append((gongan, meta))
                 case SuppressMeta():
@@ -481,15 +477,13 @@ class ScoreCreatorAgent(Agent):
                     if meta.beat_count == 0:
                         # immediate change.
                         if is_dynamics:
-                            beat.execution.dynamics.update(
+                            self.exec_mgr.execution(beat).dynamics.update(
                                 value=meta.value, positions=meta.positions, passes=meta.passes, iterations=[]
                             )
-                            # beat.execution.dynamics.value_dict |= {pos: meta.value for pos in meta.positions}
-                            # beat.execution.dynamics.passes = meta.passes
                         else:
-                            beat.execution.tempo.update(value=meta.value, passes=meta.passes, iterations=[])
-                            # beat.execution.tempo.value_dict = meta.value
-                            # beat.execution.tempo.passes = meta.passes
+                            self.exec_mgr.execution(beat).tempo.update(
+                                value=meta.value, passes=meta.passes, iterations=[]
+                            )
                     else:
                         # Gradual change over meta.beats beats. The first change is after first beat.
                         # This emulates a gradual tempo change.
@@ -498,26 +492,20 @@ class ScoreCreatorAgent(Agent):
                             if not beat:  # End of score. This should not happen unless notation error.
                                 break
                             if is_dynamics:
-                                beat.execution.dynamics.update(
+                                self.exec_mgr.execution(beat).dynamics.update(
                                     value=meta.value,
                                     positions=meta.positions,
                                     passes=meta.passes,
                                     iterations=[],
                                     steps=steps,
                                 )
-                                # beat.execution.dynamics.value_dict |= {pos: meta.value for pos in meta.positions}
-                                # beat.execution.dynamics.steps = steps
-                                # beat.execution.dynamics.passes = meta.passes
                             else:
-                                beat.execution.tempo.update(
+                                self.exec_mgr.execution(beat).tempo.update(
                                     value=meta.value,
                                     passes=meta.passes,
                                     iterations=[],
                                     steps=steps,
                                 )
-                                # beat.execution.tempo.value_dict = meta.value
-                                # beat.execution.tempo.steps = steps
-                                # beat.execution.tempo.passes = meta.passes
                 case ValidationMeta():
                     for beat in [b for b in gongan.beats if b.id in meta.beats] or gongan.beats:
                         beat.validation_ignore.extend(meta.ignore)
@@ -540,8 +528,8 @@ class ScoreCreatorAgent(Agent):
                         lastbeat.next.prev = newbeat
                         lastbeat.next = newbeat
                         # move goto pointers to the end of the wait beat
-                        newbeat.execution.goto = lastbeat.execution.goto
-                        lastbeat.execution.goto = GoTo()
+                        self.exec_mgr.execution(newbeat).goto = self.exec_mgr.execution(lastbeat).goto
+                        self.exec_mgr.execution(lastbeat).goto = GoTo()
                     newbeat.measures = self._create_rest_measures(
                         prev_beat=lastbeat, positions=list(lastbeat.measures.keys()), duration=duration
                     )
@@ -554,10 +542,12 @@ class ScoreCreatorAgent(Agent):
             # from its predecessor. This will ensure that a goto to any of these beats will pick up the correct tempo.
             for beat in gongan.beats:
                 if beat.prev:
-                    if not beat.execution.dynamics.value_dict:
-                        beat.execution.dynamics = beat.prev.execution.dynamics.model_copy()
-                    if not beat.execution.tempo.value_dict:
-                        beat.execution.tempo = beat.prev.execution.tempo.model_copy()
+                    if not self.exec_mgr.execution(beat).dynamics.value_dict:
+                        self.exec_mgr.execution(beat).dynamics = self.exec_mgr.execution(
+                            beat.prev
+                        ).dynamics.model_copy()
+                    if not self.exec_mgr.execution(beat).tempo.value_dict:
+                        self.exec_mgr.execution(beat).tempo = self.exec_mgr.execution(beat.prev).tempo.model_copy()
 
     def _process_sequences(self):
         """Translates the labels of the SEQUENCE metadata into goto directives in the respective beats."""
@@ -570,7 +560,7 @@ class ScoreCreatorAgent(Agent):
                 # TODO GOTO remove next line
                 # pass_nr = max([p for p in from_beat.flow.goto.keys()] or [0]) + 1  # Select next available pass
                 # Select next available pass
-                goto = from_beat.execution.goto
+                goto = self.exec_mgr.execution(from_beat).goto
                 pass_nr = goto.max_passnr + 1
                 # TODO: check if this works
                 self.process_goto(frombeat=from_beat, tobeat=to_beat, passes=[pass_nr])
@@ -607,7 +597,7 @@ class ScoreCreatorAgent(Agent):
                     resttype = (
                         Stroke.SILENCE
                         if (force_silence and position in force_silence)
-                        or prevbeat.execution.get_notes(position, DEFAULT)[-1].stroke is Stroke.SILENCE
+                        or prevbeat.get_notes(position, DEFAULT)[-1].stroke is Stroke.SILENCE
                         else Stroke.EXTENSION
                     )
                     pass_.notes = self._create_rest_notes(position=position, resttype=resttype, duration=beat.duration)

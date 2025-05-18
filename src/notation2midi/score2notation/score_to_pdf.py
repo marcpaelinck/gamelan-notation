@@ -14,9 +14,10 @@ from reportlab.pdfbase.pdfmetrics import registerFont, stringWidth
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, TableStyle
 
-from src.common.classes import Gongan, Note, Score
+from src.common.classes import Gongan, Note
 from src.common.constants import Modifier, Position
 from src.notation2midi.classes import Agent
+from src.notation2midi.execution import Score
 from src.notation2midi.metadata_classes import (
     DynamicsMeta,
     GoToMeta,

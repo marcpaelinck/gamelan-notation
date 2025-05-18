@@ -161,7 +161,7 @@ notations:
         parts:
             full:
                 name: entire piece
-                file: Godek Miring font5.tsv
+                file: Godek miring font5.tsv
                 loop: false
             kawitan:
                 name: kawitan (no angsel)

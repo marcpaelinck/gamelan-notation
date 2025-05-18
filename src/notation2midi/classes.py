@@ -6,7 +6,7 @@ from enum import StrEnum
 from types import UnionType
 from typing import Any, Generator
 
-from src.common.classes import Beat, Gongan, Measure, Score
+from src.common.classes import Beat, Gongan, Measure
 from src.common.constants import (
     DynamicLevel,
     InstrumentType,
@@ -16,6 +16,7 @@ from src.common.constants import (
     Stroke,
 )
 from src.common.logger import Logging
+from src.notation2midi.execution import Score
 from src.notation2midi.metadata_classes import (
     FrequencyType,
     GonganType,
