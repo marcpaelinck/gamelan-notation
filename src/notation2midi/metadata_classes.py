@@ -23,7 +23,7 @@ class MetaDataSwitch(NotationEnum):
 
 class FrequencyType(NotationEnum):
     ONCE = "once"
-    ALWAYS = "always"
+    MULTIPLE = "always"
 
 
 class ValidationProperty(NotationEnum):
@@ -73,7 +73,8 @@ class GradualChangeMetadata(MetaDataBaseModel):
     value: int = None
     first_beat: int = 1
     beat_count: int = 0
-    passes: list[int] = Field(default_factory=lambda: list([DEFAULT]))  # On which pass(es) should goto be performed?
+    passes: list[int] = Field(default_factory=list)  # On which pass(es) should goto be performed?
+    # passes: list[int] = Field(default_factory=lambda: list([DEFAULT]))  # On which pass(es) should goto be performed?
 
     @property
     def first_beat_seq(self) -> int:
@@ -120,8 +121,8 @@ class GoToMeta(MetaDataBaseModel):
     metatype: Literal["GOTO"] = "GOTO"
     label: str
     from_beat: int = -1  # Beat number from which to goto. Default is last beat of the gongan.
-    passes: list[int] = [DEFAULT]  # On which pass(es) should goto be performed?
-    frequency: FrequencyType = FrequencyType.ALWAYS
+    passes: list[int] = Field(default_factory=list)  # On which pass(es) should goto be performed?
+    cycle: int = 99
     DEFAULTPARAM = "label"
 
     @property
@@ -177,14 +178,14 @@ class PartMeta(MetaDataBaseModel):
 class RepeatMeta(MetaDataBaseModel):
     metatype: Literal["REPEAT"] = "REPEAT"
     count: int = 1
-    frequency: FrequencyType = FrequencyType.ALWAYS
+    frequency: FrequencyType = FrequencyType.MULTIPLE
     DEFAULTPARAM = "count"
 
 
 class SequenceMeta(MetaDataBaseModel):
     metatype: Literal["SEQUENCE"] = "SEQUENCE"
     value: list[str] = Field(default_factory=list)
-    frequency: FrequencyType = FrequencyType.ALWAYS
+    frequency: FrequencyType = FrequencyType.MULTIPLE
     DEFAULTPARAM = "value"
 
 

@@ -9,6 +9,7 @@ logger = Logging.get_logger(__name__)
 BPM = int
 VelocityInt = int
 PassSequence = int
+IterationSequence = int
 Duration = int
 BeatId = str
 Octave = int

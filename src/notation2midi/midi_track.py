@@ -211,6 +211,7 @@ class MidiTrackX(MidiTrack):
         # Edit the previous helping hand message with the current note information.
         if is_last:
             # if self.run_settings.notation.part.loop:
+            pass
             first_msg_json = json.loads(self.first_helpinghand_msg.text)
             time_until = int(self.current_millitime - self.last_hh_millitime)
             pitch = first_msg_json["pitch"]

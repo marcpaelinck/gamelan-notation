@@ -223,7 +223,7 @@ class ScoreValidationAgent(Agent):
                         and polos.rest_after == sangsih.rest_after
                         for polos, sangsih in notepairs
                     ):
-                        orig_sangsih_str = "".join((n.symbol for n in beat.flow.get_notes(sangsih, DEFAULT)))
+                        orig_sangsih_str = "".join((n.symbol for n in beat.execution.get_notes(sangsih, DEFAULT)))
                         # Check for incorrect sangsih values.
                         # When autocorrecting, run the code a second time to check for remaining errors.
                         iterations = [1, 2] if autocorrect else [1]
@@ -253,7 +253,7 @@ class ScoreValidationAgent(Agent):
                                             self.logerror(
                                                 f"Trying to create an incorrect combination {sangsih} {correct_note} OCT{correct_octave} {sangsihnote.stroke} duration={sangsihnote.duration} rest_after{sangsihnote.rest_after} while correcting kempyung."
                                             )
-                                        beat.flow.get_notes(sangsih, DEFAULT)[seq] = correct_sangsih
+                                        beat.execution.get_notes(sangsih, DEFAULT)[seq] = correct_sangsih
                                         autocorrected = True
                                     elif iteration == iterations[-1]:
                                         # Last iterations

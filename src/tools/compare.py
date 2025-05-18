@@ -117,11 +117,14 @@ def to_text(path, midifilename):
     with open(txtfilepath, "w", encoding="utf-8") as csvfile:
         for i, track in enumerate(mid.tracks):
             clocktime = 0
+            passes: dict[str, int] = defaultdict(lambda: 0)
             csvfile.write("Track {}: {}".format(i, track.name) + "\n")
             for msg in track:
                 do_write = True
                 match = re.findall(r"'marker', text='b_(\d+-\d+)'", str(msg))
                 if match:
+                    if match[0] != beat:
+                        passes[match[0]] += 1
                     beat = match[0]
                     do_write = False
                 else:
@@ -131,7 +134,10 @@ def to_text(path, midifilename):
                         do_write = False
                 clocktime += msg.time
                 if do_write:
-                    csvfile.write(f"    ({clocktime},{beat},{position}) -- {str(msg)} abstime={clocktime}" + "\n")
+                    csvfile.write(
+                        f"    ({clocktime},{beat},{passes[beat]},{position}) -- {str(msg)} abstime={clocktime} pass={passes[beat]}"
+                        + "\n"
+                    )
 
 
 def to_text_multiple_files(files: list[str], folders: list[str]):
@@ -156,14 +162,14 @@ def attr(line: str):
     if type_.startswith("note"):
         # pylint: disable=line-too-long
         matcher = re.match(
-            r" *\((?P<abstime>\d+),(?P<beat_id>\d+-\d+),(?P<position_id>\w*)\)[ -]+(?P<type>note_[a-z]{2,3}) channel=(?P<channel>[^ ]+) note=(?P<note>[^ ]+) velocity=(?P<velocity>[^ ]+) time=(?P<time>\d+) abstime=\d* *$",
+            r" *\((?P<abstime>\d+),(?P<beat_id>\d+-\d+),(?P<pass_id>\d+),(?P<position_id>\w*)\)[ -]+(?P<type>note_[a-z]{2,3}) channel=(?P<channel>[^ ]+) note=(?P<note>[^ ]+) velocity=(?P<velocity>[^ ]+) time=(?P<time>\d+) abstime=\d* pass=\d* *$",
             line,
         )
         params = matcher.groupdict() if matcher else {}
     else:
         # Metamessage. Determine type and set match string accordingly
         matcher = re.match(
-            r" *\((?P<abstime>\d+),(?P<beat_id>\d+-\d+),(?P<position_id>\w*)\)[ -]+MetaMessage\('(?P<type>\w+)'(, text='(?P<text>[^']+)'|, name='(?P<name>\w+)'|, tempo=(?P<tempo>\d+)|, port=(?P<port>\d+)){0,1}, time=(?P<time>\d+)\) abstime=\d* *$",
+            r" *\((?P<abstime>\d+),(?P<beat_id>\d+-\d+),(?P<pass_id>\d+),(?P<position_id>\w*)\)[ -]+MetaMessage\('(?P<type>\w+)'(, text='(?P<text>[^']+)'|, name='(?P<name>\w+)'|, tempo=(?P<tempo>\d+)|, port=(?P<port>\d+)){0,1}, time=(?P<time>\d+)\) abstime=\d* pass=\d* *$",
             line,
         )
         # pylint: enable=line-too-long

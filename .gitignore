@@ -9,3 +9,4 @@ notebooks/*
 __pycache__
 .pytest_cache/*
 tests/data/notation/_integration_test/*/
+tests/data/notation/_integration_test_small/*/
