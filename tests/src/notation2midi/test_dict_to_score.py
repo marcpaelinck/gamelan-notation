@@ -14,7 +14,7 @@ from src.common.constants import (
 )
 from src.notation2midi.classes import MetaDataRecord
 from src.notation2midi.dict_to_score import ScoreCreatorAgent
-from src.notation2midi.execution import Execution, Score
+from src.notation2midi.execution import Dynamics, Execution, Score
 from src.notation2midi.metadata_classes import (
     DynamicsMeta,
     GonganMeta,
@@ -332,13 +332,13 @@ class TestDictToScoreConverter(BaseUnitTestCase):
                         )
                     ],
                 ),
-                value := lambda: gongan.beats[0].execution.dynamics,
-                expected := {
-                    Execution.Dynamics(
-                        value={pos: gongan.metadata[0].value for pos in gongan.metadata[0].positions},
-                        gradual=False,
-                    )
-                },
+                value := lambda: converter.exec_mgr.execution(gongan.beats[0]).dynamics,
+                expected := Dynamics(
+                    value_dict={
+                        (pos, DEFAULT, DEFAULT): gongan.metadata[0].value for pos in gongan.metadata[0].positions
+                    },
+                    gradual=False,
+                ),
             ),
             (
                 gongan := self.create_gongan_with_metadata(2, [GonganMeta(type=GonganType.KEBYAR)]),

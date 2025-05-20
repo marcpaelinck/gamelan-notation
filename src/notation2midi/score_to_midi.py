@@ -66,9 +66,7 @@ class MidiGeneratorAgent(Agent):
         """
 
         def reset_pass_counters():
-            for gongan in self.score.gongans:
-                for beat in gongan.beats:
-                    self.exec_mgr.execution(beat).reset_all_counters()
+            self.exec_mgr.reset_all_counters()
 
         def store_part_info(beat: Beat):
             # current_time_in_millis might be incorrect if the beat consists of only silences.
@@ -120,11 +118,11 @@ class MidiGeneratorAgent(Agent):
                     f"loop{self.exec_mgr.execution(beat).loop.curr_iteration if self.exec_mgr.execution(beat).loop else "-"}"
                 )
             # Set new tempo.
-            if new_bpm := self.exec_mgr.execution(beat).get_changed_tempo(curr_tempo=track.current_bpm):
+            if new_bpm := self.exec_mgr.get_tempo(beat=beat, curr_tempo=track.current_bpm):
                 track.update_tempo(new_bpm)
             # Set new dynamics
-            if new_velocity := self.exec_mgr.execution(beat).get_changed_dynamics(
-                curr_dynamics=track.current_velocity, position=position
+            if new_velocity := self.exec_mgr.get_dynamics(
+                beat=beat, position=position, curr_dynamics=track.current_velocity
             ):
                 track.update_dynamics(new_velocity)
 

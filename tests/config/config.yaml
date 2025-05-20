@@ -133,7 +133,7 @@ notations:
     integration_test_small:
         title: Dummy for small Integration Test
         subfolder: _integration_test_small/reference
-        folder_in: ./tests/data/notation/_integration_test_small/reference
+        folder_in: ./tests/data/notation/_integration_test/reference
         folder_out_nonprod: ./tests/data/notation/_integration_test_small/output
         include_in_run_types: []
         parts: 
@@ -141,43 +141,6 @@ notations:
                 name: dummy
                 file: dummy
                 loop: false        
-    bapangselisir_integration_test_small:
-        title: Bapang Selisir
-        subfolder: .
-        instrumentgroup: SEMAR_PAGULINGAN
-        folder_in: ./tests/data/notation/_integration_test_small/notations
-        folder_out_nonprod: ./tests/data/notation/_integration_test_small/output
-        beat_at_end: false
-        include_in_run_types: [RUN_SINGLE]
-        parts:
-            full:
-                name: entire piece
-                file: Bapang Selisir_font5.tsv
-                loop: false
-    legongmahawidya_integration_test_small:
-        title: Legong Mahawidya
-        subfolder: .
-        folder_in: ./tests/data/notation/_integration_test_small/notations
-        folder_out_nonprod: ./tests/data/notation/_integration_test_small/output
-        beat_at_end: false
-        parts:
-            full:
-                name: entire piece
-                file: Legong Mahawidya_font5.tsv
-                loop: false
-    godekmiring_integration_test_small:
-        title: Godek Miring
-        instrumentgroup: SEMAR_PAGULINGAN
-        subfolder: .
-        folder_in: ./tests/data/notation/_integration_test_small/notations
-        folder_out_nonprod: ./tests/data/notation/_integration_test_small/output
-        beat_at_end: false
-        autocorrect_kempyung : false
-        parts:
-            full:
-                name: entire piece
-                file: Godek Miring font5.tsv
-                loop: false
     bapangselisir:
         title: Bapang Selisir
         subfolder: .

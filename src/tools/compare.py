@@ -25,6 +25,7 @@ LOGGER = Logging.get_logger(__name__)
 # ID values at beginning of line
 ABSTIME_ID = "abstime"  # Not used
 BEAT_ID = "beat_id"
+PASS_ID = "pass_id"
 POSITION_ID = "position_id"
 # Message types
 META = "MetaMessage"
@@ -135,8 +136,7 @@ def to_text(path, midifilename):
                 clocktime += msg.time
                 if do_write:
                     csvfile.write(
-                        f"    ({clocktime},{beat},{passes[beat]},{position}) -- {str(msg)} abstime={clocktime} pass={passes[beat]}"
-                        + "\n"
+                        f"    ({clocktime},{beat},{passes[beat]},{position}) -- {str(msg)} abstime={clocktime}" + "\n"
                     )
 
 
@@ -162,14 +162,14 @@ def attr(line: str):
     if type_.startswith("note"):
         # pylint: disable=line-too-long
         matcher = re.match(
-            r" *\((?P<abstime>\d+),(?P<beat_id>\d+-\d+),(?P<pass_id>\d+),(?P<position_id>\w*)\)[ -]+(?P<type>note_[a-z]{2,3}) channel=(?P<channel>[^ ]+) note=(?P<note>[^ ]+) velocity=(?P<velocity>[^ ]+) time=(?P<time>\d+) abstime=\d* pass=\d* *$",
+            r" *\((?P<abstime>\d+),(?P<beat_id>\d+-\d+),(?P<pass_id>\d+),(?P<position_id>\w*)\)[ -]+(?P<type>note_[a-z]{2,3}) channel=(?P<channel>[^ ]+) note=(?P<note>[^ ]+) velocity=(?P<velocity>[^ ]+) time=(?P<time>\d+) abstime=\d* *$",
             line,
         )
         params = matcher.groupdict() if matcher else {}
     else:
         # Metamessage. Determine type and set match string accordingly
         matcher = re.match(
-            r" *\((?P<abstime>\d+),(?P<beat_id>\d+-\d+),(?P<pass_id>\d+),(?P<position_id>\w*)\)[ -]+MetaMessage\('(?P<type>\w+)'(, text='(?P<text>[^']+)'|, name='(?P<name>\w+)'|, tempo=(?P<tempo>\d+)|, port=(?P<port>\d+)){0,1}, time=(?P<time>\d+)\) abstime=\d* pass=\d* *$",
+            r" *\((?P<abstime>\d+),(?P<beat_id>\d+-\d+),(?P<pass_id>\d+),(?P<position_id>\w*)\)[ -]+MetaMessage\('(?P<type>\w+)'(, text='(?P<text>[^']+)'|, name='(?P<name>\w+)'|, tempo=(?P<tempo>\d+)|, port=(?P<port>\d+)){0,1}, time=(?P<time>\d+)\) abstime=\d* *$",
             line,
         )
         # pylint: enable=line-too-long
@@ -371,9 +371,11 @@ def save_file_summary(stream: TextIOWrapper, summary: dict[str, dict[str, str]],
         stream.write(tab0 + f"{key}{": " if items else ""}{len(items) if items else ""}\n")
         if detailed:
             for line1, lines2 in items:
-                stream.write(tab2 + f"{line1}\n")
+                id1_tuple = f"({line1[ABSTIME]},{line1[BEAT_ID]},{line1[PASS_ID]},{line1[POSITION_ID]})"
+                stream.write(tab2 + f"{line1} -- {id1_tuple}\n")
                 for nr, line in enumerate(lines2):
-                    stream.write(f"{tab3a if nr==0 else tab3b}{line}\n")
+                    id2_tuple = f"({line[ABSTIME]},{line[BEAT_ID]},{line[PASS_ID]},{line[POSITION_ID]})"
+                    stream.write(f"{tab3a if nr==0 else tab3b}{line} -- {id2_tuple}\n")
 
 
 def compare_txt_files(

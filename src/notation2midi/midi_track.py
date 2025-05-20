@@ -140,7 +140,8 @@ class MidiTrackX(MidiTrack):
 
     def update_dynamics(self, new_velocity):
         """Updates the current dynamics value"""
-        self.current_velocity = new_velocity
+        if new_velocity != self.current_velocity:
+            self.current_velocity = new_velocity
 
     def units_to_ticks(self, value: int, unit: TimeUnit) -> int:
         "Converts a value from the given unit to ticks"

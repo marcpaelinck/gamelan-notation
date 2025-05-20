@@ -269,6 +269,7 @@ class MetaDataRecord:
     name: str | _MISSING_TYPE = MISSING
     octaves: int | _MISSING_TYPE = MISSING
     passes: list[int] | _MISSING_TYPE = MISSING
+    iterations: list[int] | _MISSING_TYPE = MISSING
     positions: list[Position] | _MISSING_TYPE = MISSING
     scope: Scope | _MISSING_TYPE = MISSING
     seconds: float | _MISSING_TYPE = MISSING

@@ -790,7 +790,9 @@ class Beat(BaseModel):
         # Especially useful for list comprehensions
         if not position in self.measures.keys():  # pylint: disable=no-member
             return None
-        return self.measures[position].passes.get(passid, self.measures[position].passes[DEFAULT])
+        return self.measures[position].passes.get(
+            passid, self.measures[position].passes[DEFAULT] if DEFAULT in self.measures[position].passes else None
+        )
 
     def get_notes(self, position: Position, passid: int = DEFAULT, none=None):
         # Convenience function for a much-used query.

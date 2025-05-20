@@ -1,7 +1,7 @@
 # pylint: disable=missing-module-docstring, missing-class-docstring, missing-function-docstring, line-too-long, invalid-name
 
-from src.common.classes import Score
 from src.common.constants import DEFAULT, Position
+from src.notation2midi.execution import Score
 from src.notation2midi.score_validation import ScoreValidationAgent
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase

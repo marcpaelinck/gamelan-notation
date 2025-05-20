@@ -441,8 +441,8 @@ class ScoreCreatorAgent(Agent):
                 case PartMeta():
                     pass
                 case RepeatMeta():
-                    self.exec_mgr.execution(gongan.beats[-1]).loop = Loop(
-                        to_beat=gongan.beats[0], iterations=meta.count + 1
+                    self.exec_mgr.gonganid_execution(gongan.id).loop = Loop(
+                        first_beat=gongan.beats[0], last_beat=gongan.beats[-1], iterations=meta.count + 1
                     )
                 case SequenceMeta():
                     self.score.flowinfo.sequences.append((gongan, meta))
@@ -478,11 +478,14 @@ class ScoreCreatorAgent(Agent):
                         # immediate change.
                         if is_dynamics:
                             self.exec_mgr.execution(beat).dynamics.update(
-                                value=meta.value, positions=meta.positions, passes=meta.passes, iterations=[]
+                                value=meta.value,
+                                positions=meta.positions,
+                                passes=meta.passes,
+                                iterations=meta.iterations,
                             )
                         else:
                             self.exec_mgr.execution(beat).tempo.update(
-                                value=meta.value, passes=meta.passes, iterations=[]
+                                value=meta.value, passes=meta.passes, iterations=meta.iterations
                             )
                     else:
                         # Gradual change over meta.beats beats. The first change is after first beat.
@@ -496,14 +499,14 @@ class ScoreCreatorAgent(Agent):
                                     value=meta.value,
                                     positions=meta.positions,
                                     passes=meta.passes,
-                                    iterations=[],
+                                    iterations=meta.iterations,
                                     steps=steps,
                                 )
                             else:
                                 self.exec_mgr.execution(beat).tempo.update(
                                     value=meta.value,
                                     passes=meta.passes,
-                                    iterations=[],
+                                    iterations=meta.iterations,
                                     steps=steps,
                                 )
                 case ValidationMeta():
@@ -537,6 +540,10 @@ class ScoreCreatorAgent(Agent):
                 case _:
                     raise ValueError("Metadata type %s is not supported." % type(meta).__name__)
 
+        # TODO Think the following part over. It might cause unexpected results. But omitting it might puzzle the users
+        # because then the dynamics and tempo will be taken from whatever gongan precedes the current one.
+        # It might be good discipline to always explicitly set dynamics and tempo for gongans that have a label. The application
+        # might give a warning if they are missing and suggest to add them.
         if haslabel:
             # Gongan has one or more Label metadata items: explicitly set the current tempo for each beat by copying it
             # from its predecessor. This will ensure that a goto to any of these beats will pick up the correct tempo.

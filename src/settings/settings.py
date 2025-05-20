@@ -91,4 +91,6 @@ class Settings:
 if __name__ == "__main__":
     # For testing
     settings = Settings.get("godekmiring", "kawitan")
-    print(settings.notation_version)
+    for notation in settings.configdata.notations.values():
+        notation.folder_out_nonprod = "./tests/data/notation/_integration_test_small/"
+    print(settings.notation)

@@ -1,0 +1,24 @@
+Differences in Bapang Selisir_full_GAMELAN1.txt:
+     ('DIFF', 'note_on', ('velocity',)): 708
+Differences in Cendrawasih_full_GAMELAN1.txt:
+     No differences
+Differences in Gilak Deng_full_GAMELAN1.txt:
+     ('DIFF', 'note_on', ('velocity',)): 1068
+Differences in Godek Miring_full_GAMELAN1.txt:
+     No differences
+Differences in Legong Mahawidya_full_GAMELAN1.txt:
+     No differences
+Differences in Lengker_full_GAMELAN1.txt:
+     No differences
+Differences in Margapati_full_GAMELAN1.txt:
+     No differences
+Differences in Pendet_full_GAMELAN1.txt:
+     No differences
+Differences in Rejang Dewa_full_GAMELAN1.txt:
+     No differences
+Differences in Sekar Gendot_full_GAMELAN1.txt:
+     ('DIFF', 'note_on', ('velocity',)): 46
+Differences in Sinom Ladrang (GK)_full_GAMELAN1.txt:
+     No differences
+Differences in Sinom Ladrang_full_GAMELAN1.txt:
+     No differences
