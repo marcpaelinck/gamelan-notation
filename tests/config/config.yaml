@@ -143,10 +143,9 @@ notations:
                 loop: false        
     bapangselisir:
         title: Bapang Selisir
-        subfolder: .
-        instrumentgroup: SEMAR_PAGULINGAN
-        folder_in: ./tests/data/notation/_integration_test/notations
+        subfolder: _integration_test/notations
         folder_out_nonprod: ./tests/data/notation/_integration_test/output
+        instrumentgroup: SEMAR_PAGULINGAN
         beat_at_end: false
         parts:
             full:
@@ -155,8 +154,7 @@ notations:
                 loop: false
     cendrawasih:
         title: Cendrawasih
-        subfolder: .
-        folder_in: ./tests/data/notation/_integration_test/notations
+        subfolder: _integration_test/notations
         folder_out_nonprod: ./tests/data/notation/_integration_test/output
         beat_at_end: false
         parts:
@@ -166,8 +164,7 @@ notations:
                 loop: false
     gilakdeng:
         title: Gilak Deng
-        subfolder: .
-        folder_in: ./tests/data/notation/_integration_test/notations
+        subfolder: _integration_test/notations
         folder_out_nonprod: ./tests/data/notation/_integration_test/output
         beat_at_end: false
         parts:
@@ -178,8 +175,7 @@ notations:
     godekmiring:
         title: Godek Miring
         instrumentgroup: SEMAR_PAGULINGAN
-        subfolder: .
-        folder_in: ./tests/data/notation/_integration_test/notations
+        subfolder: _integration_test/notations
         folder_out_nonprod: ./tests/data/notation/_integration_test/output
         beat_at_end: false
         autocorrect_kempyung : false
@@ -188,10 +184,27 @@ notations:
                 name: entire piece
                 file: Godek Miring font5.tsv
                 loop: false
+    janger:
+        title: Janger
+        subfolder: _integration_test/notations
+        folder_out_nonprod: ./tests/data/notation/_integration_test/output
+        parts:
+            full:
+                name: entire piece
+                file: Janger.tsv
+                loop: false
+    kahyangan:
+        title: Kahyangan
+        subfolder: _integration_test/notations
+        folder_out_nonprod: ./tests/data/notation/_integration_test/output
+        parts:
+            full:
+                name: entire piece
+                file: Kahyangan_font5.tsv
+                loop: false
     legongmahawidya:
         title: Legong Mahawidya
-        subfolder: .
-        folder_in: ./tests/data/notation/_integration_test/notations
+        subfolder: _integration_test/notations
         folder_out_nonprod: ./tests/data/notation/_integration_test/output
         beat_at_end: false
         parts:
@@ -201,8 +214,7 @@ notations:
                 loop: false
     lengker:
         title: Lengker
-        subfolder: .
-        folder_in: ./tests/data/notation/_integration_test/notations
+        subfolder: _integration_test/notations
         folder_out_nonprod: ./tests/data/notation/_integration_test/output
         beat_at_end: false
         autocorrect_kempyung : false
@@ -214,8 +226,7 @@ notations:
                 loop: false
     margapati:
         title: Margapati
-        subfolder: .
-        folder_in: ./tests/data/notation/_integration_test/notations
+        subfolder: _integration_test/notations
         folder_out_nonprod: ./tests/data/notation/_integration_test/output
         beat_at_end: false
         parts:
@@ -225,8 +236,7 @@ notations:
                 loop: false
     pendet:
         title: Pendet
-        subfolder: .
-        folder_in: ./tests/data/notation/_integration_test/notations
+        subfolder: _integration_test/notations
         folder_out_nonprod: ./tests/data/notation/_integration_test/output
         beat_at_end: true
         parts:
@@ -234,10 +244,18 @@ notations:
                 name: entire piece
                 file: pendet_font5_beat_at_end.tsv
                 loop: false
+    puspamekar:
+        title: Puspa Mekar
+        subfolder: _integration_test/notations
+        folder_out_nonprod: ./tests/data/notation/_integration_test/output
+        parts:
+            full:
+                name: entire piece
+                file: Puspa Mekar.tsv
+                loop: false
     rejangdewa:
         title: Rejang Dewa
-        subfolder: .
-        folder_in: ./tests/data/notation/_integration_test/notations
+        subfolder: _integration_test/notations
         folder_out_nonprod: ./tests/data/notation/_integration_test/output
         parts:
             full:
@@ -247,8 +265,7 @@ notations:
         autocorrect_kempyung : false
     sekargendot:
         title: Sekar Gendot
-        subfolder: .
-        folder_in: ./tests/data/notation/_integration_test/notations
+        subfolder: _integration_test/notations
         folder_out_nonprod: ./tests/data/notation/_integration_test/output
         instrumentgroup: SEMAR_PAGULINGAN
         beat_at_end: false
@@ -260,8 +277,7 @@ notations:
                 loop: false
     sinomladrang-sp:
         title: Sinom Ladrang
-        subfolder: .
-        folder_in: ./tests/data/notation/_integration_test/notations
+        subfolder: _integration_test/notations
         folder_out_nonprod: ./tests/data/notation/_integration_test/output
         instrumentgroup: SEMAR_PAGULINGAN
         beat_at_end: false
@@ -272,8 +288,7 @@ notations:
                 loop: false
     sinomladrang-gk:
         title: Sinom Ladrang (GK)
-        subfolder: .
-        folder_in: ./tests/data/notation/_integration_test/notations
+        subfolder: _integration_test/notations
         folder_out_nonprod: ./tests/data/notation/_integration_test/output
         beat_at_end: false
         instrumentgroup: GONG_KEBYAR

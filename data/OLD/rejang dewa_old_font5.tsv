@@ -1,0 +1,152 @@
+
+metadata	{TEMPO value=80}
+metadata	{KEMPLI status=off}
+metadata	{PART name="reyong intro"}
+reyong1	a,-.ia,-i-	..a,i..i-	a,.a,i.a,i.	ia,.ia,-a,i	-a,a,-a,-a,u,	-e,-u,a,.u,a,
+reyong2	e-o.e-.-	o-e.o-..	eoe.oe.o	.eo.eoe.	.oo.o-eo	.e.o.io.	
+reyong3	a-.i<a-i<-	..ai<..i<-	a.ai<.ai<.	i<a.i<a-ai<	-aa-a-aa	-e-aa.aa
+reyong4	e<-o<.e<-.-	o<-e<.o<-..	e<o<e<.o<e<.o<	.e<o<.e<o<e<.	.o<o<.o<-e<o<	.e<.o<.i<o<.	
+
+metadata	{KEMPLI status=off}
+reyong1	.a,.u,e,e,-e,	-u,-a,.u,a,.	.a,a,-a,-a,i	-..u,a,.u,a,	.a,.u,e,e,-e,	-u,-e,u,.a,u,
+reyong2	i.ioee-e	-o-ei.ei	.ee-e-ei	-o-o.io.	i.ioee-e	.o-e-oe.
+reyong3	.a.uee-e	-u-a.ua.	.aa-a-ai<	-..ua.ua	.a.uee-e	-u-eu.au
+reyong4	i<.i<o<e<e<-e<	-o<-e<i<.e<i<	.e<e<-e<-e<i<	-o<-o<.i<o<.	i<.i<o<e<e<-e<	.o<-e<-o<e<.
+
+metadata	{KEMPLI status=off}
+metadata	{TEMPO value=50,  beat_count=4}
+reyong1	e,-a,.u,a,.u,	.a,u,.a,u,a,.	u,.a,i.a,i.	ia,.ia,.a,i
+reyong2	e-oe.oe.	eo.eo.oe	..e.oe.o	.eo.eoe.
+reyong3	e-a.ua.u	.au.aua.	u.ai<.ai<.	i<a.i<a.ai<
+reyong4	e<-o<e<.o<e<.	e<o<.e<o<.o<e<	..e<.o<e<.o<	.e<o<.e<o<e<.
+
+comment	0:49 (maat 0)
+metadata	{TEMPO value=50}
+metadata	{LABEL name=PENGAWAK}
+metadata	{PART name=pengawak}
+gangsa	o---e---	u---e---	o---u---	e---a---	u---u---	a---u---	e---a---	u---e---
+reyong1	u,u,-u,.e,u,e,	..u,a,.u,a,i	a,ia,.u,u,e,u,	e,e,-a,a,u,a,e,	.u,u,-u,-a,.	.a,a,e,.u,e,u,	e,e,-a,a,e,u,a,	u,a,.a,..a,i
+reyong2	oo-oeioe	.eieeoei	oeoe.oe.	eoieoioe	.ii-i-ei	.eoe.oeo	.eeieioe	.eieeoei
+reyong3	uu-u.eue	..ua.uai<	ai<a.uueu	ee-aauae	.uu-u-a.	.aae.ueu	ee-aaeua	ua.a..ai<
+reyong4	o<o<-o<e<i<o<e<	.e<i<e<e<o<e<i<	o<e<o<e<.o<e<.	e<o<i<e<o<i<o<e<	.i<i<-i<-e<i<	.e<o<e<.o<e<o<	.e<e<i<e<i<o<e<	.e<i<e<e<o<e<i<
+calung	o	u	o	e	u	a	e	u
+jegogan	o		o		u		e
+gong	G				P
+
+comment	1:11 (maat 16)
+gangsa	o---a,---	i---o---	e---i---	a,---o---	i---o-i-	a,---i---	o---a,---	e,---u,---
+reyong1	...u,.a,u,a,	a,..a,u,.e,u,	e,.u,a,.u,a,.	a,u,.a,u,.u,a,	..a,i.a,i.	ia,.ia,.a,i	.-e,u,.e,u,.	u,e,.u,e,.e,u,
+reyong2	oo-ieioe	eiieoeio	eio.io.i	.oi.oio.	i-e.oe.o	.eo.eoe.	o-i.a,i.a,	.ia,.ia,i.
+reyong3	...u.aua	a..au.eu	e.ua.ua.	au.au.ua	..ai<.ai<.	i<a.i<a.ai<	.-eu.eu.	ue.ue.eu
+reyong4	o<o<-i<e<i<o<e<	e<i<i<e<o<e<i<o<	e<i<o<.i<o<.i<	.o<i<.o<i<o<.	i<-e<.o<e<.o<	.e<o<.e<o<e<.	o<-i<.ai<.a	.i<a.i<ai<.
+calung	o	i	e	a	i---o-i-	a	o	e
+jegogan	o		e		i		o
+gong	T				P		----P---	----P---
+
+comment	1:34 (maat 32)
+gangsa	a,---i---	o---i---	a,---o---	i---e---	o---i---	e---o---	i---e---	o---i---
+reyong1	...a,.u,a,i	.t.t.a,.u,	a,.a,i.a,i.	ia,.ia,.a,i	u,..u,u,.e,u,	e,e,.u,a,.u,a,	.a,.u,e,e,-e,	-u,u,a,.u,a,.
+reyong2	a,a,-oioee	oeoeieoi	eoe.oe.o	.eo.eoe.	ooo-o-io	.eeieoio	ieioee-e	-ooeieoi
+reyong3	...a.uai<	.i<ai<.a.u	a.ai<.ai<.	i<a.i<a.ai<	u..uu.eu	ee.ua.ua	.a.uee-e	-uua.ua.
+reyong4	aa-o<i<o<e<e<	o<e<o<e<i<e<o<i<	e<o<e<.o<e<.o<	.e<o<.e<o<e<.	o<o<o<-o<-i<o<	.e<e<i<e<o<i<o<	i<e<i<o<e<e<-e<	-o<o<e<i<e<o<i<
+calung	a	o	a	i	o	e	i	o
+jegogan	a		a		o		i
+gong	G				P
+
+comment	1:56 (maat 48)
+gangsa	a,---a,---	o---a,---	i---e---	o---u---	e---u-e-	o---e---	u---o---	i---e---
+reyong1	.a,a,-a,.a,i	...u,a,.u,a,	.a,.u,e,e,.e,	-u,u,e,u,.e,u,	e,--a,u,.a,u,	.a,u,.a,u,.a,	u,.a,i.a,i.	ia,.ia,.a,i
+reyong2	iee-eoei	oeoieioe	ieioee-e	-ooe.oe.	e-oe.oe.	oe.oe.oe	.oe.oe.o	.eo.eoe.
+reyong3	.aa-a.ai<	...ua.ua	.a.uee.e	-uueu.eu	e--au.au	.au.au.a	u.ai<.ai<.	i<a.i<a.ai<
+reyong4	i<e<e<-e<o<e<i<	o<e<o<i<e<i<o<e<	i<e<i<o<e<e<-e<	-o<o<e<.o<e<.	e<-o<e<.o<e<.	o<e<.o<e<.o<e<	.o<e<.o<e<.o<	.e<o<.e<o<e<.
+calung	a	o	i	o	e---u-e-	o	u	i
+jegogan	a		i		e		u
+gong	T				P		----P---	----P---
+metadata	{GOTO label=PENGAWAK, passes=[1,2]}
+
+metadata	{TEMPO value=100, first_beat=3, beat_count=6}
+gangsa	o-------	u-------	o-------	u-------	o---e---	i---o---	e---i-i-	o-o-i-i-
+calung	o	u	o	u	o---e---	i---o---	e---i---	o---i---
+jegogan	o		o		o		e	
+reyong1	u,--xxxx-	b--xxxx-	b--xxxx-	b--xxxx-	b-..b-..	b-..b-..	b--.b-b-	b/..bb/bb/.
+reyong2	o--xxxx-	b--xxxx-	b--xxxx-	b--xxxx-	b-..b-..	b-..b-..	b--.b-b-	b/..bb/bb/.
+reyong3	u--xxxx-	b--xxxx-	b--xxxx-	b--xxxx-	b-..b-..	b-..b-..	b--.b-b-	b/..bb/bb/.
+reyong4	o<--xxxx-	b--xxxx-	b--xxxx-	b--xxxx-	b-..b-..	b-..b-..	b--.b-b-	b/..bb/bb/.
+
+
+comment	6:00
+metadata	{TEMPO value=100}
+metadata	{LABEL name=PENGECET}
+metadata	{PART name=pengecet}
+gangsa p	a,-a,-	i-i-	a,-a,-	i-i-	a,-a,-	e-e-	i-i-	o-o-
+gangsa s	-a,-a,	-i-i	-a,-a,	-i-i	-a,-a,	-e-e	-i-i	-o-o
+reyong1	a,i.a,	ia,.i	a,i.a,	ia,.i	a,.io	.io.	oi.o	i.io
+reyong2	e.oe	.eo.	e.oe	.eo.	e.u.	eu.e	.ue.	ueu.
+reyong3	ai<.a	i<a.i<	ai<.a	i<a.i<	a.i<o<	.i<o<.	o<i<.o<	i<.i<o<
+reyong4	e<.o<e<	.e<o<.	e<.o<e<	.e<o<.	e<.u<.	e<u<.e<	.u<e<.	u<e<u<.
+calung	a		a		a		i
+jegogan	a				a
+gong	G
+
+gangsa p	e-e-	u-u-	e-e-	a-a-	u-u-	o-o-	i-i-	e-e-
+gangsa s	-e-e	-u-u	-e-e	-a-a	-u-u	-o-o	-i-i	-e-e
+reyong1	.io.	oi.o	.io.	oio.	..a,i	.a,i.	ia,.i	a,.a,i
+reyong2	eu.e	.ue.	eu.e	.u.e	u.e.	oe.o	.eo.	eoe.
+reyong3	.i<o<.	o<i<.o<	.i<o<.	o<i<o<.	..ai<	.ai<.	i<a.i<	a.ai<
+reyong4	e<u<.e<	.u<e<.	e<u<.e<	.u<.e<	u<.e<.	o<e<.o<	.e<o<.	e<o<e<.
+calung	e		e		u		i
+jegogan	e				u
+gong	P
+
+gangsa p	o-o-	e-e-	o-o-	i-i-	o-o-	e-e-	i-i-	o-o-
+gangsa s	-o-o	-e-e	-o-o	-i-i	-o-o	-e-e	-i-i	-o-o
+reyong1	.a,i.	ia,.i	.a,i.	ia,.i	..io	.io.	oi.o	i.io
+reyong2	oe.o	.eo.	oe.o	.eo.	o.u.	eu.e	.ue.	ueu.
+reyong3	.ai<.	i<a.i<	.ai<.	i<a.i<	..i<o<	.i<o<.	o<i<.o<	i<.i<o<
+reyong4	o<e<.o<	.e<o<.	o<e<.o<	.e<o<.	o<.u<.	e<u<.e<	.u<e<.	u<e<u<.
+calung	o		o		o		i
+jegogan	o				o
+gong	T
+
+gangsa p	e-e-	u-u-	e-e-	a-a-	u-u-	o-o-	i-i-	e-e-
+gangsa s	-e-e	-u-u	-e-e	-a-a	-u-u	-o-o	-i-i	-e-e
+reyong1	.io.	oi.o	.io.	oio.	..a,i	.a,i.	ia,.i	a,.a,i
+reyong2	eu.e	.ue.	eu.e	.u.e	u.e.	oe.o	.eo.	eoe.
+reyong3	.i<o<.	o<i<.o<	.i<o<.	o<i<o<.	..ai<	.ai<.	i<a.i<	a.ai<
+reyong4	e<u<.e<	.u<e<.	e<u<.e<	.u<.e<	u<.e<.	o<e<.o<	.e<o<.	e<o<e<.
+calung	e		e		u		i
+jegogan	e				u
+gong	P
+
+metadata	{TEMPO value=80, beat_count=8, passes=[4]}
+gangsa p	o-o-	e-e-	o-o-	u-u-	e-e-	i-i-	o-o-	i-i-
+gangsa s	-o-o	-e-e	-o-o	-u-u	-e-e	-i-i	-o-o	-i-i
+reyong1	.a,i.	ia,.i	.o.i	o.io	.io.	oi.o	.ia,a,	.a,.i
+reyong2	oe.o	.eo.	o-eu	.eu.	eu.e	.ue.	e.eo	.eo.
+reyong3	.ai<.	i<a.i<	.o<.i<	o<.i<o<	.i<o<.	o<i<.o<	.i<aa	.a.i<
+reyong4	o<e<.o<	.e<o<.	o<-e<u<	.e<u<.	e<u<.e<	.u<e<.	e<.e<o<	.e<o<.
+calung	o		o		e		o
+jegogan	o				e
+gong	T
+
+metadata	{TEMPO value=50, beat_count=8, passes=[4]}
+gangsa p	a,-a,-	u,-u,-	e,-e,-	u,-u,-	a,-a,-	i-i-	o-o-	i-i-
+gangsa s	-a,-a,	-u,-u,	-e,-e,	-u,-u,	-a,-a,	-i-i	-o-o	-i-i
+reyong1	a,i.a,	ia,.i	a,i.a,	ia,.i	a,i.a,	i.a,i	.ia,.	ia,.i
+reyong2	e.oe	.eo.	e.oe	.eo.	e.oe	.oe.	o.eo	.eo.
+reyong3	ai<.a	i<a.i<	ai<.a	i<a.i<	ai<.a	i<.ai<	.i<a.	i<a.i<
+reyong4	e<.o<e<	.e<o<.	e<.o<e<	.e<o<.	e<.o<e<	.o<e<.	o<.e<o<	.e<o<.
+calung	a		e		e		a
+jegogan	a				e
+gong	P
+metadata	{GOTO label=PENGECET, passes=[1,2,3]}
+
+gangsa p	a,
+gangsa s	e
+reyong1	a,
+reyong2	e
+reyong3	a
+reyong4	e<
+calung	a
+jegogan	a
+gong	P

@@ -1,0 +1,35 @@
+comment	pengawak
+comment	0:49 (maat 0)
+metadata	{VALIDATION ignore=[kempyung], scope=SCORE}
+metadata	{TEMPO value=50}
+metadata	{DYNAMICS value=ff, positions=[PEMADE_POLOS]}
+pemade p	oo-oeuoe	uu-ueoue	ouoeuoeu	eoueouoe	.uu-u-eu	-a-eueau	eoeuaeua	u,a,ia,iu,a,i
+reyong1+3	...a,.u,a,.	u,u,-u,e,a,u,e,	.e,a,.u,a,.u,	.a,u,.a,u,a,.	.u,u,-u,.e,u,	-a,-e,u,e,a,u,	u,.e,u,.a,u,e,	u,a,.a,a,u,a,.
+reyong2+4	oo-oe.oe	oo-oeo.e	o.oe.oe.	eo.eo.oe	.oo-o-eo	-e-eoe.o	eoeo.eoe	.eieioei
+calung	o	u	o	e	u	a	e	u
+jegogan	o		o		u		e
+gong	G				P
+
+comment	1:11 (maat 16)
+pemade p	ioo-o-u,a,	-i-ioeio	e-u,a,iu,a,i	a,u,ia,u,iu,a,	i-a,ioa,io	ia,oia,oa,i	o-e,u,a,e,u,a,	u,e,a,u,e,a,e,u,
+reyong1+3	......u,a,	...u,.a,.u,	..u,a,.u,a,.	a,u,.a,u,.u,a,	..a,i.a,i.	ia,.ia,.a,i	.-e,u,.e,u,.	u,e,.u,e,.e,u,
+reyong2+4	ioo-o-oe	-i-ioeio	e-o.io.i	.oi.oio.	i-e.oe.o	.eo.eoe.	o-i.a,i.a,	.ia,.ia,i.
+calung	o	i	e	a	i---o-i-	a	o	e
+jegogan	o		e		i		o
+gong	T				P		----P---	----P---
+
+comment	1:34 (maat 32)
+pemade p	a,a,-a,iu,a,i	oo-a,iu,a,i	a,u,a,ioa,io	ia,oia,oa,i	.oo-o-e,u,	-e,-u,a,iu,a,	ia,iu,e,e,-e,	-u,u,a,iu,a,i
+reyong1+3	e,e,.a,.u,a,.	...a,.u,a,.	a,u,a,..a,i.	ia,.ia,.a,i	......e,u,	-e,-u,a,.u,a,	.a,.u,e,e,-e,	-u,u,a,.u,a,u,
+reyong2+4	a,a,-eioei	oo-eioei	eoeioeio	ieoieoei	.oo-o-eo	-e-o.io.	i.ioee-e	-ooeioeo
+calung	a	o	a	i	o	e	i	o
+jegogan	a		a		o		i
+gong	G				P
+
+comment	1:56 (maat 48)
+pemade p	.a,a,-a,u,a,i	oo-u,a,iu,a,	ia,ioee-e	-u,u,e,u,e,e,u,	e,-u,a,iu,a,i	a,u,ia,u,iu,a,	i-a,ioa,io	ia,oia,oa,i
+reyong1+3	u,a,a,-a,.a,i	...u,a,.u,a,	.a,.u,e,e,-e,	-u,u,e,u,.e,u,	e,-u,a,.u,a,.	a,u,.a,u,.u,a,	..a,i.a,i.	ia,.ia,.a,i
+reyong2+4	.ee-eoei	oo-o.io.	i.ioee-e	-ooeoeeo	e-o.io.i	.oi.oio.	i-e.oe.o	.eo.eoe.
+calung	a	o	i	o	e---u-e-	o	u	i
+jegogan	a		i		e		u
+gong	T				P		----P---	----P---

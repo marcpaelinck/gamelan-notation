@@ -182,13 +182,6 @@ class PartMeta(MetaDataBaseModel):
     DEFAULTPARAM = "name"
 
 
-class RepeatMeta(MetaDataBaseModel):
-    metatype: Literal["REPEAT"] = "REPEAT"
-    count: int = 1
-    frequency: FrequencyType = FrequencyType.ALWAYS
-    DEFAULTPARAM = "count"
-
-
 class SequenceMeta(MetaDataBaseModel):
     metatype: Literal["SEQUENCE"] = "SEQUENCE"
     value: list[str] = Field(default_factory=list)
@@ -235,9 +228,9 @@ MetaDataType = Union[
     KempliMeta,
     AutoKempyungMeta,
     LabelMeta,
+    LoopMeta,
     OctavateMeta,
     PartMeta,
-    RepeatMeta,
     SequenceMeta,
     SuppressMeta,
     TempoMeta,
@@ -253,22 +246,7 @@ MetaDataType = Union[
 # See the tip at the end of this section: https://docs.pydantic.dev/latest/concepts/unions/#nested-discriminated-unions
 # See also documentation about TypeAdapter: https://docs.pydantic.dev/latest/api/type_adapter/#TypeAdapter
 MetaData = Annotated[
-    Union[
-        DynamicsMeta,
-        GonganMeta,
-        GoToMeta,
-        KempliMeta,
-        AutoKempyungMeta,
-        LabelMeta,
-        OctavateMeta,
-        PartMeta,
-        RepeatMeta,
-        SequenceMeta,
-        SuppressMeta,
-        TempoMeta,
-        ValidationMeta,
-        WaitMeta,
-    ],
+    MetaDataType,
     Field(discriminator="metatype"),
 ]
 

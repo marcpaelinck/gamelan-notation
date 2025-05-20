@@ -125,22 +125,6 @@ notations:
                 name: entire piece
                 file: Cendrawasih_complete_font5.tsv
                 loop: false
-    kahyangan:
-        title: Kahyangan (dance improv.)
-        subfolder: kahyangan
-        parts:
-            full:
-                name: entire piece
-                file: Kahyangan_font5.tsv
-                loop: false
-    janger:
-        title: Janger
-        subfolder: janger
-        parts:
-            full:
-                name: entire piece
-                file: Janger.tsv
-                loop: false
     gilakdeng:
         title: Gilak Deng
         subfolder: gilak deng
@@ -179,6 +163,22 @@ notations:
                 name: pengawak
                 file: Godek Miring font5_pengawak.tsv
                 loop: true
+    janger:
+        title: Janger
+        subfolder: janger
+        parts:
+            full:
+                name: entire piece
+                file: Janger.tsv
+                loop: false
+    kahyangan:
+        title: Kahyangan (dance improv.)
+        subfolder: kahyangan
+        parts:
+            full:
+                name: entire piece
+                file: Kahyangan_font5.tsv
+                loop: false
     legongmahawidya:
         title: Legong Mahawidya SP
         subfolder: legong mahawidya

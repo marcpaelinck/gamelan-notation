@@ -31,9 +31,9 @@ from src.notation2midi.metadata_classes import (
     DynamicsMeta,
     GoToMeta,
     LabelMeta,
+    LoopMeta,
     MetaData,
     PartMeta,
-    RepeatMeta,
     SequenceMeta,
     TempoMeta,
 )
@@ -349,10 +349,10 @@ class NotationTemplate:
                 "parastyle": self.metadataLabelStyle,
                 "formatter": self._simple_formatter_rml_safe,
             },
-            RepeatMeta: {
+            LoopMeta: {
                 "cellnr": -2,  # right-aligned starting from the last beat. Column -1 is the overflow column.
                 "parastyle": self.metadataGotoStyle,
-                "before": "repeat ",
+                "before": "play ",
                 "after": "X",
                 "formatter": self._simple_formatter_rml_safe,
             },

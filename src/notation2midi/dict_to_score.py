@@ -33,12 +33,12 @@ from src.notation2midi.metadata_classes import (
     GoToMeta,
     KempliMeta,
     LabelMeta,
+    LoopMeta,
     MetaData,
     MetaDataAdapter,
     MetaDataSwitch,
     OctavateMeta,
     PartMeta,
-    RepeatMeta,
     Scope,
     SequenceMeta,
     SuppressMeta,
@@ -413,6 +413,10 @@ class ScoreCreatorAgent(Agent):
                     gotometa: GoToMeta
                     for gongan_, gotometa in self.score.flowinfo.gotos[meta.name]:
                         process_goto_meta(gongan_, gotometa)
+                case LoopMeta():
+                    self.exec_mgr.gonganid_execution(gongan.id).loop = Loop(
+                        first_beat=gongan.beats[0], last_beat=gongan.beats[-1], iterations=meta.count
+                    )
                 case OctavateMeta():
                     positions = [pos for pos in Position if pos.instrumenttype is meta.instrument]
                     for beat in gongan.beats:
@@ -440,10 +444,6 @@ class ScoreCreatorAgent(Agent):
                                                 )
                 case PartMeta():
                     pass
-                case RepeatMeta():
-                    self.exec_mgr.gonganid_execution(gongan.id).loop = Loop(
-                        first_beat=gongan.beats[0], last_beat=gongan.beats[-1], iterations=meta.count + 1
-                    )
                 case SequenceMeta():
                     self.score.flowinfo.sequences.append((gongan, meta))
                 case SuppressMeta():

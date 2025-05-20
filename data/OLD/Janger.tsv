@@ -1,0 +1,94 @@
+	{AUTOKEMPYUNG off scope=SCORE}
+
+	{GONGAN type=gineman}								
+	{TEMPO value=45}
+calung	u----------
+jegogan	u----------
+
+	{GONGAN type=gineman}								
+	{REPEAT count=1}
+ugal	u/.u/.u:---e-u-a_a_/._u_aa-----u-i<-a_u_---a-u_	e_----------
+calung		e
+jegogan		e
+
+	{GONGAN type=gineman}								
+ugal	u_a--u--e-Ua-u-e-u/.......u-e_	o
+calung		o
+jegogan		o
+
+	{GONGAN type=gineman}								
+	{REPEAT count=1}
+ugal	---------e/....e/.e/.e:---o-e-u_u/e_uu-----e-a-u_e_---u-e_	o
+calung		o
+jegogan		o
+
+##	GONGAN 5
+	{GONGAN type=gineman}								
+ugal	-----e_u--e--o-e_u-e-o-i-e_o_i_o/..o-i_	a------
+calung		a
+jegogan		a
+
+	{GONGAN type=gineman}								
+ugal	i/.i/.i:
+calung	
+jegogan	
+	
+	{LABEL SONG_START}
+	{TEMPO 40}
+	{SUPPRESS [gangsa] beat=1 pass=1}
+ga/ugal	i-------	--i-o-e-	u--ua-e-	u-uai<-a-	u---a-e-	u-uai<-a-	u-eoi---	o--ue-o-
+calung	i	i	u	u	u	u	u	o
+jegogan	i		u		u		u	
+gong	G		P		T		P
+
+ga/ugal	i--oe-o-	e--ua-u-	e-------	--e-u-eu	a--au-au	e--ioeue	o-------	--u,a,i-a,-
+calung	i	e	e	e	a	e	o	o
+jegogan	i		e		a		o
+gong	G		P		T		P
+
+ga/ugal	u,-----a,-	i---oeio	e-eue-o-	i-ioe-o-
+calung	u	i	e	i
+jegogan	u
+gong	G		P
+
+	{TEMPO 30 pass=6 beat_count=4}
+ga/ugal	i-io	eueu	e-ou	e-o-
+calung	i		e	
+jegogan	i		e
+gong	G	P	T	P
+	{REPEAT 2}
+	{GOTO SONG_START pass=3}
+##	{WAIT 1 pass=6}
+
+	{LABEL CHORUS}
+	{TEMPO 120}
+ga/ugal	i-------	..i-o-e-	u--ue-u-	a-uai<-a-	u--uu-u-	u-i-o-e-	u--ue-u-	a-uai<-a-
+reyong1	.a,u,a,.a,u,a,	.a,u,a,.u,u,a,	u,a,u,a,u,a,a,e,	a,e,a,e,a,e,u,a,	u,a,u,a,u,a,u,a,	u,a,u,a,u,a,u,a,	u,a,u,a,u,a,a,e,	a,e,a,e,a,e,u,a,
+reyong2	ioioioio	ioioi.oe	.eoe.eoi	.ioi.ioe	.eoe.eoe	.eoe.eoe	.eoe.eoi	.ioi.ioe
+calung	i		u	a	u		u	a
+jegogan	i				u
+gong	G                                    
+
+ga/ugal	u--uu-u-	--a-u-e-	o--io-e-	u-uae-o-	i--ii-i-	i-a-u-e-	o--io-e-	u-uae-o-
+reyong1	u,a,u,a,u,a,u,a,	u,a,u,a,u,u,a,t	.t.t.u,u,a,	u,a,u,a,u,.u,a,	.a,u,a,.a,u,a,	.a,u,a,.u,a,t	.t.t.u,u,a,	u,a,u,a,u,.u,a,
+reyong2	.eoe.eoe	.eoe.ooe	oeoeo.oe	.eoe.eoi	ioioioio	ioioiioe	oeoeo.oe	.eoe.iio
+calung	u		o	u	i		o	u
+jegogan	u				i
+gong	
+
+	{TEMPO 65 pass=7 beat_count=6}
+	{TEMPO 50 pass=8 beat_count=6}
+ga/ugal	i--ii-i-	--i-a,-i-	o--oo-o-	o-e-u-o-	e--eu-e-	o-i-a,-o-
+reyong1	.a,u,a,.a,u,a,	.a,u,a,.u,a,t	.t.t.t.t	.t.t.e,e,u,	e,u,e,u,e,u,a,t	.t.t.e,u,a,	
+reyong2	ioioioio	ioioiooe	oeoeoeoe	oeoeoeei	eieieooe	oeoeoio.
+calung	i		o		e	o	
+jegogan	i
+gong	
+	{REPEAT 1}
+	{GOTO CHORUS passes=[2,4,6]}
+	
+ga/ugal	i
+reyong1	.
+reyong2	i
+calung	i
+jegogan	i

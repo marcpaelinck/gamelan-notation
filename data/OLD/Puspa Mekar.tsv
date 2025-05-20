@@ -1,0 +1,443 @@
+	{AUTOKEMPYUNG off scope=SCORE}
+
+	{PART kawitan}
+	{DYNAMICS mf positions=[gangsa]}
+	{TEMPO 90}
+	{KEMPLI off}
+gangsa	a-u-	Ai<-a-	u-e-	Ua-u-	e-o-	e...
+
+	# melody 1
+	{LABEL P1}
+	{DYNAMICS mp positions=[gangsa], passes=[1,9,17], first_beat=4}
+	{DYNAMICS f positions=[gangsa], passes=[7,15]}
+	{TEMPO 75 beat_count=4 passes=[24]}
+ugal	o-e-	o-e-	--o-	e---
+gangsa p	oe.e	.e.o	e.oe	.eo.	
+gangsa s	.eu.	u.u.	eu.e	ue.e
+calung	o-e-	o-e-	--o-	e
+jegogan	o		o	e
+gong	G		T
+	{REPEAT 7}
+
+	# transition to melody 2
+	{TEMPO 50 beat_count=3, passes=[3]}
+ugal	o---	e---	u---	a-u-
+gangsa p	oe.o	e.oe	u.eu	.e.u
+gangsa s	.eu.	eu.e	ua.u	a.au
+calung	o	e	u	a-u-
+jegogan	o	
+gong	G		T
+	{GOTO K_END passes=[3]}
+
+	# melody 1
+	{DYNAMICS mp positions=[gangsa], passes=[1,7], first_beat=4}
+	{DYNAMICS f positions=[gangsa], passes=[5,11]}
+ugal	e-u-	e-u-	--e-	u---
+gangsa p	eu.u	.u.e	u.eu	.ue.	
+gangsa s	.ua.	a.a.	ua.u	au.u
+calung	e-u-	e-u-	--e-	u
+jegogan	e		e	u
+gong	G		T
+	{REPEAT 5}
+
+	# transition to melody 1
+ugal	e---	u---	a---	i<-a-
+gangsa p	eu.e	u.eu	a.ua	.u.a
+gangsa s	.uai<	.ai<.	ai<.a	i<.i<a
+calung	e	u	a	i-a-
+jegogan	e
+gong	G		T
+
+ugal	u---	a-u-	e-o-	i-a,-
+gangsa p	u.eu	.e.u	e.oe	....
+gangsa s	.a.u	a.au	.u.e	u...
+calung	u	a-u-	e-o-	i-a-
+jegogan	u
+gong	G		T
+	{GOTO P1 passes=[1, 2]}
+
+	{LABEL K_END}
+ugal	e-u-	e-u-	--e-	u---
+gangsa p	eu.u	.u.e	u.eu	.ue.	
+gangsa s	.ua.	a.a.	ua.u	au.u
+calung	e-u-	e-u-	--e-	u
+jegogan	e		e	u
+gong	G
+
+ugal	e
+gangsa p	e
+gangsa s	i<
+calung	e
+jegogan	e
+gong	G
+
+
+	{PART pengawak}
+	{KEMPLI off}
+	{TEMPO 60}
+	{DYNAMICS mf positions=gangsa}
+ga/ugal	.....ue.	Ua---uea-
+calung		a
+	{SEQUENCE [A1, A2, A3, A1, A2, B1, B2, A1, A2, PENGECET1]}
+
+	{LABEL A1}
+ga/ugal	Ue-----o-	i-a,-u,-a,-	i-a,a,u,a,e,-	Ua,-iia,iu,-	Ai-------	--ooioa,-	Io-----a,-	Io---i-o-
+calung	e	i---u---	i---u---	a	i	----i---	o	o---i---
+jegogan	e				i
+
+	{LABEL A2}
+ga/ugal	Ia,-eeoei-	Oe-------	Oi-Oe-o-i-	a,---iia,-	Io---ii/ia,	i-Oe-o-i-	
+calung	a---o---	e	i---o---	a---i---	o---o---	i---o---
+jegogan		e
+
+	{LABEL A3}
+ga/ugal	a,-----aa/	a---u-e-	Ua-----uu/	u-eeuea-	Ue-----aa/	a---u-e-	Ua-----uu/	u-eeuea-
+calung	a	a---u---	a	u---o---	e	a---u---	a	u---o---
+jegogan	a				e
+gong	G
+
+	## 2:11
+	{LABEL B1}
+ga/ugal	a,-------	i<.......	Au-a-u-e-	Ua-i-o-i-	a-uueuo-	Eu-eeoei-	Oe---Ua-i<-	a---u-a-
+calung				a---o---	a---e---	u---o---	e	a---u---
+jegogan	a
+gong	G
+
+	{LABEL B2}
+ga/ugal	Ue-Ua-u-e-	o-eeoei-	Oe---uue-	Ua---uue-	Ua---ii/ia,	i-Oe-o-i-	a,-a.a---
+calung	e---u---	o---o---	e	a	a	i	a
+jegogan							a
+gong							G
+
+	{PART "pengecet 1"}
+	{LABEL PENGECET1}
+	{TEMPO 100}
+	{KEMPLI off}
+ga/ugal	a,---	e---	o---	a,---	o---	i---	a,---	i---
+calung	a	e	o	a	o	i	a	i
+jegogan
+gong	G
+
+	{KEMPLI off}
+ga/ugal	a,---	u,---	a,---	e,---	a,-u,-	e,-u,-
+calung	a	u	a	e	a-u-	e-u-
+
+	{DYNAMICS mp positions=gangsa}
+ugal	e,---	--u,-	a,-i-	a,-u,-	a,-i-	a,-u,-	e,-u,-	o,-e,-
+gangsa p	e.eu	.e.u	e.eu	.e.u	e.eu	.e.u	e.eu	.e.u
+gangsa s	i<ai<.	ai<a.	i<ai<.	ai<a.	i<ai<.	ai<a.	i<ai<.	ai<a.
+calung	e	--u-	a-i-	a-u-	a-i-	a-u-	e-u-	o-e-
+jegogan	e
+gong	G
+
+ugal	u,-a,-	i-a,-	i---	o---	i---	o-i-	a,-u,-	a,-i-
+gangsa p	e.eu	.e.u	e.eu	.e.u	e.a.	a.a.	a.a.	a.a.
+gangsa s	i<ai<.	ai<a.	i<ai<.	ai<a.	i<a.i<	.i<.i<	.i<.i<	.i<.i<
+calung	u-a-	i-a-	i	o	i	o-i-	a-u-	a-i-
+
+ugal	o-i-	a,-i-	o-e-	o-i-
+gangsa p	a.a.	a.a.	aue.	e.eu	
+gangsa s	.i<.i<	.i<.i<	.u.o	.o.u
+calung	o-i-	a-i-	o-e-	o-i-
+jegogan	o
+gong	T
+	{SEQUENCE [PA1, PA2, PA1, PA2, PB1, PB2, PB1, PB2, PB3, PB4, PA1, PA2, PA1, PA2, PB1, PB2, PB1, PB2, PB3, PB4]}
+
+	{LABEL PA1}
+ugal	a,---	----	----	--i.	i-o-	i-a,-	i-a,-	u,-a,-
+gangsa p	a.ua	.ua.	ua.u	a.ua	.u.a	u.ua	.u.a	u.ua
+gangsa s	ai<.a	i<.ai<	.ai<.	ai<.a	i<.i<a	.i<.a	i<.i<a	.i<.a
+calung	a			--i.	i-o-	i-a-	i-a-	u-a-
+jegogan	a				i
+gong	G
+
+	{LABEL PA2}
+ugal	i---	o-i-	a,-u,-	a,-i-	o-i-	a,-i-	o-e-	o-i-
+gangsa p	.u.a	u.ua	.u.a	u.ua	.u.a	u.ua	.ue.	e.eu
+gangsa s	i<.i<a	.i<.a	i<.i<a	.i<.a	i<.i<a	.i<.a	i<u.o	.o.u
+calung	i---	o-i-	a-u-	a-i-	o-i-	a-i-	o-e-	o-i-
+jegogan	i				o
+gong					T
+
+	{LABEL PB1}
+ugal	a,---	----	----	u,---	a,-u,-	e,-u,-	a,---	u,---
+gangsa p	a.ua	.ua.	ua.u	a.ua	.ua.	ua.u	a.ua	.uau
+gangsa s	ai<.a	i<.ai<	.ai<.	ai<.a	i<.ai<	.ai<.	ai<.a	i<u.o
+calung	a			u	a-u-	e-u-	a---	u
+jegogan	a				a
+gong	G
+
+	{LABEL PB2}
+ugal	e,---	----	----	u,---	a,-i-	a,-u,-	a,---	i---
+gangsa p	.uau	.uau	.uau	.uau	.eu.	eu.e	u.eu	.ueu
+gangsa s	eu.o	eu.o	eu.o	eu.o	e.ua	.ua.	ua.u	au.u
+calung	e			u	a-i-	a-u-	a	i
+jegogan	e				a
+
+	{LABEL PB3}
+ugal	a,---	u,---	e,-u,-	o,-e,-	u,-a,-	i-a,-	i---	o---
+gangsa p	.e.u	e.eu	.e.u	e.eu	.e.u	e.eu	.e.u	e.eu
+gangsa s	ai<a.	i<ai<.	ai<a.	i<ai<.	ai<a.	i<ai<.	ai<a.	i<ai<.
+calung	a	u	e-u-	o-e-	u-a-	i-a-	i	o
+jegogan	a				u
+
+	{LABEL PB4}
+	{TEMPO 130 first_beat=6 beat_count=3 pass=2}
+ugal	i---	o-i-	a,-u,-	a,-i-	o-i-	a,-i-	o-e-	o-i-
+gangsa p	a.a.	a.a.	a.a.	a.a.	a.a.	a.a.	aue.	e.eu
+gangsa s	ai<.i<	.i<.i<	.i<.i<	.i<.i<	.i<.i<	.i<.i<	.u.o	.o.u
+calung	i	o-i-	a-u-	a-i-	o-i-	a-i-	o-e-	o-i-
+jegogan	i				o
+gong					T
+
+	{PART "Pengecet 2"}
+	{DYNAMICS mf positions=gangsa}
+ga/ugal	a,---	e,---	a,---	u,---	e,---	a,---	i---	u,---
+gangsa	aa-a	e-aa	-ae-	a-u-	ee-e	a-ee	-ea-	e-u-
+calung	a		a		e		i
+jegogan	a				e
+gong	G				T
+	{REPEAT 1}
+	{SEQUENCE [A, A, B, B, A, A, B, B, A, AN, ANGSEL1B, ANGSEL2B, A, AN, ANGSEL3B, B,
+		AN, ANGSEL4A, ANGSEL5B, ANGSEL5B, ANGSEL5A, ANGSEL4A, ANGSEL5B, ANGSEL5B,
+		ANGSEL5A, ANGSEL4A, ANGSEL5B, ANGSEL6B, ANGSEL4A, A, B, B,
+		ANGSEL3A, A, BN, ANGSEL1B,
+		ANGSEL5AS, AS, BS, BS, AS, AS, BS, BS,
+		AS, ANGSEL3AX, B, ANGSEL4B, ANGSEL7A, ASS, END]}
+	
+	{LABEL A}
+	# Melody A
+	{TEMPO 120}
+	{DYNAMICS mp positions=gangsa}
+ga/ugal	a,---	o---	e---	i---	o---	a,---	i---	u,---
+gangsa p	a.u.	au.u	a.u.	au.u	a.u.	au.u	a.u.	au.u
+gangsa s	ai<.i<	a.i<.	ai<.i<	a.i<.	ai<.i<	a.i<.	ai<.i<	a.i<.
+calung	a		e		o		i
+jegogan	a				o
+gong	G				T
+	
+	{LABEL AN}
+	# Melody A before angsel
+	{DYNAMICS mp positions=gangsa}
+	{DYNAMICS f positions=gangsa first_beat=5}
+	{TEMPO 120}
+ga/ugal	a,---	o---	e---	i---	o---	a,---	i---	u,---
+gangsa p	a.u.	au.u	a.u.	au.u	a.u.	au.u	a.u.	au.u
+gangsa s	ai<.i<	a.i<.	ai<.i<	a.i<.	ai<.i<	a.i<.	ai<.i<	a.i<.
+calung	a		e		o		i
+jegogan	a				o
+gong	G				T
+	
+	{LABEL AS}
+	# Melody A slow
+	{DYNAMICS mp positions=gangsa}
+	{TEMPO 95}
+ga/ugal	a,---	o---	e---	i---	o---	a,---	i---	u,---
+gangsa p	a.u.	au.u	a.u.	au.u	a.u.	au.u	a.u.	au.u
+gangsa s	ai<.i<	a.i<.	ai<.i<	a.i<.	ai<.i<	a.i<.	ai<.i<	a.i<.
+calung	a		e		o		i
+jegogan	a				o
+gong	G				T
+
+	{LABEL ASS}
+	# Melody A very slow (last gongan)
+	{DYNAMICS mf positions=gangsa}
+	{TEMPO 70}
+ga/ugal	a,---	o---	e---	i---	o---	a,---	i---	u,---
+gangsa p	a.u.	au.u	a.u.	au.u	a.u.	au.u	a.u.	au.u
+gangsa s	ai<.i<	a.i<.	ai<.i<	a.i<.	ai<.i<	a.i<.	ai<.i<	a.i<.
+calung	a		e		o		i
+jegogan	a				o
+gong	G				T
+
+	{LABEL B}
+	# Melody B
+	{DYNAMICS mp positions=gangsa}
+	{TEMPO 120}
+ga/ugal	a,---	e,---	u,---	o,---	e,---	a,---	i---	u,---
+gangsa p	a.u.	au.u	a.u.	au.u	a.u.	au.u	a.u.	au.u
+gangsa s	ai<.i<	a.i<.	ai<.i<	a.i<.	ai<.i<	a.i<.	ai<.i<	a.i<.
+calung	a		u		o		i
+jegogan	a				o
+gong	G				T
+
+	{LABEL BN}
+	# Melody B before angsel
+	{DYNAMICS mp positions=gangsa}
+	{DYNAMICS f positions=gangsa first_beat=5}
+	{TEMPO 120}
+ga/ugal	a,---	e,---	u,---	o,---	e,---	a,---	i---	u,---
+gangsa p	a.u.	au.u	a.u.	au.u	a.u.	au.u	a.u.	au.u
+gangsa s	ai<.i<	a.i<.	ai<.i<	a.i<.	ai<.i<	a.i<.	ai<.i<	a.i<.
+calung	a		u		o		i
+jegogan	a				o
+gong	G				T
+
+	{LABEL BS}
+	# Melody B slow
+	{DYNAMICS mp positions=gangsa}
+	{TEMPO 95}
+ga/ugal	a,---	e,---	u,---	o,---	e,---	a,---	i---	u,---
+gangsa p	a.u.	au.u	a.u.	au.u	a.u.	au.u	a.u.	au.u
+gangsa s	ai<.i<	a.i<.	ai<.i<	a.i<.	ai<.i<	a.i<.	ai<.i<	a.i<.
+calung	a		u		o		i
+jegogan	a				o
+gong	G				T
+
+	{LABEL ANGSEL1B}
+	# angsel 1 melody B
+	{DYNAMICS f positions=gangsa}
+	{TEMPO 120}
+ga/ugal	a,---	e,---	u,---	o,---	e,---	a,---	i---	u,---
+gangsa p	a.u.	au.u	a.u.	au.u	a.a/.	a---	--a/.	a---
+gangsa s	ai<.i<	a.i<.	ai<.i<	a.i<.	a.a/.	a---	--a/.	a---
+calung	a		u		o		i
+jegogan	a				o
+gong	G				T
+
+	{LABEL ANGSEL2B}
+	# angsel 2 melody B
+	{DYNAMICS f positions=gangsa}
+	{DYNAMICS mp positions=gangsa first_beat=5 beat_count=2}
+	{TEMPO 120}
+ga/ugal	a,---	e,---	u,---	o,---	e,---	a,---	i---	u,---
+gangsa p	a.u.	au.u	a.u.	au.u	a...	a-a/.	..a-	----
+gangsa s	ai<.i<	a.i<.	ai<.i<	a.i<.	a...	a-a/.	..a-	----
+calung	a		u		o		i
+jegogan	a				o
+gong	G				T
+
+	{LABEL ANGSEL3A}
+	# angsel 3 melody A
+	{DYNAMICS mf positions=gangsa first_beat=5}
+ga/ugal	a,---	o---	e---	i---	o---	a,---	i---	u,---
+gangsa p	a.u.	au.u	a.u.	au.u	a---	Aa-a-	a-a-	a---
+gangsa s	ai<.i<	a.i<.	ai<.i<	a.i<.	a---	Aa-a-	a-a-	a---
+calung	a		e		o		i
+jegogan	a				o
+gong	G				T
+
+	{LABEL ANGSEL3AX}
+	# angsel 3 melody A accelerating
+	{DYNAMICS mf positions=gangsa first_beat=5}
+	{TEMPO 95}
+	{TEMPO 120 first_beat=3 beat_count=4}
+ga/ugal	a,---	o---	e---	i---	o---	a,---	i---	u,---
+gangsa p	a.u.	au.u	a.u.	au.u	a---	Aa-a-	a-a-	a---
+gangsa s	ai<.i<	a.i<.	ai<.i<	a.i<.	a---	Aa-a-	a-a-	a---
+calung	a		e		o		i
+jegogan	a				o
+gong	G				T
+
+	{LABEL ANGSEL3B}
+	# angsel 3 melody B
+	{DYNAMICS mf positions=gangsa first_beat=5}
+	{TEMPO 120}
+ga/ugal	a,---	e,---	u,---	o,---	e,---	a,---	i---	u,---
+gangsa p	a.u.	au.u	a.u.	au.u	a---	Aa-a-	a-a-	a---
+gangsa s	ai<.i<	a.i<.	ai<.i<	a.i<.	a---	Aa-a-	a-a-	a---
+calung	a		u		o		i
+jegogan	a				o
+gong	G				T
+
+	{LABEL ANGSEL4A}
+	# angsel 4 melody A
+	{DYNAMICS f positions=gangsa}
+	{TEMPO 120}
+ga/ugal	a,---	o---	e---	i---	o---	a,---	i---	u,---
+gangsa p	a.u.	au.u	a.u.	au.u	a.u.	a---	--a/.	a---
+gangsa s	ai<.i<	a.i<.	ai<.i<	a.i<.	ai<.i<	a---	--a/.	a---
+calung	a		e		o		i
+jegogan	a				o
+gong	G				T
+
+	{LABEL ANGSEL4B}
+	# angsel 4 melody B
+	{DYNAMICS f positions=gangsa}
+	{TEMPO 120}
+ga/ugal	a,---	e,---	u,---	o,---	e,---	a,---	i---	u,---
+gangsa p	a.u.	au.u	a.u.	au.u	a.u.	a---	--a/.	a---
+gangsa s	ai<.i<	a.i<.	ai<.i<	a.i<.	ai<.i<	a---	--a/.	a---
+calung	a		e		o		i
+jegogan	a				o
+gong	G				T
+
+	{LABEL ANGSEL5A}
+	# angsel 5 melody A
+	{DYNAMICS f positions=gangsa}
+	{TEMPO 120}
+ga/ugal	a,---	o---	e---	i---	o---	a,---	i---	u,---
+gangsa p	a.u.	au.u	a.u.	au.u	a---	a-a/.	..a-	----
+gangsa s	ai<.i<	a.i<.	ai<.i<	a.i<.	a---	a-a/.	..a-	----
+calung	a		e		o		i
+jegogan	a				o
+gong	G				T
+
+	{LABEL ANGSEL5AS}
+	# angsel 5 melody A slowing down
+	{DYNAMICS mf positions=gangsa}
+	{DYNAMICS mp positions=gangsa first_beat=5}
+	{TEMPO 120}
+	{TEMPO 95 first_beat=5 beat_count=4}
+ga/ugal	a,---	o---	e---	i---	o---	a,---	i---	u,---
+gangsa p	a.u.	au.u	a.u.	au.u	a---	a-a/.	..a-	----
+gangsa s	ai<.i<	a.i<.	ai<.i<	a.i<.	a---	a-a/.	..a-	----
+calung	a		e		o		i
+jegogan	a				o
+gong	G				T
+
+	{LABEL ANGSEL5B}
+	# angsel 5 melody B
+	{DYNAMICS f positions=gangsa}
+	{TEMPO 120}
+ga/ugal	a,---	e,---	u,---	o,---	e,---	a,---	i---	u,---
+gangsa p	a.u.	au.u	a.u.	au.u	a...	a-a/.	..a-	----
+gangsa s	ai<.i<	a.i<.	ai<.i<	a.i<.	a...	a-a/.	..a-	----
+calung	a		u		o		i
+jegogan	a				o
+gong	G				T
+
+	{LABEL ANGSEL6B}
+	# angsel 6 melody B
+	{DYNAMICS f positions=gangsa}
+	{TEMPO 120}
+ga/ugal	a,---	e,---	u,---	o,---	e,---	a,---	i---	u,---
+gangsa p	----	a-a/.	..a-	----	----	a-a/.	..a-	----
+gangsa s	----	a-a/.	..a-	----	----	a-a/.	..a-	----
+calung	a		u		o		i
+jegogan	a				o
+gong	G				T
+
+	{LABEL ANGSEL7A}
+	# angsel 7 melody A
+	{DYNAMICS f positions=gangsa}
+	{TEMPO 120}
+ga/ugal	a,---	o---	e---	i---	o---	a,---	i---	u,---
+gangsa p	a.u.	au.u	a.u.	au.u	a--a	a-a-	a-a-	a---
+gangsa s	ai<.i<	a.i<.	ai<.i<	a.i<.	a--a	a-a-	a-a-	a---
+calung	a		e		o		i
+jegogan	a				o
+gong	G				T
+
+	{LABEL ANGSEL8A}
+	# angsel 8 melody A
+	{DYNAMICS f positions=gangsa}
+	{TEMPO 120}
+ga/ugal	a,---	o---	e---	i---	o---	a,---	i---	u,---
+gangsa p	a.u.	au.u	a.u.	au.u	a---	Ua---	----	----
+gangsa s	ai<.i<	a.i<.	ai<.i<	a.i<.	a---	Ua---	----	----
+calung	a		e		o		i
+jegogan	a				o
+gong	G				T
+
+	{LABEL END}
+	{DYNAMICS mf positions=gangsa}
+	{TEMPO 70}
+ga/ugal	a
+gangsa p	a
+gangsa s	a
+calung	a
+jegogan	a
+gong	G
+
+

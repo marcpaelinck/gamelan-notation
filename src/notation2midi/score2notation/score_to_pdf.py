@@ -22,9 +22,9 @@ from src.notation2midi.metadata_classes import (
     DynamicsMeta,
     GoToMeta,
     LabelMeta,
+    LoopMeta,
     MetaData,
     PartMeta,
-    RepeatMeta,
     SequenceMeta,
     TempoMeta,
 )
@@ -303,7 +303,7 @@ class PDFGeneratorAgent(Agent):
 
         if not above_notation:
             # Content that should occur after the notation part of the gongan
-            for metatype in [RepeatMeta, GoToMeta, SequenceMeta]:
+            for metatype in [LoopMeta, GoToMeta, SequenceMeta]:
                 if metalist := metadict.get(metatype, None):
                     if metatype is SequenceMeta:
                         content.append_empty_row(

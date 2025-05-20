@@ -369,7 +369,7 @@ class TestDictToScoreConverter(BaseUnitTestCase):
                     P.DONG.model_copy_x(octave=0, transformation=RuleValue.SAME_PITCH),
                 ],
             ),
-            #     add RepeatMeta
+            #     add LoopMeta
             #     add SequenceMeta
             #     add SuppressMeta
             #     add TempoMeta

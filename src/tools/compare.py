@@ -361,21 +361,31 @@ def compare_directories(
     return sorted_dict(differences)
 
 
+def print_lines(stream: TextIOWrapper, lines: dict[str, Any], tab1: str, tab2: str) -> str:
+    def line_key(line):
+        return f"({line.get(ABSTIME, line.get(ABSTIME.upper()))},{line[BEAT_ID]},{line[PASS_ID]},{line.get(POSITION_ID,line.get(POSITION_ID.upper()) )})"
+
+    if isinstance(lines, list):
+        for nr, line in enumerate(lines):
+            stream.write(f"{tab1 if nr==0 else tab2}{line} -- {line_key(line)}\n")
+    else:
+        stream.write(tab1 + f"{lines} -- {line_key(lines)}\n")
+
+
+TAB0 = " " * 5
+TAB1 = " " * 10
+TAB2 = TAB1 + "  - "
+TAB3A = TAB1 + "  > "
+TAB3B = TAB1 + "    "
+
+
 def save_file_summary(stream: TextIOWrapper, summary: dict[str, dict[str, str]], detailed: bool) -> None:
-    tab0 = " " * 5
-    tab1 = " " * 10
-    tab2 = tab1 + "  - "
-    tab3a = tab1 + "  > "
-    tab3b = tab1 + "    "
     for key, items in summary.items():
-        stream.write(tab0 + f"{key}{": " if items else ""}{len(items) if items else ""}\n")
+        stream.write(TAB0 + f"{key}{": " if items else ""}{len(items) if items else ""}\n")
         if detailed:
-            for line1, lines2 in items:
-                id1_tuple = f"({line1[ABSTIME]},{line1[BEAT_ID]},{line1[PASS_ID]},{line1[POSITION_ID]})"
-                stream.write(tab2 + f"{line1} -- {id1_tuple}\n")
-                for nr, line in enumerate(lines2):
-                    id2_tuple = f"({line[ABSTIME]},{line[BEAT_ID]},{line[PASS_ID]},{line[POSITION_ID]})"
-                    stream.write(f"{tab3a if nr==0 else tab3b}{line} -- {id2_tuple}\n")
+            for lines1, lines2 in items:
+                print_lines(stream, lines1, TAB2, TAB2)
+                print_lines(stream, lines2, TAB3A, TAB3B)
 
 
 def compare_txt_files(
@@ -419,7 +429,6 @@ def compare_all(ref_dir: str, other_dir: str) -> bool:
     filelist = files[0].intersection(files[1])
     LOGGER.info("Generating .TXT files from MIDI files")
     to_text_multiple_files(filelist, [ref_dir, other_dir])
-    # to_text_multiple_files(filelist, [dir_new])
 
     # 2. compare the text files
     LOGGER.info("Comparing .TXT files in `reference` and `output` folder")
