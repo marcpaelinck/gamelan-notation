@@ -114,7 +114,7 @@ class MidiGeneratorAgent(Agent):
             # beat.flow.incr_pass_counter(Flow.FlowType.GOTO)
             if self.run_settings.options.debug_logging:
                 track.comment(
-                    f"beat {beat.full_id} pass{self.exec_mgr.execution(beat).goto.curr_pass} "
+                    f"beat {beat.full_id} pass{self.exec_mgr.execution(beat).goto.counter} "
                     f"loop{self.exec_mgr.execution(beat).loop.curr_iteration if self.exec_mgr.execution(beat).loop else "-"}"
                 )
             # Set new tempo.
@@ -129,9 +129,12 @@ class MidiGeneratorAgent(Agent):
             # Process individual notes.
             try:
                 # TODO: create function Beat.next_beat_in_flow()
-                pass_ = beat.measures[position].passes.get(
-                    self.exec_mgr.execution(beat).goto.curr_pass, beat.measures[position].passes[DEFAULT]
-                )
+                if self.exec_mgr.execution(beat).goto:
+                    pass_ = beat.measures[position].passes.get(
+                        self.exec_mgr.execution(beat).goto.counter, beat.measures[position].passes[DEFAULT]
+                    )
+                else:
+                    pass_ = beat.measures[position].passes[DEFAULT]
             except KeyError:
                 self.logerror(f"No measure found for {position} in beat {beat.full_id}. Program halted.")
                 sys.exit()

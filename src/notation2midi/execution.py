@@ -22,46 +22,44 @@ from src.settings.classes import Part, RunSettings
 # pylint: disable=no-member
 
 
-class GoTo(BaseModel):
-    MAXPASSES: ClassVar[int] = 99
-    cycle: int = MAXPASSES  # Determines when _pass_counter_ should be reset
-    to_beat: dict[PassSequence, Beat] = Field(default_factory=dict)
-    curr_pass: int = 0
+class Flow(BaseModel):
+    MAXCYCLE: ClassVar[int] = 99
+    cycle: int = MAXCYCLE  # Determines when _pass_counter_ should be reset
+    from_beat: Beat
+    to_beat_dict: dict[PassSequence, Beat] = Field(default_factory=dict)
+    counter: int = 0
 
-    def reset_pass_counter(self) -> None:
+    def reset_counter(self) -> None:
         """(re-)initializes the pass counter"""
-        self.curr_pass = 0
+        self.counter = 0
 
-    def incr_pass_counter(self) -> None:
+    def incr_counter(self) -> int:
         """increments the pass counter. Resets the counter if required."""
-        if self.curr_pass >= self.cycle:
-            self.reset_pass_counter()
-        self.curr_pass += 1
+        if self.counter >= self.cycle:
+            self.reset_counter()
+        self.counter += 1
+        return self.counter
 
     @property
     def max_passnr(self) -> PassSequence:
-        return max(list(self.to_beat.keys()) + [0])
+        return max(list(self.to_beat_dict.keys()) + [0])
 
+    def next_beat(self):
+        """Override this method"""
+
+
+class GoTo(Flow):
     def next_beat(self) -> Beat:
-        return self.to_beat.get(self.curr_pass, self.to_beat.get(DEFAULT, None))
+        return self.to_beat_dict.get(self.counter, self.to_beat_dict.get(DEFAULT, None))
 
 
-class Loop(BaseModel):
-    iterations: int = 0
-    first_beat: Beat = None
-    last_beat: Beat = None
-    curr_iteration: int = 0
-
-    def reset_iteration_counter(self) -> None:
-        """(re-)initializes the pass counter"""
-        self.curr_iteration = 0
-
-    def incr_iteration_counter(self) -> None:
-        """increments the pass counter. Resets the counter if required."""
-        self.curr_iteration += 1
+class Loop(Flow):
+    @property
+    def to_beat(self):
+        return self.to_beat_dict.get(DEFAULT, None)
 
     def next_beat(self, beat: Beat) -> Beat:
-        return self.first_beat if beat is self.last_beat and self.curr_iteration < self.iterations else None
+        return self.to_beat if beat is self.from_beat and self.counter < self.cycle else None
 
 
 # `steps` attribute of Classes Tempo and Dynamics indicates a gradual change of tempo or dynamics.
@@ -152,28 +150,34 @@ class Execution(BaseModel):
     Also contains the execution status (pass)"""
 
     beat: Optional[Beat] = None  # The beat to which this flow object belongs: value is set by Beat.model_post_init
-    goto: GoTo = Field(default_factory=GoTo)
+    goto: GoTo = None
     loop: Loop = None
     dynamics: Dynamics = Field(default_factory=Dynamics)
     tempo: Tempo = Field(default_factory=Tempo)
 
+    def model_post_init(self, context):
+        if self.beat:
+            self.goto = GoTo(from_beat=self.beat)
+            self.goto.to_beat_dict[DEFAULT] = self.beat.next
+        return super().model_post_init(context)
+
     def reset_all_counters(self) -> None:
-        self.goto.reset_pass_counter()
+        if self.goto:
+            self.goto.reset_counter()
         if self.loop:
-            self.loop.reset_iteration_counter()
+            self.loop.reset_counter()
 
     def incr_all_counters(self) -> None:
-        self.goto.incr_pass_counter()
+        if self.goto:
+            self.goto.incr_counter()
         if self.loop:
-            self.loop.incr_iteration_counter()
+            self.loop.incr_counter()
 
     def get_pass(self) -> PassSequence:
-        return self.goto.curr_pass
+        return self.goto.counter if self.goto else DEFAULT
 
     def get_iteration(self) -> IterationSequence:
-        if self.loop:
-            return self.loop.curr_iteration
-        return DEFAULT
+        return self.loop.counter if self.loop else DEFAULT
 
     def get_dynamics(self, curr_dynamics: int, position: Position, pass_: int, iteration: int = DEFAULT) -> int | None:
         """Returns either a Velocity value for the current beat.
@@ -204,7 +208,7 @@ class Execution(BaseModel):
         Returns:
             _type_: _description_
         """
-        return self.beat.get_pass_object(position=position, passid=self.goto.curr_pass)
+        return self.beat.get_pass_object(position=position, passid=self.goto.counter)
 
 
 class ExecutionManager:
@@ -219,24 +223,30 @@ class ExecutionManager:
         self.beat_execution_dict: dict[int, Execution] = {}
         self.gongan_execution_dict: dict[str, Execution] = {}
 
+    def add_beat_execution(self, beat: Beat) -> None:
+        """Adds an Execution to the beat_execution_dict for the given beat"""
+        self.beat_execution_dict[beat.full_id] = Execution(beat=beat)
+
+    def add_gongan_execution(self, gongan_id: int) -> None:
+        """Adds an Execution to the gongan_execution_dict for the given gongan id"""
+        self.gongan_execution_dict[gongan_id] = Execution()
+
     def execution(self, beat: Beat) -> Execution:
         """Returns the execution information for the given beat."""
-        key = beat.full_id
-        if not key in self.beat_execution_dict:
-            self.beat_execution_dict[key] = Execution(beat=beat)
-        return self.beat_execution_dict[key]
+        if not beat.full_id in self.beat_execution_dict:
+            self.add_beat_execution(beat)
+        return self.beat_execution_dict[beat.full_id]
 
     def gongan_execution(self, beat: Beat) -> Execution | None:
         """Returns the execution information of the given gongan."""
-        key = beat.gongan_id
-        if not key in self.gongan_execution_dict:
-            self.gongan_execution_dict[key] = Execution()
-        return self.gongan_execution_dict[key]
+        if not beat.gongan_id in self.gongan_execution_dict:
+            self.add_gongan_execution(beat.gongan_id)
+        return self.gongan_execution_dict[beat.gongan_id]
 
     def gonganid_execution(self, gongan_id: int) -> Execution | None:
         """Returns the execution information of the given gongan."""
         if not gongan_id in self.gongan_execution_dict:
-            self.gongan_execution_dict[gongan_id] = Execution()
+            self.add_gongan_execution(gongan_id)
         return self.gongan_execution_dict[gongan_id]
 
     def get_curr_pass(self, beat: Beat):
@@ -265,29 +275,33 @@ class ExecutionManager:
         next_beat = None
         if gongan_exec.loop:
             # Retrieve next beat from Loop item (returns None if there are no more iterations)
-            if beat is gongan_exec.loop.last_beat:
+            if beat is gongan_exec.loop.from_beat:
+                # Start with next iteration
                 next_beat = gongan_exec.loop.next_beat(beat)
-                if not next_beat:
-                    # :End of loop: reset iteration counter
-                    gongan_exec.loop.reset_iteration_counter()
+                # if not next_beat:
+                #     # No more iterations: reset iteration counter
+                #     gongan_exec.loop.reset_iteration_counter()
 
-        # Retrieve next beat from GoTo item
+        # Retrieve next beat: either GoTo item or default next beat
         if not next_beat:
             beat_exec = self.execution(beat)
-            next_beat = beat_exec.goto.next_beat() or beat_exec.beat.next
+            if beat_exec.goto:
+                next_beat = beat_exec.goto.next_beat()
+            if not next_beat:
+                next_beat = beat_exec.beat.next
         if next_beat:
             # Update the pass and iteration counters
             nb_gongan_exec = self.gongan_execution(next_beat)
             if nb_gongan_exec.loop:
-                if next_beat is nb_gongan_exec.loop.first_beat:
-                    nb_gongan_exec.loop.incr_iteration_counter()
-                iteration_counter = nb_gongan_exec.loop.curr_iteration
+                if next_beat is nb_gongan_exec.loop.to_beat:
+                    nb_gongan_exec.loop.incr_counter()
+                iteration_counter = nb_gongan_exec.loop.counter
             else:
                 iteration_counter = None
             # Increment the pass counter of the next beat. In case of a loop, only increment the pass
             # counter on the first iteration.
-            if not iteration_counter or iteration_counter == 1:
-                self.execution(next_beat).goto.incr_pass_counter()
+            if (not iteration_counter or iteration_counter == 1) and self.execution(next_beat).goto:
+                self.execution(next_beat).goto.incr_counter()
             # Increment the iteration counter of the next beat's gongan it is
             # the first beat of a gongan that has a loop.
         return next_beat
