@@ -244,6 +244,7 @@ class AnimationProfiles(NotationEnum):
     GK_GONGS = "GK_GONGS"
     GK_KENDANG = "GK_KENDANG"
     GK_CALUNG = "GK_CALUNG"
+    GK_PENYACAH = "GK_PENYACAH"
     GK_JEGOGAN = "GK_JEGOGAN"
     GK_GANGSA = "GK_GANGSA"
     GK_REYONG = "GK_REYONG"

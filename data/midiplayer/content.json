@@ -102,6 +102,13 @@
                                 {"part": "entire piece (loop)", "file": "Merah Putih_full_GAMELAN1.mid", "loop": true, "markers": {}}
                         ]
                 }, 
+                {"title": "Palawakya", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Palawakya_full_GAMELAN1.pdf", "notation_version": "21-may-2025", "parts": [
+                                {"part": "entire piece", "file": "Palawakya_full_GAMELAN1.mid", "loop": false, "markers": {
+                                                "kawitan": 0.05854458169896376
+                                        }
+                                }
+                        ]
+                }, 
                 {"title": "Pendet", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Pendet_full_GAMELAN1.pdf", "notation_version": "18-apr-2025", "parts": [
                                 {"part": "entire piece", "file": "Pendet_full_GAMELAN1.mid", "loop": false, "markers": {
                                                 "kawitan": 0.1683970772824379, 
@@ -186,6 +193,7 @@
                         {"group": "GONGS", "label": "GONGS", "channels": [0], "midioffset": 0, "animation": "GK_GONGS"}, 
                         {"group": "KENDANG", "label": "KENDANG", "channels": [1], "midioffset": 0, "animation": "GK_KENDANG"}, 
                         {"group": "JEGOGAN", "label": "JEGOGAN", "channels": [2], "midioffset": 0, "animation": "GK_JEGOGAN"}, 
+                        {"group": "PENYACAH", "label": "PENYACAH", "channels": [3], "midioffset": 20, "animation": "GK_PENYACAH"}, 
                         {"group": "CALUNG", "label": "CALUNG", "channels": [3], "midioffset": 0, "animation": "GK_CALUNG"}, 
                         {"group": "PEMADE", "label": "PEMADE", "channels": [4, 5], "midioffset": 0, "animation": "GK_GANGSA"}, 
                         {"group": "PEMADE_POLOS", "label": "- PEMADE_POLOS", "channels": [4], "midioffset": 0, "animation": "GK_GANGSA"}, 
@@ -297,6 +305,14 @@
                                         "DONG2": [10, 22, 34, null, null], 
                                         "DENG2": [11, 23, 35, 40, 44], 
                                         "DUNG2": [12, 24, 36, null, null]}, "strokes": ["OPEN", "ABBREVIATED", "MUTED", "TICK1", "TICK2"]}, 
+                        "GK_PENYACAH": {"file": "GK_PENYACAH.svg", "notes": {
+                                        "DUNG0": [21, 28, 35], 
+                                        "DANG0": [22, 29, 36], 
+                                        "DING1": [23, 30, 37], 
+                                        "DONG1": [24, 31, 38], 
+                                        "DENG1": [25, 32, 39], 
+                                        "DUNG1": [26, 33, 40], 
+                                        "DANG1": [27, 34, 41]}, "strokes": ["OPEN", "ABBREVIATED", "MUTED"]}, 
                         "GK_CALUNG": {"file": "GK_CALUNG.svg", "notes": {
                                         "DING1": [1, 6, 11], 
                                         "DONG1": [2, 7, 12], 

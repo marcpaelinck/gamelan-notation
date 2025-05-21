@@ -30,7 +30,7 @@ class IntegrationTester(BaseUnitTestCase):
             else:
                 notation.include_in_run_types = []
 
-    RUN_INTEGRATION_TEST = True  # <== SET TO True TO RUN THIS TEST (0.5 MIN. OR MORE RUNTIME)
+    RUN_INTEGRATION_TEST = False  # <== SET TO True TO RUN THIS TEST (0.5 MIN. OR MORE RUNTIME)
     RUN_SMALL_TEST = False  # <== a small test will only run the given titles and save the results in "./tests/data/notation/_integration_test_small/output"
     SMALL_TEST_NOTATIONS = ["kahyangan"]
 

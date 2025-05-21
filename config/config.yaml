@@ -9,7 +9,7 @@ instruments:
     tags_file: instrumenttags.tsv
     rules_file: rules.tsv
     # shorthand_notation: instruments for which silence and extension symbols may be omitted
-    shorthand_notation: [UGAL, CALUNG, JEGOGAN, GONGS, KEMPLI]
+    shorthand_notation: [UGAL, CALUNG, PENYACAH, JEGOGAN, GONGS, KEMPLI]
 midi:
     folder: ./config/midi
     midi_definition_file: gamelan_midinotes1.tsv
@@ -76,7 +76,7 @@ soundfont:
 midiplayer:
     folder: ./data/midiplayer
     contentfile: content.json
-    helpinghand: [CALUNG, JEGOGAN, PEMADE_POLOS, PEMADE_SANGSIH, KANTILAN_POLOS, KANTILAN_SANGSIH, UGAL] # Animate panggul.
+    helpinghand: [CALUNG, PENYACAH, JEGOGAN, PEMADE_POLOS, PEMADE_SANGSIH, KANTILAN_POLOS, KANTILAN_SANGSIH, UGAL] # Animate panggul.
 notations:
     # `beat_at_end` indicates whether the notation has the gir at the end of each gongan (Balinese concept) or at the beginning.
     # `beat_at_end` notation will be converted to beat at beginning.
@@ -282,6 +282,14 @@ notations:
                 name: pengecet 1
                 file: Puspa mekar pengecet1.tsv
                 loop: true
+    palawakya:
+        title: Palawakya
+        subfolder: palawakya
+        parts:
+            full:
+                name: entire piece
+                file: Palawakya.tsv
+                loop: false
     rejangdewa:
         title: Rejang Dewa
         subfolder: rejang dewa
