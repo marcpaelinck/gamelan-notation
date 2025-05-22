@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from pydantic import BaseModel, Field
 
@@ -68,9 +68,7 @@ class Loop(Flow):
 
 
 class Tempo(BaseModel):
-    """Contains tempo information.
-    See FlowType.is_expression() for a list of expression types.
-    """
+    """Contains tempo information."""
 
     steps: int = 0
     value_dict: dict[tuple[PassSequence, IterationSequence], int] = Field(default_factory=dict)
@@ -105,11 +103,7 @@ class Tempo(BaseModel):
 
 
 class Dynamics(BaseModel):
-    """Contains dynamics information.
-    See FlowType.is_expression() for a list of expression types.
-    Note: when creating an Expression object, the positions argument can be either a list of strings or its
-    JSON representation. Both will be interpreted correctly by the Pydantic BaseModel.
-    """
+    """Contains dynamics information."""
 
     steps: int = 0
     value_dict: dict[tuple[Position, PassSequence, IterationSequence], int] = Field(default_factory=dict)
@@ -261,26 +255,21 @@ class ExecutionManager:
                 # Start with next iteration
                 next_beat = loop.next_beat(beat)
 
-        # Retrieve next beat: either GoTo item or default next beat
+        # Retrieve next beat: note that goto contains default value for next beat
         if not next_beat:
             next_beat = self.goto(beat).next_beat()
-            # TODO next lines should not be necessar (goto always should always have default value = beat.next)
-            # if not next_beat:
-            #     next_beat = beat.next
         if next_beat:
-            # Update the pass and iteration counters
+            # Increment the loop counter if the next beat starts a new iteration
             if nb_loop := self.loop(next_beat):
                 if next_beat is nb_loop.to_beat:
                     nb_loop.incr_counter()
                 iteration_counter = nb_loop.counter
             else:
                 iteration_counter = None
-            # Increment the pass counter of the next beat. In case of a loop, only increment the pass
-            # counter on the first iteration.
+            # Increment the pass counter of the next beat. If the gongan has a loop,
+            # only increment the pass counter on the first iteration.
             if (not iteration_counter or iteration_counter == 1) and self.goto(next_beat):
                 self.goto(next_beat).incr_counter()
-            # Increment the iteration counter of the next beat's gongan it is
-            # the first beat of a gongan that has a loop.
         return next_beat
 
     def get_tempo(self, beat: Beat, curr_tempo: BPM):
