@@ -354,11 +354,9 @@ class ScoreCreatorAgent(Agent):
         self, frombeat: Beat, tobeat: Beat, passes: list[int] | None = None, cycle: int | None = None
     ) -> None:
         tobeat_dict = {passnr: tobeat for passnr in passes} if passes else {DEFAULT: tobeat}
-        if not self.exec_mgr.execution(frombeat).goto:
-            self.exec_mgr.execution(frombeat).goto = GoTo(from_beat=frombeat, to_beat={})
-        self.exec_mgr.execution(frombeat).goto.to_beat_dict |= tobeat_dict
+        self.exec_mgr.goto(frombeat).to_beat_dict |= tobeat_dict
         if cycle:
-            self.exec_mgr.execution(frombeat).goto.cycle = cycle
+            self.exec_mgr.goto(frombeat).cycle = cycle
 
     def _apply_metadata(self, gongan: Gongan) -> None:
         """Processes the metadata of a gongan into the object model.
@@ -416,8 +414,9 @@ class ScoreCreatorAgent(Agent):
                     for gongan_, gotometa in self.score.flowinfo.gotos[meta.name]:
                         process_goto_meta(gongan_, gotometa)
                 case LoopMeta():
-                    self.exec_mgr.gonganid_execution(gongan.id).loop = Loop(
-                        from_beat=gongan.beats[-1], to_beat_dict={DEFAULT: gongan.beats[0]}, cycle=meta.count
+                    self.exec_mgr.set_loop(
+                        gongan.id,
+                        Loop(from_beat=gongan.beats[-1], to_beat_dict={DEFAULT: gongan.beats[0]}, cycle=meta.count),
                     )
                 case OctavateMeta():
                     positions = [pos for pos in Position if pos.instrumenttype is meta.instrument]
@@ -479,14 +478,14 @@ class ScoreCreatorAgent(Agent):
                     if meta.beat_count == 0:
                         # immediate change.
                         if is_dynamics:
-                            self.exec_mgr.execution(beat).dynamics.update(
+                            self.exec_mgr.dynamics(beat, True).update(
                                 value=meta.value,
                                 positions=meta.positions,
                                 passes=meta.passes,
                                 iterations=meta.iterations,
                             )
                         else:
-                            self.exec_mgr.execution(beat).tempo.update(
+                            self.exec_mgr.tempo(beat, True).update(
                                 value=meta.value, passes=meta.passes, iterations=meta.iterations
                             )
                     else:
@@ -497,7 +496,7 @@ class ScoreCreatorAgent(Agent):
                             if not beat:  # End of score. This should not happen unless notation error.
                                 break
                             if is_dynamics:
-                                self.exec_mgr.execution(beat).dynamics.update(
+                                self.exec_mgr.dynamics(beat, True).update(
                                     value=meta.value,
                                     positions=meta.positions,
                                     passes=meta.passes,
@@ -505,7 +504,7 @@ class ScoreCreatorAgent(Agent):
                                     steps=steps,
                                 )
                             else:
-                                self.exec_mgr.execution(beat).tempo.update(
+                                self.exec_mgr.tempo(beat, True).update(
                                     value=meta.value,
                                     passes=meta.passes,
                                     iterations=meta.iterations,
@@ -519,7 +518,7 @@ class ScoreCreatorAgent(Agent):
                     # The beat's bpm is set to 60 for easy calculation.
                     lastbeat = gongan.beats[-1]
                     duration = round(4 * meta.seconds)  # 4 notes per bpm unit and bpm=60 => 4 notes per second.
-                    newbeat = Beat(
+                    waitbeat = Beat(
                         id=lastbeat.id + 1,
                         gongan_id=gongan.id,
                         duration=duration,
@@ -528,20 +527,17 @@ class ScoreCreatorAgent(Agent):
                         has_kempli_beat=False,
                         validation_ignore=[ValidationProperty.BEAT_DURATION],
                     )
+                    self.exec_mgr.extend_goto(waitbeat, self.exec_mgr.goto(lastbeat))
                     if lastbeat.next:
                         # modify the default next and prev pointes
-                        lastbeat.next.prev = newbeat
-                        lastbeat.next = newbeat
+                        lastbeat.next.prev = waitbeat
+                        lastbeat.next = waitbeat
                         # move goto pointers to the end of the wait beat
-                        self.exec_mgr.execution(newbeat).goto = self.exec_mgr.execution(lastbeat).goto
-                        self.exec_mgr.execution(newbeat).goto.from_beat = newbeat
-                        self.exec_mgr.execution(lastbeat).goto = GoTo(
-                            from_beat=lastbeat.prev, to_beat_dict={DEFAULT: newbeat}
-                        )
-                    newbeat.measures = self._create_rest_measures(
+                    self.exec_mgr.set_goto(lastbeat, GoTo(from_beat=lastbeat.prev, to_beat_dict={DEFAULT: waitbeat}))
+                    waitbeat.measures = self._create_rest_measures(
                         prev_beat=lastbeat, positions=list(lastbeat.measures.keys()), duration=duration
                     )
-                    gongan.beats.append(newbeat)
+                    gongan.beats.append(waitbeat)
                 case _:
                     raise ValueError("Metadata type %s is not supported." % type(meta).__name__)
 
@@ -554,12 +550,14 @@ class ScoreCreatorAgent(Agent):
             # from its predecessor. This will ensure that a goto to any of these beats will pick up the correct tempo.
             for beat in gongan.beats:
                 if beat.prev:
-                    if not self.exec_mgr.execution(beat).dynamics.value_dict:
-                        self.exec_mgr.execution(beat).dynamics = self.exec_mgr.execution(
-                            beat.prev
-                        ).dynamics.model_copy()
-                    if not self.exec_mgr.execution(beat).tempo.value_dict:
-                        self.exec_mgr.execution(beat).tempo = self.exec_mgr.execution(beat.prev).tempo.model_copy()
+                    if (
+                        not self.exec_mgr.dynamics(beat) or not self.exec_mgr.dynamics(beat).value_dict
+                    ) and self.exec_mgr.dynamics(beat.prev):
+                        self.exec_mgr.set_dynamics(beat, self.exec_mgr.dynamics(beat.prev).model_copy())
+                    if (
+                        not self.exec_mgr.tempo(beat) or not self.exec_mgr.tempo(beat).value_dict
+                    ) and self.exec_mgr.tempo(beat.prev):
+                        self.exec_mgr.set_tempo(beat, self.exec_mgr.tempo(beat.prev).model_copy())
 
     def _process_sequences(self):
         """Translates the labels of the SEQUENCE metadata into goto directives in the respective beats."""
@@ -572,7 +570,7 @@ class ScoreCreatorAgent(Agent):
                 # TODO GOTO remove next line
                 # pass_nr = max([p for p in from_beat.flow.goto.keys()] or [0]) + 1  # Select next available pass
                 # Select next available pass
-                goto = self.exec_mgr.execution(from_beat).goto
+                goto = self.exec_mgr.goto(from_beat)
                 pass_nr = goto.max_passnr + 1
                 # TODO: check if this works
                 self.process_goto(frombeat=from_beat, tobeat=to_beat, passes=[pass_nr])

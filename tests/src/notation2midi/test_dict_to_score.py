@@ -14,7 +14,7 @@ from src.common.constants import (
 )
 from src.notation2midi.classes import MetaDataRecord
 from src.notation2midi.dict_to_score import ScoreCreatorAgent
-from src.notation2midi.execution import Dynamics, Execution, Score
+from src.notation2midi.execution import Dynamics, Score
 from src.notation2midi.metadata_classes import (
     DynamicsMeta,
     GonganMeta,
@@ -114,7 +114,6 @@ def create_beat(beat_id: int = 1, content: dict[PositionNote, list[Note]] = None
     return Beat(
         id=beat_id,
         gongan_id=1,
-        execution=Execution(),
         duration=4,
         measures=measures,
     )
@@ -332,7 +331,7 @@ class TestDictToScoreConverter(BaseUnitTestCase):
                         )
                     ],
                 ),
-                value := lambda: converter.exec_mgr.execution(gongan.beats[0]).dynamics,
+                value := lambda: converter.exec_mgr.dynamics(gongan.beats[0]),
                 expected := Dynamics(
                     value_dict={
                         (pos, DEFAULT, DEFAULT): gongan.metadata[0].value for pos in gongan.metadata[0].positions

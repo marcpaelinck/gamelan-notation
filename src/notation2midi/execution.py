@@ -26,7 +26,7 @@ class Flow(BaseModel):
     MAXCYCLE: ClassVar[int] = 99
     cycle: int = MAXCYCLE  # Determines when _pass_counter_ should be reset
     from_beat: Beat
-    to_beat_dict: dict[PassSequence, Beat] = Field(default_factory=dict)
+    to_beat_dict: dict[PassSequence, Beat | None] = Field(default_factory=dict)
     counter: int = 0
 
     def reset_counter(self) -> None:
@@ -75,15 +75,18 @@ class Tempo(BaseModel):
     steps: int = 0
     value_dict: dict[tuple[PassSequence, IterationSequence], int] = Field(default_factory=dict)
 
-    def value(self, pass_: int = DEFAULT, iteration: int = DEFAULT):
+    def value(self, curr_tempo: int, pass_: int = DEFAULT, iteration: int = DEFAULT):
         """Returns the dynamics value for the given combination of attributess"""
-        return self.value_dict.get(
+        value = self.value_dict.get(
             (pass_, iteration),
             self.value_dict.get(
                 (DEFAULT, iteration),
                 self.value_dict.get((pass_, DEFAULT), self.value_dict.get((DEFAULT, DEFAULT), None)),
             ),
         )
+        if value and self.steps > 1:
+            value = curr_tempo + int((value - curr_tempo) / self.steps)
+        return value
 
     def update(  # pylint: disable=dangerous-default-value # [] is only iterated, not modifed
         self,
@@ -111,9 +114,9 @@ class Dynamics(BaseModel):
     steps: int = 0
     value_dict: dict[tuple[Position, PassSequence, IterationSequence], int] = Field(default_factory=dict)
 
-    def value(self, position: Position, pass_: int = DEFAULT, iteration: int = DEFAULT):
+    def value(self, curr_dynamics: int, position: Position, pass_: int = DEFAULT, iteration: int = DEFAULT):
         """Returns the dynamics value for the given combination of attributess"""
-        return self.value_dict.get(
+        value = self.value_dict.get(
             (position, pass_, iteration),
             self.value_dict.get(
                 (position, DEFAULT, iteration),
@@ -122,6 +125,9 @@ class Dynamics(BaseModel):
                 ),
             ),
         )
+        if value and self.steps > 1:
+            value = curr_dynamics + int((value - curr_dynamics) / self.steps)
+        return value
 
     def update(  # pylint: disable=dangerous-default-value # [] is only iterated, not modifed
         self,
@@ -145,72 +151,11 @@ class Dynamics(BaseModel):
             self.steps = steps
 
 
-class Execution(BaseModel):
-    """Contains execution details of a single beat, such as tempo, dynamics, loops and 'go to' directives.
-    Also contains the execution status (pass)"""
-
-    beat: Optional[Beat] = None  # The beat to which this flow object belongs: value is set by Beat.model_post_init
-    goto: GoTo = None
-    loop: Loop = None
-    dynamics: Dynamics = Field(default_factory=Dynamics)
-    tempo: Tempo = Field(default_factory=Tempo)
-
-    def model_post_init(self, context):
-        if self.beat:
-            self.goto = GoTo(from_beat=self.beat)
-            self.goto.to_beat_dict[DEFAULT] = self.beat.next
-        return super().model_post_init(context)
-
-    def reset_all_counters(self) -> None:
-        if self.goto:
-            self.goto.reset_counter()
-        if self.loop:
-            self.loop.reset_counter()
-
-    def incr_all_counters(self) -> None:
-        if self.goto:
-            self.goto.incr_counter()
-        if self.loop:
-            self.loop.incr_counter()
-
-    def get_pass(self) -> PassSequence:
-        return self.goto.counter if self.goto else DEFAULT
-
-    def get_iteration(self) -> IterationSequence:
-        return self.loop.counter if self.loop else DEFAULT
-
-    def get_dynamics(self, curr_dynamics: int, position: Position, pass_: int, iteration: int = DEFAULT) -> int | None:
-        """Returns either a Velocity value for the current beat.
-        Returns None if the value for the current beat is the same as that of the previous beat.
-        In case of a gradual change over several measures, calculates the value for the current beat.
-        """
-        value = self.dynamics.value(position=position, pass_=pass_, iteration=iteration)
-        if value and self.dynamics.steps > 1:
-            value = curr_dynamics + int((value - curr_dynamics) / self.dynamics.steps)
-        return value
-
-    def get_tempo(self, curr_tempo, pass_: int, iteration: int = DEFAULT) -> int | None:
-        """Returns a BPM value for the current beat.
-        Returns None if the value for the current beat is the same as that of the previous beat.
-        In case of a gradual change over several measures, calculates the value for the current beat.
-        """
-        value = self.tempo.value(pass_=pass_, iteration=iteration)
-        if value and self.tempo.steps > 1:
-            value = curr_tempo + int((value - curr_tempo) / self.tempo.steps)
-        return value
-
-    def get_curr_pass_object(self, position: Position):
-        """Returns the current pass in the flow
-
-        Args:
-            position (Position): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        return self.beat.get_pass_object(position=position, passid=self.goto.counter)
+BeatID = str
+GonganID = int
 
 
+@dataclass
 class ExecutionManager:
     """Takes care of the execution or 'performance' of a score. This consists in applying dynamics, tempo
     and flow (GOTO, LOOP and SEQUENCE).
@@ -219,49 +164,87 @@ class ExecutionManager:
         _type_: _description_
     """
 
-    def __init__(self):
-        self.beat_execution_dict: dict[int, Execution] = {}
-        self.gongan_execution_dict: dict[str, Execution] = {}
+    goto_dict: dict[BeatID, GoTo] = field(default_factory=dict)
+    loop_dict: dict[GonganID, Loop] = field(default_factory=dict)
+    dynamics_dict: dict[BeatID, Dynamics] = field(default_factory=dict)
+    tempo_dict: dict[BeatID, Tempo] = field(default_factory=dict)
 
     def add_beat_execution(self, beat: Beat) -> None:
         """Adds an Execution to the beat_execution_dict for the given beat"""
-        self.beat_execution_dict[beat.full_id] = Execution(beat=beat)
+        # self.beat_execution_dict[beat.full_id] = Execution(beat=beat)
 
     def add_gongan_execution(self, gongan_id: int) -> None:
         """Adds an Execution to the gongan_execution_dict for the given gongan id"""
-        self.gongan_execution_dict[gongan_id] = Execution()
+        # self.gongan_execution_dict[gongan_id] = Execution()
 
-    def execution(self, beat: Beat) -> Execution:
-        """Returns the execution information for the given beat."""
-        if not beat.full_id in self.beat_execution_dict:
-            self.add_beat_execution(beat)
-        return self.beat_execution_dict[beat.full_id]
+    def goto(self, beat: Beat, create_if_none: bool = True) -> GoTo:
+        """Returns the GoTo object for the beat or a newly created default GoTo value"""
+        goto = self.goto_dict.get(beat.full_id, None)
+        if not goto and create_if_none:
+            goto = GoTo(from_beat=beat, to_beat_dict={DEFAULT: beat.next})
+            self.goto_dict[beat.full_id] = goto
+        return goto
 
-    def gongan_execution(self, beat: Beat) -> Execution | None:
-        """Returns the execution information of the given gongan."""
-        if not beat.gongan_id in self.gongan_execution_dict:
-            self.add_gongan_execution(beat.gongan_id)
-        return self.gongan_execution_dict[beat.gongan_id]
+    def set_goto(self, beat: Beat, goto: GoTo) -> None:
+        self.goto_dict[beat.full_id] = goto
 
-    def gonganid_execution(self, gongan_id: int) -> Execution | None:
-        """Returns the execution information of the given gongan."""
-        if not gongan_id in self.gongan_execution_dict:
-            self.add_gongan_execution(gongan_id)
-        return self.gongan_execution_dict[gongan_id]
+    def extend_goto(self, beat: Beat, goto: GoTo, skip_default=True) -> None:
+        """extend the beat's goto with the goto data.
+        Does not process the goto's default value"""
+        self.goto(beat).to_beat_dict |= {
+            key: val for key, val in goto.to_beat_dict.items() if not skip_default or key != DEFAULT
+        }
 
-    def get_curr_pass(self, beat: Beat):
-        beat_exec = self.execution(beat)
-        return beat_exec.get_pass()
+    def loop(self, beat: Beat, create_if_none: bool = False) -> Loop | None:
+        """Returns the Loop object for the beat or None"""
+        loop = self.loop_dict.get(beat.gongan_id, None)
+        if not loop and create_if_none:
+            loop = Loop()
+            self.loop_dict[beat.gongan_id] = loop
+        return loop
 
-    def get_curr_iteration(self, beat: Beat):
-        gongan_exec = self.gongan_execution(beat)
-        return gongan_exec.get_iteration()
+    def set_loop(self, gongan_id: GonganID, loop: Loop) -> None:
+        """Assigns a Loop object for the given gongan"""
+        self.loop_dict[gongan_id] = loop
+
+    def dynamics(self, beat: Beat, create_if_none: bool = False) -> Dynamics | None:
+        """Returns the Loop object for the beat or None"""
+        dynamics = self.dynamics_dict.get(beat.full_id, None)
+        if not dynamics and create_if_none:
+            dynamics = Dynamics()
+            self.dynamics_dict[beat.full_id] = dynamics
+        return dynamics
+
+    def set_dynamics(self, beat: Beat, dynamics: Dynamics) -> None:
+        """Assigns a Dynamics object for the given beat"""
+        self.dynamics_dict[beat.full_id] = dynamics
+
+    def tempo(self, beat: Beat, create_if_none: bool = False) -> Tempo | None:
+        """Returns the Loop object for the beat or None"""
+        tempo = self.tempo_dict.get(beat.full_id, None)
+        if not tempo and create_if_none:
+            tempo = Tempo()
+            self.tempo_dict[beat.full_id] = tempo
+        return tempo
+
+    def set_tempo(self, beat: Beat, tempo: Tempo) -> None:
+        """Assigns a Tempo object for the given beat"""
+        self.tempo_dict[beat.full_id] = tempo
+
+    def get_curr_pass(self, beat: Beat) -> int:
+        return self.goto(beat).counter
+
+    def get_curr_iteration(self, beat: Beat) -> int | None:
+        if self.loop(beat):
+            return self.loop(beat).counter
+        return DEFAULT
 
     def reset_all_counters(self):
-        for execution in self.beat_execution_dict.values():
-            execution.reset_all_counters()
-        for execution in self.gongan_execution_dict.values():
-            execution.reset_all_counters()
+        """Resets all GoTo and Loop counters"""
+        for goto in self.goto_dict.values():
+            goto.reset_counter()
+        for loop in self.loop_dict.values():
+            loop.reset_counter()
 
     def next_beat_in_flow(self, beat: Beat) -> Beat:
         """Determines the next beat, based on flow information and the current status
@@ -271,52 +254,50 @@ class ExecutionManager:
         Returns:
             Beat: _description_
         """
-        gongan_exec = self.gongan_execution(beat)
         next_beat = None
-        if gongan_exec.loop:
+        if loop := self.loop(beat):
             # Retrieve next beat from Loop item (returns None if there are no more iterations)
-            if beat is gongan_exec.loop.from_beat:
+            if beat is loop.from_beat:
                 # Start with next iteration
-                next_beat = gongan_exec.loop.next_beat(beat)
-                # if not next_beat:
-                #     # No more iterations: reset iteration counter
-                #     gongan_exec.loop.reset_iteration_counter()
+                next_beat = loop.next_beat(beat)
 
         # Retrieve next beat: either GoTo item or default next beat
         if not next_beat:
-            beat_exec = self.execution(beat)
-            if beat_exec.goto:
-                next_beat = beat_exec.goto.next_beat()
-            if not next_beat:
-                next_beat = beat_exec.beat.next
+            next_beat = self.goto(beat).next_beat()
+            # TODO next lines should not be necessar (goto always should always have default value = beat.next)
+            # if not next_beat:
+            #     next_beat = beat.next
         if next_beat:
             # Update the pass and iteration counters
-            nb_gongan_exec = self.gongan_execution(next_beat)
-            if nb_gongan_exec.loop:
-                if next_beat is nb_gongan_exec.loop.to_beat:
-                    nb_gongan_exec.loop.incr_counter()
-                iteration_counter = nb_gongan_exec.loop.counter
+            if nb_loop := self.loop(next_beat):
+                if next_beat is nb_loop.to_beat:
+                    nb_loop.incr_counter()
+                iteration_counter = nb_loop.counter
             else:
                 iteration_counter = None
             # Increment the pass counter of the next beat. In case of a loop, only increment the pass
             # counter on the first iteration.
-            if (not iteration_counter or iteration_counter == 1) and self.execution(next_beat).goto:
-                self.execution(next_beat).goto.incr_counter()
+            if (not iteration_counter or iteration_counter == 1) and self.goto(next_beat):
+                self.goto(next_beat).incr_counter()
             # Increment the iteration counter of the next beat's gongan it is
             # the first beat of a gongan that has a loop.
         return next_beat
 
     def get_tempo(self, beat: Beat, curr_tempo: BPM):
+        """Returns the tempo for the given beat."""
+        if not (tempo := self.tempo(beat)):
+            return curr_tempo
         curr_pass = self.get_curr_pass(beat)
         curr_iteration = self.get_curr_iteration(beat)
-        return self.execution(beat).get_tempo(curr_tempo=curr_tempo, pass_=curr_pass, iteration=curr_iteration)
+        return tempo.value(curr_tempo=curr_tempo, pass_=curr_pass, iteration=curr_iteration)
 
     def get_dynamics(self, beat: Beat, position: Position, curr_dynamics: int):
+        """Returns the dynamics for the given beat and position."""
+        if not (dynamics := self.dynamics(beat)):
+            return curr_dynamics
         curr_pass = self.get_curr_pass(beat)
         curr_iteration = self.get_curr_iteration(beat)
-        return self.execution(beat).get_dynamics(
-            curr_dynamics=curr_dynamics, position=position, pass_=curr_pass, iteration=curr_iteration
-        )
+        return dynamics.value(curr_dynamics=curr_dynamics, position=position, pass_=curr_pass, iteration=curr_iteration)
 
 
 @dataclass

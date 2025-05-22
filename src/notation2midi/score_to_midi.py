@@ -114,8 +114,8 @@ class MidiGeneratorAgent(Agent):
             # beat.flow.incr_pass_counter(Flow.FlowType.GOTO)
             if self.run_settings.options.debug_logging:
                 track.comment(
-                    f"beat {beat.full_id} pass{self.exec_mgr.execution(beat).goto.counter} "
-                    f"loop{self.exec_mgr.execution(beat).loop.curr_iteration if self.exec_mgr.execution(beat).loop else "-"}"
+                    f"beat {beat.full_id} pass{self.exec_mgr.goto(beat).counter} "
+                    f"loop{self.exec_mgr.loop(beat).counter if self.exec_mgr.loop(beat) else "-"}"
                 )
             # Set new tempo.
             if new_bpm := self.exec_mgr.get_tempo(beat=beat, curr_tempo=track.current_bpm):
@@ -129,9 +129,9 @@ class MidiGeneratorAgent(Agent):
             # Process individual notes.
             try:
                 # TODO: create function Beat.next_beat_in_flow()
-                if self.exec_mgr.execution(beat).goto:
+                if self.exec_mgr.goto(beat):
                     pass_ = beat.measures[position].passes.get(
-                        self.exec_mgr.execution(beat).goto.counter, beat.measures[position].passes[DEFAULT]
+                        self.exec_mgr.goto(beat).counter, beat.measures[position].passes[DEFAULT]
                     )
                 else:
                     pass_ = beat.measures[position].passes[DEFAULT]
@@ -142,7 +142,6 @@ class MidiGeneratorAgent(Agent):
                 track.add_note(note)
             beat = self.exec_mgr.next_beat_in_flow(beat)
             # TODO GOTO modify, also for freq type
-            x = 1
 
         track.finalize()
         if position == Position.PEMADE_POLOS:

@@ -23,12 +23,18 @@ class IntegrationTester(BaseUnitTestCase):
             run_settings (RunSettings): _description_
             notations (list[str]): _description_
         """
+        output_ditr = "./tests/data/notation/_integration_test_small/output"
         for notation_id, notation in run_settings.configdata.notations.items():
-            if notation_id in self.SMALL_TEST_NOTATIONS:
-                notation.folder_out_nonprod = "./tests/data/notation/_integration_test_small/output"
+            if notation_id in notations:
+                notation.folder_out_nonprod = output_ditr
                 notation.include_in_run_types = [RunType.RUN_ALL]
             else:
                 notation.include_in_run_types = []
+        # Remove existing content from the output file
+        for filename in os.listdir(output_ditr):
+            file_path = os.path.join(output_ditr, filename)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
 
     RUN_INTEGRATION_TEST = True  # <== SET TO True TO RUN THIS TEST (0.5 MIN. OR MORE RUNTIME)
     RUN_SMALL_TEST = False  # <== a small test will only run the given titles and save the results in "./tests/data/notation/_integration_test_small/output"
