@@ -71,6 +71,7 @@ class Agent:
         NOTATIONPARSER = "PARSING NOTATION TO DICT"
         SCOREGENERATOR = "CONVERTING DICT TO SCORE"
         SCOREVALIDATOR = "VALIDATING SCORE"
+        EXECUTIONCREATOR = "CREATING SCORE EXECUTION"
         NOTATIONGENERATOR = "CREATING CORRECTED NOTATION"
         MIDIGENERATOR = "GENERATING MIDI FILE"
         PDFGENERATOR = "CONVERTING SCORE TO PDF NOTATION"
@@ -83,13 +84,14 @@ class Agent:
         RUNSETTINGS = "run_settings"
         NOTATION = "notation"
         SCORE = "score"
+        EXECUTION = "execution"
         PART = "part"
         PDFFILE = "pdf_file"
 
     # Define these constants in each subclass
     AGENT_TYPE: AgentType
     EXPECTED_INPUT_TYPES: tuple[InputOutputType] | None
-    RETURN_TYPE: InputOutputType | None
+    RETURN_TYPE: InputOutputType | tuple[InputOutputType] | None
 
     run_settings = None
     curr_gongan_id: int = None

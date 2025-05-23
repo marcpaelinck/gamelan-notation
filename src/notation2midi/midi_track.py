@@ -29,7 +29,6 @@ class MidiTrackX(MidiTrack):
     Generates MIDI messages and keeps track of the midi time (tick time).
     """
 
-    name: str
     run_settings: RunSettings
     position: Position
     instrumenttype: InstrumentType

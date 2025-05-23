@@ -86,7 +86,11 @@ class PipeLine:
                     )
                     return False
             if agentclass.RETURN_TYPE:
-                available_data |= {agentclass.RETURN_TYPE.value: True}
+                if isinstance(agentclass.RETURN_TYPE, Agent.InputOutputType):
+                    available_data |= {agentclass.RETURN_TYPE: True}
+                else:
+                    for outtype in agentclass.RETURN_TYPE:
+                        available_data |= {outtype: True}
         return True
 
     def __get_data_items__(self, datatypes: dict[str, type]):
@@ -116,7 +120,11 @@ class PipeLine:
                     self.do_quit()
             # Retrieve the required parameters
             param_dict = (
-                {keyword: value for keyword, value in self.data.items() if keyword in agentclass.EXPECTED_INPUT_TYPES}
+                {
+                    keyword.value: value
+                    for keyword, value in self.data.items()
+                    if keyword in agentclass.EXPECTED_INPUT_TYPES
+                }
                 if agentclass.EXPECTED_INPUT_TYPES
                 else {}
             )
@@ -125,7 +133,15 @@ class PipeLine:
             if agent.has_errors:
                 self.do_quit()
             if result:
-                self.data[agentclass.RETURN_TYPE.value] = result
+                if (
+                    isinstance(result, tuple)
+                    and isinstance(agent.RETURN_TYPE, tuple)
+                    and len(result) == len(agent.RETURN_TYPE)
+                ):
+                    for return_type, return_value in zip(agent.RETURN_TYPE, result):
+                        self.data[return_type] = return_value
+                else:
+                    self.data[agentclass.RETURN_TYPE] = result
 
 
 # FULL SEQUENCE STARTS HERE

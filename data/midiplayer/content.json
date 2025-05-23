@@ -102,9 +102,9 @@
                                 {"part": "entire piece (loop)", "file": "Merah Putih_full_GAMELAN1.mid", "loop": true, "markers": {}}
                         ]
                 }, 
-                {"title": "Palawakya", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Palawakya_full_GAMELAN1.pdf", "notation_version": "21-may-2025", "parts": [
+                {"title": "Palawakya", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Palawakya_full_GAMELAN1.pdf", "notation_version": "22-may-2025", "parts": [
                                 {"part": "entire piece", "file": "Palawakya_full_GAMELAN1.mid", "loop": false, "markers": {
-                                                "kawitan": 0.05854458169896376
+                                                "kawitan": 0.020535427034205175
                                         }
                                 }
                         ]

@@ -3,19 +3,8 @@ from typing import ClassVar
 
 from pydantic import BaseModel, Field
 
-from src.common.classes import Beat, FlowInfo, Gongan, MidiNote
-from src.common.constants import (
-    BPM,
-    DEFAULT,
-    IterationSequence,
-    Octave,
-    PassSequence,
-    Pitch,
-    Position,
-    Stroke,
-)
-from src.notation2midi.metadata_classes import MetaData
-from src.settings.classes import Part, RunSettings
+from src.common.classes import Beat, Score
+from src.common.constants import BPM, DEFAULT, IterationSequence, PassSequence, Position
 
 # Next statement is to avoid pylint bug when assigning Field to attributes in pydantic class definition
 # see bugreport https://github.com/pylint-dev/pylint/issues/10087
@@ -150,7 +139,7 @@ GonganID = int
 
 
 @dataclass
-class ExecutionManager:
+class Execution:
     """Takes care of the execution or 'performance' of a score. This consists in applying dynamics, tempo
     and flow (GOTO, LOOP and SEQUENCE).
 
@@ -158,18 +147,11 @@ class ExecutionManager:
         _type_: _description_
     """
 
+    score: Score
     goto_dict: dict[BeatID, GoTo] = field(default_factory=dict)
     loop_dict: dict[GonganID, Loop] = field(default_factory=dict)
     dynamics_dict: dict[BeatID, Dynamics] = field(default_factory=dict)
     tempo_dict: dict[BeatID, Tempo] = field(default_factory=dict)
-
-    def add_beat_execution(self, beat: Beat) -> None:
-        """Adds an Execution to the beat_execution_dict for the given beat"""
-        # self.beat_execution_dict[beat.full_id] = Execution(beat=beat)
-
-    def add_gongan_execution(self, gongan_id: int) -> None:
-        """Adds an Execution to the gongan_execution_dict for the given gongan id"""
-        # self.gongan_execution_dict[gongan_id] = Execution()
 
     def goto(self, beat: Beat, create_if_none: bool = True) -> GoTo:
         """Returns the GoTo object for the beat or a newly created default GoTo value"""
@@ -287,18 +269,3 @@ class ExecutionManager:
         curr_pass = self.get_curr_pass(beat)
         curr_iteration = self.get_curr_iteration(beat)
         return dynamics.value(curr_dynamics=curr_dynamics, position=position, pass_=curr_pass, iteration=curr_iteration)
-
-
-@dataclass
-class Score:
-    title: str
-    settings: RunSettings
-    instrument_positions: set[Position] = None
-    gongans: list[Gongan] = field(default_factory=list)
-    global_metadata: list[MetaData] = field(default_factory=list)
-    global_comments: list[str] = field(default_factory=list)
-    midi_notes_dict: dict[tuple[Position, Pitch, Octave, Stroke], MidiNote] = None
-    flowinfo: FlowInfo = field(default_factory=FlowInfo)
-    midifile_duration: int = None
-    part_info: Part = None
-    execution_manager: ExecutionManager = None

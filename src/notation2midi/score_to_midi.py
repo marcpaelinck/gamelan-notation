@@ -11,7 +11,7 @@ from mido import MidiFile
 from src.common.classes import Beat, Preset
 from src.common.constants import DEFAULT, Pitch, Position
 from src.notation2midi.classes import Agent
-from src.notation2midi.execution import ExecutionManager, Score
+from src.notation2midi.execution import Execution
 from src.notation2midi.metadata_classes import PartMeta
 from src.notation2midi.midi_track import MidiTrackX, TimeUnit
 from src.settings.classes import PartForm, RunSettings
@@ -21,16 +21,16 @@ class MidiGeneratorAgent(Agent):
     """This Parser creates a MIDI file based on a Score objects."""
 
     AGENT_TYPE = Agent.AgentType.MIDIGENERATOR
-    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.SCORE)
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.EXECUTION)
     RETURN_TYPE = Agent.InputOutputType.PART
 
     part_info: PartForm = None
-    exec_mgr: ExecutionManager = None
+    exec_mgr: Execution = None
 
-    def __init__(self, run_settings: RunSettings, score: Score):
+    def __init__(self, run_settings: RunSettings, execution: Execution):
         super().__init__(run_settings)
-        self.score = score
-        self.exec_mgr = self.score.execution_manager
+        self.exec_mgr = execution
+        self.score = execution.score
         self.part_info = PartForm(
             part=self.run_settings.notation.part.name,
             file=self.run_settings.midi_out_file,

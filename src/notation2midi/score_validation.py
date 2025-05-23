@@ -15,7 +15,7 @@ from src.common.constants import (
     Stroke,
 )
 from src.notation2midi.classes import Agent
-from src.notation2midi.execution import Score
+from src.notation2midi.execution import Execution
 from src.notation2midi.metadata_classes import GonganType, ValidationProperty
 from src.settings.classes import RunSettings
 
@@ -23,9 +23,8 @@ from src.settings.classes import RunSettings
 class ScoreValidationAgent(Agent):
 
     AGENT_TYPE = Agent.AgentType.SCOREVALIDATOR
-    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.SCORE)
-    RETURN_TYPE = Agent.InputOutputType.SCORE
-
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.EXECUTION)
+    RETURN_TYPE = None
     POSITIONS_AUTOCORRECT_UNEQUAL_MEASURES = [
         Position.UGAL,
         Position.CALUNG,
@@ -38,9 +37,9 @@ class ScoreValidationAgent(Agent):
         (Position.KANTILAN_POLOS, Position.KANTILAN_SANGSIH),
     ]
 
-    def __init__(self, run_settings: RunSettings, score: Score):
+    def __init__(self, run_settings: RunSettings, execution: Execution):
         super().__init__(run_settings)
-        self.score = score
+        self.score = execution.score
 
     @override
     @classmethod
@@ -335,6 +334,7 @@ class ScoreValidationAgent(Agent):
 
             # TODO temporary disabled
             if self.score.settings.instrumentgroup == InstrumentGroup.GONG_KEBYAR:
+                # c1ontinue
                 invalids, corrected, ignored = self._incorrect_kempyung(gongan, autocorrect=autocorrect)
                 remaining_incorrect_kempyung.extend(invalids)
                 corrected_invalid_kempyung.extend(corrected)
@@ -375,4 +375,4 @@ class ScoreValidationAgent(Agent):
             "INCORRECT KEMPYUNG", corrected_invalid_kempyung, ignored_invalid_kempyung, remaining_incorrect_kempyung
         )
 
-        return self.score
+        return None

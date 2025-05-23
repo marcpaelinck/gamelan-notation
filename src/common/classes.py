@@ -42,7 +42,7 @@ from src.notation2midi.metadata_classes import (
     SequenceMeta,
     ValidationProperty,
 )
-from src.settings.classes import RunSettings
+from src.settings.classes import Part, RunSettings
 from src.settings.constants import (
     FontFields,
     InstrumentFields,
@@ -767,12 +767,6 @@ class Beat(BaseModel):
     next: Optional["Beat"] = Field(default=None, repr=False)  # next beat in the score
     has_kempli_beat: bool = True
     validation_ignore: list[ValidationProperty] = Field(default_factory=list)
-    # execution: Optional["Execution"] = None
-
-    # @override
-    # def model_post_init(self, context: Any) -> None:  # pylint: disable=arguments-differ
-    #     self.execution = Execution()
-    #     self.execution.beat = self
 
     @computed_field
     @property
@@ -827,6 +821,20 @@ class FlowInfo:
     labels: dict[str, Beat] = field(default_factory=dict)
     gotos: dict[str, tuple[Gongan, GoToMeta]] = field(default_factory=lambda: defaultdict(list))
     sequences: list[tuple[Gongan, SequenceMeta]] = field(default_factory=list)
+
+
+@dataclass
+class Score:
+    title: str
+    settings: RunSettings
+    instrument_positions: set[Position] = None
+    gongans: list[Gongan] = field(default_factory=list)
+    global_metadata: list[MetaData] = field(default_factory=list)
+    global_comments: list[str] = field(default_factory=list)
+    midi_notes_dict: dict[tuple[Position, Pitch, Octave, Stroke], MidiNote] = None
+    flowinfo: FlowInfo = field(default_factory=FlowInfo)
+    midifile_duration: int = None
+    part_info: Part = None
 
 
 @dataclass

@@ -73,7 +73,7 @@ after_parm = 'after' '=' after:boolvalue;
 beat_count_parm = 'beat_count' '=' beat_count:intvalue;
 beat_parm = 'beat' '=' beat:intvalue;
 beats_parm = ('beat' | 'beats') '=' (beats+:intvalue | beats:intlistvalue);
-first_beat_parm = 'first_beat' '=' first_beat:intvalue;
+first_beat_parm = ('first_beat' | 'beat') '=' first_beat:intvalue;
 from_beat_parm = 'from_beat' '=' from_beat:intvalue;
 octaves_parm = 'octaves' '=' octaves:intvalue;
 passes_parm = ('pass' | 'passes') '=' (passes+:intvalue | passes:intlistvalue);
