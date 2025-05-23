@@ -47,7 +47,7 @@ class Loop(Flow):
     def to_beat(self):
         return self.to_beat_dict.get(DEFAULT, None)
 
-    def next_beat(self, beat: Beat) -> Beat:
+    def next_beat(self, beat: Beat) -> Beat:  # pylint: disable=arguments-differ
         return self.to_beat if beat is self.from_beat and self.counter < self.cycle else None
 
 
@@ -153,12 +153,15 @@ class Execution:
     dynamics_dict: dict[BeatID, Dynamics] = field(default_factory=dict)
     tempo_dict: dict[BeatID, Tempo] = field(default_factory=dict)
 
+    def create_default_goto(self, beat: Beat) -> GoTo:
+        self.goto_dict[beat.full_id] = GoTo(from_beat=beat, to_beat_dict={DEFAULT: beat.next})
+        return self.goto_dict[beat.full_id]
+
     def goto(self, beat: Beat, create_if_none: bool = True) -> GoTo:
         """Returns the GoTo object for the beat or a newly created default GoTo value"""
         goto = self.goto_dict.get(beat.full_id, None)
         if not goto and create_if_none:
-            goto = GoTo(from_beat=beat, to_beat_dict={DEFAULT: beat.next})
-            self.goto_dict[beat.full_id] = goto
+            goto = self.create_default_goto(beat)
         return goto
 
     def set_goto(self, beat: Beat, goto: GoTo) -> None:

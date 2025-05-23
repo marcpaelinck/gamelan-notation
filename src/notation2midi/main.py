@@ -4,15 +4,16 @@ from tkinter.messagebox import askyesno
 
 from src.common.logger import Logging
 from src.common.pipeline import PipeLine
-from src.notation2midi.dict_to_score import ScoreCreatorAgent
-from src.notation2midi.export_to_midiplayer import (
+from src.notation2midi.pipeline.create_execution import ExecutionCreatorAgent
+from src.notation2midi.pipeline.dict_to_score import ScoreCreatorAgent
+from src.notation2midi.pipeline.export_to_midiplayer import (
     MidiPlayerUpdatePartAgent,
     MidiPlayerUpdatePdfAgent,
 )
-from src.notation2midi.notation_parser_tatsu import NotationParserAgent
-from src.notation2midi.score2notation.score_to_pdf import PDFGeneratorAgent
-from src.notation2midi.score_to_midi import MidiGeneratorAgent
-from src.notation2midi.score_validation import ScoreValidationAgent
+from src.notation2midi.pipeline.notation_parser_tatsu import NotationParserAgent
+from src.notation2midi.pipeline.score_to_midi import MidiGeneratorAgent
+from src.notation2midi.pipeline.score_to_pdf import PDFGeneratorAgent
+from src.notation2midi.pipeline.score_validation import ScoreValidationAgent
 from src.settings.classes import RunSettings, RunType
 from src.settings.settings import Settings
 from src.settings.settings_validation import SettingsValidationAgent
@@ -24,6 +25,7 @@ PIPE = [
     NotationParserAgent,
     ScoreCreatorAgent,
     ScoreValidationAgent,
+    ExecutionCreatorAgent,
     MidiGeneratorAgent,
     PDFGeneratorAgent,
     MidiPlayerUpdatePartAgent,

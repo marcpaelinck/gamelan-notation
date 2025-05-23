@@ -331,7 +331,7 @@ class TestDictToScoreConverter(BaseUnitTestCase):
                         )
                     ],
                 ),
-                value := lambda: converter.exec_mgr.dynamics(gongan.beats[0]),
+                value := lambda: converter.execution.dynamics(gongan.beats[0]),
                 expected := Dynamics(
                     value_dict={
                         (pos, DEFAULT, DEFAULT): gongan.metadata[0].value for pos in gongan.metadata[0].positions

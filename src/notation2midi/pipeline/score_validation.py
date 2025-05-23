@@ -2,7 +2,7 @@ import math
 from itertools import product
 from typing import Any, override
 
-from src.common.classes import Beat, Gongan, Note
+from src.common.classes import Beat, Gongan, Note, Score
 from src.common.constants import (
     DEFAULT,
     BeatId,
@@ -15,7 +15,6 @@ from src.common.constants import (
     Stroke,
 )
 from src.notation2midi.classes import Agent
-from src.notation2midi.execution import Execution
 from src.notation2midi.metadata_classes import GonganType, ValidationProperty
 from src.settings.classes import RunSettings
 
@@ -23,7 +22,7 @@ from src.settings.classes import RunSettings
 class ScoreValidationAgent(Agent):
 
     AGENT_TYPE = Agent.AgentType.SCOREVALIDATOR
-    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.EXECUTION)
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.SCORE)
     RETURN_TYPE = None
     POSITIONS_AUTOCORRECT_UNEQUAL_MEASURES = [
         Position.UGAL,
@@ -37,9 +36,9 @@ class ScoreValidationAgent(Agent):
         (Position.KANTILAN_POLOS, Position.KANTILAN_SANGSIH),
     ]
 
-    def __init__(self, run_settings: RunSettings, execution: Execution):
+    def __init__(self, run_settings: RunSettings, score: Score):
         super().__init__(run_settings)
-        self.score = execution.score
+        self.score = score
 
     @override
     @classmethod
@@ -295,6 +294,7 @@ class ScoreValidationAgent(Agent):
         ignored_invalid_kempyung = []
         remaining_incorrect_kempyung = []
 
+        # pylint: disable=unused-variable
         corrected_incorrect_norot = []
         ignored_incorrect_norot = []
         remaining_incorrect_norot = []
@@ -302,6 +302,7 @@ class ScoreValidationAgent(Agent):
         corrected_incorrect_ubitan = []
         ignored_incorrect_ubitan = []
         remaining_incorrect_ubitan = []
+        # pylint: enable=unused-variable
 
         autocorrect = self.score.settings.options.notation_to_midi.autocorrect
         detailed_logging = self.score.settings.options.notation_to_midi.detailed_validation_logging

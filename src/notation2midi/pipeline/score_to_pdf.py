@@ -28,15 +28,15 @@ from src.notation2midi.metadata_classes import (
     SequenceMeta,
     TempoMeta,
 )
-from src.notation2midi.notation_parser_tatsu import PassID
+from src.notation2midi.pipeline.notation_parser_tatsu import PassID
 from src.notation2midi.score2notation.formatting import (
     NotationTemplate,
     RowType,
     SpanType,
     TableContent,
 )
-from src.notation2midi.score2notation.score_to_notation import aggregate_positions
 from src.notation2midi.score2notation.utils import (
+    aggregate_positions,
     clean_staves,
     has_kempli_beat,
     measure_to_str_rml_safe,
