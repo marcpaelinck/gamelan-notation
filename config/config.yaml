@@ -46,6 +46,8 @@ midi:
         notes_per_quarternote: 3
         accelerating_pattern: [48, 40, 32, 26, 22, 18, 14, 10, 10, 10, 10, 10]
         accelerating_velocity: [100, 100, 100, 100, 100, 100, 100, 90, 80, 70, 60, 50]
+notation:
+    gongantypes_without_kempli: [KEBYAR, GINEMAN, GENDERAN]
 font:
     folder: ./config/font
     file: balimusic5font.tsv
@@ -77,7 +79,7 @@ midiplayer:
     folder: ./data/midiplayer
     contentfile: content.json
     helpinghand: [CALUNG, PENYACAH, JEGOGAN, PEMADE_POLOS, PEMADE_SANGSIH, KANTILAN_POLOS, KANTILAN_SANGSIH, UGAL] # Animate panggul.
-notations:
+notationfiles:
     # `beat_at_end` indicates whether the notation has the gir at the end of each gongan (Balinese concept) or at the beginning.
     # `beat_at_end` notation will be converted to beat at beginning.
     # If `loop`==false, the last note of each instrument will be extended for a natural fade out.
@@ -283,8 +285,11 @@ notations:
                 file: Puspa mekar pengecet1.tsv
                 loop: true
     palawakya:
-        title: Palawakya
+        title: Palawakya (under development)
         subfolder: palawakya
+        midi_out_file_pattern: !!str "Palawakya_{part_id}_${{midi.midiversion}}.mid"
+        pdf_out_file_pattern: !!str "Palawakya_{part_id}_${{midi.midiversion}}.pdf"
+        autocorrect_kempyung : false
         parts:
             full:
                 name: entire piece
