@@ -39,7 +39,7 @@ def run_pipeline(run_settings: RunSettings):
     Args:
         run_settings (RunSettings): Settings and configuration.
     """
-    logger.open_logging(f"{run_settings.notation.title} - {run_settings.notation.part.name}")
+    logger.open_logging(f"{run_settings.notationfile.title} - {run_settings.notationfile.part.name}")
     pipeline = PipeLine(run_settings=run_settings, pipe=PIPE)
     pipeline.execute()
 
@@ -57,7 +57,7 @@ def run_multiple_pipelines(run_settings: RunSettings):
     # their include_in_run_types and include_in_production_run attributes.
     notation_list = [
         (notation_key, notation_info)
-        for notation_key, notation_info in run_settings.configdata.notations.items()
+        for notation_key, notation_info in run_settings.configdata.notationfiles.items()
         if runtype in notation_info.include_in_run_types
         and (not is_production_run or notation_info.include_in_production_run)
     ]

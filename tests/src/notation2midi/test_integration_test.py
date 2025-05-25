@@ -24,7 +24,7 @@ class IntegrationTester(BaseUnitTestCase):
             notations (list[str]): _description_
         """
         output_ditr = "./tests/data/notation/_integration_test_small/output"
-        for notation_id, notation in run_settings.configdata.notations.items():
+        for notation_id, notation in run_settings.configdata.notationfiles.items():
             if notation_id in notations:
                 notation.folder_out_nonprod = output_ditr
                 notation.include_in_run_types = [RunType.RUN_ALL]
@@ -59,7 +59,7 @@ class IntegrationTester(BaseUnitTestCase):
         run_settings = Settings.get(
             notation_id="integration_test_small" if self.RUN_SMALL_TEST else "integration_test", part_id="dummy"
         )
-        reference_dict = run_settings.notation.folder_in
+        reference_dict = run_settings.notationfile.folder_in
         compare_dict = run_settings.folder_out
         run_settings.options.notation_to_midi.runtype = RunType.RUN_ALL
         if self.RUN_SMALL_TEST:

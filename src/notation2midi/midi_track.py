@@ -59,7 +59,7 @@ class MidiTrackX(MidiTrack):
         self.append(MetaMessage(type="midi_port", port=self.port))
         # Note: MSB (control 0) seems to accept values larger than 127.
         self.append(Message(type="control_change", skip_checks=True, control=0, value=self.bank, channel=self.channel))
-        self.append(Message(type="program_change", program=self.preset, channel=self.channel))
+        self.append(Message(type="program_change", skip_checks=True, program=self.preset, channel=self.channel))
         # Do not set channel volume. It will be set in the online MIDI app.
         # self.append(
         #     Message(type="control_change", control=7, value=127 if self.channel > 4 else 127, channel=self.channel)
@@ -280,6 +280,7 @@ class MidiTrackX(MidiTrack):
                         velocity=self.current_velocity if not note.velocity else note.velocity,
                         time=self.current_ticktime - self.ticktime_last_message,
                         channel=self.channel,
+                        skip_checks=True,
                     )
                 )
 
@@ -299,6 +300,7 @@ class MidiTrackX(MidiTrack):
                         note=midivalue,
                         time=0,  # the time will be determined by the self.append method
                         channel=self.channel,
+                        skip_checks=True,
                     )
                 )
 

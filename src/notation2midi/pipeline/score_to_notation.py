@@ -8,7 +8,7 @@ from src.common.classes import Gongan, Note
 from src.common.constants import ParserTag, Position
 from src.notation2midi.classes import Agent
 from src.notation2midi.execution import Score
-from src.notation2midi.score2notation.utils import aggregate_positions, is_silent
+from src.notation2midi.score2notationutils.utils import aggregate_positions, is_silent
 from src.settings.classes import RunSettings
 from src.settings.constants import InstrumentFields
 

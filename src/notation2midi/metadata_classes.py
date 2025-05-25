@@ -3,19 +3,13 @@ from typing import Annotated, ClassVar, Literal, Union, override
 
 from pydantic import BaseModel, Field, TypeAdapter, ValidationInfo, field_validator
 
-from src.common.constants import DEFAULT, InstrumentType, NotationEnum, Position
+from src.common.constants import GonganType, InstrumentType, NotationEnum, Position
 from src.settings.classes import RunSettings
 from src.settings.settings import RunSettingsListener
 from src.settings.utils import tag_to_position_dict
 
 
 # MetaData related constants
-class GonganType(NotationEnum):
-    REGULAR = "regular"
-    KEBYAR = "kebyar"
-    GINEMAN = "gineman"
-
-
 class MetaDataSwitch(NotationEnum):
     OFF = "off"
     ON = "on"

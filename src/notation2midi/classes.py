@@ -130,7 +130,7 @@ class Agent:
     def open_logging(self):
         """To be called by the pipeline manager before running the pipeline.
         Adds an empty line followed by a title line"""
-        title_text = f"NOTATION2MIDI: {self.run_settings.notation.title}"
+        title_text = f"NOTATION2MIDI: {self.run_settings.notationfile.title}"
         separator = "=" * int(50 - len(title_text) // 2)
         title = f"{separator} {title_text} {separator}"
         self.logger.info("")

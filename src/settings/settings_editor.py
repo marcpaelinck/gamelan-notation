@@ -65,13 +65,13 @@ def create_menu():
     part_combo, part = add_item(
         ItemType.DROPDOWN,
         label="Part",
-        value=run_settings.notation.part_id,
-        values=list(run_settings.notations[run_settings.notation.notation_id].parts.keys()),
+        value=run_settings.notationfile.part_id,
+        values=list(run_settings.notations[run_settings.notationfile.notation_id].parts.keys()),
     )
     _, notation = add_item(
         ItemType.DROPDOWN,
         label="Notation",
-        value=run_settings.notation.notation_id,
+        value=run_settings.notationfile.notation_id,
         values=notations,
         trace=lambda *args: update_parts(part_combo, *args),
     )

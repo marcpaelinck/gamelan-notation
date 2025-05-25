@@ -2,7 +2,7 @@
 
 from src.common.classes import Note
 from src.common.constants import DEFAULT, Position
-from src.notation2midi.score2notation.score_to_notation import ScoreToNotationAgent
+from src.notation2midi.score2notationutils.score_to_notation import ScoreToNotationAgent
 from src.settings.constants import InstrumentFields
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase

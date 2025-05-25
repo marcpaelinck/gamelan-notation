@@ -29,13 +29,13 @@ from src.notation2midi.metadata_classes import (
     TempoMeta,
 )
 from src.notation2midi.pipeline.notation_parser_tatsu import PassID
-from src.notation2midi.score2notation.formatting import (
+from src.notation2midi.score2notationutils.formatting import (
     NotationTemplate,
     RowType,
     SpanType,
     TableContent,
 )
-from src.notation2midi.score2notation.utils import (
+from src.notation2midi.score2notationutils.utils import (
     aggregate_positions,
     clean_staves,
     has_kempli_beat,
@@ -78,7 +78,7 @@ class PDFGeneratorAgent(Agent):
     def run_condition_satisfied(cls, run_settings: RunSettings):
         return (
             run_settings.options.notation_to_midi.save_pdf_notation
-            and run_settings.part_id == run_settings.notation.generate_pdf_part_id
+            and run_settings.part_id == run_settings.notationfile.generate_pdf_part_id
         )
 
     def _append_single_metadata_type(

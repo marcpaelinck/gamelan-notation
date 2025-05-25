@@ -5,7 +5,7 @@ from src.common.classes import Gongan
 from src.common.constants import Position, Stroke
 from src.notation2midi.execution import Score
 from src.notation2midi.metadata_classes import AutoKempyungMeta, MetaDataSwitch
-from src.notation2midi.score2notation.utils import (
+from src.notation2midi.score2notationutils.utils import (
     aggregate_positions,
     clean_staves,
     has_kempli_beat,

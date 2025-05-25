@@ -3,6 +3,8 @@ from typing import override
 
 from src.notation2midi.classes import Agent
 from src.settings.classes import Content, PartForm, RunSettings, Song
+from src.settings.constants import PresetsFields
+from src.settings.settings import Settings
 from src.settings.utils import pretty_compact_json
 
 
@@ -42,6 +44,40 @@ class MidiPlayerUpdateAgentModel(Agent):
             os.remove(contentfilepath)
             os.rename(tempfilepath, contentfilepath)
 
+    def _update_instrument_info(self, content: Content) -> None:
+        """Updates the MIDI information of the InstrumentInfo component from the presets config file."""
+        instrument_presets = self.run_settings.data.presets
+        for instrumentgroup, instrumentinfo in content.instrumentgroups.items():
+            for instrument in instrumentinfo:
+                # instrument.group of the content can correspond either with an instrument type
+                # or an instrument position.
+                # 1. Try matching with instrument type
+                presets = [
+                    preset
+                    for preset in instrument_presets
+                    if preset[PresetsFields.INSTRUMENTGROUP] == instrumentgroup
+                    and preset[PresetsFields.INSTRUMENTTYPE] == instrument.group
+                ]
+                if presets:
+                    instrument.channels = [preset[PresetsFields.CHANNEL] for preset in presets]
+                    preset = presets[0]
+                    instrument.preset = preset[PresetsFields.PRESET]
+                    instrument.bank = preset[PresetsFields.BANK]
+                    instrument.midioffset = preset[PresetsFields.MIDIOFFSET]
+                # 2. Try matching with instrument position
+                presets = [
+                    preset
+                    for preset in instrument_presets
+                    if preset[PresetsFields.INSTRUMENTGROUP] == instrumentgroup
+                    and preset[PresetsFields.POSITION] == instrument.group
+                ]
+                if presets:
+                    instrument.channels = [preset[PresetsFields.CHANNEL] for preset in presets]
+                    preset = presets[0]
+                    instrument.preset = preset[PresetsFields.PRESET]
+                    instrument.bank = preset[PresetsFields.BANK]
+                    instrument.midioffset = preset[PresetsFields.MIDIOFFSET]
+
 
 class MidiPlayerUpdatePartAgent(MidiPlayerUpdateAgentModel):
     """Updates the Part info in the content.json file in the midiplayer data folder."""
@@ -72,14 +108,16 @@ class MidiPlayerUpdatePartAgent(MidiPlayerUpdateAgentModel):
         content = self._get_midiplayer_content(
             self.run_settings.midiplayer.folder, self.run_settings.midiplayer.contentfile
         )
+        self._update_instrument_info(content)
+
         # If info is already present, replace it.
-        song_title = self.run_settings.notation.title
+        song_title = self.run_settings.notationfile.title
         player_song: Song = next((song_ for song_ in content.songs if song_.title == song_title), None)
         if not player_song:
             # TODO create components of Song
             content.songs.append(
                 player_song := Song(
-                    title=self.run_settings.notation.title,
+                    title=self.run_settings.notationfile.title,
                     instrumentgroup=self.run_settings.instrumentgroup,
                     display=True,
                     pfd=None,
@@ -131,7 +169,7 @@ class MidiPlayerUpdatePdfAgent(MidiPlayerUpdateAgentModel):
         return (
             run_settings.options.notation_to_midi.is_production_run
             and run_settings.options.notation_to_midi.save_pdf_notation
-            and run_settings.part_id == run_settings.notation.generate_pdf_part_id
+            and run_settings.part_id == run_settings.notationfile.generate_pdf_part_id
         )
 
     @override
@@ -141,7 +179,7 @@ class MidiPlayerUpdatePdfAgent(MidiPlayerUpdateAgentModel):
             self.run_settings.midiplayer.folder, self.run_settings.midiplayer.contentfile
         )
         # Check if song info is already present in the content file
-        song_title = self.run_settings.notation.title
+        song_title = self.run_settings.notationfile.title
         player_song: Song = next((song_ for song_ in content.songs if song_.title == song_title), None)
         if player_song:
             player_song.pdf = self.pdf_file
@@ -151,7 +189,7 @@ class MidiPlayerUpdatePdfAgent(MidiPlayerUpdateAgentModel):
             # TODO create components of Song
             content.songs.append(
                 player_song := Song(
-                    title=self.run_settings.notation.title,
+                    title=self.run_settings.notationfile.title,
                     instrumentgroup=self.run_settings.instrumentgroup,
                     display=True,
                     pfd=self.pdf_file,
@@ -164,3 +202,10 @@ class MidiPlayerUpdatePdfAgent(MidiPlayerUpdateAgentModel):
         self._save_midiplayer_content(
             content, self.run_settings.midiplayer.folder, self.run_settings.midiplayer.contentfile
         )
+
+
+if __name__ == "__main__":
+    settings = Settings.get()
+    agent = MidiPlayerUpdateAgentModel(settings)
+    content = agent._get_midiplayer_content(settings.midiplayer.folder, settings.midiplayer.contentfile)
+    agent._update_instrument_info(content)

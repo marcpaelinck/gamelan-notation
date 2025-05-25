@@ -1,5 +1,7 @@
 from enum import StrEnum
 
+from pydantic_core import core_schema
+
 # Names of the environment variables in the .env and .env.test files
 ENV_VAR_CONFIG_PATH = "GAMELAN_NOTATION_CONFIG_PATH"
 ENV_VAR_N2M_SETTINGS_PATH = "GAMELAN_NOTATION_N2M_SETTINGS_PATH"
@@ -11,6 +13,25 @@ class SStrEnum(StrEnum):
 
     def __str__(self):
         return self.value
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        # Create a schema that checks for valid names or values
+        return core_schema.union_schema(
+            [
+                # First, check if the input is a valid enum member
+                core_schema.is_instance_schema(cls),
+                # If not, check if it matches a name or value
+                core_schema.chain_schema(
+                    [
+                        core_schema.literal_schema([m.name for m in cls] + [m.value for m in cls]),
+                        core_schema.no_info_plain_validator_function(
+                            lambda x: cls[x] if x in cls.__members__ else cls(x)
+                        ),
+                    ]
+                ),
+            ]
+        )
 
 
 # Enums containing field names of the configuration data tables in subfolders of the settings folder.
@@ -25,6 +46,7 @@ class PresetsFields(SStrEnum):
     BANK = "bank"
     PRESET = "preset"
     CHANNEL = "channel"
+    MIDIOFFSET = "midioffset"
     PRESET_NAME = "preset_name"
 
 
@@ -112,7 +134,7 @@ class RuleFields(SStrEnum):
 class Yaml(SStrEnum):
     """YAML fieldnames and (enum) values"""
 
-    NOTATIONS = "notations"
+    NOTATIONFILES = "notationfiles"
     NOTATION = "notation"
     DATA = "data"
     DEFAULTS = "defaults"

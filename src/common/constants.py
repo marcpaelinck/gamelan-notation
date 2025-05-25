@@ -2,6 +2,8 @@
 from enum import StrEnum
 from typing import Any
 
+from pydantic_core import core_schema
+
 from src.common.logger import Logging
 
 logger = Logging.get_logger(__name__)
@@ -64,6 +66,25 @@ class NotationEnum(StrEnum):
     def get(cls, value: Any, notfoundval: Any):
         return cls[value] if value in cls else notfoundval
 
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        # Create a schema that checks for valid names or values
+        return core_schema.union_schema(
+            [
+                # First, check if the input is a valid enum member
+                core_schema.is_instance_schema(cls),
+                # If not, check if it matches a name or value
+                core_schema.chain_schema(
+                    [
+                        core_schema.literal_schema([m.name for m in cls] + [m.value for m in cls]),
+                        core_schema.no_info_plain_validator_function(
+                            lambda x: cls[x] if x in cls.__members__ else cls(x)
+                        ),
+                    ]
+                ),
+            ]
+        )
+
 
 # TODO should we create enums dynamically from settings files?
 # See https://stackoverflow.com/questions/47299036/how-can-i-construct-an-enum-enum-from-a-dictionary-of-values
@@ -108,6 +129,13 @@ class InstrumentType(NotationEnum):
     TROMPONG = "TROMPONG"
     GENDERWAYANG = "GENDERWAYANG"
     SULING = "SULING"
+
+
+class GonganType(NotationEnum):
+    REGULAR = "regular"
+    KEBYAR = "kebyar"
+    GINEMAN = "gineman"
+    GENDERAN = "genderan"
 
 
 class RuleType(NotationEnum):

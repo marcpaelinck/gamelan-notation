@@ -31,6 +31,7 @@ from src.common.constants import (
     Stroke,
 )
 from src.common.logger import Logging
+from src.notation2midi.metadata_classes import GonganType
 from src.settings.constants import ENV_VAR_CONFIG_PATH, ENV_VAR_N2M_SETTINGS_PATH, Yaml
 
 logger = Logging.get_logger(__name__)
@@ -132,6 +133,7 @@ DATA = {
             "bank": ([], None),
             "preset": ([], None),
             "channel": ([], None),
+            "midioffset": ([], 0),
             "port": ([], None),
         },
     },
@@ -213,7 +215,9 @@ class InstrumentInfo(BaseModel):
     label: str  # for instrument selector dropdown
     channels: list[int]
     midioffset: int
-    animation: AnimationProfiles
+    bank: int = 0
+    preset: int = 0
+    animation: AnimationProfiles | None
 
 
 class Profile(BaseModel):
@@ -331,6 +335,10 @@ class SettingsFontInfo(BaseModel):
         return os.path.join(self.folder, self.ttf_file)
 
 
+class SettingsNotationInfo(BaseModel):
+    gongantypes_without_kempli: list[GonganType]
+
+
 class SettingsGrammarInfo(BaseModel):
 
     folder: str
@@ -396,7 +404,7 @@ class SettingsPdfConverterInfo(BaseModel):
     omit_octave_diacritics: list[Position]
 
 
-class SettingsNotationInfo(BaseModel):
+class SettingsNotationFilesInfo(BaseModel):
     class NotationPart(BaseModel):
         name: str
         file: str
@@ -461,12 +469,13 @@ class ConfigData(BaseModel):
     instruments: SettingsInstrumentInfo
     midi: SettingsMidiInfo
     font: SettingsFontInfo
+    notation: SettingsNotationInfo
     grammar: SettingsGrammarInfo
     samples: SettingsSampleInfo
     soundfont: SettingsSoundfontInfo
     midiplayer: SettingsMidiPlayerInfo
     pdf_converter: SettingsPdfConverterInfo
-    notations: dict[str, SettingsNotationInfo] = Field(default_factory=dict)
+    notationfiles: dict[str, SettingsNotationFilesInfo] = Field(default_factory=dict)
 
 
 class RunSettings(BaseModel):
@@ -487,8 +496,8 @@ class RunSettings(BaseModel):
         super().__init__(**settings)  # pylint: disable=not-a-mapping
 
     @property
-    def notation(self) -> SettingsNotationInfo:
-        notation = self.configdata.notations[self.notation_id]
+    def notationfile(self) -> SettingsNotationFilesInfo:
+        notation = self.configdata.notationfiles[self.notation_id]
         return notation.model_copy(update={"part": notation.parts[self.part_id]})
 
     @property
@@ -513,31 +522,31 @@ class RunSettings(BaseModel):
 
     @property
     def instrumentgroup(self) -> InstrumentGroup:
-        return self.notation.instrumentgroup
+        return self.notationfile.instrumentgroup
 
     @property
     def fontversion(self) -> NotationFontVersion:
-        return self.notation.fontversion
+        return self.notationfile.fontversion
 
     @property
     def midi_out_file(self) -> str:
-        return self.notation.midi_out_file_pattern.format(title=self.notation.title, part_id=self.part_id)
+        return self.notationfile.midi_out_file_pattern.format(title=self.notationfile.title, part_id=self.part_id)
 
     @property
     def pdf_out_file(self) -> str:
-        return self.notation.pdf_out_file_pattern.format(title=self.notation.title, part_id=self.part_id)
+        return self.notationfile.pdf_out_file_pattern.format(title=self.notationfile.title, part_id=self.part_id)
 
     @property
     def folder_out(self) -> str:
         return (
-            self.notation.folder_out_prod
+            self.notationfile.folder_out_prod
             if self.options.notation_to_midi.is_production_run
-            else self.notation.folder_out_nonprod
+            else self.notationfile.folder_out_nonprod
         )
 
     @property
     def notation_filepath(self) -> str:
-        return os.path.join(self.notation.folder_in, self.notation.parts[self.part_id].file)
+        return os.path.join(self.notationfile.folder_in, self.notationfile.parts[self.part_id].file)
 
     @property
     def midi_out_filepath(self) -> str:
@@ -561,7 +570,7 @@ class RunSettings(BaseModel):
         """Returns the last modification date of the input file"""
         notation_dt = self.notation_datetime
         if notation_dt:
-            return notation_dt.strftime(self.notation.version_fmt).lower()
+            return notation_dt.strftime(self.notationfile.version_fmt).lower()
         return ""
 
     def _post_process(self, subdict: dict[str, Any], run_settings_dict: dict[str, Any] = None, curr_path: list = None):
@@ -669,10 +678,10 @@ class RunSettings(BaseModel):
         """
         notation_id = run_settings_dict[Yaml.NOTATION_ID]
         part_id = run_settings_dict[Yaml.PART_ID]
-        if not data_dict[Yaml.NOTATIONS].get(notation_id, None):
+        if not data_dict[Yaml.NOTATIONFILES].get(notation_id, None):
             logger.error("Invalid composition name: %s", notation_id)
             return False
-        if not data_dict[Yaml.NOTATIONS][Yaml.NOTATION_ID].get(part_id, None):
+        if not data_dict[Yaml.NOTATIONFILES][Yaml.NOTATION_ID].get(part_id, None):
             logger.error("Part %s not found in composition %s", part_id, notation_id)
             return False
         return True
@@ -694,11 +703,13 @@ class RunSettings(BaseModel):
         config_filepath = os.getenv(ENV_VAR_CONFIG_PATH)
         settings_data_dict = self._read_settings(config_filepath)
         # update each notation entry with the default settings
-        for key, notation_entry in settings_data_dict[Yaml.NOTATIONS].items():
+        for key, notation_entry in settings_data_dict[Yaml.NOTATIONFILES].items():
             if key == Yaml.DEFAULTS:
                 continue
-            settings_data_dict[Yaml.NOTATIONS][key] = settings_data_dict[Yaml.NOTATIONS][Yaml.DEFAULTS] | notation_entry
-        del settings_data_dict[Yaml.NOTATIONS][Yaml.DEFAULTS]
+            settings_data_dict[Yaml.NOTATIONFILES][key] = (
+                settings_data_dict[Yaml.NOTATIONFILES][Yaml.DEFAULTS] | notation_entry
+            )
+        del settings_data_dict[Yaml.NOTATIONFILES][Yaml.DEFAULTS]
         settings_data_dict = self._post_process(settings_data_dict)
 
         settings_filepath = os.getenv(ENV_VAR_N2M_SETTINGS_PATH)
