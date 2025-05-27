@@ -186,11 +186,12 @@ class ExecutionCreatorAgent(Agent):
         # because then the dynamics and tempo will be taken from whatever gongan precedes the current one.
         # It might be good discipline to always explicitly set dynamics and tempo for gongans that have a label. The application
         # might give a warning if they are missing and suggest to add them.
+        # TODO suppressed because it gives unexpected results
         if haslabel:
             # Gongan has one or more Label metadata items: explicitly set the current tempo for each beat by copying it
             # from its predecessor. This will ensure that a goto to any of these beats will pick up the correct tempo.
             for beat in gongan.beats:
-                if beat.prev:
+                if beat.prev and beat.prev.gongan_id == gongan.id:
                     if (
                         not self.execution.dynamics(beat) or not self.execution.dynamics(beat).value_dict
                     ) and self.execution.dynamics(beat.prev):

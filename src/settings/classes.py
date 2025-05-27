@@ -32,7 +32,12 @@ from src.common.constants import (
 )
 from src.common.logger import Logging
 from src.notation2midi.metadata_classes import GonganType
-from src.settings.constants import ENV_VAR_CONFIG_PATH, ENV_VAR_N2M_SETTINGS_PATH, Yaml
+from src.settings.constants import (
+    ENV_VAR_CONFIG_PATH,
+    ENV_VAR_N2M_SETTINGS_PATH,
+    ENV_VAR_NOTATIONS_PATH,
+    Yaml,
+)
 
 logger = Logging.get_logger(__name__)
 
@@ -701,7 +706,10 @@ class RunSettings(BaseModel):
             RunSettings: settings object
         """
         config_filepath = os.getenv(ENV_VAR_CONFIG_PATH)
+        notations_filepath = os.getenv(ENV_VAR_NOTATIONS_PATH)
         settings_data_dict = self._read_settings(config_filepath)
+        notations_data_dict = self._read_settings(notations_filepath)
+        settings_data_dict |= notations_data_dict
         # update each notation entry with the default settings
         for key, notation_entry in settings_data_dict[Yaml.NOTATIONFILES].items():
             if key == Yaml.DEFAULTS:

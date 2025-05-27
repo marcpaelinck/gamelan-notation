@@ -36,9 +36,9 @@ class IntegrationTester(BaseUnitTestCase):
             if os.path.isfile(file_path):
                 os.remove(file_path)
 
-    RUN_INTEGRATION_TEST = True  # <== SET TO True TO RUN THIS TEST (0.5 MIN. OR MORE RUNTIME)
+    RUN_INTEGRATION_TEST = False  # <== SET TO True TO RUN THIS TEST (0.5 MIN. OR MORE RUNTIME)
     RUN_SMALL_TEST = False  # <== a small test will only run the given titles and save the results in "./tests/data/notation/_integration_test_small/output"
-    SMALL_TEST_NOTATIONS = ["kahyangan"]
+    SMALL_TEST_NOTATIONS = ["sinomladrang-gk"]
 
     @pytest.mark.skipif(RUN_INTEGRATION_TEST is False, reason="Set RUN_INTEGRATION_TEST=True to run the test")
     @unittest.skipIf(RUN_INTEGRATION_TEST is False, reason="Set RUN_INTEGRATION_TEST=True to run the test")

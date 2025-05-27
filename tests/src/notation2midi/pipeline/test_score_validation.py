@@ -2,7 +2,7 @@
 
 from src.common.constants import DEFAULT, Position
 from src.notation2midi.execution import Score
-from src.notation2midi.score_validation import ScoreValidationAgent
+from src.notation2midi.pipeline.score_validation import ScoreValidationAgent
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
 from tests.src.utils_for_tests import PositionNote, create_gongan

@@ -21,7 +21,7 @@ from src.settings.settings_validation import SettingsValidationAgent
 logger = Logging.get_logger(__name__)
 
 PIPE = [
-    # SettingsValidationAgent,
+    SettingsValidationAgent,
     NotationParserAgent,
     ScoreCreatorAgent,
     ScoreValidationAgent,
@@ -71,7 +71,6 @@ def run_multiple_pipelines(run_settings: RunSettings):
 def main():
     logger.open_logging("NOTATION2MIDI")
     run_settings = Settings.get()
-    SettingsValidationAgent(run_settings).run()
     if not run_settings.options.notation_to_midi.is_production_run or askyesno(
         "Warning", "Running production version. Continue?"
     ):

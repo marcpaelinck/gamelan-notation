@@ -90,6 +90,7 @@ class ScoreValidationAgent(Agent):
                 ignored.append(f"BEAT {beat.full_id} skipped due to override")
                 continue
             # Check if the length of all measures in a beat are equal.
+            self.curr_line_nr = list(beat.measures.values())[0].passes[DEFAULT].line
             unequal_lengths = {
                 position: measure.passes[DEFAULT].notes
                 for position, measure in beat.measures.items()
@@ -131,7 +132,7 @@ class ScoreValidationAgent(Agent):
                 }
                 if unequal_lengths:
                     invalids.append(
-                        {"BEAT " + beat.full_id: beat.duration}
+                        {f"BEAT {beat.full_id} line {self.curr_line_nr}": {beat.duration}}
                         | {pos: sum(note.total_duration for note in notes) for pos, notes in unequal_lengths.items()},
                     )
         return invalids, corrected, ignored
@@ -350,31 +351,57 @@ class ScoreValidationAgent(Agent):
             for element in list:
                 loglevel(f"    {str(element)}")
 
-        def log_results(title: str, corrected: list[Any], ignored: list[Any], remaining: list[Any]) -> None:
-            self.loginfo(f"{title}: corrected {len(corrected)}, ignored {len(ignored)}, remaining: {len(remaining)}")
+        def log_results(
+            title_ok: str, title_error: str, corrected: list[Any], ignored: list[Any], remaining: list[Any]
+        ) -> None:
+            error = len(remaining) > 0
+            warning = len(corrected) + len(ignored) > 0
+            message = (
+                title_ok
+                if not error and not warning
+                else f"{title_error}: corrected {len(corrected)}, ignored {len(ignored)}, remaining: {len(remaining)}"
+            )
+            if error:
+                self.logerror(message)
+            elif warning:
+                self.logwarning(message)
+            else:
+                self.loginfo(message)
             if detailed_logging:
                 if corrected:
-                    self.loginfo(f"corrected:{corrected}")
+                    self.logwarning(f"corrected:{corrected}")
                 if ignored:
-                    log_list(self.logger.info, "ignored:", ignored)
+                    log_list(self.logger.warning, "ignored:", ignored)
             if remaining:
-                log_list(self.logger.warning, "remaining invalids:", remaining)
+                log_list(self.logger.error, "remaining invalids:", remaining)
 
-        log_results("INCORRECT BEAT LENGTHS", corrected_beat_lengths, ignored_beat_lengths, remaining_bad_beat_lengths)
         log_results(
+            "ALL BEAT LENGTHS ARE CORRECT",
+            "INCORRECT BEAT LENGTHS",
+            corrected_beat_lengths,
+            ignored_beat_lengths,
+            remaining_bad_beat_lengths,
+        )
+        log_results(
+            "ALL MEASURES HAVE CORRECT LENGTH",
             "BEATS WITH UNEQUAL MEASURE LENGTHS",
             corrected_measure_lengths,
             ignored_measure_lengths,
             remaining_bad_measure_lengths,
         )
         log_results(
+            "ALL NOTES ARE WITHIN THE INSTRUMENT RANGE",
             "BEATS WITH NOTES OUT OF INSTRUMENT RANGE",
             corrected_note_out_of_range,
             ignored_note_out_of_range,
             remaining_note_out_of_range,
         )
         log_results(
-            "INCORRECT KEMPYUNG", corrected_invalid_kempyung, ignored_invalid_kempyung, remaining_incorrect_kempyung
+            "ALL KEMPYUNG PARTS ARE CORRECT",
+            "INCORRECT KEMPYUNG",
+            corrected_invalid_kempyung,
+            ignored_invalid_kempyung,
+            remaining_incorrect_kempyung,
         )
 
         return None

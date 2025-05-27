@@ -255,6 +255,15 @@ class Execution:
             # only increment the pass counter on the first iteration.
             if (not iteration_counter or iteration_counter == 1) and self.goto(next_beat):
                 self.goto(next_beat).incr_counter()
+            # If the next beat is in a new gongan and is not the first beat of the gongan,
+            #  update the pass counter of the preceding beats in the gongan. This could otherwise
+            # cause confusion e.g. when setting tempo at the beginning of the gongan for a specific pass.
+            if beat.gongan_id != next_beat.gongan_id and next_beat.id > 1:
+                prev_beat = next_beat.prev
+                while prev_beat and prev_beat.gongan_id == next_beat.gongan_id:
+                    self.goto(prev_beat).counter = self.goto(next_beat).counter
+                    prev_beat = prev_beat.prev
+
         return next_beat
 
     def get_tempo(self, beat: Beat, curr_tempo: BPM):

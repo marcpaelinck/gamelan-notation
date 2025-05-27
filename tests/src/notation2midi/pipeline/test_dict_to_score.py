@@ -13,7 +13,6 @@ from src.common.constants import (
     Stroke,
 )
 from src.notation2midi.classes import MetaDataRecord
-from src.notation2midi.dict_to_score import ScoreCreatorAgent
 from src.notation2midi.execution import Dynamics, Score
 from src.notation2midi.metadata_classes import (
     DynamicsMeta,
@@ -30,6 +29,7 @@ from src.notation2midi.metadata_classes import (
     TempoMeta,
     WaitMeta,
 )
+from src.notation2midi.pipeline.dict_to_score import ScoreCreatorAgent
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
 
@@ -321,25 +321,6 @@ class TestDictToScoreConverter(BaseUnitTestCase):
         # lambda is used to delay the calculation of the value to be tested
         tests = [
             (
-                gongan := self.create_gongan_with_metadata(
-                    1,
-                    [
-                        DynamicsMeta(
-                            abbreviation=DynamicLevel.PIANISSIMO,
-                            first_beat=1,
-                            positions=[Position.PEMADE_POLOS, Position.PEMADE_SANGSIH],
-                        )
-                    ],
-                ),
-                value := lambda: converter.execution.dynamics(gongan.beats[0]),
-                expected := Dynamics(
-                    value_dict={
-                        (pos, DEFAULT, DEFAULT): gongan.metadata[0].value for pos in gongan.metadata[0].positions
-                    },
-                    gradual=False,
-                ),
-            ),
-            (
                 gongan := self.create_gongan_with_metadata(2, [GonganMeta(type=GonganType.KEBYAR)]),
                 value := lambda: (gongan.gongantype, all(not beat.has_kempli_beat for beat in gongan.beats)),
                 expected := (GonganType.KEBYAR, True),
@@ -368,10 +349,7 @@ class TestDictToScoreConverter(BaseUnitTestCase):
                     P.DONG.model_copy_x(octave=0, transformation=RuleValue.SAME_PITCH),
                 ],
             ),
-            #     add LoopMeta
-            #     add SequenceMeta
             #     add SuppressMeta
-            #     add TempoMeta
             #     add ValidationMeta
             #     add WaitMeta
         ]

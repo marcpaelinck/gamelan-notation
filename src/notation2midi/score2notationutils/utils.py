@@ -95,6 +95,9 @@ def to_aggregated_tags(positions: list[Position]) -> list[str]:
     pemade = {Position.PEMADE_POLOS.lower(), Position.PEMADE_SANGSIH.lower()}
     kantilan = {Position.KANTILAN_POLOS.lower(), Position.KANTILAN_SANGSIH.lower()}
     gangsa = {"pemade", "kantilan"}
+    reyong13 = {Position.REYONG_1.lower(), Position.REYONG_2.lower()}
+    reyong24 = {Position.REYONG_3.lower(), Position.REYONG_4.lower()}
+    reyong = {"reyong1+3", "reyong2+4"}
     # Aggregate pemade and kantilan if both appear in the position list.
     if pemade.issubset(tags):
         tags = tags.difference(pemade).union({"pemade"})
@@ -102,6 +105,13 @@ def to_aggregated_tags(positions: list[Position]) -> list[str]:
         tags = tags.difference(kantilan).union({"kantilan"})
     if gangsa.issubset(tags):
         tags = tags.difference(gangsa).union({"gangsa"})
+    if reyong13.issubset(tags):
+        tags = tags.difference(reyong13).union({"reyong1+3"})
+    if reyong24.issubset(tags):
+        tags = tags.difference(reyong24).union({"reyong2+4"})
+    if reyong.issubset(tags):
+        tags = tags.difference(reyong).union({"reyong"})
+
     return tags
 
 

@@ -8,7 +8,7 @@
                                 {"part": "entire piece", "file": "Bapang Selisir (gong kebyar)_full_GAMELAN1.mid", "loop": false, "markers": {}}
                         ]
                 }, 
-                {"title": "Cendrawasih", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Cendrawasih_full_GAMELAN1.pdf", "notation_version": "11-may-2025", "parts": [
+                {"title": "Cendrawasih", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Cendrawasih_full_GAMELAN1.pdf", "notation_version": "26-may-2025", "parts": [
                                 {"part": "entire piece", "file": "Cendrawasih_full_GAMELAN1.mid", "loop": false, "markers": {
                                                 "pepeson": 0.06827279634396652, 
                                                 "pengawak": 0.29231541226767066, 
@@ -102,18 +102,11 @@
                                 {"part": "entire piece (loop)", "file": "Merah Putih_full_GAMELAN1.mid", "loop": true, "markers": {}}
                         ]
                 }, 
-                {"title": "Palawakya", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Palawakya_full_GAMELAN1.pdf", "notation_version": "22-may-2025", "parts": [
+                {"title": "Palawakya", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Palawakya_full_GAMELAN1.pdf", "notation_version": "26-may-2025", "parts": [
                                 {"part": "entire piece", "file": "Palawakya_full_GAMELAN1.mid", "loop": false, "markers": {
-                                                "kawitan": 0.020535427034205175
-                                        }
-                                }
-                        ]
-                }, 
-                {"title": "Palawakya (under development)", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Palawakya_full_GAMELAN1.pdf", "notation_version": "23-may-2025", "parts": [
-                                {"part": "entire piece", "file": "Palawakya_full_GAMELAN1.mid", "loop": false, "markers": {
-                                                "kawitan": 0.0049267070218712945, 
-                                                "melody 1": 0.0885969723743115, 
-                                                "trompong": 0.9080348022584025
+                                                "pepeson": 0.0038383884909759486, 
+                                                "pengawak": 0.7074482649204558, 
+                                                "pekaad": 0.792212677429508
                                         }
                                 }
                         ]
@@ -228,7 +221,7 @@
                         {"group": "KANTILAN", "label": "KANTILAN", "channels": [6, 7], "midioffset": 50, "bank": 0, "preset": 6, "animation": "SP_GANGSA"}, 
                         {"group": "KANTILAN_POLOS", "label": "- KANTILAN_POLOS", "channels": [6], "midioffset": 50, "bank": 0, "preset": 6, "animation": "SP_GANGSA"}, 
                         {"group": "KANTILAN_SANGSIH", "label": "- KANTILAN_SANGSIH", "channels": [7], "midioffset": 50, "bank": 0, "preset": 6, "animation": "SP_GANGSA"}, 
-                        {"group": "TROMPONG", "label": "TROMPONG", "channels": [8], "midioffset": 50, "bank": 0, "preset": 10, "animation": "SP_TROMPONG"}
+                        {"group": "TROMPONG", "label": "TROMPONG", "channels": [8], "midioffset": 80, "bank": 0, "preset": 10, "animation": "SP_TROMPONG"}
                 ]
         }, 
         "animation": {
