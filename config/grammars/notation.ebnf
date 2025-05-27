@@ -42,7 +42,7 @@ metadata_line = {"metadata"} tab "{" ~ @:metadata "}" {tab} eol ;
 
 comment_line = (("comment" tab) | ({tab} "#")) ~ @:comment {tab} eol ;
 
-stave_line = position:tag beats:{beat_with_tab} {tab} eol ;
+stave_line = position:tag measures:{measure_with_tab} {tab} eol ;
 
 (* position tag may be anything except 'comment' or 'metadata' and can be optionally followed 
    by a pass indicator: a colon followed by digits or by two groups of digits separated by a hyphen.
@@ -55,7 +55,7 @@ stave_line = position:tag beats:{beat_with_tab} {tab} eol ;
 tag = tag:/(?!comment|metadata\t)\w[\w\ \/\+]*/ pass:(/:(\d+-?\d*)/ | `-1`);
 
 (* `note` is defined in font5.metadata *)
-beat_with_tab = tab @:{note};
+measure_with_tab = tab @:{note};
 
 #include :: "./gamelan-notation/config/grammars/metadata.ebnf"
 #include :: "./gamelan-notation/config/grammars/font5.ebnf"

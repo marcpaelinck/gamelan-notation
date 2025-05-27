@@ -344,7 +344,7 @@ class ScoreValidationAgent(Agent):
                 ignored_invalid_kempyung.extend(ignored)
 
         self.curr_gongan_id = None
-        self.curr_beat_id = None
+        self.curr_measure_id = None
 
         def log_list(loglevel: callable, title: str, list: list[Any]) -> None:
             loglevel(title)

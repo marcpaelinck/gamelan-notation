@@ -95,7 +95,7 @@ class Agent:
 
     run_settings = None
     curr_gongan_id: int = None
-    curr_beat_id: int = None
+    curr_measure_id: int = None
     curr_position: Position = None
     curr_line_nr: int = None
     log_msgs: dict[int, str] = {logging.ERROR: [], logging.WARNING: []}
@@ -158,7 +158,7 @@ class Agent:
         """
         extra_spaces = " " * (7 - len(logging.getLevelName(level)))
         prefix = (
-            f"{extra_spaces}{self._fmt(self.curr_gongan_id,2)}-{self._fmt(self.curr_beat_id,2)} "
+            f"{extra_spaces}{self._fmt(self.curr_gongan_id,2)}-{self._fmt(self.curr_measure_id,2)} "
             f"|{self._fmt(self.curr_line_nr,4)}| "
         )
         msg = prefix + msg
@@ -188,7 +188,7 @@ class Agent:
             raise AttributeError("base object has no attribute `gongans`")
         for gongan in obj.gongans:
             self.curr_gongan_id = gongan.id
-            self.curr_beat_id = None
+            self.curr_measure_id = None
             yield gongan
 
     def beat_iterator(self, obj: Gongan) -> Generator[Beat, None, None]:
@@ -196,7 +196,7 @@ class Agent:
         if not hasattr(obj, "beats"):
             raise AttributeError("base object has no attribute `beats`")
         for beat in obj.beats:
-            self.curr_beat_id = beat.id
+            self.curr_measure_id = beat.id
             yield beat
 
     def pass_iterator(self, obj: Measure) -> Generator[Measure.Pass, None, None]:

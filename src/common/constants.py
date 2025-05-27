@@ -37,6 +37,7 @@ class ParserTag(StrEnum):
     POSITION = "position"
     BEATS = "beats"
     STAVES = "staves"
+    MEASURES = "measures"
     PASS = "pass"
     ALL_POSITIONS = "all_positions"
     LINE = "line"

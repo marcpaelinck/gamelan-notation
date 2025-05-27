@@ -122,32 +122,32 @@ def create_beat(beat_id: int = 1, content: dict[PositionNote, list[Note]] = None
 def get_notation():
     p = PositionNote(Position.PEMADE_POLOS)
     notation = {
-        -1: {ParserTag.METADATA: [], ParserTag.COMMENTS: [], ParserTag.BEATS: {}},
+        -1: {ParserTag.METADATA: [], ParserTag.COMMENTS: [], ParserTag.STAVES: []},
         1: {
             ParserTag.METADATA: [MetaDataRecord(metatype="KEMPLI", status=MetaDataSwitch.OFF, line=1)],
             ParserTag.COMMENTS: ["Gongan 1"],
-            ParserTag.BEATS: {
-                1: {
-                    (Position.PEMADE_POLOS): Measure(
-                        position=Position.PEMADE_POLOS,
-                        all_positions=Position.PEMADE_POLOS,
-                        passes={-1: Measure.Pass(seq=-1, line=3, notes=[p.DING, p.DUNG, p.DENG, p.DANG])},
-                    ),
+            ParserTag.STAVES: [
+                {
+                    ParserTag.PASS: -1,
+                    ParserTag.MEASURES: [[p.DING, p.DUNG, p.DENG, p.DANG]],
+                    ParserTag.POSITION: Position.PEMADE_POLOS,
+                    ParserTag.ALL_POSITIONS: [Position.PEMADE_POLOS, Position.KANTILAN_POLOS],
+                    ParserTag.LINE: 3,
                 },
-            },
+            ],
         },
         2: {
             ParserTag.METADATA: [],
             ParserTag.COMMENTS: ["Gongan 2"],
-            ParserTag.BEATS: {
-                1: {
-                    (Position.PEMADE_POLOS): Measure(
-                        position=Position.PEMADE_POLOS,
-                        all_positions=Position.PEMADE_POLOS,
-                        passes={-1: Measure.Pass(seq=-1, line=3, notes=[p.DING, p.DONG, p.DENG, p.DUNG])},
-                    ),
+            ParserTag.STAVES: [
+                {
+                    ParserTag.PASS: -1,
+                    ParserTag.MEASURES: [[p.DING, p.DONG, p.DENG, p.DUNG]],
+                    ParserTag.POSITION: Position.PEMADE_POLOS,
+                    ParserTag.ALL_POSITIONS: [Position.PEMADE_POLOS, Position.KANTILAN_POLOS],
+                    ParserTag.LINE: 3,
                 },
-            },
+            ],
         },
     }
     return notation
@@ -183,8 +183,42 @@ class TestDictToScoreConverter(BaseUnitTestCase):
 
     def test_get_all_positions(self):
         notation_dict = {
-            1: {ParserTag.BEATS: {1: {Position.UGAL: [], Position.CALUNG: []}}},
-            2: {ParserTag.BEATS: {1: {Position.JEGOGAN: [], Position.GONGS: []}}},
+            1: {
+                ParserTag.STAVES: [
+                    {
+                        ParserTag.PASS: -1,
+                        ParserTag.MEASURES: [],
+                        ParserTag.POSITION: Position.UGAL,
+                        ParserTag.ALL_POSITIONS: [Position.UGAL],
+                        ParserTag.LINE: 1,
+                    },
+                    {
+                        ParserTag.PASS: -1,
+                        ParserTag.MEASURES: [],
+                        ParserTag.POSITION: Position.CALUNG,
+                        ParserTag.ALL_POSITIONS: [Position.CALUNG],
+                        ParserTag.LINE: 1,
+                    },
+                ]
+            },
+            2: {
+                ParserTag.STAVES: [
+                    {
+                        ParserTag.PASS: -1,
+                        ParserTag.MEASURES: [],
+                        ParserTag.POSITION: Position.JEGOGAN,
+                        ParserTag.ALL_POSITIONS: [Position.JEGOGAN],
+                        ParserTag.LINE: 1,
+                    },
+                    {
+                        ParserTag.PASS: -1,
+                        ParserTag.MEASURES: [],
+                        ParserTag.POSITION: Position.GONGS,
+                        ParserTag.ALL_POSITIONS: [Position.GONGS],
+                        ParserTag.LINE: 1,
+                    },
+                ]
+            },
         }
         converter = self.get_converter_gk()
         positions = converter._get_all_positions(notation_dict)
@@ -207,6 +241,23 @@ class TestDictToScoreConverter(BaseUnitTestCase):
                 converter._move_beat_to_start.assert_called_once()
             else:
                 converter._move_beat_to_start.assert_not_called()
+
+    def test_staves_to_beat(self):
+        converter = self.get_converter_gk()
+        converter.run()
+        notation = get_notation()
+        for gongan_id, gongan in notation.items():
+            for stave_seq, stave in enumerate(gongan[ParserTag.STAVES]):
+                for measure_seq, measure in enumerate(stave[ParserTag.MEASURES]):
+                    with self.subTest(gongan=gongan_id, stave=stave_seq, measure=measure_seq):
+                        self.assertEqual(
+                            converter.score.gongans[gongan_id - 1]
+                            .beats[measure_seq]
+                            .measures[Position.PEMADE_POLOS]
+                            .passes[-1]
+                            .notes,
+                            measure,
+                        )
 
     def test_move_beat_to_start2(self):
         # Original score:

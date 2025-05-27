@@ -8,48 +8,38 @@ Tatsu: https://tatsu.readthedocs.io/en/stable/intro.html
 The following structure is returned:
 
 <score> :: { <gongan id>: int -> <gongan> }
-<gongan> :: { METADATA -> [ <metadata>: MetaData ], COMMENTS -> [ <comment>: str ], BEATS -> <beats> }
-<beats> :: { <beat id>: int -> <beat> }
-<beat> :: { <position>: Position -> <measure>: Measure(position: Position, passes: <passes>) }
-<passes> :: { <pass id>: int ->  <note list>: Measure.Pass(pass_seq: int, line: int, notes: <notes>) }
-<notes>: [ <note>: Note ]
+<gongan> :: { METADATA -> [ <metadata> :: MetaData ], COMMENTS -> [ <comment> :: str ], STAVES -> <staves> }
+<staves> :: [ <stave> ]
+<stave> :: {PASS -> int, MEASURES -> <notes>, POSITION -> <position>, ALL_POSITIONS -> <positions>, LINE -> int }
+<positions> :: [ <position> ]
+<position> :: Position
+<notes> :: [ <note> ]
+<note> :: Note
 
 <gongan id>, <beat id> and <pass id> are cast into a NamedIntID class, which is an int subclass that
 formats the values with a label: LABEL(<value>). This makes the structure more legible and makes debugging easier.
 
-METADATA, COMMENTS, BEATS: ParserTag
+METADATA, COMMENTS, STAVES, MEASURES, ALL_POSITIONS, PASS: ParserTag
 
 Example:
 
 {   SCORE LEVEL(-1):    {   METADATA:   [MetaData(...), ...],
                             COMMENTS:   ['comment 1', ...],
-                            BEATS:      [],  # no beats on score level
-                        }
+                            STAVES:      [],  # no beats on score level
+                        },
     GONGAN(1):          {   METADATA:   [MetaData(...), ...],
                             COMMENTS:   ['comment 2', ...],
-                            BEATS       {
-                                BEAT(1):    {
-                                    UGAL: Measure(
-                                            position=KANTILAN_SANGSIH,
-                                            passes={
-                                                DEFAULT PASS(-1):
-                                                    Measure.Pass(
-                                                        pass_seq=DEFAULT PASS(-1),
-                                                        line=9,
-                                                        notes=[Note(...), Note(...), ...]
-                                                    ),
-                                                PASS(1):
-                                                    ...
-                                            }
-                                    },
-                                    CALUNG: { ...
-                                    },
+                            STAVES:      [
+                                            {
+                                                PASS: DEFAULT_PASS(-1),
+                                                MEASURES, [[Note(...), Note(...), ...], [Note(...), Note(...), ...], ....],
+                                                POSITION: REYONG_1,
+                                                ALL_POSITIONS: [REYONG_1, REYONG_2, REYONG_3, REYONG_4],
+                                                LINE: 12,
+                                            },
+                                            ...
+                                        ],
                                         ...
-                                },
-                                BEAT(2):    {...
-                                },
-                            }
-                            ...
                         },
     GONGAN(2):          { ...
                         },
@@ -70,14 +60,8 @@ from tatsu.exceptions import FailedParse
 from tatsu.model import ParseModel
 from tatsu.util import asjson
 
-from src.common.classes import InstrumentTag, Measure, Notation, Note
-from src.common.constants import (
-    NotationDict,
-    NotationFontVersion,
-    ParserTag,
-    Position,
-    RuleType,
-)
+from src.common.classes import InstrumentTag, Notation, Note
+from src.common.constants import NotationDict, NotationFontVersion, ParserTag, Position
 from src.notation2midi.classes import Agent, MetaDataRecord, NamedIntID, NoteRecord
 from src.settings.classes import RunSettings
 from src.settings.constants import FontFields, NoteFields
@@ -93,10 +77,6 @@ from src.settings.settings import Settings
 class GonganID(NamedIntID):
     name = "GONGAN"
     default = "SCORE LEVEL"
-
-
-class BeatID(NamedIntID):
-    name = "BEAT"
 
 
 class PassID(NamedIntID):
@@ -279,9 +259,6 @@ class NotationParserAgent(Agent):
             tag = stave[ParserTag.POSITION][ParserTag.TAG]
             stave[ParserTag.ALL_POSITIONS] = InstrumentTag.get_positions(tag)
             pass_sequences = split_passes(stave[ParserTag.POSITION][ParserTag.PASS])
-            # PassID(int(stave[ParserTag.POSITION][ParserTag.PASS]))
-            # stave[ParserTag.POSITION] = positions[0]
-            # stave[ParserTag.PASS] = pass_sequence
             for position in stave[ParserTag.ALL_POSITIONS]:
                 for pass_seq in pass_sequences:
                     # Create a copy of the stave for each additional position
@@ -318,54 +295,6 @@ class NotationParserAgent(Agent):
             return list(range(int(rangestr[0]), int(rangestr[2]) + 1))
         else:
             return list(json.loads(f"[{rangestr}]"))
-
-    def _staves_to_beats(self, staves: list[dict]) -> list[dict]:
-        """Transposes the stave -> beats structure of a gongan to beat -> staves
-            target structure is: gongan[beat_id][position][passes]
-        Args:
-            staves (list[dict]): staves belonging to the same gongan.
-
-        Returns:
-            list[dict]: the transposed structure
-        """
-        if not staves:
-            return {}
-        # There can be multiple staves with the same `position` value. In that case they will have different `pass`
-        # values. The staves first need to be grouped by position. We create a position dict for this, will also
-        # be used below to retrieve the correct ALL_POSITIONS value when a new Measure is created.
-        position_dict = {stave[ParserTag.POSITION]: stave[ParserTag.ALL_POSITIONS] for stave in staves}
-        staves_by_pos_pass = {
-            position: {int(stave[ParserTag.PASS]): stave for stave in staves if stave[ParserTag.POSITION] == position}
-            for position in position_dict.keys()
-        }
-        # count only non-empty beats
-        beat_count = max(len([beat for beat in stave[ParserTag.BEATS] if beat]) for stave in staves)
-        beats = {
-            BeatID(beat_seq + 1): {
-                position: Measure(
-                    position=position,
-                    all_positions=position_dict[position],  # positions,
-                    passes={
-                        stave[ParserTag.PASS]: (
-                            Measure.Pass(
-                                seq=stave[ParserTag.PASS],
-                                line=stave[ParserTag.LINE],
-                                notes=(
-                                    stave[ParserTag.BEATS][beat_seq] if beat_seq < len(stave[ParserTag.BEATS]) else []
-                                ),
-                                ruletype=RuleType.UNISONO if len(stave[ParserTag.ALL_POSITIONS]) > 1 else None,
-                                autogenerated=False,
-                            )
-                        )
-                        for pass_, stave in position_staves.items()
-                    },
-                )
-                for position, position_staves in staves_by_pos_pass.items()
-            }
-            for beat_seq in range(beat_count)
-        }
-
-        return beats
 
     @override
     def _main(self, notation: str | None = None) -> NotationDict:
@@ -462,10 +391,13 @@ class NotationParserAgent(Agent):
         }
 
         # Flatten the metadata items, create MetaData and Note objects
+
         for self.curr_gongan_id, gongan in notation_dict.items():
             # Remove empty staves so that they can be recognized as 'missing staves' by the dict to score parser.
             gongan[ParserTag.STAVES] = [
-                stave for stave in gongan.get(ParserTag.STAVES, {}) if any((beat for beat in stave["beats"]))
+                stave
+                for stave in gongan.get(ParserTag.STAVES, {})
+                if any((measure for measure in stave[ParserTag.MEASURES]))
             ]
 
             # Parse the metadata into MetaDataRecord objects
@@ -491,17 +423,19 @@ class NotationParserAgent(Agent):
 
             for stave in gongan[ParserTag.STAVES]:
                 self.curr_line_nr = stave[ParserTag.LINE]
-                del stave[ParserTag.STAVES]  # remove superfluous key
-                # Parse the beats into Note objects
-                parsed_beats = []
-                for self.curr_beat_id, measure in enumerate(stave[ParserTag.BEATS], start=1):
-                    parsed_beats.append(self._parse_measure(measure, stave[ParserTag.POSITION]))
-                stave[ParserTag.BEATS] = parsed_beats
 
-            # Transpose the gongan from stave-oriented to beat-oriented
-            gongan[ParserTag.BEATS] = self._staves_to_beats(gongan[ParserTag.STAVES])
-            del gongan[ParserTag.STAVES]
-        # self._update_grace_notes(notation_dict)
+                # Replace string key values with ParserTag values
+                for key in [ParserTag.LINE, ParserTag.POSITION, ParserTag.MEASURES, ParserTag.PARSEINFO]:
+                    stave[key] = stave.pop(key)
+                # remove superfluous key
+                del stave[ParserTag.STAVES]
+                # Parse and cast the measures into Note objects
+                # TODO: it would be better to only parse the mearsures into character groups, each
+                # representing a single note, and to leave the casting into Notes for the score creator.
+                parsed_measures = []
+                for self.curr_measure_id, measure in enumerate(stave[ParserTag.MEASURES], start=1):
+                    parsed_measures.append(self._parse_measure(measure, stave[ParserTag.POSITION]))
+                stave[ParserTag.MEASURES] = parsed_measures
 
         if self.has_errors:
             self.logerror("Program halted.")
