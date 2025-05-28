@@ -389,12 +389,13 @@ class ScoreCreatorAgent(Agent):
         """
         notes = []  # will contain the Note objects
         for note_rec in noterecord_list:
+            next_note = None
             try:
                 next_note = self._note_from_rec(note_rec, position, all_positions, metadata=metadata)
             except ValueError as e:
                 self.logerror(str(e))
             if not next_note:
-                self.logerror(f"Could not cast {note_rec[NoteFields.SYMBOL]} to {position.value}")
+                self.logerror(f"Could not cast {note_rec.symbol} to {position.value}")
             else:
                 notes.append(next_note)
         try:
@@ -746,9 +747,7 @@ class ScoreCreatorAgent(Agent):
 
         self.loginfo("input file: %s", self.run_settings.notationfile.part.file)
         self._create_score_object_model()
-        if self.has_errors:
-            self.logerror("Program halted.")
-            exit()
+        self.abort_if_errors()
 
         return self.score
 

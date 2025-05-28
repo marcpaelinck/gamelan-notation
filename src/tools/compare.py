@@ -124,6 +124,9 @@ def to_text(path, midifilename):
                 do_write = True
                 match = re.findall(r"'marker', text='b_(\d+-\d+)'", str(msg))
                 if match:
+                    # This is a 'marker' metamessage which contains beat and pass information
+                    # The information will be added to the following messages. The marker
+                    # message itself should not be saved.
                     if match[0] != beat:
                         passes[match[0]] += 1
                     beat = match[0]
@@ -131,6 +134,8 @@ def to_text(path, midifilename):
                 else:
                     match = re.findall(r"'track_name', name='(\w+)'", str(msg))
                     if match:
+                        # Similar to the 'marker' metamessages, this message will not be exported
+                        # but the track information will be added to the following messages.
                         position = match[0]
                         do_write = False
                 clocktime += msg.time
@@ -353,10 +358,13 @@ def compare_directories(
         file1 = os.path.join(dir1, file)
         file2 = os.path.join(dir2, file)
 
+        msg = "Analyzing " + os.path.basename(file1) + "."
         if not filecmp.cmp(file1, file2, shallow=False):
+            msg += " Files are different, performing detailed analysis."
             differences[file] = compare_file_contents(file1, file2)
         else:
             differences[file] = NO_DIFFERENCES
+        LOGGER.info(msg)
 
     return sorted_dict(differences)
 
@@ -399,7 +407,9 @@ def compare_txt_files(
         filepath_new (str): Second folder
     """
     # compare the text files
+    LOGGER.info("Analyzing " + os.path.basename(filepath_old))
     if not filecmp.cmp(filepath_old, filepath_new, shallow=False):
+        LOGGER.info(os.path.basename(filepath_old) + " has differences, analyzing files in detail.")
         differences = compare_file_contents(filepath_old, filepath_new)
     else:
         differences = NO_DIFFERENCES

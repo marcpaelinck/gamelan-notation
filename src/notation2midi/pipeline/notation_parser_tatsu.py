@@ -437,10 +437,7 @@ class NotationParserAgent(Agent):
                     parsed_measures.append(self._parse_measure(measure, stave[ParserTag.POSITION]))
                 stave[ParserTag.MEASURES] = parsed_measures
 
-        if self.has_errors:
-            self.logerror("Program halted.")
-            exit()
-
+        self.abort_if_errors()
         notation = Notation(notation_dict=notation_dict, settings=self.run_settings)
 
         return notation

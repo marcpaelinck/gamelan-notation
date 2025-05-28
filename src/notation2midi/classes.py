@@ -1,6 +1,7 @@
 """BASE CLASS FOR THE CLASSES THAT PERFORM THE NOTATION -> MIDI CONVERSION"""
 
 import logging
+import sys
 from dataclasses import _MISSING_TYPE, MISSING, dataclass, fields
 from enum import StrEnum
 from types import UnionType
@@ -100,10 +101,12 @@ class Agent:
     curr_line_nr: int = None
     log_msgs: dict[int, str] = {logging.ERROR: [], logging.WARNING: []}
     logger = None
+    log_current_pos: bool
 
     def __init__(self, run_settings: RunSettings):
         self.run_settings = run_settings
         self.logger = Logging.get_logger(self.__class__.__name__)
+        self.log_current_pos = True
 
     # pylint: disable=unused-argument,missing-function-docstring
 
@@ -145,7 +148,7 @@ class Agent:
     def _fmt(self, val: int | None, pos: int):
         """Number formatting, used to format logging messages"""
         p = f"{pos:02d}"
-        return f"{val:{p}d}" if val else " " * pos
+        return f"{val:{p}d}" if val and self.log_current_pos else " " * pos
 
     def log(self, msg: str, *args, level: int = logging.ERROR) -> str:
         """Formats the message. and sends it to the console. Stores a copy in the log_msgs dict.
@@ -165,6 +168,15 @@ class Agent:
         self.logger.log(level, msg, *args)
         if level > logging.INFO:
             self.log_msgs[level].append(msg)
+
+    def abort_if_errors(self):
+        """Displays a 'program aborted' message and stops execution."""
+        if self.has_errors:
+            tmp = self.log_current_pos
+            self.log_current_pos = False
+            self.logerror("Program halted.")
+            self.log_current_pos = tmp
+            sys.exit()
 
     def logerror(self, msg: str, *args: Any) -> str:
         """Logs an error"""
