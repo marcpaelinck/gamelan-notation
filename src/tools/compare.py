@@ -43,7 +43,7 @@ HELPINGHAND = "helpinghand"
 # In case of metamessage, TYPE is the metamessage type.
 # For type 'marker' the marker type is used (currently only HELPINGHAND)
 TYPE = "type"
-TYPES = [NOTEON, NOTEOFF, TRACK_NAME, SET_TEMPO, MIDI_PORT, END_OF_TRACK, HELPINGHAND]
+COMPARE_TYPES = [NOTEON, NOTEOFF, TRACK_NAME, SET_TEMPO, MIDI_PORT, END_OF_TRACK, HELPINGHAND]
 NAME = "name"
 CHANNEL = "channel"
 NOTE = "note"
@@ -273,6 +273,7 @@ def find_best_match(
 
 def compare_file_contents(file1: str, file2: str) -> dict[tuple[str], tuple[dict[str, Any]], list[dict[str, Any]]]:
     """Compares two files and returns the differences in a unified diff format.
+    Only the message types given in COMPARE_TYPES will be compared.
     Args:
         file1, file2 (_type_): path to the files
     Returns:
@@ -322,7 +323,7 @@ def compare_file_contents(file1: str, file2: str) -> dict[tuple[str], tuple[dict
             # report[category].append((message1, f2_remain_original[f2_match_range[0] : f2_match_range[1]]))
             report[category].append((message1, []))
     if f2_remain:
-        for msgtype in TYPES:
+        for msgtype in COMPARE_TYPES:
             msglist = [msg for msg in f2_remain if msg[TYPE] == msgtype]
             if msglist:
                 category = NOMATCH_2, msgtype
