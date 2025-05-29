@@ -99,7 +99,6 @@ ID = "id"
 SCORE = "score"
 DIFF = "diff"
 MATCH = "match"
-NOMATCH = "nomatch"
 NOMATCH_1 = "NO MATCH REF"
 NOMATCH_2 = "NO MATCH NEW"
 COUNT = "count"
@@ -324,10 +323,10 @@ def compare_file_contents(file1: str, file2: str) -> dict[tuple[str], tuple[dict
             report[category].append((message1, []))
     if f2_remain:
         for msgtype in COMPARE_TYPES:
-            msglist = [msg for msg in f2_remain if msg[TYPE] == msgtype]
+            msglist = [([], msg) for msg in f2_remain if msg[TYPE] == msgtype]
             if msglist:
                 category = NOMATCH_2, msgtype
-                report[category].append((msglist, []))
+                report[category] = msglist
 
     if not report:
         report = NO_DIFFERENCES
