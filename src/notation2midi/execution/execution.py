@@ -79,8 +79,8 @@ class Tempo(BaseModel):
         self,
         value: int,
         *,
-        passes: list[PassSequence] = [],
-        iterations: list[IterationSequence] = [],
+        passes: list[PassSequence] = None,
+        iterations: list[IterationSequence] = None,
         steps: int = None,
     ) -> None:
         """Updates the value_dict"""
@@ -117,8 +117,8 @@ class Dynamics(BaseModel):
         value: int,
         *,
         positions: list[Position],
-        passes: list[PassSequence] = [],
-        iterations: list[IterationSequence] = [],
+        passes: list[PassSequence] = None,
+        iterations: list[IterationSequence] = None,
         steps: int = None,
     ) -> None:
         """Updates the value_dict"""

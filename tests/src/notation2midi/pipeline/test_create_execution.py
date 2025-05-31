@@ -10,7 +10,7 @@ from src.common.constants import (
     RuleValue,
     Stroke,
 )
-from src.notation2midi.execution import Dynamics, Score
+from src.notation2midi.execution.execution import Dynamics, Score
 from src.notation2midi.metadata_classes import DynamicsMeta, MetaDataBaseModel
 from src.notation2midi.pipeline.create_execution import ExecutionCreatorAgent
 from src.settings.settings import Settings

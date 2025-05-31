@@ -43,7 +43,7 @@ HELPINGHAND = "helpinghand"
 # In case of metamessage, TYPE is the metamessage type.
 # For type 'marker' the marker type is used (currently only HELPINGHAND)
 TYPE = "type"
-COMPARE_TYPES = [NOTEON, NOTEOFF, TRACK_NAME, SET_TEMPO, MIDI_PORT, END_OF_TRACK, HELPINGHAND]
+COMPARE_TYPES = [NOTEON, NOTEOFF, TRACK_NAME, SET_TEMPO, END_OF_TRACK, HELPINGHAND]  # MIDI_PORT] <-- to be added
 NAME = "name"
 CHANNEL = "channel"
 NOTE = "note"

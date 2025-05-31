@@ -1,0 +1,2 @@
+The Execution class processes metadata directives for flow (GOTO, SEQUENCE, LOOP) and interpretation (TEMPO, DYNAMICS), and generates note patterns such as tremolo, grace notes and norot.
+These elaborations together with the contents of the Score object contain all the information needed to generate MIDI messages.

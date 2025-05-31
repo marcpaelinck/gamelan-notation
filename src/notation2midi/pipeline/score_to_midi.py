@@ -11,9 +11,9 @@ from mido import MidiFile
 from src.common.classes import Beat, Preset
 from src.common.constants import DEFAULT, Pitch, Position
 from src.notation2midi.classes import Agent
-from src.notation2midi.execution import Execution
+from src.notation2midi.execution.execution import Execution
 from src.notation2midi.metadata_classes import PartMeta
-from src.notation2midi.midi_track import MidiTrackX, TimeUnit
+from src.notation2midi.midi.midi_track import MidiTrackX, TimeUnit
 from src.settings.classes import PartForm, RunSettings
 
 

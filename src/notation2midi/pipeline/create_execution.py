@@ -3,7 +3,7 @@ from typing import override
 from src.common.classes import Beat, Gongan, Score
 from src.common.constants import DEFAULT
 from src.notation2midi.classes import Agent
-from src.notation2midi.execution import Execution, Loop
+from src.notation2midi.execution.execution import Execution, Loop
 from src.notation2midi.metadata_classes import (
     AutoKempyungMeta,
     DynamicsMeta,

@@ -6,7 +6,7 @@ from mido import Message
 
 from src.common.classes import Preset
 from src.common.constants import Position
-from src.notation2midi.midi_track import MidiTrackX
+from src.notation2midi.midi.midi_track import MidiTrackX
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
 

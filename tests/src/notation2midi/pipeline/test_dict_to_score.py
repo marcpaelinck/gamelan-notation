@@ -13,7 +13,7 @@ from src.common.constants import (
     Stroke,
 )
 from src.notation2midi.classes import MetaDataRecord
-from src.notation2midi.execution import Dynamics, Score
+from src.notation2midi.execution.execution import Dynamics, Score
 from src.notation2midi.metadata_classes import (
     DynamicsMeta,
     GonganMeta,

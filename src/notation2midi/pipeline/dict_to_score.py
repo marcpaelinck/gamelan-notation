@@ -34,6 +34,10 @@ from src.common.constants import (
     VelocityInt,
 )
 from src.notation2midi.classes import Agent, MetaDataRecord, NamedIntID, NoteRecord
+from src.notation2midi.execution.note_patterns import (
+    generate_tremolo,
+    update_grace_notes_octaves,
+)
 from src.notation2midi.metadata_classes import (
     AutoKempyungMeta,
     DynamicsMeta,
@@ -55,12 +59,7 @@ from src.notation2midi.metadata_classes import (
     ValidationProperty,
     WaitMeta,
 )
-from src.notation2midi.special_notes_treatment import (
-    generate_tremolo,
-    update_grace_notes_octaves,
-)
 from src.settings.classes import RunSettings
-from src.settings.constants import NoteFields
 
 # pylint incorrectly reports an error when Pydantic fields are pre-assigned with the Field function
 # pylint disable = no - member

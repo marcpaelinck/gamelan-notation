@@ -17,7 +17,7 @@ from src.common.constants import (
     Stroke,
 )
 from src.common.logger import Logging
-from src.notation2midi.execution import Score
+from src.notation2midi.execution.execution import Score
 from src.notation2midi.metadata_classes import (
     FrequencyType,
     GonganType,

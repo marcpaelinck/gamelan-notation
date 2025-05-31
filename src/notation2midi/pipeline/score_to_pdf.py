@@ -17,7 +17,7 @@ from reportlab.platypus import Paragraph, TableStyle
 from src.common.classes import Gongan, Note
 from src.common.constants import Modifier, Position
 from src.notation2midi.classes import Agent
-from src.notation2midi.execution import Score
+from src.notation2midi.execution.execution import Score
 from src.notation2midi.metadata_classes import (
     DynamicsMeta,
     GoToMeta,
@@ -145,6 +145,9 @@ class PDFGeneratorAgent(Agent):
             return min(a[2][0], b[2][0]) - max(a[1][0], b[1][0]) >= 0
 
         cell_alignment = "RIGHT" if parastyle.alignment in [TA_RIGHT, "RIGHT"] else "LEFT"
+        # if metalist[0].metatype == "DYNAMICS":
+        #     metalist = sorted(metalist, key=lambda m: "".join(m.positions) + str(m.first_beat) + "".join(m.passes))
+        # TODO separate function to group by same position + passes and merge string values if possible.
         for meta in metalist:
             value = formatter(meta, **kwargs)
             # if meta.metatype == "TEMPO":
@@ -199,10 +202,10 @@ class PDFGeneratorAgent(Agent):
             if span_range[0] != span_range[1]:
                 span = ("SPAN", (span_range[0], len(content.data)), (span_range[1], len(content.data)))
 
-            # Add dots if necessary for metadata spanning more than one column
-            if col_range[0] != col_range[1]:
-                freespace = span_width(*col_range) - textwidth - delta
-                if freespace > 0:
+            # Add dots if necessary for metadata spanning more than one beat
+            if span_range[0] != span_range[1]:
+                freespace = span_width(*span_range) - textwidth - delta
+                if getattr(meta, "beat_count", None) and meta.beat_count > 1 and freespace > 0:
                     nrdots = int(freespace / stringWidth("." * 10, parastyle.fontName, parastyle.fontSize) * 10)
                     dots = "." * nrdots
                 else:
@@ -223,9 +226,8 @@ class PDFGeneratorAgent(Agent):
             # Check if the current row can be merged with the previous row by determining if their contents overlap.
             # Only merge if the previous row contains metadata.
             if content.data and content.rowtypes[-1] is RowType.METADATA:
-                prevrow_spans = [
-                    cmd for cmd in content.style if cmd[0] == "SPAN" and cmd[1][1] == len(content.data) - 1
-                ]
+                all_styles = cellspans + content.style
+                prevrow_spans = [cmd for cmd in all_styles if cmd[0] == "SPAN" and cmd[1][1] == len(content.data) - 1]
                 content_overlap = any(cell1 and cell2 for cell1, cell2 in zip(row, content.data[-1]))
                 overlapping_spans = span and any(
                     span_overlap(s1, s2) for s1, s2 in itertools.product([span], prevrow_spans)

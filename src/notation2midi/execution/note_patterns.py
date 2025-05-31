@@ -1,8 +1,15 @@
+from dataclasses import dataclass
 from typing import Callable
 
 from src.common.classes import Instrument, Note
 from src.common.constants import Stroke
 from src.settings.classes import SettingsMidiInfo
+
+
+@dataclass
+class NotePattern:
+    note: Note
+    pattern: list[Note]
 
 
 def notes_to_notation(measure: list[Note]) -> str:
