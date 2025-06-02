@@ -139,7 +139,10 @@ class MidiGeneratorAgent(Agent):
                 self.logerror(f"No measure found for {position} in beat {beat.full_id}. Program halted.")
                 sys.exit()
             for note in pass_.notes:
-                track.add_note(note)
+                # Retrieve the pattern represented by the note, if any (returns a list containing the note if no pattern)
+                for pattnote in note.pattern:
+                    if pattnote:
+                        track.add_note(pattnote)
             beat = self.exec_mgr.next_beat_in_flow(beat)
             # TODO GOTO modify, also for freq type
 

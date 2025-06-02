@@ -24,10 +24,8 @@ from src.settings.classes import RunSettings
 
 
 class ExecutionCreatorAgent(Agent):
-    """Parser that converts notation documents into a hierarchical dict structure. It uses the
-    Tatsu library in combination with ebnf grammar files.
-    The parser has no 'knowledge' about the instruments and idiom of the music. It only checks the
-    basic structure of the notation as described in the grammar files and reports any syntax error.
+    """Creates an Execution object that contains the interpretation of the score.
+    See Execution class for more information.
     """
 
     AGENT_TYPE = Agent.AgentType.EXECUTIONCREATOR

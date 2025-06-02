@@ -18,12 +18,12 @@ from typing import Any, Type
 
 from src.common.logger import Logging
 from src.notation2midi.classes import Agent
-from src.notation2midi.pipeline.dict_to_score import ScoreCreatorAgent
 from src.notation2midi.pipeline.export_to_midiplayer import (
     MidiPlayerUpdatePartAgent,
     MidiPlayerUpdatePdfAgent,
 )
 from src.notation2midi.pipeline.notation_parser_tatsu import NotationParserAgent
+from src.notation2midi.pipeline.notation_to_score import ScoreCreatorAgent
 from src.notation2midi.pipeline.score_to_midi import MidiGeneratorAgent
 from src.notation2midi.pipeline.score_to_pdf import PDFGeneratorAgent
 from src.notation2midi.pipeline.score_validation import ScoreValidationAgent

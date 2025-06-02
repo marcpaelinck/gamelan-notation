@@ -249,6 +249,7 @@ class ScoreValidationAgent(Agent):
                                             duration=sangsihnote.duration,
                                             rest_after=sangsihnote.rest_after,
                                         )
+                                        correct_sangsih.pattern.append(correct_sangsih.model_copy())
                                         if not (correct_sangsih):
                                             self.logerror(
                                                 f"Trying to create an incorrect combination {sangsih} {correct_note} OCT{correct_octave} {sangsihnote.stroke} duration={sangsihnote.duration} rest_after{sangsihnote.rest_after} while correcting kempyung."

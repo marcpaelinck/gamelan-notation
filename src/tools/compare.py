@@ -22,6 +22,8 @@ from src.common.logger import Logging
 
 LOGGER = Logging.get_logger(__name__)
 
+# Do not write these messages to the text file:
+SKIP_IF_CONTAINS = ["control_change", "program_change", "midi_port"]
 # ID values at beginning of line
 ABSTIME_ID = "abstime"  # Not used
 BEAT_ID = "beat_id"
@@ -74,8 +76,16 @@ OPTIONAL = "optional"  # attributes should preferably match.
 # and OPTIONAL values in descending order. The best_matches algorithm will try to find an exact match with a higher
 # priority for attributes with a higher preference.
 ATTRIBUTES_DICT = {
-    NOTEON: {ALWAYS: [TYPE, POSITION_ID, CHANNEL], CLOSEST: [ABSTIME], OPTIONAL: [TIME, NOTE, VELOCITY]},
-    NOTEOFF: {ALWAYS: [TYPE, POSITION_ID, CHANNEL], CLOSEST: [ABSTIME], OPTIONAL: [TIME, NOTE, VELOCITY]},
+    NOTEON: {
+        ALWAYS: [TYPE, POSITION_ID, CHANNEL, BEAT_ID, PASS_ID],
+        CLOSEST: [ABSTIME],
+        OPTIONAL: [TIME, NOTE, VELOCITY],
+    },
+    NOTEOFF: {
+        ALWAYS: [TYPE, POSITION_ID, CHANNEL, BEAT_ID, PASS_ID],
+        CLOSEST: [ABSTIME],
+        OPTIONAL: [TIME, NOTE, VELOCITY],
+    },
     SET_TEMPO: {ALWAYS: [TYPE, POSITION_ID], CLOSEST: [TEMPO, ABSTIME], OPTIONAL: [TIME]},
     MIDI_PORT: {ALWAYS: [TYPE, POSITION_ID, PORT, TIME], CLOSEST: [], OPTIONAL: []},
     END_OF_TRACK: {ALWAYS: [TYPE, POSITION_ID, TIME], CLOSEST: [], OPTIONAL: [TIME]},
@@ -120,6 +130,8 @@ def to_text(path, midifilename):
             passes: dict[str, int] = defaultdict(lambda: 0)
             csvfile.write("Track {}: {}".format(i, track.name) + "\n")
             for msg in track:
+                if any(t in str(msg) for t in SKIP_IF_CONTAINS):
+                    continue
                 do_write = True
                 match = re.findall(r"'marker', text='b_(\d+-\d+)'", str(msg))
                 if match:
@@ -280,16 +292,8 @@ def compare_file_contents(file1: str, file2: str) -> dict[tuple[str], tuple[dict
     """
     with open(file1, "r", encoding="utf-8") as f1, open(file2, "r", encoding="utf-8") as f2:
         # Remove additional marker messages that are added to the test output for easier location of differences
-        f1_lines = [
-            line
-            for line in f1.readlines()
-            if not "MetaMessage('marker', text='b_" in line and any(t in line for t in MESSAGETYPES)
-        ]
-        f2_lines = [
-            line
-            for line in f2.readlines()
-            if not "MetaMessage('marker', text='b_" in line and any(t in line for t in MESSAGETYPES)
-        ]
+        f1_lines = [line for line in f1.readlines() if any(t in line for t in MESSAGETYPES)]
+        f2_lines = [line for line in f2.readlines() if any(t in line for t in MESSAGETYPES)]
     matcher = difflib.SequenceMatcher(
         None,
         [l.split(" -- ")[1] for l in f1_lines],

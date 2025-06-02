@@ -29,7 +29,7 @@ from src.notation2midi.metadata_classes import (
     TempoMeta,
     WaitMeta,
 )
-from src.notation2midi.pipeline.dict_to_score import ScoreCreatorAgent
+from src.notation2midi.pipeline.notation_to_score import ScoreCreatorAgent
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
 

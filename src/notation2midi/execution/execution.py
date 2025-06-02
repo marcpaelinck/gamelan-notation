@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field
 
-from src.common.classes import Beat, Score
+from src.common.classes import Beat, Note, Score
 from src.common.constants import BPM, DEFAULT, IterationSequence, PassSequence, Position
 
 # Next statement is to avoid pylint bug when assigning Field to attributes in pydantic class definition
@@ -152,6 +152,7 @@ class Execution:
     loop_dict: dict[GonganID, Loop] = field(default_factory=dict)
     dynamics_dict: dict[BeatID, Dynamics] = field(default_factory=dict)
     tempo_dict: dict[BeatID, Tempo] = field(default_factory=dict)
+    pattern_dict: dict[str, list[Note]] = field(default_factory=dict)
 
     def create_default_goto(self, beat: Beat) -> GoTo:
         self.goto_dict[beat.full_id] = GoTo(from_beat=beat, to_beat_dict={DEFAULT: beat.next})
