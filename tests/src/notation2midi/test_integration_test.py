@@ -47,7 +47,7 @@ class IntegrationTester(BaseUnitTestCase):
     def test_integrationtest(self):
         """
         NOTE: this test typically takes between 30 seconds and a minute to run if the test succeeds. However the
-        duration can grow to several minutes if it fails.
+        duration can increase to several minutes if the test fails.
         1. Runs the src.notation2midi.main.main() function for all notations marked RUN_ALL in
            tests/config/config.yaml and saves the MIDI files in the `data/notation/_integration_test/output` folder.
         2. Creates a text version of each MIDI file in the same folder.

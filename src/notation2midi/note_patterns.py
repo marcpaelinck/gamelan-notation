@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 from typing import Callable
 
-from src.common.classes import Beat, Instrument
+from src.common.classes import Beat
 from src.common.constants import Position, Stroke
 from src.common.notes import Note
+from src.common.rules import Instrument
 from src.settings.classes import RunSettings, SettingsMidiInfo
 
 

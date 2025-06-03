@@ -8,7 +8,7 @@ from dataclasses import _MISSING_TYPE, asdict
 from statistics import mode
 from typing import override
 
-from src.common.classes import Beat, Gongan, Instrument, Measure, Notation, Score
+from src.common.classes import Beat, Gongan, Measure, Notation, Score
 from src.common.constants import (
     DEFAULT,
     NotationDict,
@@ -20,6 +20,7 @@ from src.common.constants import (
     VelocityInt,
 )
 from src.common.notes import Note, NoteRecord, Tone
+from src.common.rules import Instrument
 from src.notation2midi.classes import Agent, MetaDataRecord, NamedIntID
 from src.notation2midi.metadata_classes import MetaData, MetaDataAdapter, Scope
 from src.notation2midi.note_patterns import NotePattern, NotePatternGenerator
