@@ -4,8 +4,9 @@ from typing import override
 
 import pandas as pd
 
-from src.common.classes import Gongan, Note
+from src.common.classes import Gongan
 from src.common.constants import ParserTag, Position
+from src.common.notes import Note
 from src.notation2midi.classes import Agent
 from src.notation2midi.execution.execution import Score
 from src.notation2midi.score2notationutils.utils import aggregate_positions, is_silent

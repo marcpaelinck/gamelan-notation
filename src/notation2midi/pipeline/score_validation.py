@@ -2,7 +2,7 @@ import math
 from itertools import product
 from typing import Any, override
 
-from src.common.classes import Beat, Gongan, Note, Score
+from src.common.classes import Beat, Gongan, Score
 from src.common.constants import (
     DEFAULT,
     BeatId,
@@ -14,6 +14,7 @@ from src.common.constants import (
     Position,
     Stroke,
 )
+from src.common.notes import Note
 from src.notation2midi.classes import Agent
 from src.notation2midi.metadata_classes import GonganType, ValidationProperty
 from src.settings.classes import RunSettings

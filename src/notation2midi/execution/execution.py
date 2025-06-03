@@ -3,8 +3,9 @@ from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field
 
-from src.common.classes import Beat, Note, Score
+from src.common.classes import Beat, Score
 from src.common.constants import BPM, DEFAULT, IterationSequence, PassSequence, Position
+from src.common.notes import Note
 
 # Next statement is to avoid pylint bug when assigning Field to attributes in pydantic class definition
 # see bugreport https://github.com/pylint-dev/pylint/issues/10087

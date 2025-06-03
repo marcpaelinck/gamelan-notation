@@ -1,5 +1,6 @@
-from src.common.classes import Gongan, Note
+from src.common.classes import Gongan
 from src.common.constants import Pitch, Position, RuleValue, Stroke
+from src.common.notes import Note
 from src.notation2midi.metadata_classes import MetaData
 
 

@@ -9,9 +9,10 @@ from typing import override
 from mido import Message, MetaMessage, MidiTrack, bpm2tempo
 from mido.messages import BaseMessage
 
-from src.common.classes import Note, Preset
+from src.common.classes import Preset
 from src.common.constants import InstrumentType, Pitch, Position, Stroke
 from src.common.logger import Logging
+from src.common.notes import Note
 from src.settings.classes import RunSettings
 
 logger = Logging.get_logger(__name__)
@@ -73,7 +74,7 @@ class MidiTrackX(MidiTrack):
             midivalue (int): the midi value for the message
             note (Note): Note object containing velocity information
         """
-        self.set_bank_and_preset()
+        # self.set_bank_and_preset()
         self.append(
             Message(
                 type="note_on",
@@ -92,7 +93,7 @@ class MidiTrackX(MidiTrack):
             midivalue (_type_): the midi value for the message
         """
         # Do not append the note_off message to the track yet. It might be followed by extension 'notes'.
-        self.set_bank_and_preset()
+        # self.set_bank_and_preset()
         self.last_noteoff_msgs.append(
             Message(
                 type="note_off",
@@ -116,7 +117,7 @@ class MidiTrackX(MidiTrack):
         self.current_velocity = run_settings.midi.dynamics[run_settings.midi.default_dynamics]
         self.msg_id = 0
         # unique id for helpinghand messages
-        self.set_channel()
+        self.set_bank_and_preset()
         self.update_tempo(60)  # set default tempo, needed for initial silence
         self.last_helpinghand_msg = self._append_helpinghand_message()
         self.first_helpinghand_msg = self.last_helpinghand_msg

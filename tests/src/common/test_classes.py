@@ -1,8 +1,9 @@
 from itertools import product
 from typing import Any
 
-from src.common.classes import Instrument, Note, Tone
+from src.common.classes import Instrument
 from src.common.constants import InstrumentGroup, Pitch, Position, RuleValue, Stroke
+from src.common.notes import Note, Tone
 from src.settings.constants import NoteFields
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase

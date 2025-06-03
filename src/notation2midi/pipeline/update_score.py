@@ -3,7 +3,7 @@ from typing import override
 
 from pydantic import ValidationError
 
-from src.common.classes import Beat, Gongan, Measure, Note, Score
+from src.common.classes import Beat, Gongan, Measure, Score
 from src.common.constants import (
     DEFAULT,
     Duration,
@@ -13,6 +13,7 @@ from src.common.constants import (
     RuleValue,
     Stroke,
 )
+from src.common.notes import Note
 from src.notation2midi.classes import Agent
 from src.notation2midi.metadata_classes import (
     AutoKempyungMeta,

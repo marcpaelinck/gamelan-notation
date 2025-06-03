@@ -4,8 +4,9 @@ import html
 import re
 from functools import partial
 
-from src.common.classes import Gongan, Instrument, Note
+from src.common.classes import Gongan, Instrument
 from src.common.constants import Pitch, Position, Stroke
+from src.common.notes import Note
 from src.notation2midi.metadata_classes import GonganType, MetaDataSwitch
 from src.notation2midi.pipeline.notation_parser_tatsu import PassID
 

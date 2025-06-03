@@ -1,7 +1,7 @@
 # pylint: disable=missing-module-docstring, missing-class-docstring, missing-function-docstring, line-too-long, invalid-name
 
-from src.common.classes import Note
 from src.common.constants import DEFAULT, Position
+from src.common.notes import Note
 from src.notation2midi.pipeline.score_to_notation import ScoreToNotationAgent
 from src.settings.constants import InstrumentFields
 from src.settings.settings import Settings

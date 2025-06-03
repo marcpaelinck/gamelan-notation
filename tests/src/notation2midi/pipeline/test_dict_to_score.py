@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
 
-from src.common.classes import Beat, Gongan, Measure, Notation, Note
+from src.common.classes import Beat, Gongan, Measure, Notation
 from src.common.constants import (
     DEFAULT,
     DynamicLevel,
@@ -12,6 +12,7 @@ from src.common.constants import (
     RuleValue,
     Stroke,
 )
+from src.common.notes import Note
 from src.notation2midi.classes import MetaDataRecord
 from src.notation2midi.execution.execution import Dynamics, Score
 from src.notation2midi.metadata_classes import (

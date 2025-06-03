@@ -60,9 +60,10 @@ from tatsu.exceptions import FailedParse
 from tatsu.model import ParseModel
 from tatsu.util import asjson
 
-from src.common.classes import InstrumentTag, Notation, Note
+from src.common.classes import InstrumentTag, Notation
 from src.common.constants import NotationDict, NotationFontVersion, ParserTag, Position
-from src.notation2midi.classes import Agent, MetaDataRecord, NamedIntID, NoteRecord
+from src.common.notes import Note, NoteRecord
+from src.notation2midi.classes import Agent, MetaDataRecord, NamedIntID
 from src.settings.classes import RunSettings
 from src.settings.constants import FontFields, NoteFields
 from src.settings.font_to_valid_notes import get_note_records

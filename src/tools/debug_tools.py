@@ -10,9 +10,10 @@ import pandas as pd
 import regex
 from scipy.io import wavfile
 
-from src.common.classes import InstrumentTag, Note
+from src.common.classes import InstrumentTag
 from src.common.constants import InstrumentType, Modifier, Pitch, Position, Stroke
 from src.common.logger import Logging
+from src.common.notes import Note
 
 logger = Logging.get_logger(__name__)
 

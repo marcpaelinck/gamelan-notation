@@ -15,6 +15,7 @@ from src.common.constants import (
     AnimationStroke,
     Duration,
     DynamicLevel,
+    GonganType,
     InstrumentGroup,
     InstrumentType,
     MIDIvalue,
@@ -31,7 +32,6 @@ from src.common.constants import (
     Stroke,
 )
 from src.common.logger import Logging
-from src.notation2midi.metadata_classes import GonganType
 from src.settings.constants import (
     ENV_VAR_CONFIG_PATH,
     ENV_VAR_N2M_SETTINGS_PATH,

@@ -232,31 +232,8 @@ class Agent:
         return len(self.log_msgs[logging.WARNING]) > 0
 
 
-# The classes below are record-like structures that are used to store the intermediate
-# results of the notation parser step. These records will be parsed to the final object model in
-# the dict_to_score step. This enables the parsing logic and the object model logic to be
-# applied separately, which makes the code easier to understand and to maintain.
-
 # pylint: disable=missing-class-docstring
 # pylint: disable=too-many-instance-attributes
-
-
-@dataclass(frozen=True, kw_only=False)
-class NoteRecord:
-    symbol: str
-    pitch: Pitch
-    octave: int
-    stroke: Stroke
-    duration: float
-    rest_after: float
-    modifier: Modifier | None = Modifier.NONE
-
-    @classmethod
-    def fieldnames(cls) -> list[str]:
-        """Returns the field names"""
-        return [f.name for f in fields(cls)]
-
-
 @dataclass(init=False, kw_only=True)
 class MetaDataRecord:
     """This class casts string values to the given types.

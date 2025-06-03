@@ -24,12 +24,13 @@ logger = Logging.get_logger(__name__)
 
 PIPE = [
     SettingsValidationAgent,
-    NotationParserAgent,
-    ScoreCreatorAgent,
-    NotePatternGeneratorAgent,
-    ScoreUpdateAgent,
+    NotationParserAgent,  # -> NotationRecords
+    ScoreCreatorAgent,  # -> Score with Notes: pitch, octave, stroke, duration, rest
+    # RulesApplicationAgent, # TODO To be added. Casts notes to instruments. -> IScore with INotes: Note + position, rule and transformation
+    NotePatternGeneratorAgent,  # -> PattScore: Score with PatttNotes: INote + pattern + UUID
+    ScoreUpdateAgent,  # Fills empty and shorthand beats + applies metadata. -> CompleteScore
     ScoreValidationAgent,
-    ExecutionCreatorAgent,
+    ExecutionCreatorAgent,  # Creates Execution for the ExtScore -> Execution
     MidiGeneratorAgent,
     PDFGeneratorAgent,
     MidiPlayerUpdatePartAgent,
