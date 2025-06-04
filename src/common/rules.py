@@ -36,16 +36,41 @@ from src.settings.settings import RunSettingsListener
 
 class Instrument(BaseModel, RunSettingsListener):
 
-    _POS_TO_INSTR: ClassVar[dict[Position, "Instrument"]]
-    _RULES: ClassVar[dict[Position, dict[RuleType, list[Rule]]]]
-    _MAX_RANGE: list[Tone]
-
     group: InstrumentGroup
     positions: list[Position]
     instrumenttype: InstrumentType
     position_ranges: dict[Position, list[Tone]] = Field(default_factory=lambda: defaultdict(list))
     extended_position_ranges: dict[Position, list[Tone]] = Field(default_factory=lambda: defaultdict(list))
     instrument_range: list[Tone] = Field(default_factory=list)
+
+    def merge(self, other: "Instrument") -> "Instrument":
+        """
+        Merge the data of another Instrument object into this one.
+
+        If the other Instrument is None, returns self unchanged. Otherwise, combines the positions, position ranges,
+        extended position ranges, and instrument ranges of both Instrument objects. The instrument_range is merged,
+        duplicates are removed, and the result is sorted by the 'key' attribute.
+
+        Args:
+            other (Instrument): Another Instrument object to merge with this one.
+
+        Returns:
+            Instrument: The updated Instrument object with merged data.
+        """
+        if not other:
+            return self
+        # Merge the data of two Instrument objects.
+        self.positions += other.positions  # pylint: disable=no-member; -> incorrect warning
+        self.position_ranges = self.position_ranges | other.position_ranges
+        self.extended_position_ranges = self.extended_position_ranges | other.extended_position_ranges
+        self.instrument_range = sorted(list(set(self.instrument_range + other.instrument_range)), key=lambda x: x.key)
+        return self
+
+
+class RulesEngine(BaseModel, RunSettingsListener):
+    _POS_TO_INSTR: ClassVar[dict[Position, Instrument]]
+    _RULES: ClassVar[dict[Position, dict[RuleType, list[Rule]]]]
+    _MAX_RANGE: list[Tone]
 
     @classmethod
     @override
@@ -54,7 +79,7 @@ class Instrument(BaseModel, RunSettingsListener):
         cls._init_rules(run_settings)
 
     @classmethod
-    def get_instrument(cls, position: Position) -> "Instrument":
+    def get_instrument(cls, position: Position) -> Instrument:
         return cls._POS_TO_INSTR[position]
 
     @classmethod
@@ -73,7 +98,7 @@ class Instrument(BaseModel, RunSettingsListener):
         return sorted(
             [
                 t
-                for t in Instrument.get_range(position, extended=extended_range)
+                for t in RulesEngine.get_range(position, extended=extended_range)
                 if t.pitch == tone.pitch and (t.octave == tone.octave or not match_octave)
             ],
             key=lambda x: abs(x.octave - tone.octave - 0.1),
@@ -128,31 +153,21 @@ class Instrument(BaseModel, RunSettingsListener):
         kempyung_pitch = cls.get_kempyung_pitch(position, tone.pitch, inverse)
         # List possible octaves, looking at octaves equal or highter than the reference tone first
         try_octaves = [tone.octave, tone.octave + 1, tone.octave + 2, tone.octave - 1, tone.octave - 2]
-        oct_interval = Instrument.interval(Tone(Pitch.DONG, 0), Tone(Pitch.DONG, 1))
+        oct_interval = RulesEngine.interval(Tone(pitch=Pitch.DONG, octave=0), Tone(pitch=Pitch.DONG, octave=1))
         inv = -1 if inverse else 1
         k_list = [
-            Tone(kempyung_pitch, octave)
+            Tone(pitch=kempyung_pitch, octave=octave)
             for octave in try_octaves
-            if Tone(kempyung_pitch, octave) in Instrument.get_range(position, extended_range)
+            if Tone(pitch=kempyung_pitch, octave=octave) in RulesEngine.get_range(position, extended_range)
             and (
                 not exact_octave_match
-                or 0 < inv * Instrument.interval(tone, Tone(kempyung_pitch, octave)) < oct_interval
+                or 0 < inv * RulesEngine.interval(tone, Tone(pitch=kempyung_pitch, octave=octave)) < oct_interval
             )
         ]
         # Put kempyung tones that are higher than the reference tone first.
         return sorted(
-            k_list, key=lambda x: [0, 1, 2, -1, -2].index(math.floor(Instrument.interval(tone, x) / oct_interval))
+            k_list, key=lambda x: [0, 1, 2, -1, -2].index(math.floor(RulesEngine.interval(tone, x) / oct_interval))
         )
-
-    def merge(self, other: "Instrument") -> "Instrument":
-        if not other:
-            return self
-        # Merge the data of two Instrument objects.
-        self.positions += other.positions  # pylint: disable=no-member; -> incorrect warning
-        self.position_ranges = self.position_ranges | other.position_ranges
-        self.extended_position_ranges = self.extended_position_ranges | other.extended_position_ranges
-        self.instrument_range = sorted(list(set(self.instrument_range + other.instrument_range)), key=lambda x: x.key)
-        return self
 
     @classmethod
     def get_shared_notation_rule(cls, position: Position, unisono_positions: set[Position]) -> Rule:
@@ -201,7 +216,7 @@ class Instrument(BaseModel, RunSettingsListener):
         if not tone.is_melodic():
             return tone
 
-        rule = Instrument.get_shared_notation_rule(position, set(all_positions))
+        rule = RulesEngine.get_shared_notation_rule(position, set(all_positions))
         if not rule:
             raise ValueError(f"No unisono rule found for {position}.")
 
@@ -237,7 +252,7 @@ class Instrument(BaseModel, RunSettingsListener):
                             tone, position, extended_range=False, match_octave=True
                         ) or cls.get_tones_within_range(tone, position, extended_range=False, match_octave=False)
             if tones:
-                return Tone(pitch=tones[0].pitch, octave=tones[0].octave, rule=rule, transformation=action)
+                return Tone(pitch=tones[0].pitch, octave=tones[0].octave, transformation=action)
 
         return None
 
@@ -280,9 +295,16 @@ class Instrument(BaseModel, RunSettingsListener):
             # instrument position.
             record = row.copy()
             record[POSITIONS] = [position := record[InstrumentFields.POSITION]]
-            record[POSITION_RANGES] = {position: [Tone(*tpl) for tpl in record[InstrumentFields.POSITION_RANGE]]}
+            record[POSITION_RANGES] = {
+                position: [
+                    Tone(**dict(zip(("pitch", "octave"), tpl))) for tpl in record[InstrumentFields.POSITION_RANGE]
+                ]
+            }
             record[EXTENDED_POSITION_RANGES] = {
-                position: [Tone(*tpl) for tpl in record[InstrumentFields.EXTENDED_POSITION_RANGE]]
+                position: [
+                    Tone(**dict(zip(("pitch", "octave"), tpl)))
+                    for tpl in record[InstrumentFields.EXTENDED_POSITION_RANGE]
+                ]
                 or record[POSITION_RANGES][position]
             }
             record[INSTRUMENT_RANGE] = record[EXTENDED_POSITION_RANGES][position]

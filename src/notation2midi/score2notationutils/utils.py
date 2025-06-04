@@ -7,7 +7,7 @@ from functools import partial
 from src.common.classes import Gongan
 from src.common.constants import Pitch, Position, Stroke
 from src.common.notes import Note
-from src.common.rules import Instrument
+from src.common.rules import RulesEngine
 from src.notation2midi.metadata_classes import GonganType, MetaDataSwitch
 from src.notation2midi.pipeline.notation_parser_tatsu import PassID
 
@@ -172,7 +172,7 @@ def equivalent(note1: Note, note2: Note, positions: list[Position], metadata) ->
         bool: True if the notes are equivalent
     """
     if note2.is_melodic():
-        tone2cast = Instrument.cast_to_position(
+        tone2cast = RulesEngine.cast_to_position(
             note2.to_tone(), position=note1.position, all_positions=positions, metadata=metadata
         )
         if not tone2cast:

@@ -1,9 +1,9 @@
 from itertools import product
 from typing import Any
 
-from src.common.classes import Instrument
 from src.common.constants import InstrumentGroup, Pitch, Position, RuleValue, Stroke
 from src.common.notes import Note, Tone
+from src.common.rules import RulesEngine
 from src.settings.constants import NoteFields
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
@@ -152,7 +152,7 @@ class ToneTester(BaseUnitTestCase):
             with self.subTest(tone=tone, position=position):
                 for i, (extended_range, match_octave) in enumerate(product([True, False], [True, False])):
                     self.assertEqual(
-                        Instrument.get_tones_within_range(tone, position, extended_range, match_octave), expected[i]
+                        RulesEngine.get_tones_within_range(tone, position, extended_range, match_octave), expected[i]
                     )
 
 
@@ -180,7 +180,7 @@ class RuleTester(BaseUnitTestCase):
             for i, (extended_range, exact_match) in enumerate(product([True, False], [True, False])):
                 with self.subTest(tone=tone, position=position, extended_range=extended_range, exact_match=exact_match):
                     self.assertEqual(
-                        Instrument.get_kempyung_tones_within_range(tone, position, extended_range, exact_match),
+                        RulesEngine.get_kempyung_tones_within_range(tone, position, extended_range, exact_match),
                         expected[i],
                     )
 
@@ -238,7 +238,7 @@ class RuleTester(BaseUnitTestCase):
     def test_shared_notation_rule(self):
         for position, all_positions, expected in self.data_shared_notation_rule:
             with self.subTest(position=position, all_positions=all_positions):
-                self.assertEqual(Instrument.get_shared_notation_rule(position, all_positions), expected)
+                self.assertEqual(RulesEngine.get_shared_notation_rule(position, all_positions), expected)
 
     P_POLOS = Position.PEMADE_POLOS
     P_SANGSIH = Position.PEMADE_SANGSIH
@@ -307,7 +307,7 @@ class RuleTester(BaseUnitTestCase):
     def test_apply_unisono_rule(self):
         for tone, position, all_positions, expected in self.data_shared_notation:
             with self.subTest(tone=tone, position=position, all_positions=all_positions):
-                cast_tone = Instrument.cast_to_position(
+                cast_tone = RulesEngine.cast_to_position(
                     tone=tone, position=position, all_positions=all_positions, metadata=[]
                 )
                 self.assertEqual(cast_tone, expected)

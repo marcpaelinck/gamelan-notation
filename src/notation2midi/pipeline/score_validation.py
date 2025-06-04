@@ -95,17 +95,19 @@ class ScoreValidationAgent(Agent):
             unequal_lengths = {
                 position: measure.passes[DEFAULT].notes
                 for position, measure in beat.measures.items()
-                if sum(note.total_duration for note in measure.passes[DEFAULT].notes) != beat.duration
+                if measure.duration != beat.duration
             }
             if unequal_lengths:
                 if autocorrect:
+                    # Autocorrection is performed using beat.duration as a reference,
+                    #  which is the mode (= most occurring duration) of all measure durations.
                     corrected_positions = dict()
                     for position, notes in unequal_lengths.items():
                         filler = Note.get_whole_rest_note(position, Stroke.EXTENSION)
-                        uncorrected_position = {position: sum(note.total_duration for note in notes)}
+                        uncorrected_position = {position: sum(note.pattern_duration for note in notes)}
                         # Empty measures will always be corrected.
                         if position in self.POSITIONS_AUTOCORRECT_UNEQUAL_MEASURES or not notes:
-                            measure_duration = sum(note.total_duration for note in notes)
+                            measure_duration = sum(note.pattern_duration for note in notes)
                             # Add rests of duration 1 to match the integer part of the beat's duration
                             if int(beat.duration - measure_duration) >= 1:
                                 fill_content = [filler.model_copy() for count in range(int(beat.duration - len(notes)))]
@@ -115,12 +117,12 @@ class ScoreValidationAgent(Agent):
                                     notes.extend(fill_content)
                                 else:
                                     notes.extend(fill_content)
-                                measure_duration = sum(note.total_duration for note in notes)
+                                measure_duration = sum(note.pattern_duration for note in notes)
                             # Add an extra rest for any fractional part of the beat's duration
                             if measure_duration < beat.duration:
                                 attr = "duration" if filler.stroke == Stroke.EXTENSION else "rest_after"
                                 notes.append(filler.model_copy(update={attr: beat.duration - measure_duration}))
-                            if sum(note.total_duration for note in notes) == beat.duration:
+                            if sum(note.pattern_duration for note in notes) == beat.duration:
                                 # store the original (incorrect) value
                                 corrected_positions |= uncorrected_position
                     if corrected_positions:
@@ -129,12 +131,12 @@ class ScoreValidationAgent(Agent):
                 unequal_lengths = {
                     position: measure.passes[DEFAULT].notes
                     for position, measure in beat.measures.items()
-                    if sum(note.total_duration for note in measure.passes[DEFAULT].notes) != beat.duration
+                    if sum(note.pattern_duration for note in measure.passes[DEFAULT].notes) != beat.duration
                 }
                 if unequal_lengths:
                     invalids.append(
                         {f"BEAT {beat.full_id} line {self.curr_line_nr}": {beat.duration}}
-                        | {pos: sum(note.total_duration for note in notes) for pos, notes in unequal_lengths.items()},
+                        | {pos: sum(note.pattern_duration for note in notes) for pos, notes in unequal_lengths.items()},
                     )
         return invalids, corrected, ignored
 
@@ -250,7 +252,8 @@ class ScoreValidationAgent(Agent):
                                             duration=sangsihnote.duration,
                                             rest_after=sangsihnote.rest_after,
                                         )
-                                        correct_sangsih.pattern.append(correct_sangsih.model_copy())
+                                        correct_sangsih.pattern.clear()
+                                        correct_sangsih.pattern.append(correct_sangsih.to_pattern_note())
                                         if not (correct_sangsih):
                                             self.logerror(
                                                 f"Trying to create an incorrect combination {sangsih} {correct_note} OCT{correct_octave} {sangsihnote.stroke} duration={sangsihnote.duration} rest_after{sangsihnote.rest_after} while correcting kempyung."

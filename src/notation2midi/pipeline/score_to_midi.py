@@ -10,6 +10,7 @@ from mido import MidiFile
 
 from src.common.classes import Beat, Preset
 from src.common.constants import DEFAULT, Pitch, Position
+from src.common.notes import Note
 from src.notation2midi.classes import Agent
 from src.notation2midi.execution.execution import Execution
 from src.notation2midi.metadata_classes import PartMeta
@@ -93,7 +94,6 @@ class MidiGeneratorAgent(Agent):
         beat = Beat(
             id=0,
             gongan_id=0,
-            duration=0,
             next=self.score.gongans[0].beats[0],
         )
         # Select the first beat.
@@ -140,9 +140,13 @@ class MidiGeneratorAgent(Agent):
                 sys.exit()
             for note in pass_.notes:
                 # Retrieve the pattern represented by the note, if any (returns a list containing the note if no pattern)
+                if not note.pattern:
+                    print(f"ERROR {note.pitch} {note.position} has no pattern")
                 for pattnote in note.pattern:
                     if pattnote:
                         track.add_note(pattnote)
+                    else:
+                        print(f"ERROR pattern is None for {note.pitch} {note.position}")
             beat = self.exec_mgr.next_beat_in_flow(beat)
             # TODO GOTO modify, also for freq type
 

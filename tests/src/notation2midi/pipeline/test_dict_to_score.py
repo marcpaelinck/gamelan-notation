@@ -115,7 +115,6 @@ def create_beat(beat_id: int = 1, content: dict[PositionNote, list[Note]] = None
     return Beat(
         id=beat_id,
         gongan_id=1,
-        duration=4,
         measures=measures,
     )
 

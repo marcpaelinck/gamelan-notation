@@ -1,7 +1,7 @@
 ---
 # SETTINGS FILE FOR NOTATION2MIDI
 # The settings below (except for options) refer to values in the data.yaml file.
-notation_id: sinomladrang-sp
+notation_id: puspamekar
 part_id: full
 options:
   debug_logging: false

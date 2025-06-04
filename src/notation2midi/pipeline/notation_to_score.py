@@ -20,7 +20,7 @@ from src.common.constants import (
     VelocityInt,
 )
 from src.common.notes import Note, NoteRecord, Tone
-from src.common.rules import Instrument
+from src.common.rules import RulesEngine
 from src.notation2midi.classes import Agent, MetaDataRecord, NamedIntID
 from src.notation2midi.metadata_classes import MetaData, MetaDataAdapter, Scope
 from src.notation2midi.note_patterns import NotePattern, NotePatternGenerator
@@ -152,9 +152,9 @@ class ScoreCreatorAgent(Agent):
                     raise ValueError(
                         "Grace note not followed by melodic note in %s" % NotePatternGenerator.notes_to_str(notes)
                     )
-                tones = Instrument.get_tones_within_range(note.to_tone(), note.position, match_octave=False)
+                tones = RulesEngine.get_tones_within_range(note.to_tone(), note.position, match_octave=False)
                 # pylint: disable=cell-var-from-loop
-                nearest = sorted(tones, key=lambda x: abs(Instrument.interval(x, nextnote.to_tone())))[0]
+                nearest = sorted(tones, key=lambda x: abs(RulesEngine.interval(x, nextnote.to_tone())))[0]
                 # pylint: enable=cell-var-from-loop
                 nearest_grace_note = note.model_copy_x(octave=nearest.octave)
                 notes[pos] = nearest_grace_note
@@ -205,8 +205,8 @@ class ScoreCreatorAgent(Agent):
         # The notation is for multiple positions. Determine pitch and octave using the 'unisono rules'.
 
         # Create a Tone object from the the symbol by finding any matching note (disregarding the position)
-        reference_tone = Tone(note_record.pitch, note_record.octave)
-        tone = Instrument.cast_to_position(
+        reference_tone = Tone(pitch=note_record.pitch, octave=note_record.octave)
+        tone = RulesEngine.cast_to_position(
             tone=reference_tone, position=position, all_positions=set(all_positions), metadata=metadata
         )
 
@@ -333,12 +333,6 @@ class ScoreCreatorAgent(Agent):
                     id=int(self.curr_measure_id),
                     gongan_id=int(self.curr_gongan_id),
                     measures=measures,
-                    duration=max(
-                        sum(note.total_duration for note in measure.passes[DEFAULT].notes)
-                        for measure in measures.values()
-                    ),
-                    # TODO Shouldn't we use mode instead of max for duration? Makes a difference for error logging.
-                    # Answer: not here, because at this stage, pokok positions with length 1 haven't been extended yet.
                 )
                 for position, measure in new_beat.measures.items():  # pylint: disable=no-member
                     for passnr in measure.passes.keys():
@@ -354,7 +348,6 @@ class ScoreCreatorAgent(Agent):
                 gongan = Gongan(
                     id=int(self.curr_gongan_id),
                     beats=beats,
-                    beat_duration=mode(beat.duration for beat in beats),  # most occuring duration
                     metadata=gongan_info.get(ParserTag.METADATA, []) + self.score.global_metadata,
                     comments=gongan_info.get(ParserTag.COMMENTS, []),
                 )

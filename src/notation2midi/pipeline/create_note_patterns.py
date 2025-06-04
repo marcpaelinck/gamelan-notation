@@ -35,12 +35,10 @@ class NotePatternGeneratorAgent(Agent):
             for position, measure in beat.measures.items():
                 for passnr, pass_ in measure.passes.items():
                     self.curr_line_nr = pass_.line
-                    for note in pass_.notes:
-                        note.pattern.append(note.model_copy())
                     try:
-                        # self.patterns += self.pattern_generator.update_grace_notes_octaves(
-                        #     beat=beat, position=position, passnr=passnr
-                        # )
+                        self.patterns += self.pattern_generator.update_grace_notes_octaves(
+                            beat=beat, position=position, passnr=passnr
+                        )
                         self.patterns += self.pattern_generator.generate_tremolo(
                             beat=beat,
                             position=position,
