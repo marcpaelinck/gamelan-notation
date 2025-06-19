@@ -1,5 +1,5 @@
-from src.common.classes import MidiNote
 from src.common.constants import InstrumentType, Stroke
+from src.common.notes import MidiNote
 from src.settings.settings import Settings
 
 

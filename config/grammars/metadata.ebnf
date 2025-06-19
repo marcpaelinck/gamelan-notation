@@ -51,7 +51,7 @@ loopmeta = metatype:'LOOP' {('count'|'value') '='} count:intvalue ;
 octavatemeta = metatype:'OCTAVATE' {('instrument'|'value') '='} instrument:strvalue parameters:octavatemetaparameters ;
 octavatemetaparameters = {[','] @:(octaves_parm | scope_parm)} ;
 
-partmeta = metatype:'PART' {('name'|'value') '='} name:strvalue ;
+partmeta = metatype:'PART' {('name'|'value') '='} name:alphanumvalue ;
     
 repeatmeta = metatype:'REPEAT' {('count'|'value') '='} count:intvalue ;
     
@@ -85,6 +85,10 @@ strvalue = (nqstrvalue | sqstrvalue | dqstrvalue) ;
 nqstrvalue = /[a-zA-Z_][\w\-]*/ ;      (* unquoted string *)
 sqstrvalue = /'([a-zA-Z_][\w\- ]*)'/ ; (* single-quoted string *)
 dqstrvalue = /"([a-zA-Z_][\w\- ]*)"/ ; (* double-quoted string *)
+alphanumvalue = (nqalphanumvalue | sqalphanumvalue | dqalphanumvalue) ;
+nqalphanumvalue = /[\d\w+-\\&]+/ ;      (* unquoted string *)
+sqalphanumvalue = /'([\d\w+-\\& ]+)'/ ; (* single-quoted string *)
+dqalphanumvalue = /"([\d\w+-\\& ]+)"/ ; (* double-quoted string *)
 numvalue = intvalue | floatvalue ;
 intvalue = /\d+/ ;
 floatvalue = /\d+\.{0,1}\d*/ ;

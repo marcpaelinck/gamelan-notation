@@ -196,7 +196,7 @@ def rename_notes_in_filenames(folderpath: str, print_only: bool = True):
             pitch
             for position in Position
             if position.instrumenttype == instrtype
-            for (pitch, octave, stroke) in Note.get_all_p_o_s(position)
+            for (pitch, octave, stroke) in NoteFactory.get_all_p_o_s(position)
             if octave and stroke == Stroke.OPEN
         ]
         for instrtype in instrdict.values()

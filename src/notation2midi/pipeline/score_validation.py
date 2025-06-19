@@ -14,7 +14,7 @@ from src.common.constants import (
     Position,
     Stroke,
 )
-from src.common.notes import Note
+from src.common.notes import Note, NoteFactory
 from src.notation2midi.classes import Agent
 from src.notation2midi.metadata_classes import GonganType, ValidationProperty
 from src.settings.classes import RunSettings
@@ -103,7 +103,7 @@ class ScoreValidationAgent(Agent):
                     #  which is the mode (= most occurring duration) of all measure durations.
                     corrected_positions = dict()
                     for position, notes in unequal_lengths.items():
-                        filler = Note.get_whole_rest_note(position, Stroke.EXTENSION)
+                        filler = NoteFactory.get_whole_rest_note(position, Stroke.EXTENSION)
                         uncorrected_position = {position: sum(note.pattern_duration for note in notes)}
                         # Empty measures will always be corrected.
                         if position in self.POSITIONS_AUTOCORRECT_UNEQUAL_MEASURES or not notes:
@@ -159,7 +159,7 @@ class ScoreValidationAgent(Agent):
                 ignored.append(f"BEAT {beat.full_id} skipped due to override")
                 continue
             for position, measure in beat.measures.items():
-                instr_range = Note.get_all_p_o_s(position)
+                instr_range = NoteFactory.get_all_p_o_s(position)
                 badnotes = list()
                 for note in measure.passes[DEFAULT].notes:
                     if note.pitch is not Pitch.NONE and (note.pitch, note.octave, note.stroke) not in instr_range:
@@ -210,7 +210,9 @@ class ScoreValidationAgent(Agent):
                 continue
             for polos, sangsih in self.POSITIONS_VALIDATE_AND_CORRECT_KEMPYUNG:
                 instrumentrange = [
-                    (pitch, octave) for (pitch, octave, stroke) in Note.get_all_p_o_s(polos) if stroke == Stroke.OPEN
+                    (pitch, octave)
+                    for (pitch, octave, stroke) in NoteFactory.get_all_p_o_s(polos)
+                    if stroke == Stroke.OPEN
                 ]
                 kempyung_dict = self._get_kempyung_dict(instrumentrange)
                 # check if both instruments occur in the beat
@@ -244,7 +246,7 @@ class ScoreValidationAgent(Agent):
                                         correct_note, correct_octave = kempyung_dict[
                                             (polosnote.pitch, polosnote.octave)
                                         ]
-                                        correct_sangsih = Note.get_note(
+                                        correct_sangsih = Note(
                                             position=sangsih,
                                             pitch=correct_note,
                                             octave=correct_octave,
@@ -252,8 +254,11 @@ class ScoreValidationAgent(Agent):
                                             duration=sangsihnote.duration,
                                             rest_after=sangsihnote.rest_after,
                                         )
+                                        # Replace the note pattern
+                                        # pylint: disable=no-member
                                         correct_sangsih.pattern.clear()
                                         correct_sangsih.pattern.append(correct_sangsih.to_pattern_note())
+                                        # pylint: enable=no-member
                                         if not (correct_sangsih):
                                             self.logerror(
                                                 f"Trying to create an incorrect combination {sangsih} {correct_note} OCT{correct_octave} {sangsihnote.stroke} duration={sangsihnote.duration} rest_after{sangsihnote.rest_after} while correcting kempyung."

@@ -62,7 +62,7 @@ from tatsu.util import asjson
 
 from src.common.classes import InstrumentTag, Notation
 from src.common.constants import NotationDict, NotationFontVersion, ParserTag, Position
-from src.common.notes import Note, NoteRecord
+from src.common.notes import Note, UnboundNote
 from src.notation2midi.classes import Agent, MetaDataRecord, NamedIntID
 from src.settings.classes import RunSettings
 from src.settings.constants import FontFields, NoteFields
@@ -103,7 +103,7 @@ class NotationParserAgent(Agent):
     grammar_model: str
     model_source: str
     _char_to_fontinfo_dict: dict[str, dict[str, Any]]
-    _symbol_to_note: dict[str, NoteRecord]
+    _symbol_to_note: dict[str, UnboundNote]
 
     def __init__(self, run_settings: RunSettings):
         super().__init__(run_settings)
@@ -114,8 +114,8 @@ class NotationParserAgent(Agent):
         # Initialize _symbol_to_note lookup dict
         note_records = get_note_records(self.run_settings)
         self._symbol_to_note = {
-            self.sorted_chars(note[NoteFields.SYMBOL]): NoteRecord(
-                **{k: v for k, v in note.items() if k in NoteRecord.fieldnames()}
+            self.sorted_chars(note[NoteFields.SYMBOL]): UnboundNote(
+                **{k: v for k, v in note.items() if k in UnboundNote.fieldnames()}
             )
             for note in note_records
         }
@@ -173,20 +173,19 @@ class NotationParserAgent(Agent):
         )
         return flattened_dict
 
-    def _parse_generic_note(
+    def _parse_unbound_note(
         self,
         symbol: str,
         position: Position,
-    ) -> NoteRecord:
-        """Parses the given notation symbol to a NoteRecord object.
-           The note is generic in the sense that it is not bound to an instument type.
-           This binding will be performed in a later step of the pipeline (dict_to_score).
-           This is done to keep the notation parser free of any 'knowledge' about the instruments.
+    ) -> UnboundNote:
+        """Parses the given notation symbol to an UnboundNote object.
+           No check is performed whether the note belongs to the instrument's range. Range check and
+           casting of the notes to their instrument's range will be performed  in a later step down the pipeline.
         Args:
             symbol (str): notation characters.
             position (Position): position
         Returns:
-            NoteRecord: A generic note object, i.e. not bound to any instrument type.
+            UnboundNote: A generic note object, i.e. not bound to any instrument type.
         """
         normalized_symbol = self.sorted_chars(symbol)
 
@@ -195,6 +194,7 @@ class NotationParserAgent(Agent):
         return self._symbol_to_note[normalized_symbol]
 
     def _parse_measure(self, measure: str, position: Position) -> list[Note]:
+        # TODO review this documentation
         """Parses the notation of a stave to note objects
            If the stave stands for multiple reyong positions, the notation is transformed to match
            each position separately. There are two possible cases:
@@ -214,7 +214,7 @@ class NotationParserAgent(Agent):
         note_chars = measure
         for note_chars in measure:
             try:
-                next_note = self._parse_generic_note(note_chars, position)
+                next_note = self._parse_unbound_note(note_chars, position)
             except (ValueError, KeyError) as e:
                 self.logerror(str(e))
             if not next_note:

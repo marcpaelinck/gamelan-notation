@@ -19,7 +19,7 @@ from src.common.constants import (
     Stroke,
     VelocityInt,
 )
-from src.common.notes import Note, NoteRecord, Tone
+from src.common.notes import Note, NoteFactory, Tone, UnboundNote
 from src.common.rules import RulesEngine
 from src.notation2midi.classes import Agent, MetaDataRecord, NamedIntID
 from src.notation2midi.metadata_classes import MetaData, MetaDataAdapter, Scope
@@ -162,7 +162,7 @@ class ScoreCreatorAgent(Agent):
 
     def _note_from_rec(
         self,
-        note_record: NoteRecord,
+        note_record: UnboundNote,
         position: Position,
         all_positions: list[Position],
         metadata: list[MetaData],
@@ -181,8 +181,8 @@ class ScoreCreatorAgent(Agent):
             # Notation for single position
             if position not in all_positions:
                 raise ValueError(f"{position} not in list {all_positions}")
-            note = Note.get_note(
-                position,
+            note = NoteFactory.get_unbound_note(
+                position=position,
                 pitch=note_record.pitch,
                 octave=note_record.octave,
                 stroke=note_record.stroke,
@@ -194,7 +194,7 @@ class ScoreCreatorAgent(Agent):
                 any_oct_symbol = note_record.symbol + ",<"
                 alternatives = [
                     n.symbol
-                    for n in Note.VALIDNOTES
+                    for n in NoteFactory.VALIDNOTES
                     if n.position is position and all(char in any_oct_symbol for char in n.symbol)
                 ]
                 msg1 = "Invalid note '%s' for %s." % (note_record.symbol, position)
@@ -212,7 +212,7 @@ class ScoreCreatorAgent(Agent):
 
         # Return the matching note within the position's range
         if tone:
-            note = Note.get_note(
+            note = Note(
                 position=position,
                 pitch=tone.pitch,
                 octave=tone.octave,
@@ -223,7 +223,7 @@ class ScoreCreatorAgent(Agent):
             return note.model_copy_x(transformation=tone.transformation)
         else:
             # return silence
-            note = Note.get_note(
+            note = Note(
                 position=position,
                 pitch=Pitch.NONE,
                 octave=None,
@@ -236,7 +236,7 @@ class ScoreCreatorAgent(Agent):
 
     def _convert_to_notes(
         self,
-        noterecord_list: list[NoteRecord],
+        noterecord_list: list[UnboundNote],
         position: Position,
         all_positions: list[Position],
         metadata: list[MetaData],

@@ -106,7 +106,7 @@ class ValidNoteTester(BaseUnitTestCase):
             self.load_settings(group)
             for combination in self.TRY_COMBINATIONS:
                 with self.subTest(combination=combination):
-                    note = Note.get_note(**combination)  # returns None for invalid combinations
+                    note = Note(**combination)  # returns None for invalid combinations
                     if self.is_valid_combination(group, combination):
                         is_valid = True
                         self.assertIsNotNone(note)

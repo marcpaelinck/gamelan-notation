@@ -88,6 +88,14 @@ notationfiles:
                 name: pengawak
                 file: Godek Miring font5_pengawak.tsv
                 loop: true
+    hujanmas:
+        title: Hujan Mas
+        subfolder: hujan mas
+        parts:
+            full:
+                name: entire piece
+                file: Hujan Mas.tsv
+                loop: false
     janger:
         title: Janger
         subfolder: janger
@@ -207,6 +215,14 @@ notationfiles:
                 name: pengecet 1
                 file: Puspa mekar pengecet1.tsv
                 loop: true
+    puspamekar-calung:
+        title: Puspa Mekar CALUNG
+        subfolder: puspa mekar
+        parts:
+            full:
+                name: entire piece
+                file: Puspa Mekar CALUNG.tsv
+                loop: false
     palawakya:
         title: Palawakya
         subfolder: palawakya
@@ -217,6 +233,15 @@ notationfiles:
             full:
                 name: entire piece
                 file: Palawakya.tsv
+                loop: false
+    palawakya-penyacah:
+        title: Palawakya PENYACAH
+        subfolder: palawakya
+        autocorrect_kempyung : false
+        parts:
+            full:
+                name: entire piece
+                file: Palawakya PENYACAH.tsv
                 loop: false
     rejangdewa:
         title: Rejang Dewa

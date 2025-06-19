@@ -90,7 +90,7 @@ def to_list(value, el_type: type):
 
 
 def create_note_records(run_settings: RunSettings) -> list[AnyNote]:
-    """Creates a list of records containing all possible attribute combinations for a Note object.
+    """Creates a list of records containing all possible attribute combinations for a MidiNote object.
        The records are created by combining the MIDI definitions and the font definitions files
        and will be used to validate the creation of new Note objects. This will ensure that any character combination
         that does not occur in this dict is considered invalid.
