@@ -333,7 +333,7 @@ class ScoreCreatorAgent(Agent):
                     gongan_id=int(self.curr_gongan_id),
                     measures=measures,
                     duration=max(
-                        sum(note.total_duration for note in measure.passes[DEFAULT].notes)
+                        sum(note.total_duration for note in measure.passes.get(DEFAULT, Measure.Pass(-1)).notes)
                         for measure in measures.values()
                     ),
                     # TODO Shouldn't we use mode instead of max for duration? Makes a difference for error logging.

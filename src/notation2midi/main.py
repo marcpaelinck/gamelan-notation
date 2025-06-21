@@ -13,6 +13,7 @@ from src.notation2midi.pipeline.export_to_midiplayer import (
 from src.notation2midi.pipeline.notation_parser_tatsu import NotationParserAgent
 from src.notation2midi.pipeline.notation_to_score import ScoreCreatorAgent
 from src.notation2midi.pipeline.score_to_midi import MidiGeneratorAgent
+from src.notation2midi.pipeline.score_to_notation import ScoreToNotationAgent
 from src.notation2midi.pipeline.score_to_pdf import PDFGeneratorAgent
 from src.notation2midi.pipeline.score_validation import ScoreValidationAgent
 from src.notation2midi.pipeline.update_score import ScoreUpdateAgent
@@ -33,6 +34,7 @@ PIPE = [
     ExecutionCreatorAgent,  # Creates Execution for the ExtScore -> Execution
     MidiGeneratorAgent,
     PDFGeneratorAgent,
+    ScoreToNotationAgent,
     MidiPlayerUpdatePartAgent,
     MidiPlayerUpdatePdfAgent,
 ]

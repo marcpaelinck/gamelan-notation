@@ -88,6 +88,16 @@ notationfiles:
                 name: pengawak
                 file: Godek Miring font5_pengawak.tsv
                 loop: true
+    hujanmas:
+        title: Hujan Mas
+        subfolder: hujan mas
+        autocorrect_kempyung : false
+        beat_at_end: true
+        parts:
+            full:
+                name: entire piece
+                file: Hujan Mas.tsv
+                loop: false
     janger:
         title: Janger
         subfolder: janger

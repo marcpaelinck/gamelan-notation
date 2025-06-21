@@ -1,7 +1,7 @@
 ---
 # SETTINGS FILE FOR NOTATION2MIDI
 # The settings below (except for options) refer to values in the data.yaml file.
-notation_id: sinomladrang-sp
+notation_id: hujanmas
 part_id: full
 options:
   debug_logging: false
@@ -12,7 +12,7 @@ options:
     # `is_production_run`: false - output is saved in the subfolder of the `notation` data folder specified in config.yaml.
     #                      true  - output is saved in the `midiplayer` data folder and the `content.json` file is updated.
     is_production_run: false
-    detailed_validation_logging : false
+    detailed_validation_logging : true
     # `autocorrect`: true - the validation step will perform some minor corrections such as incorrect kempyung in sangsih part.
     autocorrect : true
     # `save_corrected_to_file`: true - saves a new version of the input file after processing it. Will include autocorrections.
