@@ -52,7 +52,6 @@ class MetaDataBaseModel(BaseModel, RunSettingsListener):
     def model_dump_notation(self):
         jsonval = self.model_dump(exclude_defaults=True)
         del jsonval["line"]
-        del jsonval["metatype"]
         if self.DEFAULTPARAM:
             defval = jsonval[self.DEFAULTPARAM]
             del jsonval[self.DEFAULTPARAM]
