@@ -27,8 +27,8 @@ PIPE = [
     SettingsValidationAgent,
     NotationParserAgent,  # -> NotationRecords
     ScoreCreatorAgent,  # -> Score with Notes: pitch, octave, stroke, duration, rest
-    # RulesApplicationAgent, # TODO To be added. Casts notes to instruments. -> IScore with INotes: Note + position, rule and transformation
-    NotePatternGeneratorAgent,  # -> PattScore: Score with PatttNotes: INote + pattern + UUID
+    # RulesApplicationAgent, # TODO To be added. Processes notation for instrument groups: casts notes to individual instruments. -> IScore with INotes: Note + position, rule and transformation
+    NotePatternGeneratorAgent,  # -> PattScore: Score with PattNotes: INote + pattern + UUID
     ScoreUpdateAgent,  # Fills empty and shorthand beats + applies metadata. -> CompleteScore
     ScoreValidationAgent,
     ExecutionCreatorAgent,  # Creates Execution for the ExtScore -> Execution

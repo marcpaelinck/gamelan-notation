@@ -36,6 +36,24 @@
                                 {"part": "pengecet", "file": "Godek Miring_pengecet_GAMELAN1.mid", "loop": true, "markers": {}}
                         ]
                 }, 
+                {"title": "Hujan Mas", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Hujan Mas_full_GAMELAN1.pdf", "notation_version": "23-jun-2025", "parts": [
+                                {"part": "entire piece", "file": "Hujan Mas_full_GAMELAN1.mid", "loop": false, "markers": {
+                                                "1": 0.007697873847243392, 
+                                                "2": 0.052699644358228256, 
+                                                "3": 0.08112276056019994, 
+                                                "4": 0.12424368389450834, 
+                                                "5": 0.18819761981740643, 
+                                                "6": 0.20359336751189322, 
+                                                "7": 0.22964553856891393, 
+                                                "8": 0.25451736896935734, 
+                                                "9": 0.32586896165945634, 
+                                                "Transition": 0.4075870244638431, 
+                                                "reyongan": 0.4445958359634402, 
+                                                "pengecet": 0.5209818381496364
+                                        }
+                                }
+                        ]
+                }, 
                 {"title": "Janger", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Janger_full_GAMELAN1.pdf", "notation_version": "04-apr-2025", "parts": [
                                 {"part": "entire piece", "file": "Janger_full_GAMELAN1.mid", "loop": false, "markers": {}}
                         ]

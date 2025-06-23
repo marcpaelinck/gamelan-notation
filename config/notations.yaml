@@ -92,7 +92,6 @@ notationfiles:
         title: Hujan Mas
         subfolder: hujan mas
         autocorrect_kempyung : false
-        beat_at_end: true
         parts:
             full:
                 name: entire piece
