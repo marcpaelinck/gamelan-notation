@@ -48,7 +48,7 @@ notationfiles:
         parts:
             full:
                 name: entire piece
-                file: Cendrawasih_complete_font5.tsv
+                file: Cendrawasih_isi.tsv
                 loop: false
     gilakdeng:
         title: Gilak Deng

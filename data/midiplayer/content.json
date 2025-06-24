@@ -8,12 +8,12 @@
                                 {"part": "entire piece", "file": "Bapang Selisir (gong kebyar)_full_GAMELAN1.mid", "loop": false, "markers": {}}
                         ]
                 }, 
-                {"title": "Cendrawasih", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Cendrawasih_full_GAMELAN1.pdf", "notation_version": "26-may-2025", "parts": [
+                {"title": "Cendrawasih", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Cendrawasih_full_GAMELAN1.pdf", "notation_version": "23-jun-2025", "parts": [
                                 {"part": "entire piece", "file": "Cendrawasih_full_GAMELAN1.mid", "loop": false, "markers": {
-                                                "pepeson": 0.06827279634396652, 
-                                                "pengawak": 0.29231541226767066, 
-                                                "pengipuk": 0.5112720138802264, 
-                                                "batel": 0.8909171835841375
+                                                "pepeson": 0.06474839486787907, 
+                                                "pengawak": 0.27722540679479046, 
+                                                "pengipuk": 0.5365012959358162, 
+                                                "batel": 0.8965482937741307
                                         }
                                 }
                         ]
