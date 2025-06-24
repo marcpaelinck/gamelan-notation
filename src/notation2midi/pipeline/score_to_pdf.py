@@ -176,11 +176,15 @@ class PDFGeneratorAgent(Agent):
             else:
                 col_range = (cellnr_, cellnr_)
 
-            # Add 'passes' information if available
+            # Add 'passes' or 'iterations' information if available
             if "passes" in meta.__class__.model_fields:
                 if meta.passes:
                     if any(p for p in meta.passes if p > 0):
                         value += f" (pass {','.join(str(p) for p in meta.passes)})"
+            if "iterations" in meta.__class__.model_fields:
+                if meta.iterations:
+                    if any(p for p in meta.iterations if p > 0):
+                        value += f" (iteration {','.join(str(p) for p in meta.iterations)})"
 
             # merge additional empty cells if necessary to accommondate the text width
             textwidth, _ = self.template.cell_width_height(value.format(dots=""), parastyle=parastyle)

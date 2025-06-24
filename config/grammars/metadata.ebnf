@@ -34,7 +34,7 @@ dynamicsmetaparameters ={[','] @:(beat_count_parm | first_beat_parm | passes_par
 
 gonganmeta = metatype:'GONGAN' {('type'|'value') '='} type:strvalue ;
     
-gotometa = metatype:'GOTO' {('label'|'value') '='} label:strvalue parameters:gotometaparameters ;
+gotometa = metatype:'GOTO' {('label'|'value') '='} label:alphanumvalue parameters:gotometaparameters ;
 gotometaparameters = parameters:{[','] @:(from_beat_parm | passes_parm)} ;
     
 kemplimeta = metatype:'KEMPLI' {('status'|'value') '='} status:strvalue parameters:kemplimetaparameters ;
@@ -43,7 +43,7 @@ kemplimetaparameters = {[','] @:(beats_parm | scope_parm)} ;
 autokempyungmeta = metatype:'AUTOKEMPYUNG' {('status'|'value') '='} status:strvalue parameters:autokempyungmetaparameters ;
 autokempyungmetaparameters = {[','] @:(scope_parm | positions_parm)} ;
 
-labelmeta = metatype:'LABEL' {('name'|'value') '='} name:strvalue parameters:labelmetaparameters ;
+labelmeta = metatype:'LABEL' {('name'|'value') '='} name:alphanumvalue parameters:labelmetaparameters ;
 labelmetaparameters = {[','] @:beat_parm} ;
     
 loopmeta = metatype:'LOOP' {('count'|'value') '='} count:intvalue ;
