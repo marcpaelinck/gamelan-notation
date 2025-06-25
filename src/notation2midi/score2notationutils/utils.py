@@ -7,9 +7,9 @@ from functools import partial
 from src.common.classes import Gongan
 from src.common.constants import Pitch, Position, Stroke
 from src.common.notes import Note
-from src.common.rules import RulesEngine
 from src.notation2midi.metadata_classes import GonganType, MetaDataSwitch
-from src.notation2midi.pipeline.notation_parser_tatsu import PassID
+from src.notation2midi.pipeline.parse_notation import PassID
+from src.notation2midi.rules.rules import RulesEngine
 
 
 def measure_to_str_rml_safe(

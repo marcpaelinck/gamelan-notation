@@ -106,8 +106,8 @@ class InstrumentFields(SStrEnum):
     GROUP = "group"
     INSTRUMENT = "instrument"
     POSITION = "position"
-    POSITION_RANGE = "position_range"
-    EXTENDED_POSITION_RANGE = "extended_position_range"
+    PITCHES = "pitches"
+    EXTENDED_PITCHES = "extended_pitches"
 
 
 class InstrumentTagFields(SStrEnum):

@@ -22,8 +22,8 @@ from src.settings.classes import RunSettings
 
 class ScoreValidationAgent(Agent):
 
-    AGENT_TYPE = Agent.AgentType.SCOREVALIDATOR
-    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.SCORE)
+    LOGGING_MESSAGE = "VALIDATING SCORE"
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.UNBOUNDSCORE)
     RETURN_TYPE = None
     POSITIONS_AUTOCORRECT_UNEQUAL_MEASURES = [
         Position.UGAL,

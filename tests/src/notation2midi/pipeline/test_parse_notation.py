@@ -11,7 +11,7 @@ from src.notation2midi.metadata_classes import (
     Scope,
     ValidationProperty,
 )
-from src.notation2midi.pipeline.notation_parser_tatsu import NotationParserAgent
+from src.notation2midi.pipeline.parse_notation import NotationParserAgent
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
 

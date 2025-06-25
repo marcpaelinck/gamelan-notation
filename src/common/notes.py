@@ -1,15 +1,8 @@
-from dataclasses import dataclass, fields
-from typing import Any, ClassVar, Optional, Self, override
+from dataclasses import asdict, dataclass, fields
+from typing import Any, ClassVar, Literal, Optional, override
 from uuid import UUID, uuid4
 
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    Field,
-    computed_field,
-    field_validator,
-    model_validator,
-)
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from src.common.constants import (
     Duration,
@@ -28,13 +21,6 @@ from src.settings.font_to_valid_notes import get_note_records
 from src.settings.settings import RunSettingsListener
 
 
-@dataclass(frozen=True)
-class Rule:
-    ruletype: RuleType
-    positions: Position
-    parameters: dict[RuleParameter, Any]
-
-
 class Tone(BaseModel):
     # A tone is a combination of a pitch and an octave.
     model_config = ConfigDict(extra="ignore", frozen=True)
@@ -42,7 +28,7 @@ class Tone(BaseModel):
     octave: int | None
     transformation: RuleValue | None = None
 
-    _MELODIC_PITCHES: ClassVar[dict[str, int]] = [
+    MELODIC_PITCHES: ClassVar[list[Pitch]] = [
         Pitch.DING,
         Pitch.DONG,
         Pitch.DENG,
@@ -60,38 +46,45 @@ class Tone(BaseModel):
 
     def is_melodic(self):
         """True if the the tone's pitch is one of DING...DAING"""
-        return self.pitch in Tone._MELODIC_PITCHES
+        return self.pitch in Tone.MELODIC_PITCHES
 
 
-class UnboundNote(Tone):
-    stroke: Stroke
-    modifier: Modifier = Modifier.NONE
-    duration: float
-    rest_after: float
-    symbol: str
-
-    @classmethod
-    def fieldnames(cls) -> list[str]:
-        """Returns the field names"""
-        return [f.name for f in fields(cls)]
-
-
-class BoundNote(UnboundNote):
-    position: Position
-
-
-class MidiNote(BaseModel):
-    bound_note: BoundNote
+@dataclass
+class MidiNote:
     duration: float
     rest_after: float
     relative_velocity: float = 1.0
     midinote: tuple[int, ...] = (127,)  # 0..128, used when generating MIDI output.
 
 
-# The class below is a record-like structure that is used to store the intermediate
-# results of the notation parser agent. These records will be parsed to the final object model in
-# the dict_to_score step. This enables the parsing logic and the object model logic to be
-# applied separately, which makes the code easier to understand and to maintain.
+@dataclass
+class GenericNote:
+    pitch: Pitch
+    symbol: str
+    modifiers: list[Modifier] = Field(default_factory=list)
+
+    @classmethod
+    def fieldnames(cls) -> list[str]:
+        """Returns the field names"""
+        return [name for name in fields(cls)]  # pylint: disable=not-an-iterable
+
+    @property
+    def octave(self) -> Literal[0, 1, 2]:
+        return 2 if Modifier.OCTAVE_2 in self.modifiers else 0 if Modifier.OCTAVE_0 in self.modifiers else 1
+
+
+@dataclass
+class BoundNote:
+    position: Position
+    pitch: Pitch
+    octave: Octave
+    stroke: Stroke
+    note_value: float  # 1 = whole note
+    realization: tuple[MidiNote] = tuple()
+    uniqueid: UUID = Field(default_factory=uuid4)
+
+    def to_tone(self) -> Tone:
+        return Tone(pitch=self.pitch, octave=self.octave)
 
 
 class NoteFactory(BaseModel, RunSettingsListener):
@@ -99,7 +92,8 @@ class NoteFactory(BaseModel, RunSettingsListener):
     # This uniquely defines a Note object that is mapped to a single MIDI note.
     _VALID_POS_P_O_S_D_R: ClassVar[list[tuple[Position, Pitch, Octave, Stroke, Duration, Duration]]]
     VALIDNOTES: ClassVar[list["Note"]]
-    _SYMBOL_TO_NOTE: ClassVar[dict[(Position, str), "Note"]]
+    _SYMBOL_TO_UNBOUNDNOTE: ClassVar[dict[(str), GenericNote]]
+    _CHAR_TO_PITCH_MODIFIER: ClassVar[dict[str, tuple[Pitch, Modifier]]]
     # The following attributes uniquely define a note in VALIDNOTES
     _POS_P_O_S_D_R: ClassVar[tuple[str]] = ("position", "pitch", "octave", "stroke", "duration", "rest_after")
     # The following attributes may never be updated
@@ -107,7 +101,6 @@ class NoteFactory(BaseModel, RunSettingsListener):
     _FORBIDDEN_COPY_ATTRIBUTES: ClassVar[tuple[str]] = ("uniqueid", "pattern")
     _ANY_DURATION_STROKES: ClassVar[tuple[Stroke]] = (Stroke.EXTENSION, Stroke.TREMOLO, Stroke.TREMOLO_ACCELERATING)
     _ANY_SILENCEAFTER_STROKES: ClassVar[tuple[Stroke]] = (Stroke.SILENCE,)
-    _POS_P_O_S_D_R_TO_NOTE: ClassVar[dict[tuple[Position, Pitch, Octave, Stroke, Duration, Duration], "Note"]] = None
     _FONT_SORTING_ORDER: ClassVar[dict[str, int]]
 
     @classmethod
@@ -124,26 +117,29 @@ class NoteFactory(BaseModel, RunSettingsListener):
             for rec in valid_records
         ]
         cls.VALIDNOTES = [Note(**record) for record in valid_records]
-        cls._SYMBOL_TO_NOTE = {(n.position, cls.sorted_chars(n.symbol)): n for n in cls.VALIDNOTES}
-        cls._POS_P_O_S_D_R_TO_NOTE = {
-            (n.position, n.pitch, n.octave, n.stroke, n.duration, n.rest_after): n for n in cls.VALIDNOTES
+        cls._CHAR_TO_PITCH_MODIFIER = {
+            char[FontFields.SYMBOL]: (char[FontFields.PITCH], char[FontFields.MODIFIER])
+            for char in run_settings.data.font
         }
+        # cls._SYMBOL_TO_UNBOUNDNOTE = {
+        #     cls.sorted_chars(note[NoteFields.SYMBOL]): UnboundNote(
+        #         **{k: v for k, v in note.items() if k in UnboundNote.fieldnames()}
+        #     )
+        #     for note in note_records
+        # }
 
     @classmethod
-    def get_unbound_note(
-        cls,
-        position: Position,
-        pitch: Pitch,
-        octave: int | None,
-        stroke: Stroke,
-        duration: float | None,
-        rest_after: float | None,
-    ) -> Optional[UnboundNote]:
-        note_record = (position, pitch, octave, stroke, duration, rest_after)
-        note: Note = cls._POS_P_O_S_D_R_TO_NOTE.get(note_record, None)
-        if note:
-            return note.model_copy()
-        return None
+    def clone_bound_note(cls, note: BoundNote, /, **kwargs) -> BoundNote:
+        """Creates a copy of the given note with modified attributes.
+        Args:
+            note (BoundNote): the note to copy.
+            kwargs: BoundNote attributes that should be substituted.
+        Returns:
+            BoundNote: New BoundNote instance
+        """
+        new_kwargs = asdict(note) | kwargs
+        # TODO: add validation
+        return BoundNote(**new_kwargs)
 
     @classmethod
     def get_bound_note(
@@ -154,12 +150,28 @@ class NoteFactory(BaseModel, RunSettingsListener):
         stroke: Stroke,
         duration: float | None,
         rest_after: float | None,
-    ) -> Optional[BoundNote]:
+    ) -> Optional[GenericNote]:
         note_record = (position, pitch, octave, stroke, duration, rest_after)
         note: Note = cls._POS_P_O_S_D_R_TO_NOTE.get(note_record, None)
         if note:
             return note.model_copy()
         return None
+
+    @classmethod
+    def get_unbound_note(cls, symbol: str) -> GenericNote:
+        pitch = None
+        modifiers = []
+        for char in symbol:
+            if char not in cls._CHAR_TO_PITCH_MODIFIER:
+                raise KeyError("Unrecognized character %s in %s" % (char, symbol))
+            pitch_val, mod_val = cls._CHAR_TO_PITCH_MODIFIER[char]
+            if mod_val != Modifier.NONE:
+                modifiers.append(mod_val)
+            else:
+                pitch = pitch_val
+        if not pitch:
+            raise KeyError("Missing pitch character in %s" % symbol)
+        return GenericNote(pitch=pitch, modifiers=modifiers, symbol=symbol)
 
     @classmethod
     def _is_valid_combi(
@@ -232,9 +244,9 @@ class NoteFactory(BaseModel, RunSettingsListener):
 
     @classmethod
     def get_whole_rest_note(cls, position: Position, resttype: Stroke):
-        return cls.get_unbound_note(
+        return cls.get_bound_note(
             position=position, pitch=Pitch.NONE, octave=None, stroke=resttype, duration=1, rest_after=0
-        ) or cls.get_unbound_note(
+        ) or cls.get_bound_note(
             position=position, pitch=Pitch.NONE, octave=None, stroke=resttype, duration=0, rest_after=1
         )
 
@@ -268,12 +280,12 @@ class Note(BaseModel):
         return sum([n.duration + n.rest_after for n in self.pattern])
         # return self.duration + self.rest_after
 
-    @field_validator("octave", mode="before")
-    @classmethod
-    def process_nonevals(cls, value):
-        if isinstance(value, str) and value.upper() == "NONE":
-            return None
-        return value
+    # @field_validator("octave", mode="before")
+    # @classmethod
+    # def process_nonevals(cls, value):
+    #     if isinstance(value, str) and value.upper() == "NONE":
+    #         return None
+    #     return value
 
     # @model_validator(mode="after")
     # def validate_note(self) -> Self:

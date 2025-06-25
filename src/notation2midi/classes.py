@@ -8,14 +8,7 @@ from types import UnionType
 from typing import Any, Generator
 
 from src.common.classes import Beat, Gongan, Measure
-from src.common.constants import (
-    DynamicLevel,
-    InstrumentType,
-    Modifier,
-    Pitch,
-    Position,
-    Stroke,
-)
+from src.common.constants import DynamicLevel, InstrumentType, Position
 from src.common.logger import Logging
 from src.notation2midi.execution.execution import Score
 from src.notation2midi.metadata_classes import (
@@ -65,34 +58,21 @@ class Agent:
                call the __init__ method of the Agent main class using super().__init__(...).
     """
 
-    class AgentType(StrEnum):
-        """Used by the logger to determine the source of a warning or error message."""
-
-        SETTINGSVALIDATOR = "VALIDATING RUN SETTINGS"
-        NOTATIONPARSER = "PARSING NOTATION TO DICT"
-        SCOREGENERATOR = "CONVERTING NOTATION TO SCORE OBJECT MODEL"
-        SCOREVALIDATOR = "VALIDATING SCORE"
-        NOTEPATTERNCREATOR = "CREATING SPECIAL NOTE PATTERNS"
-        SCOREUPDATER = "CREATING SPECIAL NOTE PATTERNS"
-        EXECUTIONCREATOR = "CREATING SCORE EXECUTION"
-        NOTATIONGENERATOR = "CREATING CORRECTED NOTATION"
-        MIDIGENERATOR = "GENERATING MIDI FILE"
-        PDFGENERATOR = "CONVERTING SCORE TO PDF NOTATION"
-        MIDIPLAYERPARTUPDATER = "UPDATING PART INFO IN MIDI PLAYER CONTENT"
-        MIDIPLAYERPDFUPDATER = "UPDATING PDF INFO IN MIDI PLAYER CONTENT"
-
     class InputOutputType(StrEnum):
         """Used by the logger to determine the source of a warning or error message."""
 
         RUNSETTINGS = "run_settings"
         NOTATION = "notation"
-        SCORE = "score"
+        UNBOUNDSCORE = "unbound score"
+        BOUNDSCORE = "bound score"
+        PATTERNSCORE = "pattern score"
+        COMPLETESCORE = "complete score"
         EXECUTION = "execution"
         PART = "part"
         PDFFILE = "pdf_file"
 
     # Define these constants in each subclass
-    AGENT_TYPE: AgentType
+    LOGGING_MESSAGE: str
     EXPECTED_INPUT_TYPES: tuple[InputOutputType] | None
     RETURN_TYPE: InputOutputType | tuple[InputOutputType] | None
 
@@ -126,8 +106,8 @@ class Agent:
 
     def run(self) -> Any:
         """Runs the _main method of the subclassed agent."""
-        separator = "-" * int(50 - len(self.AGENT_TYPE.value) // 2)
-        title = f"{separator} {self.AGENT_TYPE.value} {separator}"
+        separator = "-" * int(50 - len(self.LOGGING_MESSAGE) // 2)
+        title = f"{separator} {self.LOGGING_MESSAGE} {separator}"
         self.logger.info(title)
         result = self._main()  # pylint: disable=assignment-from-no-return
         return result

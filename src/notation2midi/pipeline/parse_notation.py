@@ -14,7 +14,7 @@ The following structure is returned:
 <positions> :: [ <position> ]
 <position> :: Position
 <notes> :: [ <note> ]
-<note> :: Note
+<note> :: str
 
 <gongan id>, <beat id> and <pass id> are cast into a NamedIntID class, which is an int subclass that
 formats the values with a label: LABEL(<value>). This makes the structure more legible and makes debugging easier.
@@ -32,7 +32,7 @@ Example:
                             STAVES:      [
                                             {
                                                 PASS: DEFAULT_PASS(-1),
-                                                MEASURES, [[Note(...), Note(...), ...], [Note(...), Note(...), ...], ....],
+                                                MEASURES, [[<str>, <str>, ...], [<str>, <str>, ...], ....],
                                                 POSITION: REYONG_1,
                                                 ALL_POSITIONS: [REYONG_1, REYONG_2, REYONG_3, REYONG_4],
                                                 LINE: 12,
@@ -61,13 +61,10 @@ from tatsu.model import ParseModel
 from tatsu.util import asjson
 
 from src.common.classes import InstrumentTag, Notation
-from src.common.constants import NotationDict, NotationFontVersion, ParserTag, Position
-from src.common.notes import Note, UnboundNote
+from src.common.constants import NotationDict, NotationFontVersion, ParserTag
 from src.notation2midi.classes import Agent, MetaDataRecord, NamedIntID
 from src.settings.classes import RunSettings
-from src.settings.constants import FontFields, NoteFields
-from src.settings.font_to_valid_notes import get_note_records
-from src.settings.settings import Settings
+from src.settings.constants import FontFields
 
 # The following classes display meaningful names for the IDs
 # which will be used as key values in the output dict structure.
@@ -95,7 +92,7 @@ class NotationParserAgent(Agent):
     basic structure of the notation as described in the grammar files and reports any syntax error.
     """
 
-    AGENT_TYPE = Agent.AgentType.NOTATIONPARSER
+    LOGGING_MESSAGE = "PARSING NOTATION TO DICT"
     EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS,)
     RETURN_TYPE = Agent.InputOutputType.NOTATION
 
@@ -103,7 +100,7 @@ class NotationParserAgent(Agent):
     grammar_model: str
     model_source: str
     _char_to_fontinfo_dict: dict[str, dict[str, Any]]
-    _symbol_to_note: dict[str, UnboundNote]
+    # _symbol_to_note: dict[str, UnboundNote]
 
     def __init__(self, run_settings: RunSettings):
         super().__init__(run_settings)
@@ -112,30 +109,30 @@ class NotationParserAgent(Agent):
         # Initialize _font_dict lookup dict
         self._char_to_fontinfo_dict = {sym[FontFields.SYMBOL]: sym for sym in self.run_settings.data.font}
         # Initialize _symbol_to_note lookup dict
-        note_records = get_note_records(self.run_settings)
-        self._symbol_to_note = {
-            self.sorted_chars(note[NoteFields.SYMBOL]): UnboundNote(
-                **{k: v for k, v in note.items() if k in UnboundNote.fieldnames()}
-            )
-            for note in note_records
-        }
+        # note_records = get_note_records(self.run_settings)
+        # self._symbol_to_note = {
+        #     self.sorted_chars(note[NoteFields.SYMBOL]): UnboundNote(
+        #         **{k: v for k, v in note.items() if k in UnboundNote.fieldnames()}
+        #     )
+        #     for note in note_records
+        # }
 
     @override
     @classmethod
     def run_condition_satisfied(cls, run_settings: RunSettings):
         return True
 
-    def sorted_chars(self, chars: str) -> str:
-        """Sorts the characters of a note symbol in a unique and deterministic order.
-        The sorting order is determined by the sequence of the Modifier Enum value of each font character.
-        The resulting string starts with the pitch character (Modifier.NONE) followed by optional
-        modifier in a fixed sequence."""
-        try:
-            return "".join(sorted(chars, key=lambda c: self._char_to_fontinfo_dict[c][FontFields.MODIFIER].sequence))
-        except KeyError:
-            self.logerror("Illegal character in %s", chars)
-        except Exception:  # pylint: disable=broad-exception-caught
-            self.logerror("Error parsing note %s", chars)
+    # def sorted_chars(self, chars: str) -> str:
+    #     """Sorts the characters of a note symbol in a unique and deterministic order.
+    #     The sorting order is determined by the sequence of the Modifier Enum value of each font character.
+    #     The resulting string starts with the pitch character (Modifier.NONE) followed by optional
+    #     modifier in a fixed sequence."""
+    #     try:
+    #         return "".join(sorted(chars, key=lambda c: self._char_to_fontinfo_dict[c][FontFields.MODIFIER].sequence))
+    #     except KeyError:
+    #         self.logerror("Illegal character in %s", chars)
+    #     except Exception:  # pylint: disable=broad-exception-caught
+    #         self.logerror("Error parsing note %s", chars)
 
     @classmethod
     def unoctavated(cls, note_chars: str) -> str:  # TODO MOVE
@@ -173,57 +170,56 @@ class NotationParserAgent(Agent):
         )
         return flattened_dict
 
-    def _parse_unbound_note(
-        self,
-        symbol: str,
-        position: Position,
-    ) -> UnboundNote:
-        """Parses the given notation symbol to an UnboundNote object.
-           No check is performed whether the note belongs to the instrument's range. Range check and
-           casting of the notes to their instrument's range will be performed  in a later step down the pipeline.
-        Args:
-            symbol (str): notation characters.
-            position (Position): position
-        Returns:
-            UnboundNote: A generic note object, i.e. not bound to any instrument type.
-        """
-        normalized_symbol = self.sorted_chars(symbol)
+    # def _normalize_char_sequence(
+    #     self,
+    #     symbol: str,
+    #     position: Position,
+    # ) -> str:
+    #     """Parses the given notation symbol to an UnboundNote object.
+    #        No check is performed whether the note belongs to the instrument's range. Range check and
+    #        casting of the notes to their instrument's range will be performed  in a later step down the pipeline.
+    #     Args:
+    #         symbol (str): notation characters.
+    #         position (Position): position
+    #     Returns:
+    #         UnboundNote: A generic note object, i.e. not bound to any instrument type.
+    #     """
+    #     normalized_symbol = self.sorted_chars(symbol)
 
-        if len(symbol) < 1:
-            raise ValueError(f"Unexpected empty symbol for {position}")
-        return self._symbol_to_note[normalized_symbol]
+    #     if len(symbol) < 1:
+    #         raise ValueError(f"Unexpected empty symbol for {position}")
+    #     return normalized_symbol
 
-    def _parse_measure(self, measure: str, position: Position) -> list[Note]:
-        # TODO review this documentation
-        """Parses the notation of a stave to note objects
-           If the stave stands for multiple reyong positions, the notation is transformed to match
-           each position separately. There are two possible cases:
-            - REYONG_1 and REYONG_3 are combined: the notation is expected to represent the REYONG_1 part
-              and the score is octavated for the REYONG_3 position.
-            - REYONG_2 and REYONG_4: similar case. The notation should represent the REYONG_2 part.
-            - All reyong positions: the notation is expected to represent the REYONG_1 part.
-              In this case the kempyung equivalent of the notation will be determined for REYONG_2
-              and REYONG_4 within their respective range.
-        Args:
-            stave (str): one stave of notation
-            position (Position):
-            multiple_positions (list[Position]): List of all positions for this stave.
-        Returns: list[str] | None: _description_
-        """
-        notes = []  # will contain the Note objects
-        note_chars = measure
-        for note_chars in measure:
-            try:
-                next_note = self._parse_unbound_note(note_chars, position)
-            except (ValueError, KeyError) as e:
-                self.logerror(str(e))
-            if not next_note:
-                self.logerror(f"Could not parse {note_chars[0]} from {measure} for {position.value}")
-                note_chars = note_chars[1:]
-            else:
-                notes.append(next_note)
-                note_chars = note_chars[len(next_note.symbol) :]
-        return notes
+    # def _parse_measure(self, measure: str, position: Position) -> list[UnboundNote]:
+    #     # TODO review this documentation
+    #     """Parses the notation of a stave to note objects
+    #        If the stave stands for multiple reyong positions, the notation is transformed to match
+    #        each position separately. There are two possible cases:
+    #         - REYONG_1 and REYONG_3 are combined: the notation is expected to represent the REYONG_1 part
+    #           and the score is octavated for the REYONG_3 position.
+    #         - REYONG_2 and REYONG_4: similar case. The notation should represent the REYONG_2 part.
+    #         - All reyong positions: the notation is expected to represent the REYONG_1 part.
+    #           In this case the kempyung equivalent of the notation will be determined for REYONG_2
+    #           and REYONG_4 within their respective range.
+    #     Args:
+    #         stave (str): one stave of notation
+    #         position (Position):
+    #         multiple_positions (list[Position]): List of all positions for this stave.
+    #     Returns: list[str] | None: _description_
+    #     """
+    #     notes = []  # will contain the UnboundNote objects
+    #     for note_chars in measure:
+    #         try:
+    #             next_notechars = self._normalize_char_sequence(note_chars, position)
+    #         except (ValueError, KeyError) as e:
+    #             self.logerror(str(e))
+    #         if not next_notechars:
+    #             self.logerror(f"Could not parse {note_chars[0]} from {measure} for {position.value}")
+    #             note_chars = note_chars[1:]
+    #         else:
+    #             notes.append(next_notechars)
+    #             note_chars = note_chars[len(next_notechars.symbol) :]
+    #     return notes
 
     def _replace_metadata_tags_with_positions(self, metadata_list: list[dict]) -> None:
         """Translates the values of `position` or `positions` metadata attributes to a list of Position enum values.
@@ -391,7 +387,7 @@ class NotationParserAgent(Agent):
             for gongan_id, gongan in notation_dict.items()
         }
 
-        # Flatten the metadata items, create MetaData and Note objects
+        # Flatten the metadata items, create MetaData and UnboundNote objects
 
         for self.curr_gongan_id, gongan in notation_dict.items():
             # Remove empty staves so that they can be recognized as 'missing staves' by the dict to score parser.
@@ -426,17 +422,18 @@ class NotationParserAgent(Agent):
                 self.curr_line_nr = stave[ParserTag.LINE]
 
                 # Replace string key values with ParserTag values
-                for key in [ParserTag.LINE, ParserTag.POSITION, ParserTag.MEASURES, ParserTag.PARSEINFO]:
+                for key in [ParserTag.LINE, ParserTag.POSITION, ParserTag.PARSEINFO]:
                     stave[key] = stave.pop(key)
                 # remove superfluous key
                 del stave[ParserTag.STAVES]
-                # Parse and cast the measures into Note objects
+                # Parse and cast the measures into UnboundNote objects
                 # TODO: it would be better to only parse the mearsures into character groups, each
                 # representing a single note, and to leave the casting into Notes for the score creator.
-                parsed_measures = []
-                for self.curr_measure_id, measure in enumerate(stave[ParserTag.MEASURES], start=1):
-                    parsed_measures.append(self._parse_measure(measure, stave[ParserTag.POSITION]))
-                stave[ParserTag.MEASURES] = parsed_measures
+                # parsed_measures = []
+                # for self.curr_measure_id, measure in enumerate(stave[ParserTag.MEASURES], start=1):
+                #     normalized_measure = [self.sorted_chars(note_chars) for note_chars in measure]
+                #     parsed_measures.append(normalized_measure, stave[ParserTag.POSITION])
+                # stave[ParserTag.MEASURES] = parsed_measures
 
         self.abort_if_errors()
         notation = Notation(notation_dict=notation_dict, settings=self.run_settings)
@@ -445,6 +442,4 @@ class NotationParserAgent(Agent):
 
 
 if __name__ == "__main__":
-    settings = Settings.get()
-    parser = NotationParserAgent(settings)
-    print(parser.sorted_chars("i=,/"))
+    pass

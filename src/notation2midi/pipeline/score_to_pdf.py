@@ -29,7 +29,7 @@ from src.notation2midi.metadata_classes import (
     SequenceMeta,
     TempoMeta,
 )
-from src.notation2midi.pipeline.notation_parser_tatsu import PassID
+from src.notation2midi.pipeline.parse_notation import PassID
 from src.notation2midi.score2notationutils.formatting import (
     NotationTemplate,
     RowType,
@@ -49,8 +49,8 @@ from src.settings.constants import FontFields
 class PDFGeneratorAgent(Agent):
     """PDF generator"""
 
-    AGENT_TYPE = Agent.AgentType.PDFGENERATOR
-    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.SCORE)
+    LOGGING_MESSAGE = "EXPORTING PDF NOTATION"
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.UNBOUNDSCORE)
     RETURN_TYPE = Agent.InputOutputType.PDFFILE
 
     TAG_COLWIDTH = 2.3 * cm

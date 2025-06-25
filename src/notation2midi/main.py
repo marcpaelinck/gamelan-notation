@@ -4,14 +4,15 @@ from tkinter.messagebox import askyesno
 
 from src.common.logger import Logging
 from src.common.pipeline import PipeLine
+from src.notation2midi.pipeline.apply_rules import RulesAgent
 from src.notation2midi.pipeline.create_execution import ExecutionCreatorAgent
 from src.notation2midi.pipeline.create_note_patterns import NotePatternGeneratorAgent
 from src.notation2midi.pipeline.export_to_midiplayer import (
     MidiPlayerUpdatePartAgent,
     MidiPlayerUpdatePdfAgent,
 )
-from src.notation2midi.pipeline.notation_parser_tatsu import NotationParserAgent
 from src.notation2midi.pipeline.notation_to_score import ScoreCreatorAgent
+from src.notation2midi.pipeline.parse_notation import NotationParserAgent
 from src.notation2midi.pipeline.score_to_midi import MidiGeneratorAgent
 from src.notation2midi.pipeline.score_to_notation import ScoreToNotationAgent
 from src.notation2midi.pipeline.score_to_pdf import PDFGeneratorAgent
@@ -26,9 +27,10 @@ logger = Logging.get_logger(__name__)
 PIPE = [
     SettingsValidationAgent,
     NotationParserAgent,  # -> NotationRecords
-    ScoreCreatorAgent,  # -> Score with Notes: pitch, octave, stroke, duration, rest
-    # RulesApplicationAgent, # TODO To be added. Processes notation for instrument groups: casts notes to individual instruments. -> IScore with INotes: Note + position, rule and transformation
-    NotePatternGeneratorAgent,  # -> PattScore: Score with PattNotes: INote + pattern + UUID
+    ScoreCreatorAgent,  # -> Score with grouped instruments and UnboundNotes: pitch, modifiers
+    RulesAgent,  # TODO To be added. Processes notation for instrument groups: casts notes to individual instruments. -> IScore with BoundNotes: octave, stroke and rel. duration + rule and transformation
+    # should also update grace note octaves
+    NotePatternGeneratorAgent,  # -> PattScore: Score with enhanced BoundNotes containing pattern(MidiNotes) + UUID
     ScoreUpdateAgent,  # Fills empty and shorthand beats + applies metadata. -> CompleteScore
     ScoreValidationAgent,
     ExecutionCreatorAgent,  # Creates Execution for the ExtScore -> Execution

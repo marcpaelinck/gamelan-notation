@@ -28,8 +28,8 @@ class ExecutionCreatorAgent(Agent):
     See Execution class for more information.
     """
 
-    AGENT_TYPE = Agent.AgentType.EXECUTIONCREATOR
-    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.SCORE,)
+    LOGGING_MESSAGE = "CREATING SCORE EXECUTION"
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.COMPLETESCORE,)
     RETURN_TYPE = Agent.InputOutputType.EXECUTION
 
     score: Score

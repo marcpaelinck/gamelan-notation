@@ -22,8 +22,8 @@ from src.notation2midi.pipeline.export_to_midiplayer import (
     MidiPlayerUpdatePartAgent,
     MidiPlayerUpdatePdfAgent,
 )
-from src.notation2midi.pipeline.notation_parser_tatsu import NotationParserAgent
 from src.notation2midi.pipeline.notation_to_score import ScoreCreatorAgent
+from src.notation2midi.pipeline.parse_notation import NotationParserAgent
 from src.notation2midi.pipeline.score_to_midi import MidiGeneratorAgent
 from src.notation2midi.pipeline.score_to_pdf import PDFGeneratorAgent
 from src.notation2midi.pipeline.score_validation import ScoreValidationAgent
@@ -82,7 +82,7 @@ class PipeLine:
                 )
                 if missing_input:
                     logger.error(
-                        f"Invalid pipeline sequence: missing input {missing_input} for {agentclass.AGENT_TYPE.name}."
+                        f"Invalid pipeline sequence: missing input {missing_input} for {agentclass.LOGGING_MESSAGE.name}."
                     )
                     return False
             if agentclass.RETURN_TYPE:
@@ -115,7 +115,7 @@ class PipeLine:
                 ]
                 if missing_values:
                     logger.error(
-                        "Missing input value(s) %s for %s", ", ".join(missing_values), agentclass.AGENT_TYPE.name
+                        "Missing input value(s) %s for %s", ", ".join(missing_values), agentclass.LOGGING_MESSAGE.name
                     )
                     self.do_quit()
             # Retrieve the required parameters

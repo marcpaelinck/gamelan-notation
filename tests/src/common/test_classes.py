@@ -3,7 +3,7 @@ from typing import Any
 
 from src.common.constants import InstrumentGroup, Pitch, Position, RuleValue, Stroke
 from src.common.notes import Note, Tone
-from src.common.rules import RulesEngine
+from src.notation2midi.rules.rules import RulesEngine
 from src.settings.constants import NoteFields
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase

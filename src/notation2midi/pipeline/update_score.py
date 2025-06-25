@@ -36,15 +36,11 @@ from src.settings.classes import RunSettings
 
 
 class ScoreUpdateAgent(Agent):
-    """Parser that converts notation documents into a hierarchical dict structure. It uses the
-    Tatsu library in combination with ebnf grammar files.
-    The parser has no 'knowledge' about the instruments and idiom of the music. It only checks the
-    basic structure of the notation as described in the grammar files and reports any syntax error.
-    """
+    """Fills empty and shorthand beats and applies metadata."""
 
-    AGENT_TYPE = Agent.AgentType.NOTEPATTERNCREATOR
-    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.SCORE,)
-    RETURN_TYPE = None
+    LOGGING_MESSAGE = "APPLYING METADATA"
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.BOUNDSCORE,)
+    RETURN_TYPE = Agent.InputOutputType.COMPLETESCORE
 
     score: Score
 
@@ -462,5 +458,5 @@ class ScoreUpdateAgent(Agent):
             self._apply_metadata(gongan)
         # Add kempli beats
         self._add_missing_measures(add_kempli=True)
-        x = 1
         # self._add_pattern_to_rests()
+        return self.score

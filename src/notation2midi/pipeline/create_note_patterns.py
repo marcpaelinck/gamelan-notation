@@ -13,9 +13,9 @@ class NotePatternGeneratorAgent(Agent):
     basic structure of the notation as described in the grammar files and reports any syntax error.
     """
 
-    AGENT_TYPE = Agent.AgentType.NOTEPATTERNCREATOR
-    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.SCORE,)
-    RETURN_TYPE = None
+    LOGGING_MESSAGE = "GENERATING NOTE PATTERNS"
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.BOUNDSCORE,)
+    RETURN_TYPE = Agent.InputOutputType.PATTERNSCORE
 
     score: Score
 
@@ -55,4 +55,4 @@ class NotePatternGeneratorAgent(Agent):
         for pattern in self.patterns:
             pattern.note.pattern.clear()
             pattern.note.pattern.extend(pattern.pattern)
-        return None
+        return self.score

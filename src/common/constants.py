@@ -254,16 +254,13 @@ class Modifier(NotationEnum):
     # 4. duration modifiers
     # 5. other modifiers
     NONE = "NONE"
-    # Font4
-    MODIFIER_PREV1 = "MODIFIER_PREV1"
-    MODIFIER_PREV2 = "MODIFIER_PREV2"
-    # Font5
     OCTAVE_0 = "OCTAVE_0"
     OCTAVE_2 = "OCTAVE_2"
     ABBREVIATE = "ABBREVIATE"
     MUTE = "MUTE"
     HALF_NOTE = "HALF_NOTE"
     QUARTER_NOTE = "QUARTER_NOTE"
+    GRACE_NOTE = "GRACE_NOTE"
     TREMOLO = "TREMOLO"
     TREMOLO_ACCELERATING = "TREMOLO_ACCELERATING"
     NOROT = "NOROT"

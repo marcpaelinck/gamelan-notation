@@ -82,7 +82,7 @@ class MidiPlayerUpdateAgentModel(Agent):
 class MidiPlayerUpdatePartAgent(MidiPlayerUpdateAgentModel):
     """Updates the Part info in the content.json file in the midiplayer data folder."""
 
-    AGENT_TYPE = Agent.AgentType.MIDIPLAYERPARTUPDATER
+    LOGGING_MESSAGE = "UPDATING PART INFO IN MIDI PLAYER CONTENT"
     EXPECTED_INPUT_TYPES = (
         Agent.InputOutputType.RUNSETTINGS,
         Agent.InputOutputType.PART,
@@ -152,7 +152,7 @@ class MidiPlayerUpdatePartAgent(MidiPlayerUpdateAgentModel):
 class MidiPlayerUpdatePdfAgent(MidiPlayerUpdateAgentModel):
     """Updates the PDF info in the content.json file in the midiplayer data folder."""
 
-    AGENT_TYPE = Agent.AgentType.MIDIPLAYERPDFUPDATER
+    LOGGING_MESSAGE = "UPDATING PDF INFO IN MIDI PLAYER CONTENT"
     EXPECTED_INPUT_TYPES = (
         Agent.InputOutputType.RUNSETTINGS,
         Agent.InputOutputType.PDFFILE,

@@ -17,7 +17,7 @@ logger = Logging.get_logger(__name__)
 class SettingsValidationAgent(Agent):
     """Validates the definition files in the settings folder."""
 
-    AGENT_TYPE = Agent.AgentType.SETTINGSVALIDATOR
+    LOGGING_MESSAGE = "VALIDATING RUN SETTINGS"
     EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS,)
     RETURN_TYPE = None
 

@@ -17,8 +17,8 @@ from src.settings.constants import InstrumentFields
 class ScoreToNotationAgent(Agent):
     """Saves a corrected version of the notation input file"""
 
-    AGENT_TYPE = Agent.AgentType.NOTATIONGENERATOR
-    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.SCORE)
+    LOGGING_MESSAGE = "EXPORTING CORRECTED NOTATION"
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.UNBOUNDSCORE)
     RETURN_TYPE = None
 
     def __init__(self, run_settings: RunSettings, score: Score):

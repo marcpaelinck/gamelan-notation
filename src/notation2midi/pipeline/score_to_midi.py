@@ -10,7 +10,6 @@ from mido import MidiFile
 
 from src.common.classes import Beat, Preset
 from src.common.constants import DEFAULT, Pitch, Position
-from src.common.notes import Note
 from src.notation2midi.classes import Agent
 from src.notation2midi.execution.execution import Execution
 from src.notation2midi.metadata_classes import PartMeta
@@ -21,7 +20,7 @@ from src.settings.classes import PartForm, RunSettings
 class MidiGeneratorAgent(Agent):
     """This Parser creates a MIDI file based on a Score objects."""
 
-    AGENT_TYPE = Agent.AgentType.MIDIGENERATOR
+    LOGGING_MESSAGE = "EXPORTING MIDI FILE"
     EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.EXECUTION)
     RETURN_TYPE = Agent.InputOutputType.PART
 

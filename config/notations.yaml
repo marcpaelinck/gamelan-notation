@@ -45,6 +45,8 @@ notationfiles:
     cendrawasih:
         title: Cendrawasih
         subfolder: cendrawasih
+        midi_out_file_pattern: !!str "${{_PARENT_.title}}_{part_id}_${{midi.midiversion}}_TEST.mid"
+        pdf_out_file_pattern: !!str "${{_PARENT_.title}}_{part_id}_${{midi.midiversion}}_TEST.pdf"
         parts:
             full:
                 name: entire piece
