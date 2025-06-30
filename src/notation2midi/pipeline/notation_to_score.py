@@ -12,12 +12,10 @@ from src.common.constants import (  # RuleType,
     DEFAULT,
     NotationDict,
     ParserTag,
-    Pitch,
     Position,
-    Stroke,
     VelocityInt,
 )
-from src.common.notes import GenericNote, Note, NoteFactory, Tone
+from src.common.notes import NoteFactory
 
 # from src.common.rules import RulesEngine
 from src.notation2midi.classes import Agent, MetaDataRecord, NamedIntID
@@ -40,7 +38,7 @@ class ScoreCreatorAgent(Agent):
 
     LOGGING_MESSAGE = "CONVERTING NOTATION DICT TO SCORE"
     EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.NOTATION)
-    RETURN_TYPE = Agent.InputOutputType.UNBOUNDSCORE
+    RETURN_TYPE = Agent.InputOutputType.GENERICSCORE
 
     notation: Notation = None
     score: Score = None
@@ -111,7 +109,7 @@ class ScoreCreatorAgent(Agent):
                             Measure.Pass(
                                 seq=stave[ParserTag.PASS],
                                 line=stave[ParserTag.LINE],
-                                notes=(
+                                generic_notes=(
                                     stave[ParserTag.MEASURES][beat_seq]
                                     if beat_seq < len(stave[ParserTag.MEASURES])
                                     else []
@@ -172,11 +170,13 @@ class ScoreCreatorAgent(Agent):
                 gongan_info[ParserTag.METADATA] = [meta for meta in metadata_list if meta.scope == Scope.GONGAN]
                 self.score.global_metadata.extend([meta for meta in metadata_list if meta.scope == Scope.SCORE])
             for self.curr_measure_id, measures in gongan_info[ParserTag.BEATS].items():
-                # Generate measure content: convert NoteRecord objects to Note objects.
+                # Generate measure content: convert NoteRecord objects to GenericNote objects.
                 for _, measure in measures.items():
                     for _, pass_ in measure.passes.items():
                         self.curr_line_nr = pass_.line
-                        pass_.notes = [NoteFactory.get_unbound_note(notechars) for notechars in pass_.notes]
+                        pass_.generic_notes = [
+                            NoteFactory.get_generic_note(notechars) for notechars in pass_.generic_notes
+                        ]
                         # pass_.notes = self._convert_to_notes(
                         #     pass_.notes,
                         #     measure.position,

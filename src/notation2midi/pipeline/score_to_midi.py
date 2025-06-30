@@ -137,7 +137,7 @@ class MidiGeneratorAgent(Agent):
             except KeyError:
                 self.logerror(f"No measure found for {position} in beat {beat.full_id}. Program halted.")
                 sys.exit()
-            for note in pass_.notes:
+            for note in pass_.generic_notes:
                 # Retrieve the pattern represented by the note, if any (returns a list containing the note if no pattern)
                 if not note.pattern:
                     print(f"ERROR {note.pitch} {note.position} has no pattern")

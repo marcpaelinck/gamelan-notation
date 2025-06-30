@@ -21,9 +21,11 @@ from src.common.constants import (
     MIDIvalue,
     MidiVersion,
     Modifier,
+    ModifierType,
     NotationFontVersion,
     NoteOct,
     Octave,
+    PatternType,
     Pitch,
     Position,
     RuleParameter,
@@ -36,6 +38,7 @@ from src.settings.constants import (
     ENV_VAR_CONFIG_PATH,
     ENV_VAR_N2M_SETTINGS_PATH,
     ENV_VAR_NOTATIONS_PATH,
+    InstrumentFields,
     Yaml,
 )
 
@@ -71,11 +74,14 @@ DATA = {
         "folder": "folder",
         "filename": "instruments_file",
         "formats": {
-            "group": ([InstrumentGroup], None),
-            "position": ([Position], None),
-            "instrumenttype": ([InstrumentType], None),
-            "position_range": ([Pitch], []),
-            "extended_position_range": ([Pitch], []),
+            InstrumentFields.GROUP: ([InstrumentGroup], None),
+            InstrumentFields.POSITION: ([Position], None),
+            InstrumentFields.INSTRUMENT: ([InstrumentType], None),
+            InstrumentFields.TONES: ([Pitch], []),
+            InstrumentFields.EXTENDED_TONES: ([Pitch], []),
+            InstrumentFields.STROKES: ([Stroke], []),
+            InstrumentFields.PATTERNS: ([Stroke], []),
+            InstrumentFields.RESTS: ([Stroke], []),
         },
     },
     "instrument_tags": {
@@ -153,6 +159,16 @@ DATA = {
             "duration": ([], None),
             "rest_after": ([], None),
             "modifier": ([Modifier], Modifier.NONE),
+        },
+    },
+    "modifiers": {
+        "section": "font",
+        "folder": "folder",
+        "filename": "modifier_file",
+        "formats": {
+            "modifier": ([Modifier], Modifier.NONE),
+            "mod_type": ([ModifierType], ModifierType.NONE),
+            "value": ([Stroke, PatternType], None),
         },
     },
 }
@@ -463,6 +479,7 @@ class SettingsOptions(BaseModel):
 class Data(BaseModel):
     # Contains pre-formatted table data
     font: list[dict[str, Any]] | None
+    modifiers: list[dict[str, Any]] | None
     instruments: list[dict[str, Any]] | None
     instrument_tags: list[dict[str, Any]] | None
     rules: list[dict[str, Any]] | None

@@ -104,10 +104,14 @@ class InstrumentFields(SStrEnum):
     """config/instruments/instruments.tsv"""
 
     GROUP = "group"
+    INSTRUMENTTYPE = "instrumenttype"
     INSTRUMENT = "instrument"
     POSITION = "position"
-    PITCHES = "pitches"
-    EXTENDED_PITCHES = "extended_pitches"
+    TONES = "tones"
+    EXTENDED_TONES = "extended_tones"
+    STROKES = "strokes"
+    PATTERNS = "patterns"
+    RESTS = "rests"
 
 
 class InstrumentTagFields(SStrEnum):

@@ -52,6 +52,7 @@ font:
     folder: ./config/font
     file: balimusic5font.tsv
     ttf_file: bali-music-5.ttf
+    modifier_file: modifiers.tsv
 grammar:
     folder: ./config/grammars
     notationfile: notation.ebnf

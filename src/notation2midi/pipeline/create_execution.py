@@ -34,9 +34,9 @@ class ExecutionCreatorAgent(Agent):
 
     score: Score
 
-    def __init__(self, score: Score):
-        super().__init__(score.settings)
-        self.score = score
+    def __init__(self, complete_score: Score):
+        super().__init__(complete_score.settings)
+        self.score = complete_score
         self.execution = Execution(score=self.score)
 
     @override

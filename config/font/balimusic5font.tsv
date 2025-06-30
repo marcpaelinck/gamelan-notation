@@ -3,25 +3,25 @@ symbol	unicode	symbol_description	balifont_symbol_description	pitch	octave	strok
 )	0x0029	right round bracket	serifless u	KUNG		OPEN	1.0	0.0	NONE	kendang kung (ladon)
 *	0x002a	asterisk	p	PAK		OPEN	1.0	0.0	NONE	kendang pak (lanang)
 ,	0x002c	comma	dot under preceding note character	NONE	0	NONE			OCTAVE_0	sets octave of preceding note to 0
--	0x002d	hyphen	dash	NONE		EXTENSION	1.0	0.0	NONE	extends note duration
-.	0x002e	period	dot	NONE		SILENCE	0.0	1.0	NONE	silence (muted note) open
+-	0x002d	hyphen	dash	NONE		EXTENSION	1.0	0.0	EXTENSION	extends note duration
+.	0x002e	period	dot	NONE		SILENCE	0.0	1.0	SILENCE	silence (muted note) open
 /	0x002f	forward slash	slash right of char (combining)	NONE		ABBREVIATED	0.4	0.6	ABBREVIATE	abbreviates precceding note
 0	0x0030	digit 0	serifless n	CUNG		OPEN	1.0	0.0	NONE	kendang cung (wadon)
 8	0x0038	digit 8	k	KA		OPEN	1.0	0.0	NONE	kendang ka (wadon)
 9	0x0039	digit 9	d	DE		OPEN	1.0	0.0	NONE	kendang dé (wadon)
 :	0x003A	colon	three vertical lines above char (combining)	NONE		TREMOLO_ACCELERATING			TREMOLO_ACCELERATING	repeated, rapid beats on preceding note 
 ;	0x003B	semicolon	three vertical lines of increasing length above char (combining)	NONE		TREMOLO			TREMOLO	repeated beats on preceding note, starting slowly and accelerating
-A	0x0041	uppercase A	superscript a in front of next note	DANG	1	GRACE_NOTE	0	0	GRACE_NOTE	grace note, will be combined with previous note
-B	0x0041	uppercase B	superscript b in front of next note	BYONG		GRACE_NOTE	0	0	GRACE_NOTE	grace note , will be combined with previous note
-E	0x0045	uppercase E	superscript e in front of next note	DENG	1	GRACE_NOTE	0	0	GRACE_NOTE	grace note, will be combined with previous note
+A	0x0041	uppercase A	superscript a in front of next note	DANG	1	GRACE_NOTE	1	0	GRACE_NOTE	grace note, will be combined with previous note
+B	0x0041	uppercase B	superscript b in front of next note	BYONG		GRACE_NOTE	1	0	GRACE_NOTE	grace note , will be combined with previous note
+E	0x0045	uppercase E	superscript e in front of next note	DENG	1	GRACE_NOTE	1	0	GRACE_NOTE	grace note, will be combined with previous note
 G	0x0047	uppercase G	G	GIR		OPEN	1.0	0.0	NONE	gir
-I	0x0049	uppercase I	superscript i in front of next note	DING	1	GRACE_NOTE	0	0	GRACE_NOTE	grace note, will be combined with previous note
-O	0x004F	uppercase O	superscript o in front of next note	DONG	1	GRACE_NOTE	0	0	GRACE_NOTE	grace note, will be combined with previous note
+I	0x0049	uppercase I	superscript i in front of next note	DING	1	GRACE_NOTE	1	0	GRACE_NOTE	grace note, will be combined with previous note
+O	0x004F	uppercase O	superscript o in front of next note	DONG	1	GRACE_NOTE	1	0	GRACE_NOTE	grace note, will be combined with previous note
 P	0x0050	uppercase P	P	PUR		OPEN	1.0	0.0	NONE	pur
-S	0x0053	uppercase S	superscript a and i combined	DAING	1	GRACE_NOTE	0	0	GRACE_NOTE	grace note, will be combined with previous note
+S	0x0053	uppercase S	superscript a and i combined	DAING	1	GRACE_NOTE	1	0	GRACE_NOTE	grace note, will be combined with previous note
 T	0x0054	uppercase T	T	TONG		OPEN	1.0	0.0	NONE	tong
-U	0x0055	uppercase U	superscript u in front of next note	DUNG	1	GRACE_NOTE	0	0	GRACE_NOTE	grace note, will be combined with previous note
-X	0x0058	uppercase X	superscript x in front of next note	STRIKE		GRACE_NOTE	0	0	GRACE_NOTE	grace note, will be combined with previous note
+U	0x0055	uppercase U	superscript u in front of next note	DUNG	1	GRACE_NOTE	1	0	GRACE_NOTE	grace note, will be combined with previous note
+X	0x0058	uppercase X	superscript x in front of next note	STRIKE		GRACE_NOTE	1	0	GRACE_NOTE	grace note, will be combined with previous note
 a	0x0061	lowercase a	a	DANG	1	OPEN	1.0	0.0	NONE	dang1 open
 b	0x0062	lowercase b	b	BYONG		OPEN	1.0	0.0	NONE	byong
 e	0x0065	lowercase e	e	DENG	1	OPEN	1.0	0.0	NONE	deng1 open

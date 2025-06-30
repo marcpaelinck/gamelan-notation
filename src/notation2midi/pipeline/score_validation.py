@@ -23,7 +23,7 @@ from src.settings.classes import RunSettings
 class ScoreValidationAgent(Agent):
 
     LOGGING_MESSAGE = "VALIDATING SCORE"
-    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.UNBOUNDSCORE)
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.COMPLETESCORE)
     RETURN_TYPE = None
     POSITIONS_AUTOCORRECT_UNEQUAL_MEASURES = [
         Position.UGAL,
@@ -37,9 +37,9 @@ class ScoreValidationAgent(Agent):
         (Position.KANTILAN_POLOS, Position.KANTILAN_SANGSIH),
     ]
 
-    def __init__(self, run_settings: RunSettings, score: Score):
+    def __init__(self, run_settings: RunSettings, complete_score: Score):
         super().__init__(run_settings)
-        self.score = score
+        self.score = complete_score
 
     @override
     @classmethod
@@ -196,8 +196,8 @@ class ScoreValidationAgent(Agent):
         def note_pairs(beat: Beat, pair: list[InstrumentType]):
             return list(
                 zip(
-                    [n for n in beat.measures[pair[0]].passes[DEFAULT].notes],
-                    [n for n in beat.measures[pair[1]].passes[DEFAULT].notes],
+                    beat.measures[pair[0]].passes[DEFAULT].notes,
+                    beat.measures[pair[1]].passes[DEFAULT].notes,
                 )
             )
 
@@ -243,25 +243,25 @@ class ScoreValidationAgent(Agent):
                                     == kempyung_dict[(polosnote.pitch, polosnote.octave)]
                                 ):
                                     if autocorrect and iteration == 2:
-                                        correct_note, correct_octave = kempyung_dict[
+                                        correct_pitch, correct_octave = kempyung_dict[
                                             (polosnote.pitch, polosnote.octave)
                                         ]
                                         correct_sangsih = Note(
                                             position=sangsih,
-                                            pitch=correct_note,
+                                            pitch=correct_pitch,
                                             octave=correct_octave,
                                             stroke=sangsihnote.stroke,
-                                            duration=sangsihnote.duration,
-                                            rest_after=sangsihnote.rest_after,
+                                            note_value=sangsihnote.note_value,
+                                            generic_note=sangsihnote.generic_note,
                                         )
                                         # Replace the note pattern
                                         # pylint: disable=no-member
-                                        correct_sangsih.pattern.clear()
-                                        correct_sangsih.pattern.append(correct_sangsih.to_pattern_note())
+                                        # correct_sangsih.pattern.clear()
+                                        # correct_sangsih.pattern.append(correct_sangsih.to_pattern_note())
                                         # pylint: enable=no-member
                                         if not (correct_sangsih):
                                             self.logerror(
-                                                f"Trying to create an incorrect combination {sangsih} {correct_note} OCT{correct_octave} {sangsihnote.stroke} duration={sangsihnote.duration} rest_after{sangsihnote.rest_after} while correcting kempyung."
+                                                f"Trying to create an incorrect combination {sangsih} {correct_pitch} OCT{correct_octave} {sangsihnote.stroke} duration={sangsihnote.duration} rest_after{sangsihnote.rest_after} while correcting kempyung."
                                             )
                                         beat.get_notes(sangsih, DEFAULT)[seq] = correct_sangsih
                                         autocorrected = True

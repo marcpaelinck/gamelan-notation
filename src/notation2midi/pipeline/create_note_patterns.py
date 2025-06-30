@@ -19,9 +19,9 @@ class NotePatternGeneratorAgent(Agent):
 
     score: Score
 
-    def __init__(self, score: Score):
-        super().__init__(score.settings)
-        self.score = score
+    def __init__(self, bound_score: Score):
+        super().__init__(bound_score.settings)
+        self.score = bound_score
         self.pattern_generator = NotePatternGenerator(self.run_settings)
         self.patterns: list[NotePattern] = []
 
@@ -36,9 +36,9 @@ class NotePatternGeneratorAgent(Agent):
                 for passnr, pass_ in measure.passes.items():
                     self.curr_line_nr = pass_.line
                     try:
-                        self.patterns += self.pattern_generator.update_grace_notes_octaves(
-                            beat=beat, position=position, passnr=passnr
-                        )
+                        # self.patterns += self.pattern_generator.update_grace_notes_octaves(
+                        #     beat=beat, position=position, passnr=passnr
+                        # )
                         self.patterns += self.pattern_generator.generate_tremolo(
                             beat=beat,
                             position=position,

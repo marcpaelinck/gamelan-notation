@@ -115,7 +115,7 @@ class PipeLine:
                 ]
                 if missing_values:
                     logger.error(
-                        "Missing input value(s) %s for %s", ", ".join(missing_values), agentclass.LOGGING_MESSAGE.name
+                        "Missing input value(s) %s for %s", ", ".join(missing_values), agentclass.LOGGING_MESSAGE
                     )
                     self.do_quit()
             # Retrieve the required parameters

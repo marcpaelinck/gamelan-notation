@@ -91,7 +91,7 @@ def create_beat(beat_id: int = 1, content: dict[PositionNote, list[Note]] = None
         pn.position: Measure(
             position=pn.position,
             all_positions=pn.position,
-            passes={DEFAULT: Measure.Pass(seq=-1, notes=[note for note in measure])},
+            passes={DEFAULT: Measure.Pass(seq=-1, generic_notes=[note for note in measure])},
         )
         for pn, measure in content.items()
     }

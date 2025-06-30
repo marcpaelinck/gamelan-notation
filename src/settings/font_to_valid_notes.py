@@ -308,7 +308,12 @@ def create_note_records(run_settings: RunSettings) -> list[AnyNote]:
 
     # Add notes with half and quarter duration
     modifiers = [Modifier.HALF_NOTE, Modifier.QUARTER_NOTE]
-    note_filter = lambda note: note.duration + note.rest_after == 1
+    note_filter = lambda note: note.duration + note.rest_after == 1 and note.stroke not in [
+        Stroke.GRACE_NOTE,
+        Stroke.TREMOLO,
+        Stroke.TREMOLO_ACCELERATING,
+        Stroke.NOROT,
+    ]
     duration_updater = lambda note, mod: note.duration * (mod.duration + mod.rest_after)
     restafter_updater = lambda note, mod: note.rest_after * (mod.duration + mod.rest_after)
     short_notes = modified_notes(

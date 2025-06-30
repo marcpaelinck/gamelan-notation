@@ -63,9 +63,9 @@ class Agent:
 
         RUNSETTINGS = "run_settings"
         NOTATION = "notation"
-        UNBOUNDSCORE = "unbound score"
-        BOUNDSCORE = "bound score"
-        PATTERNSCORE = "pattern score"
+        GENERICSCORE = "generic_score"
+        BOUNDSCORE = "bound_score"
+        PATTERNSCORE = "pattern_score"
         COMPLETESCORE = "complete score"
         EXECUTION = "execution"
         PART = "part"

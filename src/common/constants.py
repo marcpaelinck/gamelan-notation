@@ -153,6 +153,7 @@ class RuleParameter(NotationEnum):
 class RuleValue(NotationEnum):
     ANY = "ANY"
     SAME_TONE = "SAME_TONE"
+    SAME_TONE_EXTENDED = "SAME_TONE_EXTENDED"
     SAME_PITCH = "SAME_PITCH"
     SAME_PITCH_EXTENDED_RANGE = "SAME_PITCH_EXTENDED_RANGE"
     EXACT_KEMPYUNG = "EXACT_KEMPYUNG"
@@ -239,8 +240,15 @@ class Stroke(NotationEnum):
     CUNGKUNG = "CUNGKUNG"
     TREMOLO = "TREMOLO"
     TREMOLO_ACCELERATING = "TREMOLO_ACCELERATING"
+    NOROT = "NOROT"
     EXTENSION = "EXTENSION"
     SILENCE = "SILENCE"
+    NONE = "NONE"
+
+
+class PatternType(NotationEnum):
+    TREMOLO = "TREMOLO"
+    TREMOLO_ACCELERATING = "TREMOLO_ACCELERATING"
     NOROT = "NOROT"
     NONE = "NONE"
 
@@ -264,6 +272,16 @@ class Modifier(NotationEnum):
     TREMOLO = "TREMOLO"
     TREMOLO_ACCELERATING = "TREMOLO_ACCELERATING"
     NOROT = "NOROT"
+    EXTENSION = "EXTENSION"
+    SILENCE = "SILENCE"
+
+
+class ModifierType(NotationEnum):
+    STROKE = "STROKE"
+    OCTAVE = "OCTAVE"
+    PATTERN = "PATTERN"
+    VALUE = "VALUE"
+    NONE = "NONE"
 
 
 class AnimationProfiles(NotationEnum):

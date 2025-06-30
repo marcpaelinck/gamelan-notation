@@ -50,7 +50,7 @@ class PDFGeneratorAgent(Agent):
     """PDF generator"""
 
     LOGGING_MESSAGE = "EXPORTING PDF NOTATION"
-    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.UNBOUNDSCORE)
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.GENERICSCORE)
     RETURN_TYPE = Agent.InputOutputType.PDFFILE
 
     TAG_COLWIDTH = 2.3 * cm
@@ -59,9 +59,9 @@ class PDFGeneratorAgent(Agent):
     W = 0
     H = 1
 
-    def __init__(self, run_settings: RunSettings, score: Score):
+    def __init__(self, run_settings: RunSettings, complete_score: Score):
         super().__init__(run_settings)
-        self.score = score
+        self.score = complete_score
         self.template = NotationTemplate(self.score.settings)
         self.current_tempo = -1
         self.current_dynamics = -1  # Not used currently

@@ -15,7 +15,6 @@ from pydantic import BaseModel, Field
 
 from src.common.constants import (
     InstrumentGroup,
-    InstrumentType,
     Position,
     RuleParameter,
     RuleType,
@@ -23,9 +22,6 @@ from src.common.constants import (
 )
 from src.common.notes import Tone
 from src.notation2midi.metadata_classes import MetaData
-from src.notation2midi.rules.rule_cast_to_position import RuleCastToPosition
-from src.notation2midi.rules.rule_parse_modifiers import RuleParseModifiers
-from src.notation2midi.rules.rule_set_gracenote_octave import RuleSetGracenoteOctave
 from src.settings.classes import RunSettings
 from src.settings.constants import InstrumentFields, RuleFields
 from src.settings.settings import RunSettingsListener
@@ -40,42 +36,113 @@ class RuleDefinition:
 
 class Instrument(BaseModel, RunSettingsListener):
 
-    group: InstrumentGroup
-    positions: list[Position]
-    instrumenttype: InstrumentType
-    position_ranges: dict[Position, list[Tone]] = Field(default_factory=lambda: defaultdict(list))
-    extended_position_ranges: dict[Position, list[Tone]] = Field(default_factory=lambda: defaultdict(list))
-    instrument_range: list[Tone] = Field(default_factory=list)
+    # group: InstrumentGroup
+    # positions: list[Position]
+    # instrumenttype: InstrumentType
+    # position_ranges: dict[Position, list[Tone]] = Field(default_factory=lambda: defaultdict(list))
+    # extended_position_ranges: dict[Position, list[Tone]] = Field(default_factory=lambda: defaultdict(list))
+    # instrument_range: list[Tone] = Field(default_factory=list)
 
-    def merge(self, other: "Instrument") -> "Instrument":
-        """
-        Merge the data of another Instrument object into this one.
+    # def merge(self, other: "Instrument") -> "Instrument":
+    #     """
+    #     Merge the data of another Instrument object into this one.
 
-        If the other Instrument is None, returns self unchanged. Otherwise, combines the positions, position ranges,
-        extended position ranges, and instrument ranges of both Instrument objects. The instrument_range is merged,
-        duplicates are removed, and the result is sorted by the 'key' attribute.
+    #     If the other Instrument is None, returns self unchanged. Otherwise, combines the positions, position ranges,
+    #     extended position ranges, and instrument ranges of both Instrument objects. The instrument_range is merged,
+    #     duplicates are removed, and the result is sorted by the 'key' attribute.
+
+    #     Args:
+    #         other (Instrument): Another Instrument object to merge with this one.
+
+    #     Returns:
+    #         Instrument: The updated Instrument object with merged data.
+    #     """
+    #     if not other:
+    #         return self
+    #     # Merge the data of two Instrument objects.
+    #     self.positions += other.positions  # pylint: disable=no-member; -> incorrect warning
+    #     self.position_ranges = self.position_ranges | other.position_ranges
+    #     self.extended_position_ranges = self.extended_position_ranges | other.extended_position_ranges
+    #     self.instrument_range = sorted(list(set(self.instrument_range + other.instrument_range)), key=lambda x: x.key)
+    #     return self
+
+    DEFAULT_RANGE: ClassVar[dict] = {}
+    MAX_RANGE: ClassVar[dict] = {}
+    ORCHESTRA_RANGE: ClassVar[list] = []
+
+    @classmethod
+    def _init_pos_ranges(cls, run_settings: RunSettings):
+        """Populates the class's range dicts and lists."""
+        all_tones = set()
+        cls.DEFAULT_RANGE = {}
+        cls.MAX_RANGE = {}
+        for row in run_settings.data.instruments:
+            if (InstrumentGroup[row["group"]]) != run_settings.instrumentgroup:
+                continue
+            # Create an Instrument object for the current data record, which contains data for a single
+            # instrument position.
+            cls.DEFAULT_RANGE[row[InstrumentFields.POSITION]] = sorted(
+                [Tone(pitch=pitch, octave=octave) for pitch, octave in row[InstrumentFields.TONES]],
+                key=lambda tone: tone.key,
+            )
+            cls.MAX_RANGE[row[InstrumentFields.POSITION]] = sorted(
+                [
+                    Tone(pitch=pitch, octave=octave)
+                    for pitch, octave in row[InstrumentFields.TONES] + row[InstrumentFields.EXTENDED_TONES]
+                ],
+                key=lambda x: x.key,
+            )
+            all_tones.update(set(cls.MAX_RANGE[row[InstrumentFields.POSITION]]))
+
+        cls.ORCHESTRA_RANGE = sorted(list(all_tones), key=lambda x: x.key)
+
+    @classmethod
+    @override
+    def cls_initialize(cls, run_settings: "RunSettings"):
+        cls._init_pos_ranges(run_settings)
+
+    @classmethod
+    def get_range(cls, position: Position, extended: bool = False) -> list[Tone]:
+        return cls.MAX_RANGE[position] if extended else Instrument.DEFAULT_RANGE[position]
+
+    @classmethod
+    def get_tones_within_range(
+        cls, tone: Tone, position: Position, extended_range: bool = False, match_octave=False
+    ) -> list[Tone]:
+        # The list is sorted by absolute distance to tone.octave in sequence 0, +1, -1, +2, -2
+        return sorted(
+            [
+                t
+                for t in cls.get_range(position, extended=extended_range)
+                if t.pitch == tone.pitch and (t.octave == tone.octave or not match_octave)
+            ],
+            key=lambda x: abs(x.octave - tone.octave - 0.1),
+        )
+
+    # TODO move to separate utils class
+
+    @classmethod
+    def interval(cls, tone1: Tone, tone2: Tone) -> int:
+        """Returns the difference between the indices of the tones in their natural sorting order.
 
         Args:
-            other (Instrument): Another Instrument object to merge with this one.
+            tone1 (Tone): lower tone
+            tone2 (Tone): higher tone
+
+        Raises:
+            Exception: if either tone is not within the instrument group's range.
 
         Returns:
-            Instrument: The updated Instrument object with merged data.
+            int: the interval
         """
-        if not other:
-            return self
-        # Merge the data of two Instrument objects.
-        self.positions += other.positions  # pylint: disable=no-member; -> incorrect warning
-        self.position_ranges = self.position_ranges | other.position_ranges
-        self.extended_position_ranges = self.extended_position_ranges | other.extended_position_ranges
-        self.instrument_range = sorted(list(set(self.instrument_range + other.instrument_range)), key=lambda x: x.key)
-        return self
+        if not (tone1 in cls.ORCHESTRA_RANGE and tone2 in cls.ORCHESTRA_RANGE):
+            raise ValueError(f"{tone1} and/or {tone2} not within the orchestra's range.")
+        return cls.ORCHESTRA_RANGE.index(tone2) - cls.ORCHESTRA_RANGE.index(tone1)
 
 
-class Rule(RunSettingsListener):
-    _RANGE: dict[Position, list[Tone]]  # default tone range per position (e.g. reyong1: deng0..dang0)
-    _EXTENDED_RANGE: dict[Position, list[Tone]]  # max tone range per position (e.g. reyong1: deng0..dong1)
-    _MAX_RANGE: list[Tone]  # all possible tones for the entire orchestra
-    _RULEDEFS: dict[Position, dict[RuleType, list[RuleDefinition]]]  # Rules in the instrument config section
+class Rule:
+
+    NAME = "BASE RULE"  # replace in each subclassed rule
 
     def __init__(self, run_settings: RunSettings):
         self.run_settings = run_settings
@@ -83,75 +150,7 @@ class Rule(RunSettingsListener):
     # pylint: disable=unused-argument
     def fire(
         self, notes: list[Any], position: Position, all_positions: list[Position], metadata: list[MetaData]
-    ) -> Any: ...
+    ) -> Any:
+        return notes
 
     # pylint: enable=unused-argument
-
-    @classmethod
-    @override
-    def cls_initialize(cls, run_settings: RunSettings):
-        cls._init_pos_ranges(run_settings)
-        cls._init_ruledefs(run_settings)
-
-    @classmethod
-    def _init_pos_ranges(cls, run_settings: RunSettings):
-        """Populates the class's range dicts and lists."""
-        all_tones = set()
-
-        for row in run_settings.data.instruments:
-            if (InstrumentGroup[row["group"]]) != run_settings.instrumentgroup:
-                continue
-            # Create an Instrument object for the current data record, which contains data for a single
-            # instrument position.
-            cls._RANGE[row[InstrumentFields.POSITION]] = sorted(row[InstrumentFields.PITCHES], key=lambda x: x.key)
-            cls._EXTENDED_RANGE[row[InstrumentFields.POSITION]] = sorted(
-                row[InstrumentFields.PITCHES] + row[InstrumentFields.EXTENDED_PITCHES],
-                key=lambda x: x.key,
-            )
-            all_tones.update(set(cls._EXTENDED_RANGE[row[InstrumentFields.POSITION]]))
-
-        cls._MAX_RANGE = sorted(list(all_tones), key=lambda x: x.key)
-
-    @classmethod
-    def _init_ruledefs(cls, run_settings: RunSettings):
-        """Populates the _RULEDEFS dict."""
-        cls._RULES = defaultdict(lambda: defaultdict(list))
-        for row in run_settings.data.rules:
-            if (InstrumentGroup[row["group"]]) != run_settings.instrumentgroup:
-                continue
-            # Create an Instrument object for the current data record, which contains data for a single
-            # instrument position.
-            record = row.copy()
-            for position in (
-                Position
-                # [pos for pos in Position if not cls._RULES[pos]]
-                if record["positions"] == RuleValue.ANY
-                else record["positions"]
-            ):
-                # Replace a generic rule (= valid for any position) with a specific one.
-                rulelist: list[RuleDefinition] = cls._RULES[position][record[RuleFields.RULETYPE]]
-                ruletype = record[RuleFields.RULETYPE]
-                generic_rule = next(
-                    (r for r in rulelist if r.ruletype == ruletype and r.positions == RuleValue.ANY),
-                    None,
-                )
-                if generic_rule:
-                    rulelist.remove(generic_rule)
-                rulelist.append(
-                    RuleDefinition(
-                        ruletype=record[RuleFields.RULETYPE],
-                        positions=record[RuleFields.POSITIONS],
-                        parameters={
-                            record[parm]: record[val]
-                            for parm, val in [
-                                (RuleFields.PARAMETER1, RuleFields.VALUE1),
-                                (RuleFields.PARAMETER2, RuleFields.VALUE2),
-                            ]
-                            if record[parm]
-                        },
-                    )
-                )
-
-
-class RulesEngine(BaseModel, RunSettingsListener):
-    _RULES: ClassVar[list[Rule]] = [RuleParseModifiers, RuleCastToPosition, RuleSetGracenoteOctave]
