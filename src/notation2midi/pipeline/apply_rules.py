@@ -51,7 +51,7 @@ class RulesAgent(Agent):
                 for position, measure in beat.measures.items():
                     for pass_ in self.pass_iterator(measure):
                         bound_notes = self.execute(
-                            notes=pass_.generic_notes,
+                            notes=pass_.notesymbols,
                             position=position,
                             all_positions=measure.all_positions,
                             metadata=gongan.metadata,

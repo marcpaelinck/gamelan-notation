@@ -1,6 +1,6 @@
 # pylint: disable=missing-module-docstring,missing-class-docstring
 from enum import StrEnum
-from typing import Any, TypeVar, Union
+from typing import Any, TypeVar
 
 from pydantic_core import core_schema
 

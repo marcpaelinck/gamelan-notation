@@ -55,7 +55,7 @@ class MidiPlayerUpdateAgentModel(Agent):
                 presets = [
                     preset
                     for preset in instrument_presets
-                    if preset[PresetsFields.INSTRUMENTGROUP] == instrumentgroup
+                    if preset[PresetsFields.GROUP] == instrumentgroup
                     and preset[PresetsFields.INSTRUMENTTYPE] == instrument.group
                 ]
                 if presets:
@@ -68,7 +68,7 @@ class MidiPlayerUpdateAgentModel(Agent):
                 presets = [
                     preset
                     for preset in instrument_presets
-                    if preset[PresetsFields.INSTRUMENTGROUP] == instrumentgroup
+                    if preset[PresetsFields.GROUP] == instrumentgroup
                     and preset[PresetsFields.POSITION] == instrument.group
                 ]
                 if presets:

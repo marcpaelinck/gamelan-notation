@@ -47,9 +47,7 @@ class RuleCastToPosition(Rule, RunSettingsListener):
     def _init_ruledefs(cls, run_settings: RunSettings) -> dict[Position, dict[RuleType, Any]]:
         """create a rules dict."""
         ruledict = defaultdict(lambda: defaultdict(list))
-        for row in run_settings.data.rules:
-            if (InstrumentGroup[row["group"]]) != run_settings.instrumentgroup:
-                continue
+        for row in run_settings.data.rules.filterOn(run_settings.instrumentgroup):
             # Create an Instrument object for the current data record, which contains data for a single
             # instrument position.
             record = row.copy()
@@ -251,7 +249,7 @@ class RuleCastToPosition(Rule, RunSettingsListener):
                     octave=tone.octave if tone else None,
                     effect=base_note.effect,
                     note_value=base_note.note_value,
-                    generic_note=base_note.generic_note,
+                    notesymbol=base_note.notesymbol,
                 )
             )
         return bound_notes

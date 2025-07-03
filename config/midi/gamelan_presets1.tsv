@@ -1,4 +1,4 @@
-instrumentgroup	instrumenttype	position	bank	preset	channel	port	midioffset	preset_name
+group	instrumenttype	position	bank	preset	channel	port	midioffset	preset_name
 GONG_KEBYAR	KEMPLI		0	0	0	0	0	KEMPLI_GONGS
 GONG_KEBYAR	GONGS		0	0	0	0	0	KEMPLI_GONGS
 GONG_KEBYAR	KENDANG		0	1	1	0	0	KENDANG

@@ -3,12 +3,12 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, TypeVar
 
 import numpy as np
 import pandas as pd
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.common.constants import (
     AnimationProfiles,
@@ -56,7 +56,7 @@ logger = Logging.get_logger(__name__)
 #
 # Structure of the DATA constant:
 # <table-key>: {"section": <top level key>, "folder": <key of data subfolder>, "filename": <key of file name>,
-#               "formats": <dict with formatting info>, "groupfilter": <fieldname containing instrument group>}
+#               "formats": <dict with formatting info>
 #
 # <table-key> is the target attribute of src.settings.classes.Data that should contain the table content.
 # <top level key> refers to keys in config/config.yaml that are direct children of the root.
@@ -72,8 +72,6 @@ logger = Logging.get_logger(__name__)
 #             only argument.
 #      For numeric values the first member should be an empty list.
 #      Any field that does not occur in the "formats" section will be cast to str.
-# <fieldname containing instrument group>: If a "groupname" entry is included, the data will be filtered for the instrument
-#      group that corresponds with the notation selected in notation2midi.yaml, using the given field.
 DATA = {
     "instruments": {
         "section": "instruments",
@@ -89,7 +87,6 @@ DATA = {
             InstrumentFields.PATTERNS: ([PatternType], []),
             InstrumentFields.RESTS: ([Pitch], []),
         },
-        "groupfilter": InstrumentFields.GROUP,
     },
     "instrument_tags": {
         "section": "instruments",
@@ -113,7 +110,6 @@ DATA = {
             RuleFields.PARAMETER2: ([RuleParameter], []),
             RuleFields.VALUE2: ([RuleValue], []),
         },
-        "groupfilter": RuleFields.GROUP,
     },
     "effects": {
         "section": "instruments",
@@ -129,7 +125,7 @@ DATA = {
         "folder": "folder",
         "filename": "midi_definition_file",
         "formats": {
-            MidiNotesFields.INSTRUMENTGROUP: ([InstrumentGroup], None),
+            MidiNotesFields.GROUP: ([InstrumentGroup], None),
             MidiNotesFields.INSTRUMENTTYPE: ([InstrumentType], None),
             MidiNotesFields.POSITIONS: (
                 [Position],
@@ -149,14 +145,13 @@ DATA = {
                 lambda record: record["midinote"] if isinstance(record["midinote"], list) else [record["midinote"]],
             ),
         },
-        "groupfilter": MidiNotesFields.INSTRUMENTGROUP,
     },
     "presets": {
         "section": "midi",
         "folder": "folder",
         "filename": "presets_file",
         "formats": {
-            PresetsFields.INSTRUMENTGROUP: ([InstrumentGroup], None),
+            PresetsFields.GROUP: ([InstrumentGroup], None),
             PresetsFields.INSTRUMENTTYPE: ([InstrumentType], None),
             PresetsFields.POSITION: ([Position], None),
             PresetsFields.BANK: ([], None),
@@ -165,7 +160,6 @@ DATA = {
             PresetsFields.MIDIOFFSET: ([], 0),
             PresetsFields.PORT: ([], None),
         },
-        "groupfilter": PresetsFields.INSTRUMENTGROUP,
     },
     "font": {
         "section": "font",
@@ -440,16 +434,27 @@ class SettingsOptions(BaseModel):
     soundfont: SoundfontOptions | None = None
 
 
+class RecordList(list):
+
+    def filterOn(self, group: InstrumentGroup):
+        if len(self) > 1 and "group" in self[0]:
+            return [el for el in self if el["group"] == group]
+        else:
+            return self
+
+
 class Data(BaseModel):
     # Contains pre-formatted table data
-    font: list[dict[str, Any]] | None
-    modifiers: list[dict[str, Any]] | None
-    instruments: list[dict[str, Any]] | None
-    instrument_tags: list[dict[str, Any]] | None
-    rules: list[dict[str, Any]] | None
-    effects: list[dict[str, Any]] | None
-    midinotes: list[dict[str, Any]] | None
-    presets: list[dict[str, Any]] | None
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    font: RecordList | None
+    modifiers: RecordList | None
+    instruments: RecordList | None
+    instrument_tags: RecordList | None
+    rules: RecordList | None
+    effects: RecordList | None
+    midinotes: RecordList | None
+    presets: RecordList | None
 
 
 class ConfigData(BaseModel):
@@ -634,10 +639,7 @@ class RunSettings(BaseModel):
             file = settings_dict[category][entry["filename"]]
             filepath = os.path.join(folder, file)
             df = pd.read_csv(filepath, sep="\t", comment="#", dtype=str).replace([np.nan], [""], regex=False)
-
-            if "groupfilter" in entry:
-                df = df[df[entry["groupfilter"]] == group]
-            data[item] = df.to_dict(orient="records")
+            data[item] = RecordList(df.to_dict(orient="records"))
 
             if "formats" in entry:
                 for fmtcolumn, formatting in entry["formats"].items():

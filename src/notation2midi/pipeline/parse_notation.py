@@ -150,57 +150,6 @@ class NotationParserAgent(Agent):
         )
         return flattened_dict
 
-    # def _normalize_char_sequence(
-    #     self,
-    #     symbol: str,
-    #     position: Position,
-    # ) -> str:
-    #     """Parses the given notation symbol to an UnboundNote object.
-    #        No check is performed whether the note belongs to the instrument's range. Range check and
-    #        casting of the notes to their instrument's range will be performed  in a later step down the pipeline.
-    #     Args:
-    #         symbol (str): notation characters.
-    #         position (Position): position
-    #     Returns:
-    #         UnboundNote: A generic note object, i.e. not bound to any instrument type.
-    #     """
-    #     normalized_symbol = self.sorted_chars(symbol)
-
-    #     if len(symbol) < 1:
-    #         raise ValueError(f"Unexpected empty symbol for {position}")
-    #     return normalized_symbol
-
-    # def _parse_measure(self, measure: str, position: Position) -> list[UnboundNote]:
-    #     # TODO review this documentation
-    #     """Parses the notation of a stave to note objects
-    #        If the stave stands for multiple reyong positions, the notation is transformed to match
-    #        each position separately. There are two possible cases:
-    #         - REYONG_1 and REYONG_3 are combined: the notation is expected to represent the REYONG_1 part
-    #           and the score is octavated for the REYONG_3 position.
-    #         - REYONG_2 and REYONG_4: similar case. The notation should represent the REYONG_2 part.
-    #         - All reyong positions: the notation is expected to represent the REYONG_1 part.
-    #           In this case the kempyung equivalent of the notation will be determined for REYONG_2
-    #           and REYONG_4 within their respective range.
-    #     Args:
-    #         stave (str): one stave of notation
-    #         position (Position):
-    #         multiple_positions (list[Position]): List of all positions for this stave.
-    #     Returns: list[str] | None: _description_
-    #     """
-    #     notes = []  # will contain the UnboundNote objects
-    #     for note_chars in measure:
-    #         try:
-    #             next_notechars = self._normalize_char_sequence(note_chars, position)
-    #         except (ValueError, KeyError) as e:
-    #             self.logerror(str(e))
-    #         if not next_notechars:
-    #             self.logerror(f"Could not parse {note_chars[0]} from {measure} for {position.value}")
-    #             note_chars = note_chars[1:]
-    #         else:
-    #             notes.append(next_notechars)
-    #             note_chars = note_chars[len(next_notechars.symbol) :]
-    #     return notes
-
     def _replace_metadata_tags_with_positions(self, metadata_list: list[dict]) -> None:
         """Translates the values of `position` or `positions` metadata attributes to a list of Position enum values.
            Note that a tag can represent multiple values, e.g. 'gangsa' stands for four positions: polos and sangsih

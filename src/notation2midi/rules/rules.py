@@ -45,7 +45,7 @@ class Instrument(BaseModel, RunSettingsListener):
         all_tones = set()
         cls.DEFAULT_RANGE = {}
         cls.MAX_RANGE = {}
-        for row in run_settings.data.instruments:
+        for row in run_settings.data.instruments.filterOn(run_settings.instrumentgroup):
             if (InstrumentGroup[row["group"]]) != run_settings.instrumentgroup:
                 continue
             # Create an Instrument object for the current data record, which contains data for a single

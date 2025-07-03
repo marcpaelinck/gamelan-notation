@@ -2,23 +2,12 @@ from enum import StrEnum
 from typing import Any, Literal
 
 from src.common.constants import Modifier, ModifierType, Pitch, Position, Stroke
-from src.common.notes import GenericNote, NoteSymbol, Tone
+from src.common.notes import GenericNote, Note, NoteSymbol, Tone
 from src.notation2midi.metadata_classes import MetaData
 from src.notation2midi.rules.rules import Rule
 from src.settings.classes import RunSettings
 from src.settings.constants import ModifiersFields
 from src.settings.settings import RunSettingsListener
-
-
-class NoteFields(StrEnum):
-    PITCH = "pitch"
-    OCTAVE = "octave"
-    EFFECT = "effect"
-    PATTERN = "pattern"
-    NOTE_VALUE = "note_value"
-    GENERIC_NOTE = "generic_note"
-    SYMBOL = "symbol"
-    MODIFIERS = "modifiers"
 
 
 class RuleProcessModifiers(Rule, RunSettingsListener):
@@ -48,32 +37,32 @@ class RuleProcessModifiers(Rule, RunSettingsListener):
         self, notes: list[NoteSymbol], position: Position, all_positions: list[Position], metadata: list[MetaData]
     ) -> list[GenericNote]:
         base_notes: list[GenericNote] = []
-        for generic_note in notes:
-            self.validate(generic_note)
+        for notesymbol in notes:
+            self.validate(notesymbol)
 
-            attributes = generic_note.model_dump() | {
-                NoteFields.OCTAVE: self.infer_octave(generic_note),
-                NoteFields.GENERIC_NOTE: generic_note,
+            attributes = notesymbol.model_dump() | {
+                Note.Fields.OCTAVE: self.infer_octave(notesymbol),
+                Note.Fields.NOTESYMBOL: notesymbol,
             }
-            for modifier in [mod for mod in generic_note.modifiers if mod is not Modifier.NONE]:
+            for modifier in [mod for mod in notesymbol.modifiers if mod is not Modifier.NONE]:
                 mod_type, value = self.MODIFIER_DICT.get(modifier, None)
                 if not mod_type:
                     raise ValueError("Unrecognized modifer %s" % modifier)
                 match mod_type:
                     case ModifierType.STROKE:
-                        attributes |= {NoteFields.EFFECT: value}
+                        attributes |= {Note.Fields.EFFECT: value}
                     case ModifierType.OCTAVE:
-                        attributes |= {NoteFields.OCTAVE: value}
+                        attributes |= {Note.Fields.OCTAVE: value}
                     case ModifierType.PATTERN:
-                        attributes |= {NoteFields.EFFECT: value, NoteFields.PATTERN: []}
+                        attributes |= {Note.Fields.EFFECT: value, Note.Fields.PATTERN: []}
                     case ModifierType.VALUE:
-                        attributes |= {NoteFields.NOTE_VALUE: attributes[NoteFields.NOTE_VALUE] * value}
+                        attributes |= {Note.Fields.NOTE_VALUE: attributes[Note.Fields.NOTE_VALUE] * value}
                     case _:
                         raise ValueError("Unknown modifier type %s for %s" % (mod_type, modifier))
-            if NoteFields.EFFECT not in attributes:
+            if Note.Fields.EFFECT not in attributes:
                 stroke = (
-                    Stroke.NONE if attributes[NoteFields.PITCH] in [Pitch.EXTENSION, Pitch.SILENCE] else Stroke.OPEN
+                    Stroke.NONE if attributes[Note.Fields.PITCH] in [Pitch.EXTENSION, Pitch.SILENCE] else Stroke.OPEN
                 )
-                attributes |= {NoteFields.EFFECT: stroke}
+                attributes |= {Note.Fields.EFFECT: stroke}
             base_notes.append(GenericNote(**attributes))
         return base_notes

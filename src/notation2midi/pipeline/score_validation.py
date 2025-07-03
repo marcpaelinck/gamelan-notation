@@ -254,7 +254,8 @@ class ScoreValidationAgent(Agent):
                                             octave=correct_octave,
                                             effect=sangsihnote.effect,
                                             note_value=sangsihnote.note_value,
-                                            generic_note=sangsihnote.generic_note,
+                                            notesymbol=sangsihnote.notesymbol,
+                                            symbol="",
                                         )
                                         # Replace the note pattern
                                         # pylint: disable=no-member

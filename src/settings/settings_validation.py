@@ -5,7 +5,7 @@ from typing import override
 
 import pandas as pd
 
-from src.common.constants import Modifier, ModifierType, Pitch, Stroke
+from src.common.constants import ModifierType, Pitch, Stroke
 from src.common.logger import Logging
 from src.notation2midi.classes import Agent
 from src.settings.classes import RunSettings
@@ -50,7 +50,7 @@ class SettingsValidationAgent(Agent):
         midi_keep = midi_keys + [
             MidiNotesFields.INSTRUMENTTYPE,
             MidiNotesFields.POSITIONS,
-            MidiNotesFields.INSTRUMENTGROUP,
+            MidiNotesFields.GROUP,
         ]
         instrumentgroup = self.run_settings.instrumentgroup
 
@@ -78,8 +78,8 @@ class SettingsValidationAgent(Agent):
         # Convert lists to tuples in order to discard duplicates
         midi_df[MidiNotesFields.POSITIONS] = midi_df[MidiNotesFields.POSITIONS].apply(lambda x: tuple(x))
         midi_values = (
-            midi_df[midi_df[MidiNotesFields.INSTRUMENTGROUP] == instrumentgroup]
-            .drop([MidiNotesFields.INSTRUMENTGROUP], axis="columns")
+            midi_df[midi_df[MidiNotesFields.GROUP] == instrumentgroup]
+            .drop([MidiNotesFields.GROUP], axis="columns")
             .drop_duplicates()
         )
         merged = midi_values.merge(
@@ -111,5 +111,6 @@ class SettingsValidationAgent(Agent):
     @override
     def _main(self):
         """Main method which performs the validation."""
+        self.loginfo(f"Instrument group: {self.run_settings.instrumentgroup.value}")
         self._check_unique_character_values()
         self._check_font_midi_match()

@@ -1,4 +1,4 @@
-instrumentgroup	instrumenttype	positions	pitch	octave	stroke	remark	midinote	rootnote	sample
+group	instrumenttype	positions	pitch	octave	stroke	remark	midinote	rootnote	sample
 GONG_KEBYAR	GONGS		GIR		OPEN		2	GK GIR	GK Gong.wav
 GONG_KEBYAR	GONGS		PUR		OPEN		3	GK PUR	GK Kempur.wav
 GONG_KEBYAR	GONGS		TONG		OPEN		4	GK TONG	GK Kemong.wav

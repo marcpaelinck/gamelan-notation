@@ -109,7 +109,7 @@ class ScoreCreatorAgent(Agent):
                             Measure.Pass(
                                 seq=stave[ParserTag.PASS],
                                 line=stave[ParserTag.LINE],
-                                generic_notes=(
+                                notesymbols=(
                                     stave[ParserTag.MEASURES][beat_seq]
                                     if beat_seq < len(stave[ParserTag.MEASURES])
                                     else []
@@ -174,8 +174,8 @@ class ScoreCreatorAgent(Agent):
                 for _, measure in measures.items():
                     for _, pass_ in measure.passes.items():
                         self.curr_line_nr = pass_.line
-                        pass_.generic_notes = [
-                            NoteFactory.create_note_symbol(notechars) for notechars in pass_.generic_notes
+                        pass_.notesymbols = [
+                            NoteFactory.create_notesymbol(notechars) for notechars in pass_.notesymbols
                         ]
                         # pass_.notes = self._convert_to_notes(
                         #     pass_.notes,

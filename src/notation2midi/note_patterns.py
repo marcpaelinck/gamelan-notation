@@ -1,28 +1,12 @@
-from dataclasses import dataclass
-from typing import Callable
-
 from src.common.classes import Beat
 from src.common.constants import PatternType, Position, Stroke
 from src.common.notes import Note, NoteFactory, Pattern
 from src.settings.classes import RunSettings, SettingsMidiInfo
 
 
-@dataclass
-class NotePattern:
-    position: Position
-    beat_fullid: str
-    passnr: int
-    note: Note
-    pattern: list[Note]
-
-    @property
-    def key(self) -> str:
-        """Returns a unique key for the note to which the pattern belongs"""
-        return f"{self.position}|{self.beat_fullid}|{self.passnr}|{self.note.symbol}|{self.note.uniqueid}"
-
-
 class NotePatternGenerator:
-    """Generates note patterns for special notes types such as tremolo"""
+    """Generates note sequences to implement Patterns such as tremolo.
+    Adds the sequence to the `pattern` attribute of the Pattern."""
 
     def __init__(self, run_settings: RunSettings):
         self.run_settings = run_settings
@@ -35,7 +19,7 @@ class NotePatternGenerator:
         except:  # pylint: disable=bare-except
             return ""
 
-    def generate_tremolo(self, beat: Beat, position: Position, passnr: int, errorlogger: Callable = None) -> None:
+    def generate_tremolo(self, beat: Beat, position: Position, passnr: int) -> None:
         """Generates the note sequence for a tremolo.
             TREMOLO: The duration and pitch will be that of the given note.
             TREMOLO_ACCELERATING: The pitch will be that of the given note(s), the duration will be derived
@@ -80,10 +64,10 @@ class NotePatternGenerator:
 
             if tremolo_patterns[0].effect is PatternType.TREMOLO:
                 pattern = tremolo_patterns[0]
-                nr_of_notes = round(pattern.duration * tremolo.notes_per_quarternote)
+                nr_of_notes = round(pattern.note_value * tremolo.notes_per_quarternote)
                 note_value = pattern.note_value / nr_of_notes
-                attributes = pattern.model_dump() | {"note_value": note_value}
-                generated_notes.append([NoteFactory.create_note(**attributes) for _ in range(nr_of_notes)])
+                attributes = pattern.model_dump() | {"effect": Stroke.OPEN, "note_value": note_value}
+                generated_notes.extend([NoteFactory.create_note(**attributes) for _ in range(nr_of_notes)])
             elif tremolo_patterns[0].effect is PatternType.TREMOLO_ACCELERATING:
                 durations = [i / midi.base_note_time for i in tremolo.accelerating_pattern]
                 note_idx = 0  # Index of the next pattern to select from the `tremolo_patterns` list

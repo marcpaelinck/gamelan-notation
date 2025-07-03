@@ -35,9 +35,7 @@ class ValidNote(BaseModel):
 
 
 def get_note_records(run_settings: RunSettings) -> list[dict[str, Any]]:
-    instrument_data = [
-        rec for rec in run_settings.data.instruments if rec[InstrumentFields.GROUP] is run_settings.instrumentgroup
-    ]
+    instrument_data = [rec for rec in run_settings.data.instruments.filterOn(run_settings.instrumentgroup)]
     effect_dict = {rec[EffectsFields.EFFECT]: rec[EffectsFields.PITCHES] for rec in run_settings.data.effects}
     note_list = []
     durations = [1, 0.5, 0.25]

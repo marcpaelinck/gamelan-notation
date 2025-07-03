@@ -1,6 +1,6 @@
 from dataclasses import dataclass, fields
 from enum import StrEnum
-from typing import ClassVar, Literal, Optional, Union, override
+from typing import ClassVar, Optional, override
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
@@ -9,14 +9,13 @@ from src.common.constants import (
     Effect,
     Modifier,
     Octave,
-    PatternType,
     Pitch,
     Position,
     RuleValue,
     Stroke,
 )
 from src.settings.classes import RunSettings
-from src.settings.constants import FontFields
+from src.settings.constants import FontFields, NoteFields
 from src.settings.font_to_valid_notes import get_note_records
 from src.settings.settings import RunSettingsListener
 
@@ -78,7 +77,7 @@ class GenericNote(BaseModel):
     effect: Effect
     relative_velocity: float = 1.0
     note_value: float = None  # 1 = whole note
-    generic_note: NoteSymbol | None
+    notesymbol: NoteSymbol | None
 
     def to_tone(self) -> Tone:
         return Tone(pitch=self.pitch, octave=self.octave)
@@ -88,6 +87,16 @@ class GenericNote(BaseModel):
 
 
 class Note(GenericNote):
+    class Fields(StrEnum):
+        PITCH = "pitch"
+        OCTAVE = "octave"
+        EFFECT = "effect"
+        PATTERN = "pattern"
+        NOTE_VALUE = "note_value"
+        NOTESYMBOL = "notesymbol"
+        SYMBOL = "symbol"
+        MODIFIERS = "modifiers"
+
     model_config = ConfigDict(extra="ignore", frozen=True, revalidate_instances="always")
 
     position: Position
@@ -124,7 +133,7 @@ class NoteFactory(BaseModel, RunSettingsListener):
         mod_list = list(Modifier)
         cls._FONT_SORTING_ORDER = {sym[FontFields.SYMBOL]: mod_list.index(sym[FontFields.MODIFIER]) for sym in font}
         valid_records = get_note_records(run_settings)
-        valid_records = [record | {"generic_note": None} for record in valid_records]
+        valid_records = [record | {Note.Fields.NOTESYMBOL: None} for record in valid_records]
         cls.VALIDNOTES = [Note(**record) for record in valid_records]
         cls._POS_P_O_E_TO_NOTE = {(n.position, n.pitch, n.octave, n.effect): n for n in cls.VALIDNOTES}
         cls._CHAR_TO_PITCH_NOTEVALUE_MODIFIER = {
@@ -164,7 +173,7 @@ class NoteFactory(BaseModel, RunSettingsListener):
         return Note(**new_kwargs)
 
     @classmethod
-    def create_note_symbol(cls, symbol: str) -> NoteSymbol:
+    def create_notesymbol(cls, symbol: str) -> NoteSymbol:
         pitch = None
         note_value = None
         modifiers = []

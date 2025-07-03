@@ -41,7 +41,7 @@ class SStrEnum(StrEnum):
 class PresetsFields(SStrEnum):
     """config/midi/presets.tsv"""
 
-    INSTRUMENTGROUP = "instrumentgroup"
+    GROUP = "group"
     INSTRUMENTTYPE = "instrumenttype"
     POSITION = "position"
     BANK = "bank"
@@ -55,7 +55,7 @@ class PresetsFields(SStrEnum):
 class MidiNotesFields(SStrEnum):
     """config/midi/gamelan_midinotes<nr>.tsv"""
 
-    INSTRUMENTGROUP = "instrumentgroup"
+    GROUP = "group"
     INSTRUMENTTYPE = "instrumenttype"
     POSITIONS = "positions"
     PITCH = "pitch"
@@ -90,7 +90,7 @@ class ModifiersFields(SStrEnum):
 class NoteFields(SStrEnum):
     """Combination of the above two classes"""
 
-    INSTRUMENTGROUP = "instrumentgroup"
+    GROUP = "group"
     INSTRUMENTTYPE = "instrumenttype"
     POSITION = "position"
     SYMBOL = "symbol"

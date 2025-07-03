@@ -45,7 +45,7 @@ class MidiGeneratorAgent(Agent):
                 record[MidiNotesFields.OCTAVE],
                 record[MidiNotesFields.STROKE],
             ): record[MidiNotesFields.MIDINOTE]
-            for record in run_settings.data.midinotes
+            for record in run_settings.data.midinotes.filterOn(run_settings.instrumentgroup)
             for pos in record[MidiNotesFields.POSITIONS]
         }
 
@@ -155,13 +155,10 @@ class MidiGeneratorAgent(Agent):
                 self.logerror(f"No measure found for {position} in beat {beat.full_id}. Program halted.")
                 sys.exit()
             for note in pass_.notes:
-                # Retrieve the pattern represented by the note, if any (returns a list containing the note if no pattern)
+                # Add the note, or the pattern in case of a pattern.
                 if isinstance(note, Pattern):
-                    if not note.pattern:
-                        raise ValueError("ERROR pattern %s %s has no pattern" % (note.effect, note.position))
-                    for pattnote in note.pattern:
-                        if pattnote:
-                            track.add_note(pattnote)
+                    for pattern_note in note.pattern:
+                        track.add_note(pattern_note)
                 else:
                     track.add_note(note)
             beat = self.exec_mgr.next_beat_in_flow(beat)

@@ -2,7 +2,7 @@ from typing import override
 
 from src.common.classes import Gongan, Score
 from src.notation2midi.classes import Agent
-from src.notation2midi.note_patterns import NotePattern, NotePatternGenerator
+from src.notation2midi.note_patterns import NotePatternGenerator
 from src.settings.classes import RunSettings
 
 
@@ -35,12 +35,7 @@ class NotePatternGeneratorAgent(Agent):
                 for passnr, pass_ in measure.passes.items():
                     self.curr_line_nr = pass_.line
                     try:
-                        self.pattern_generator.generate_tremolo(
-                            beat=beat,
-                            position=position,
-                            passnr=passnr,
-                            errorlogger=self.logerror,
-                        )
+                        self.pattern_generator.generate_tremolo(beat=beat, position=position, passnr=passnr)
                     except ValueError as e:
                         self.logerror(str(e))
 
