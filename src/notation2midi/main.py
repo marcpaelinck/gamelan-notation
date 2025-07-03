@@ -13,11 +13,11 @@ from src.notation2midi.pipeline.export_to_midiplayer import (
 )
 from src.notation2midi.pipeline.notation_to_score import ScoreCreatorAgent
 from src.notation2midi.pipeline.parse_notation import NotationParserAgent
+from src.notation2midi.pipeline.score_postprocessing import ScorePostprocessAgent
 from src.notation2midi.pipeline.score_to_midi import MidiGeneratorAgent
 from src.notation2midi.pipeline.score_to_notation import ScoreToNotationAgent
 from src.notation2midi.pipeline.score_to_pdf import PDFGeneratorAgent
 from src.notation2midi.pipeline.score_validation import ScoreValidationAgent
-from src.notation2midi.pipeline.update_score import ScoreUpdateAgent
 from src.settings.classes import RunSettings, RunType
 from src.settings.settings import Settings
 from src.settings.settings_validation import SettingsValidationAgent
@@ -28,10 +28,10 @@ PIPE = [
     SettingsValidationAgent,
     NotationParserAgent,  # -> NotationRecords
     ScoreCreatorAgent,  # -> Score with grouped instruments and UnboundNotes: pitch, modifiers
-    RulesAgent,  # TODO To be added. Processes notation for instrument groups: casts notes to individual instruments. -> IScore with BoundNotes: octave, stroke and rel. duration + rule and transformation
+    RulesAgent,  # Processes notation for instrument groups: casts notes to individual instruments. -> IScore with BoundNotes: octave, stroke and rel. duration + rule and transformation
     # should also update grace note octaves
     NotePatternGeneratorAgent,  # -> PattScore: Score with enhanced BoundNotes containing pattern(MidiNotes) + UUID
-    ScoreUpdateAgent,  # Fills empty and shorthand beats + applies metadata. -> CompleteScore
+    ScorePostprocessAgent,  # Fills empty and shorthand beats + applies metadata. -> CompleteScore
     ScoreValidationAgent,
     ExecutionCreatorAgent,  # Creates Execution for the ExtScore -> Execution
     MidiGeneratorAgent,

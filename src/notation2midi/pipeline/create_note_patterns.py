@@ -23,7 +23,6 @@ class NotePatternGeneratorAgent(Agent):
         super().__init__(bound_score.settings)
         self.score = bound_score
         self.pattern_generator = NotePatternGenerator(self.run_settings)
-        self.patterns: list[NotePattern] = []
 
     @override
     @classmethod
@@ -36,10 +35,7 @@ class NotePatternGeneratorAgent(Agent):
                 for passnr, pass_ in measure.passes.items():
                     self.curr_line_nr = pass_.line
                     try:
-                        # self.patterns += self.pattern_generator.update_grace_notes_octaves(
-                        #     beat=beat, position=position, passnr=passnr
-                        # )
-                        self.patterns += self.pattern_generator.generate_tremolo(
+                        self.pattern_generator.generate_tremolo(
                             beat=beat,
                             position=position,
                             passnr=passnr,
@@ -52,7 +48,4 @@ class NotePatternGeneratorAgent(Agent):
     def _main(self):
         for gongan in self.gongan_iterator(self.score):
             self._generate_patterns(gongan)
-        for pattern in self.patterns:
-            pattern.note.pattern.clear()
-            pattern.note.pattern.extend(pattern.pattern)
         return self.score

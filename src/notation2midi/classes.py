@@ -66,7 +66,7 @@ class Agent:
         GENERICSCORE = "generic_score"
         BOUNDSCORE = "bound_score"
         PATTERNSCORE = "pattern_score"
-        COMPLETESCORE = "complete score"
+        COMPLETESCORE = "complete_score"
         EXECUTION = "execution"
         PART = "part"
         PDFFILE = "pdf_file"

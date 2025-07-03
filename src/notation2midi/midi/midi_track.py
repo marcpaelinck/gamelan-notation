@@ -58,8 +58,8 @@ class MidiTrackX(MidiTrack):
         """Sets the preset. Call this method before any note on or note off message. This enables to assign multiple"
         tracks to the same channel."""
         # Note: MSB (control 0) seems to accept values larger than 127.
-        self.append(Message(type="control_change", skip_checks=True, control=0, value=self.bank, channel=self.channel))
-        self.append(Message(type="program_change", skip_checks=True, program=self.preset, channel=self.channel))
+        self.append(Message(type="control_change", skip_checks=False, control=0, value=self.bank, channel=self.channel))
+        self.append(Message(type="program_change", skip_checks=False, program=self.preset, channel=self.channel))
         self.append(MetaMessage(type="midi_port", port=self.port))
 
     def set_channel(self):
@@ -79,10 +79,10 @@ class MidiTrackX(MidiTrack):
             Message(
                 type="note_on",
                 note=midivalue,
-                velocity=self.current_velocity if not note.velocity else note.velocity,
+                velocity=int(self.current_velocity * note.relative_velocity),
                 time=self.current_ticktime - self.ticktime_last_message,
                 channel=self.channel,
-                skip_checks=True,
+                skip_checks=False,
             )
         )
 
@@ -100,11 +100,11 @@ class MidiTrackX(MidiTrack):
                 note=midivalue,
                 time=0,  # the time will be determined by the self.append_all_and_clear method
                 channel=self.channel,
-                skip_checks=True,
+                skip_checks=False,
             )
         )
 
-    def __init__(self, position: Position, preset: Preset, run_settings: RunSettings):
+    def __init__(self, position: Position, preset: Preset, midi_dict: dict, run_settings: RunSettings):
         super().__init__()
         self.name = position.value
         self.run_settings = run_settings
@@ -121,6 +121,7 @@ class MidiTrackX(MidiTrack):
         self.update_tempo(60)  # set default tempo, needed for initial silence
         self.last_helpinghand_msg = self._append_helpinghand_message()
         self.first_helpinghand_msg = self.last_helpinghand_msg
+        self.midi_dict = midi_dict
 
     @override
     def append(self, message: BaseMessage, **kwargs):
@@ -280,6 +281,9 @@ class MidiTrackX(MidiTrack):
         if self.last_noteoff_msgs:
             self.append_all_and_clear(self.last_noteoff_msgs)
 
+    def get_midinote(self, note: Note) -> list[int]:
+        return self.midi_dict.get((note.position, note.pitch, note.octave, note.effect))
+
     def add_note(self, note: Note):
         """Converts a note into a midi event
 
@@ -290,11 +294,12 @@ class MidiTrackX(MidiTrack):
         Raises:
             ValueError: _description_
         """
-        if not note.pitch == Pitch.NONE:
+        if note.pitch not in (Pitch.EXTENSION, Pitch.SILENCE):
+            midinotes = self.get_midinote(note)
             # Set ON and OFF messages for actual note
             # In case of multiple midi notes, all notes should start and stop at the same time.
-            for count, midivalue in enumerate(note.midinote):
-                if note.stroke is Stroke.GRACE_NOTE:
+            for count, midivalue in enumerate(midinotes):
+                if note.effect is Stroke.GRACE_NOTE:
                     # Use part of the duration of the previous note or rest (max 1/2 unit).
                     # Remark that the noteoff message of the preceding note has not been saved yet
                     # if the grace note immediately follows it.
@@ -331,7 +336,7 @@ class MidiTrackX(MidiTrack):
                     self.increase_current_time(grace_tick_duration, unit=TimeUnit.TICK)
                     self.last_helpinghand_msg = new_helpinghand_msg
 
-            for count, midivalue in enumerate(note.midinote):
+            for count, midivalue in enumerate(midinotes):
                 # Do not append the note_off message to the track yet. It might be followed by extension 'notes'.
                 self.send_noteoff_message(midivalue)
                 # self.last_noteoff_msgs.append(
@@ -344,18 +349,18 @@ class MidiTrackX(MidiTrack):
                 #     )
                 # )
 
-            if note.rest_after:
+            if note.effect in (Stroke.ABBREVIATED, Stroke.MUTED):
                 # if the note is abbreviated or muted, it can not be extended.
                 self.append_all_and_clear(self.last_noteoff_msgs)
-            self.increase_current_time(note.duration + note.rest_after, unit=TimeUnit.NOTE)
+            self.increase_current_time(note.duration, unit=TimeUnit.NOTE)
         # TODO next two ifs can now be combined
-        elif note.stroke is Stroke.SILENCE:
+        elif note.pitch is Pitch.SILENCE:
             # Increment time since last note ended
             self.append_all_and_clear(self.last_noteoff_msgs)
-            self.increase_current_time(note.rest_after, unit=TimeUnit.NOTE)
-        elif note.stroke is Stroke.EXTENSION:
+            self.increase_current_time(note.duration, unit=TimeUnit.NOTE)
+        elif note.pitch is Pitch.EXTENSION:
             # Extension of note duration: add duration to last note
             # If a SILENCE occurred previously, treat the EXTENSION as a SILENCE
             self.increase_current_time(note.duration, unit=TimeUnit.NOTE)
         else:
-            raise ValueError(f"Unexpected note value {note.pitch} {note.octave} {note.stroke}")
+            raise ValueError(f"Unexpected note value {note.pitch} {note.octave} {note.effect}")

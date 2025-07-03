@@ -108,31 +108,11 @@ class NotationParserAgent(Agent):
         self.grammar_model = self._create_notation_grammar_model(self.run_settings, from_pickle=False, pickle_it=False)
         # Initialize _font_dict lookup dict
         self._char_to_fontinfo_dict = {sym[FontFields.SYMBOL]: sym for sym in self.run_settings.data.font}
-        # Initialize _symbol_to_note lookup dict
-        # note_records = get_note_records(self.run_settings)
-        # self._symbol_to_note = {
-        #     self.sorted_chars(note[NoteFields.SYMBOL]): UnboundNote(
-        #         **{k: v for k, v in note.items() if k in UnboundNote.fieldnames()}
-        #     )
-        #     for note in note_records
-        # }
 
     @override
     @classmethod
     def run_condition_satisfied(cls, run_settings: RunSettings):
         return True
-
-    # def sorted_chars(self, chars: str) -> str:
-    #     """Sorts the characters of a note symbol in a unique and deterministic order.
-    #     The sorting order is determined by the sequence of the Modifier Enum value of each font character.
-    #     The resulting string starts with the pitch character (Modifier.NONE) followed by optional
-    #     modifier in a fixed sequence."""
-    #     try:
-    #         return "".join(sorted(chars, key=lambda c: self._char_to_fontinfo_dict[c][FontFields.MODIFIER].sequence))
-    #     except KeyError:
-    #         self.logerror("Illegal character in %s", chars)
-    #     except Exception:  # pylint: disable=broad-exception-caught
-    #         self.logerror("Error parsing note %s", chars)
 
     @classmethod
     def unoctavated(cls, note_chars: str) -> str:  # TODO MOVE

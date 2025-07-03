@@ -292,9 +292,8 @@ if __name__ == "__main__":
         symbol="a",
         pitch=Pitch.DANG,
         octave=1,
-        stroke=Stroke.OPEN,
-        duration=1,
-        rest_after=0,
+        effect=Stroke.OPEN,
+        note_value=1,
         modifier=Modifier.NONE,
     )
     note = Note(
@@ -302,8 +301,7 @@ if __name__ == "__main__":
         symbol="a,",
         pitch=Pitch.DANG,
         octave=0,
-        stroke=Stroke.OPEN,
-        duration=1,
-        rest_after=0,
+        effect=Stroke.OPEN,
+        note_value=1,
         modifier=Modifier.NONE,
     )

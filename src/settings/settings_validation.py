@@ -5,11 +5,11 @@ from typing import override
 
 import pandas as pd
 
-from src.common.constants import Pitch
+from src.common.constants import Modifier, ModifierType, Pitch, Stroke
 from src.common.logger import Logging
 from src.notation2midi.classes import Agent
 from src.settings.classes import RunSettings
-from src.settings.constants import FontFields, MidiNotesFields
+from src.settings.constants import FontFields, MidiNotesFields, ModifiersFields
 
 logger = Logging.get_logger(__name__)
 
@@ -28,9 +28,9 @@ class SettingsValidationAgent(Agent):
 
     def _check_unique_character_values(self) -> None:
         """Analyzes the font definition setting and detects characters that have the same
-        values for fields `value`, `duration` and `rest_after`.
+        values for fields `pitch` and `modifier`.
         """
-        groupby = [FontFields.PITCH, FontFields.OCTAVE, FontFields.STROKE, FontFields.DURATION, FontFields.REST_AFTER]
+        groupby = [FontFields.PITCH, FontFields.MODIFIER]
         font_df = pd.read_csv(self.run_settings.configdata.font.filepath, sep="\t", quoting=csv.QUOTE_NONE)[
             groupby + [FontFields.SYMBOL]
         ]
@@ -45,28 +45,43 @@ class SettingsValidationAgent(Agent):
         """Checks the consistency of the font definition settings file and the midi settings file.
         Reports if any value in one file has no match in the other one.
         """
-        font_keys = [FontFields.PITCH, FontFields.OCTAVE, FontFields.STROKE]
+        font_keys = [FontFields.PITCH, FontFields.OCTAVE, FontFields.MODIFIER]
         midi_keys = [MidiNotesFields.PITCH, MidiNotesFields.OCTAVE, MidiNotesFields.STROKE]
-        midi_keep = midi_keys + [MidiNotesFields.INSTRUMENTTYPE, MidiNotesFields.POSITIONS]
+        midi_keep = midi_keys + [
+            MidiNotesFields.INSTRUMENTTYPE,
+            MidiNotesFields.POSITIONS,
+            MidiNotesFields.INSTRUMENTGROUP,
+        ]
         instrumentgroup = self.run_settings.instrumentgroup
 
         # 1. Find midi notes without corresponding character definition.
         # Use Int64 type to cope with NaN values,
         # see https://pandas.pydata.org/pandas-docs/version/0.24/whatsnew/v0.24.0.html#optional-integer-na-support
-        font_df = pd.read_csv(
-            self.run_settings.configdata.font.filepath,
-            sep="\t",
-            quoting=csv.QUOTE_NONE,
-            dtype={FontFields.OCTAVE: "Int64"},
-        )[font_keys]
-        midi_df = pd.read_csv(
-            self.run_settings.midi.notes_filepath, sep="\t", quoting=csv.QUOTE_NONE, dtype={FontFields.OCTAVE: "Int64"}
+        #
+        # First combine the font and modifiers tables
+        font_df = pd.DataFrame.from_records(self.run_settings.data.font)[font_keys]
+        mod_dict = {
+            modtype: {
+                mod[ModifiersFields.MODIFIER]: mod[ModifiersFields.VALUE]
+                for mod in self.run_settings.data.modifiers
+                if mod[ModifiersFields.MOD_TYPE] is modtype
+            }
+            for modtype in [ModifierType.STROKE, ModifierType.OCTAVE]
+        }
+        font_df[MidiNotesFields.STROKE] = font_df[FontFields.MODIFIER].apply(
+            lambda x: mod_dict[ModifierType.STROKE].get(x, Stroke.OPEN)
         )
+        font_df[MidiNotesFields.OCTAVE] = font_df[[FontFields.MODIFIER, FontFields.OCTAVE]].apply(
+            lambda x: mod_dict[ModifierType.OCTAVE].get(x[FontFields.MODIFIER], x[FontFields.OCTAVE]), axis=1
+        )
+        midi_df = pd.DataFrame.from_records(self.run_settings.data.midinotes)[midi_keep]
+        # Convert lists to tuples in order to discard duplicates
+        midi_df[MidiNotesFields.POSITIONS] = midi_df[MidiNotesFields.POSITIONS].apply(lambda x: tuple(x))
         midi_values = (
             midi_df[midi_df[MidiNotesFields.INSTRUMENTGROUP] == instrumentgroup]
             .drop([MidiNotesFields.INSTRUMENTGROUP], axis="columns")
             .drop_duplicates()
-        )[midi_keep]
+        )
         merged = midi_values.merge(
             font_df, how="left", left_on=(midi_keys), right_on=(font_keys), suffixes=["_F", "_M"]
         )

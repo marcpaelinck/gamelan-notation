@@ -23,7 +23,7 @@ from src.common.constants import (
 from src.common.notes import Tone
 from src.notation2midi.metadata_classes import MetaData
 from src.settings.classes import RunSettings
-from src.settings.constants import InstrumentFields, RuleFields
+from src.settings.constants import InstrumentFields
 from src.settings.settings import RunSettingsListener
 
 
@@ -35,37 +35,6 @@ class RuleDefinition:
 
 
 class Instrument(BaseModel, RunSettingsListener):
-
-    # group: InstrumentGroup
-    # positions: list[Position]
-    # instrumenttype: InstrumentType
-    # position_ranges: dict[Position, list[Tone]] = Field(default_factory=lambda: defaultdict(list))
-    # extended_position_ranges: dict[Position, list[Tone]] = Field(default_factory=lambda: defaultdict(list))
-    # instrument_range: list[Tone] = Field(default_factory=list)
-
-    # def merge(self, other: "Instrument") -> "Instrument":
-    #     """
-    #     Merge the data of another Instrument object into this one.
-
-    #     If the other Instrument is None, returns self unchanged. Otherwise, combines the positions, position ranges,
-    #     extended position ranges, and instrument ranges of both Instrument objects. The instrument_range is merged,
-    #     duplicates are removed, and the result is sorted by the 'key' attribute.
-
-    #     Args:
-    #         other (Instrument): Another Instrument object to merge with this one.
-
-    #     Returns:
-    #         Instrument: The updated Instrument object with merged data.
-    #     """
-    #     if not other:
-    #         return self
-    #     # Merge the data of two Instrument objects.
-    #     self.positions += other.positions  # pylint: disable=no-member; -> incorrect warning
-    #     self.position_ranges = self.position_ranges | other.position_ranges
-    #     self.extended_position_ranges = self.extended_position_ranges | other.extended_position_ranges
-    #     self.instrument_range = sorted(list(set(self.instrument_range + other.instrument_range)), key=lambda x: x.key)
-    #     return self
-
     DEFAULT_RANGE: ClassVar[dict] = {}
     MAX_RANGE: ClassVar[dict] = {}
     ORCHESTRA_RANGE: ClassVar[list] = []

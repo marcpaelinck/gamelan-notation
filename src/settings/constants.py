@@ -49,6 +49,7 @@ class PresetsFields(SStrEnum):
     CHANNEL = "channel"
     MIDIOFFSET = "midioffset"
     PRESET_NAME = "preset_name"
+    PORT = "port"
 
 
 class MidiNotesFields(SStrEnum):
@@ -75,11 +76,15 @@ class FontFields(SStrEnum):
     BALIFONT_SYMBOL_DESCRIPTION = "balifont_symbol_description"
     PITCH = "pitch"
     OCTAVE = "octave"
-    STROKE = "stroke"
     MODIFIER = "modifier"
-    DURATION = "duration"
-    REST_AFTER = "rest_after"
+    NOTE_VALUE = "note_value"
     DESCRIPTION = "description"
+
+
+class ModifiersFields(SStrEnum):
+    MODIFIER = "modifier"
+    MOD_TYPE = "mod_type"
+    VALUE = "value"
 
 
 class NoteFields(SStrEnum):
@@ -91,10 +96,9 @@ class NoteFields(SStrEnum):
     SYMBOL = "symbol"
     PITCH = "pitch"
     OCTAVE = "octave"
-    STROKE = "stroke"
+    EFFECT = "effect"
     MODIFIER = "modifier"
-    DURATION = "duration"
-    REST_AFTER = "rest_after"
+    NOTE_VALUE = "note_value"
     MIDINOTE = "midinote"
     ROOTNOTE = "rootnote"
     SAMPLE = "sample"
@@ -134,6 +138,13 @@ class RuleFields(SStrEnum):
     VALUE1 = "value1"
     PARAMETER2 = "parameter2"
     VALUE2 = "value2"
+
+
+class EffectsFields(SStrEnum):
+    """config/instruments/patterns.tsv"""
+
+    EFFECT = "effect"
+    PITCHES = "pitches"
 
 
 class Yaml(SStrEnum):

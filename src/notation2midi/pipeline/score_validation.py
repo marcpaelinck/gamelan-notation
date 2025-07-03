@@ -103,11 +103,11 @@ class ScoreValidationAgent(Agent):
                     #  which is the mode (= most occurring duration) of all measure durations.
                     corrected_positions = dict()
                     for position, notes in unequal_lengths.items():
-                        filler = NoteFactory.get_whole_rest_note(position, Stroke.EXTENSION)
-                        uncorrected_position = {position: sum(note.pattern_duration for note in notes)}
+                        filler = NoteFactory.get_whole_rest_note(position, Pitch.EXTENSION)
+                        uncorrected_position = {position: sum(note.duration for note in notes)}
                         # Empty measures will always be corrected.
                         if position in self.POSITIONS_AUTOCORRECT_UNEQUAL_MEASURES or not notes:
-                            measure_duration = sum(note.pattern_duration for note in notes)
+                            measure_duration = sum(note.duration for note in notes)
                             # Add rests of duration 1 to match the integer part of the beat's duration
                             if int(beat.duration - measure_duration) >= 1:
                                 fill_content = [filler.model_copy() for count in range(int(beat.duration - len(notes)))]
@@ -117,12 +117,11 @@ class ScoreValidationAgent(Agent):
                                     notes.extend(fill_content)
                                 else:
                                     notes.extend(fill_content)
-                                measure_duration = sum(note.pattern_duration for note in notes)
+                                measure_duration = sum(note.duration for note in notes)
                             # Add an extra rest for any fractional part of the beat's duration
                             if measure_duration < beat.duration:
-                                attr = "duration" if filler.stroke == Stroke.EXTENSION else "rest_after"
-                                notes.append(filler.model_copy(update={attr: beat.duration - measure_duration}))
-                            if sum(note.pattern_duration for note in notes) == beat.duration:
+                                notes.append(filler.model_copy(update={"note_value": beat.duration - measure_duration}))
+                            if sum(note.duration for note in notes) == beat.duration:
                                 # store the original (incorrect) value
                                 corrected_positions |= uncorrected_position
                     if corrected_positions:
@@ -131,12 +130,12 @@ class ScoreValidationAgent(Agent):
                 unequal_lengths = {
                     position: measure.passes[DEFAULT].notes
                     for position, measure in beat.measures.items()
-                    if sum(note.pattern_duration for note in measure.passes[DEFAULT].notes) != beat.duration
+                    if sum(note.duration for note in measure.passes[DEFAULT].notes) != beat.duration
                 }
                 if unequal_lengths:
                     invalids.append(
                         {f"BEAT {beat.full_id} line {self.curr_line_nr}": {beat.duration}}
-                        | {pos: sum(note.pattern_duration for note in notes) for pos, notes in unequal_lengths.items()},
+                        | {pos: sum(note.duration for note in notes) for pos, notes in unequal_lengths.items()},
                     )
         return invalids, corrected, ignored
 
@@ -159,11 +158,11 @@ class ScoreValidationAgent(Agent):
                 ignored.append(f"BEAT {beat.full_id} skipped due to override")
                 continue
             for position, measure in beat.measures.items():
-                instr_range = NoteFactory.get_all_p_o_s(position)
+                instr_range = NoteFactory.get_all_p_o_e(position)
                 badnotes = list()
                 for note in measure.passes[DEFAULT].notes:
-                    if note.pitch is not Pitch.NONE and (note.pitch, note.octave, note.stroke) not in instr_range:
-                        badnotes.append((note.pitch, note.octave, note.stroke))
+                    if note.pitch is not Pitch.NONE and (note.pitch, note.octave, note.effect) not in instr_range:
+                        badnotes.append((note.pitch, note.octave, note.effect))
                 if badnotes:
                     invalids.append({f"BEAT {beat.full_id} {position}": badnotes})
         return invalids, corrected, ignored
@@ -184,6 +183,10 @@ class ScoreValidationAgent(Agent):
         )
         base_dict = list(zip(all_notes, all_notes[3:]))
         kempyung_dict = {p: s if s in instrumentrange else p for (p, s) in base_dict if p in instrumentrange}
+        kempyung_dict |= {
+            (Pitch.EXTENSION, None): (Pitch.EXTENSION, None),
+            (Pitch.SILENCE, None): (Pitch.SILENCE, None),
+        }
         return kempyung_dict
 
     def _incorrect_kempyung(
@@ -211,7 +214,7 @@ class ScoreValidationAgent(Agent):
             for polos, sangsih in self.POSITIONS_VALIDATE_AND_CORRECT_KEMPYUNG:
                 instrumentrange = [
                     (pitch, octave)
-                    for (pitch, octave, stroke) in NoteFactory.get_all_p_o_s(polos)
+                    for (pitch, octave, stroke) in NoteFactory.get_all_p_o_e(polos)
                     if stroke == Stroke.OPEN
                 ]
                 kempyung_dict = self._get_kempyung_dict(instrumentrange)
@@ -223,9 +226,8 @@ class ScoreValidationAgent(Agent):
                     autocorrected = False
                     # only check kempyung if parts are homophone.
                     if all(
-                        polos.stroke == sangsih.stroke  # Unisono and playing the same stroke (muting, open or rest)
+                        polos.effect == sangsih.effect  # Unisono and playing the same stroke (muting, open or rest)
                         and polos.duration == sangsih.duration
-                        and polos.rest_after == sangsih.rest_after
                         for polos, sangsih in notepairs
                     ):
                         orig_sangsih_str = "".join((n.symbol for n in beat.get_notes(sangsih, DEFAULT)))
@@ -250,7 +252,7 @@ class ScoreValidationAgent(Agent):
                                             position=sangsih,
                                             pitch=correct_pitch,
                                             octave=correct_octave,
-                                            stroke=sangsihnote.stroke,
+                                            effect=sangsihnote.effect,
                                             note_value=sangsihnote.note_value,
                                             generic_note=sangsihnote.generic_note,
                                         )
@@ -261,7 +263,7 @@ class ScoreValidationAgent(Agent):
                                         # pylint: enable=no-member
                                         if not (correct_sangsih):
                                             self.logerror(
-                                                f"Trying to create an incorrect combination {sangsih} {correct_pitch} OCT{correct_octave} {sangsihnote.stroke} duration={sangsihnote.duration} rest_after{sangsihnote.rest_after} while correcting kempyung."
+                                                f"Trying to create an incorrect combination {sangsih} {correct_pitch} OCT{correct_octave} {sangsihnote.effect} duration={sangsihnote.duration} while correcting kempyung."
                                             )
                                         beat.get_notes(sangsih, DEFAULT)[seq] = correct_sangsih
                                         autocorrected = True

@@ -4,16 +4,14 @@ from typing import Any
 
 from src.common.constants import (
     InstrumentGroup,
-    Modifier,
-    ModifierType,
+    PatternType,
     Pitch,
     Position,
     RuleParameter,
     RuleType,
     RuleValue,
-    Stroke,
 )
-from src.common.notes import BaseNote, GenericNote, Note, Tone
+from src.common.notes import GenericNote, Note, NoteSymbol, Pattern, Tone
 from src.notation2midi.metadata_classes import (
     AutoKempyungMeta,
     MetaData,
@@ -26,8 +24,13 @@ from src.settings.settings import RunSettingsListener
 
 
 class RuleCastToPosition(Rule, RunSettingsListener):
+    """Converts all GenericNote instances (which are not bound to a specific instrument) to Note or Pattern instances.
+    The latter two are bound to specific instruments, which means that they belong to the instrument's range.
+    This class is used for staves that apply to multiple instruments. Each note's pitch and octave are inferred using
+    the instrument rules given in the instrument config.
+    """
 
-    NAME = "Cast notes to instrument positions"
+    NAME = "Cast notes to instrument positions (converts GenericNote instances to Note and Pattern instances)"
     RULES = dict[Position, list[RuleDefinition]]
 
     @classmethod
@@ -36,7 +39,7 @@ class RuleCastToPosition(Rule, RunSettingsListener):
         cls.RULES = cls._init_ruledefs(run_settings)
 
     def fire(
-        self, notes: list[GenericNote], position: Position, all_positions: list[Position], metadata: list[MetaData]
+        self, notes: list[NoteSymbol], position: Position, all_positions: list[Position], metadata: list[MetaData]
     ) -> list[Note]:
         return self.to_bound_notes(notes=notes, position=position, all_positions=all_positions, metadata=metadata)
 
@@ -229,9 +232,9 @@ class RuleCastToPosition(Rule, RunSettingsListener):
         raise ValueError("Could not assign %s to position %s" % (tone, position))
 
     def to_bound_notes(
-        self, notes: list[BaseNote], position: Position, all_positions: list[Position], metadata: list[MetaData]
+        self, notes: list[GenericNote], position: Position, all_positions: list[Position], metadata: list[MetaData]
     ):
-        bound_notes: list[Note] = []
+        bound_notes: list[Note | Pattern] = []
         for base_note in notes:
             tone = self.cast_to_position(
                 tone=Tone(pitch=base_note.pitch, octave=base_note.octave),
@@ -239,13 +242,15 @@ class RuleCastToPosition(Rule, RunSettingsListener):
                 all_positions=all_positions,
                 metadata=metadata,
             )
+            NoteType = Pattern if isinstance(base_note.effect, PatternType) else Note
             bound_notes.append(
-                Note(
+                NoteType(
                     position=position,
+                    symbol=base_note.symbol,
                     pitch=tone.pitch if tone else Pitch.NONE,
                     octave=tone.octave if tone else None,
-                    stroke=base_note.stroke,
-                    note_value=1,
+                    effect=base_note.effect,
+                    note_value=base_note.note_value,
                     generic_note=base_note.generic_note,
                 )
             )

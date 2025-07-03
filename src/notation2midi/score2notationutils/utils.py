@@ -29,7 +29,7 @@ def measure_to_str_rml_safe(
 
     def format_symbol(note: Note):
         """Returns the formatted note symbol"""
-        if note.stroke == Stroke.GRACE_NOTE:
+        if note.effect == Stroke.GRACE_NOTE:
             # Remove any stroke modifier character
             return note.symbol[0]
         if note.position in omit_octave_diacritics:
@@ -148,7 +148,7 @@ def same(note1: Note, note2: Note) -> bool:
     return (
         note1.pitch == note2.pitch
         and note1.octave == note2.octave
-        and note1.stroke == note2.stroke
+        and note1.effect == note2.effect
         and note1.note_value == note2.note_value
     )
 
@@ -171,14 +171,14 @@ def equivalent(note1: Note, note2: Note, positions: list[Position], metadata) ->
         if not tone2cast:
             return False
         try:
-            note2cast = NoteFactory.clone_bound_note(
+            note2cast = NoteFactory.clone_note(
                 note2, pitch=tone2cast.pitch, octave=tone2cast.octave, position=note1.position
             )
         except ValueError:
             return False
     else:
         try:
-            note2cast = NoteFactory.clone_bound_note(note2, position=note1.position)
+            note2cast = NoteFactory.clone_note(note2, position=note1.position)
         except ValueError:
             return False
     return same(note1, note2cast)

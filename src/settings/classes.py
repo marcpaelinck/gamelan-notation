@@ -13,18 +13,15 @@ from pydantic import BaseModel, Field
 from src.common.constants import (
     AnimationProfiles,
     AnimationStroke,
-    Duration,
     DynamicLevel,
     GonganType,
     InstrumentGroup,
     InstrumentType,
-    MIDIvalue,
     MidiVersion,
     Modifier,
     ModifierType,
     NotationFontVersion,
     NoteOct,
-    Octave,
     PatternType,
     Pitch,
     Position,
@@ -38,7 +35,14 @@ from src.settings.constants import (
     ENV_VAR_CONFIG_PATH,
     ENV_VAR_N2M_SETTINGS_PATH,
     ENV_VAR_NOTATIONS_PATH,
+    EffectsFields,
+    FontFields,
     InstrumentFields,
+    InstrumentTagFields,
+    MidiNotesFields,
+    ModifiersFields,
+    PresetsFields,
+    RuleFields,
     Yaml,
 )
 
@@ -52,7 +56,7 @@ logger = Logging.get_logger(__name__)
 #
 # Structure of the DATA constant:
 # <table-key>: {"section": <top level key>, "folder": <key of data subfolder>, "filename": <key of file name>,
-#               "formats": <dict with formatting info>}
+#               "formats": <dict with formatting info>, "groupfilter": <fieldname containing instrument group>}
 #
 # <table-key> is the target attribute of src.settings.classes.Data that should contain the table content.
 # <top level key> refers to keys in config/config.yaml that are direct children of the root.
@@ -68,6 +72,8 @@ logger = Logging.get_logger(__name__)
 #             only argument.
 #      For numeric values the first member should be an empty list.
 #      Any field that does not occur in the "formats" section will be cast to str.
+# <fieldname containing instrument group>: If a "groupname" entry is included, the data will be filtered for the instrument
+#      group that corresponds with the notation selected in notation2midi.yaml, using the given field.
 DATA = {
     "instruments": {
         "section": "instruments",
@@ -80,17 +86,18 @@ DATA = {
             InstrumentFields.TONES: ([Pitch], []),
             InstrumentFields.EXTENDED_TONES: ([Pitch], []),
             InstrumentFields.STROKES: ([Stroke], []),
-            InstrumentFields.PATTERNS: ([Stroke], []),
-            InstrumentFields.RESTS: ([Stroke], []),
+            InstrumentFields.PATTERNS: ([PatternType], []),
+            InstrumentFields.RESTS: ([Pitch], []),
         },
+        "groupfilter": InstrumentFields.GROUP,
     },
     "instrument_tags": {
         "section": "instruments",
         "folder": "folder",
         "filename": "tags_file",
         "formats": {
-            "groups": ([InstrumentGroup], None),
-            "positions": ([Position, RuleValue], None),
+            InstrumentTagFields.GROUPS: ([InstrumentGroup], None),
+            InstrumentTagFields.POSITIONS: ([Position, RuleValue], None),
         },
     },
     "rules": {
@@ -98,13 +105,23 @@ DATA = {
         "folder": "folder",
         "filename": "rules_file",
         "formats": {
-            "group": ([InstrumentGroup], None),
-            "ruletype": ([RuleType], None),
-            "positions": ([Position, RuleValue], None),
-            "parameter1": ([RuleParameter], []),
-            "value1": ([RuleValue, Pitch, Position], []),
-            "parameter2": ([RuleParameter], []),
-            "value2": ([RuleValue], []),
+            RuleFields.GROUP: ([InstrumentGroup], None),
+            RuleFields.RULETYPE: ([RuleType], None),
+            RuleFields.POSITIONS: ([Position, RuleValue], None),
+            RuleFields.PARAMETER1: ([RuleParameter], []),
+            RuleFields.VALUE1: ([RuleValue, Pitch, Position], []),
+            RuleFields.PARAMETER2: ([RuleParameter], []),
+            RuleFields.VALUE2: ([RuleValue], []),
+        },
+        "groupfilter": RuleFields.GROUP,
+    },
+    "effects": {
+        "section": "instruments",
+        "folder": "folder",
+        "filename": "effects_file",
+        "formats": {
+            EffectsFields.EFFECT: ([Stroke, PatternType], None),
+            EffectsFields.PITCHES: ([Pitch], Pitch.NONE),
         },
     },
     "midinotes": {
@@ -112,9 +129,9 @@ DATA = {
         "folder": "folder",
         "filename": "midi_definition_file",
         "formats": {
-            "instrumentgroup": ([InstrumentGroup], None),
-            "instrumenttype": ([InstrumentType], None),
-            "positions": (
+            MidiNotesFields.INSTRUMENTGROUP: ([InstrumentGroup], None),
+            MidiNotesFields.INSTRUMENTTYPE: ([InstrumentType], None),
+            MidiNotesFields.POSITIONS: (
                 [Position],
                 None,
                 lambda record: (
@@ -123,42 +140,42 @@ DATA = {
                     else record["positions"]
                 ),
             ),
-            "pitch": ([Pitch], Pitch.NONE),
-            "octave": ([], None),
-            "stroke": ([Stroke], Stroke.NONE),
-            "midinote": (
+            MidiNotesFields.PITCH: ([Pitch], Pitch.NONE),
+            MidiNotesFields.OCTAVE: ([], None),
+            MidiNotesFields.STROKE: ([Stroke], Stroke.NONE),
+            MidiNotesFields.MIDINOTE: (
                 [],
                 [],
                 lambda record: record["midinote"] if isinstance(record["midinote"], list) else [record["midinote"]],
             ),
         },
+        "groupfilter": MidiNotesFields.INSTRUMENTGROUP,
     },
     "presets": {
         "section": "midi",
         "folder": "folder",
         "filename": "presets_file",
         "formats": {
-            "instrumentgroup": ([InstrumentGroup], None),
-            "instrumenttype": ([InstrumentType], None),
-            "position": ([Position], None),
-            "bank": ([], None),
-            "preset": ([], None),
-            "channel": ([], None),
-            "midioffset": ([], 0),
-            "port": ([], None),
+            PresetsFields.INSTRUMENTGROUP: ([InstrumentGroup], None),
+            PresetsFields.INSTRUMENTTYPE: ([InstrumentType], None),
+            PresetsFields.POSITION: ([Position], None),
+            PresetsFields.BANK: ([], None),
+            PresetsFields.PRESET: ([], None),
+            PresetsFields.CHANNEL: ([], None),
+            PresetsFields.MIDIOFFSET: ([], 0),
+            PresetsFields.PORT: ([], None),
         },
+        "groupfilter": PresetsFields.INSTRUMENTGROUP,
     },
     "font": {
         "section": "font",
         "folder": "folder",
         "filename": "file",
         "formats": {
-            "pitch": ([Pitch], Pitch.NONE),
-            "octave": ([], None),
-            "stroke": ([Stroke], Stroke.NONE),
-            "duration": ([], None),
-            "rest_after": ([], None),
-            "modifier": ([Modifier], Modifier.NONE),
+            FontFields.PITCH: ([Pitch], Pitch.NONE),
+            FontFields.OCTAVE: ([], None),
+            FontFields.NOTE_VALUE: ([], None),
+            FontFields.MODIFIER: ([Modifier], Modifier.NONE),
         },
     },
     "modifiers": {
@@ -166,69 +183,16 @@ DATA = {
         "folder": "folder",
         "filename": "modifier_file",
         "formats": {
-            "modifier": ([Modifier], Modifier.NONE),
-            "mod_type": ([ModifierType], ModifierType.NONE),
-            "value": ([Stroke, PatternType], None),
+            ModifiersFields.MODIFIER: ([Modifier], Modifier.NONE),
+            ModifiersFields.MOD_TYPE: ([ModifierType], ModifierType.NONE),
+            ModifiersFields.VALUE: ([Stroke, PatternType], None),
         },
     },
 }
 
 
-# RAW CLASSES FOR DATA FILE CONTENTS
-# The following preprocessing will be performed
-# - Resolve all Enums defined in src.common.constants
-# - Explode pseudo lists (string values containing comma separated values between square brackets)
-class InstrumentRecord(BaseModel):
-    group: InstrumentGroup
-    position: Position
-    instrument: InstrumentType
-
-
-class InstrumentTagRecord(BaseModel):
-    tag: str
-    infile: str
-    positions: list[Position]
-
-
-class MidiNoteRecord(BaseModel):
-    instrumentgroup: InstrumentGroup
-    instrumenttype: InstrumentType
-    positions: Position
-    pitch: Pitch
-    octave: Octave
-    stroke: Stroke
-    remark: str
-    midinote: list[MIDIvalue]
-    rootnote: str
-    sample: str
-
-
-class PresetRecord(BaseModel):
-    instrumentgroup: InstrumentGroup
-    instrumenttype: InstrumentType
-    positions: Position
-    bank: int
-    preset: int
-    channel: int
-    port: int
-    preset_name: str
-
-
-class FontRecord(BaseModel):
-    symbol: str
-    unicode: str
-    symbol_description: str
-    balifont_symbol_description: str
-    pitch: Pitch
-    octave: Octave
-    stroke: Stroke
-    duration: Duration
-    rest_after: Duration
-    modifier: Modifier
-    description: str
-
-    # ANIMATION SETTINGS
-    #
+# ANIMATION SETTINGS
+#
 
 
 class InstrumentInfo(BaseModel):
@@ -317,8 +281,8 @@ class SettingsMidiInfo(BaseModel):
             int
         ]  # relative duration of the notes. Even number so that alternating note patterns end on the second note
         accelerating_velocity: list[
-            int
-        ]  # MIDI velocity value (0-127) for each note. Same number of values as accelerating_pattern.
+            float
+        ]  # Relative velocity value (0-1) for each note. Same number of values as accelerating_pattern.
 
     folder: str
     midi_definition_file: str
@@ -483,6 +447,7 @@ class Data(BaseModel):
     instruments: list[dict[str, Any]] | None
     instrument_tags: list[dict[str, Any]] | None
     rules: list[dict[str, Any]] | None
+    effects: list[dict[str, Any]] | None
     midinotes: list[dict[str, Any]] | None
     presets: list[dict[str, Any]] | None
 
@@ -647,7 +612,7 @@ class RunSettings(BaseModel):
         with open(filepath, "r", encoding="utf-8") as settingsfile:
             return yaml.load(settingsfile, yaml.Loader)
 
-    def _read_data(self, settings_dict: dict, specs: dict) -> dict[str, list[dict[str, str]]]:
+    def _read_data(self, settings_dict: dict, group: InstrumentGroup, specs: dict) -> dict[str, list[dict[str, str]]]:
         """Reads multiple data files into table-like dict structures. Columns that appear in the 'format' section
         of the specs will be formatted accordingly.
         Args:
@@ -668,11 +633,12 @@ class RunSettings(BaseModel):
             folder = settings_dict[category][entry["folder"]]
             file = settings_dict[category][entry["filename"]]
             filepath = os.path.join(folder, file)
-            data[item] = (
-                pd.read_csv(filepath, sep="\t", comment="#", dtype=str)
-                .replace([np.nan], [""], regex=False)
-                .to_dict(orient="records")
-            )
+            df = pd.read_csv(filepath, sep="\t", comment="#", dtype=str).replace([np.nan], [""], regex=False)
+
+            if "groupfilter" in entry:
+                df = df[df[entry["groupfilter"]] == group]
+            data[item] = df.to_dict(orient="records")
+
             if "formats" in entry:
                 for fmtcolumn, formatting in entry["formats"].items():
                     for record in data[item]:
@@ -740,6 +706,8 @@ class RunSettings(BaseModel):
         settings_filepath = os.getenv(ENV_VAR_N2M_SETTINGS_PATH)
         run_settings_dict = self._read_settings(settings_filepath)
         run_settings_dict[Yaml.CONFIGDATA] = settings_data_dict
-        run_settings_dict[Yaml.DATA] = self._read_data(settings_data_dict, DATA)
+        notation_id = run_settings_dict[Yaml.NOTATION_ID]
+        group = run_settings_dict[Yaml.CONFIGDATA][Yaml.NOTATIONFILES][notation_id][Yaml.INSTRUMENTGROUP]
+        run_settings_dict[Yaml.DATA] = self._read_data(settings_data_dict, group=group, specs=DATA)
 
         return run_settings_dict

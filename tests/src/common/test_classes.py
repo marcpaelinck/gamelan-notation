@@ -1,9 +1,17 @@
 from itertools import product
 from typing import Any
 
-from src.common.constants import InstrumentGroup, Pitch, Position, RuleValue, Stroke
+from src.common.constants import (
+    InstrumentGroup,
+    PatternType,
+    Pitch,
+    Position,
+    RuleValue,
+    Stroke,
+)
 from src.common.notes import Note, Tone
-from src.notation2midi.rules.rules import RulesEngine
+from src.notation2midi.rules.rule_cast_to_position import RuleCastToPosition
+from src.notation2midi.rules.rules import Instrument
 from src.settings.constants import NoteFields
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
@@ -26,16 +34,14 @@ class ValidNoteTester(BaseUnitTestCase):
             NoteFields.POSITION.value: position,
             NoteFields.PITCH.value: pitch,
             NoteFields.OCTAVE.value: octave,
-            NoteFields.STROKE.value: stroke,
-            NoteFields.DURATION.value: duration,
-            NoteFields.REST_AFTER.value: rest_after,
+            NoteFields.EFFECT.value: effect,
+            NoteFields.NOTE_VALUE.value: duration,
         }
         for position in (Position.PEMADE_POLOS, Position.JEGOGAN, Position.REYONG_1)
         for pitch in [Pitch.DING, Pitch.DAING, Pitch.STRIKE, Pitch.DAG, Pitch.DENGDING]
         for octave in (1, 2)
-        for stroke in [Stroke.OPEN, Stroke.MUTED, Stroke.TREMOLO, Stroke.GRACE_NOTE]
+        for effect in [Stroke.OPEN, Stroke.MUTED, Stroke.GRACE_NOTE, PatternType.TREMOLO]
         for duration in (0, 0.25, 1.0)
-        for rest_after in (0,)
     ]
     # fmt: off
     # pylint: disable=line-too-long
@@ -55,26 +61,21 @@ class ValidNoteTester(BaseUnitTestCase):
         },
     }
     ANY = "any"
-    VALID_STROKE_DURATION = {
+    VALID_PITCH_STROKE = {
         InstrumentGroup.SEMAR_PAGULINGAN: {
-            Position.PEMADE_POLOS: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5),
-                                    (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), (Stroke.TREMOLO, ANY),
-                                    (Stroke.TREMOLO_ACCELERATING, 1.0),  (Stroke.TREMOLO_ACCELERATING, ANY),  (Stroke.NOROT, 1.0), (Stroke.GRACE_NOTE, 0.0)],
-            Position.JEGOGAN: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5),
-                                (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0),  (Stroke.TREMOLO, ANY),
-                                (Stroke.TREMOLO_ACCELERATING, ANY)],
+            Position.PEMADE_POLOS: list(product([Pitch.DING, Pitch.DONG, Pitch.DENG, Pitch.DEUNG,Pitch.DUNG, Pitch.DANG, Pitch.DAING], 
+                                                [Stroke.OPEN, Stroke.ABBREVIATED, Stroke.MUTED, Stroke.GRACE_NOTE, PatternType.TREMOLO, PatternType.TREMOLO_ACCELERATING, PatternType.NOROT])),
+            Position.JEGOGAN: list(product([Pitch.DING, Pitch.DONG, Pitch.DENG, Pitch.DEUNG,Pitch.DUNG, Pitch.DANG, Pitch.DAING], 
+                                                [Stroke.OPEN, Stroke.ABBREVIATED, Stroke.MUTED, PatternType.TREMOLO, PatternType.TREMOLO_ACCELERATING])),
             Position.REYONG_1: [],
         },
         InstrumentGroup.GONG_KEBYAR: {
-            Position.PEMADE_POLOS: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5),
-                                    (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0),  (Stroke.TREMOLO, ANY),
-                                    (Stroke.TREMOLO_ACCELERATING, 1.0),  (Stroke.TREMOLO_ACCELERATING, ANY),  (Stroke.NOROT, 1.0), (Stroke.GRACE_NOTE, 0.0)],
-            Position.JEGOGAN: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5),
-                                (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0),  (Stroke.TREMOLO, ANY),
-                                (Stroke.TREMOLO_ACCELERATING, ANY)],
-            Position.REYONG_1: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5),
-                                (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0),  (Stroke.TREMOLO, ANY),
-                                (Stroke.TREMOLO_ACCELERATING, 1.0),  (Stroke.TREMOLO_ACCELERATING, ANY),  (Stroke.GRACE_NOTE, 0.0)]
+            Position.PEMADE_POLOS: list(product([Pitch.DING, Pitch.DONG, Pitch.DENG, Pitch.DUNG, Pitch.DANG], 
+                                                [Stroke.OPEN, Stroke.ABBREVIATED, Stroke.MUTED, Stroke.GRACE_NOTE, PatternType.TREMOLO, PatternType.TREMOLO_ACCELERATING, PatternType.NOROT])),
+            Position.JEGOGAN: list(product([Pitch.DING, Pitch.DONG, Pitch.DENG, Pitch.DUNG, Pitch.DANG], 
+                                                [Stroke.OPEN, Stroke.ABBREVIATED, Stroke.MUTED, PatternType.TREMOLO, PatternType.TREMOLO_ACCELERATING])),
+            Position.REYONG_1: list(product([Pitch.DENG, Pitch.DUNG, Pitch.DANG, Pitch.DING, Pitch.DONG], 
+                                                [Stroke.OPEN, Stroke.ABBREVIATED, Stroke.MUTED, PatternType.TREMOLO, PatternType.TREMOLO_ACCELERATING, PatternType.NOROT])),
         },
     }
     # fmt: on
@@ -87,16 +88,12 @@ class ValidNoteTester(BaseUnitTestCase):
            with VALID_PITCH_OCTAVE and VALID_STROKE_DURATION.
         Args:
             group (InstrumentGroup):
-            combination (dict[str, Any]): combination of pitch, octave, stroke, duration and rest_after, given as a record str->value
+            combination (dict[str, Any]): combination of pitch, octave and effect given as a record str->value
         """
         position = combination[NoteFields.POSITION.value]
         valid_pitch_octave = (combination["pitch"], combination["octave"]) in cls.VALID_PITCH_OCTAVE[group][position]
-        valid_stroke_duration = (
-            (combination["stroke"], combination["duration"]) in cls.VALID_STROKE_DURATION[group][position]
-            if not anyduration
-            else (combination["stroke"], cls.ANY) in cls.VALID_STROKE_DURATION[group][position]
-        )
-        return valid_pitch_octave and valid_stroke_duration
+        valid_pitch_effect = (combination["pitch"], combination["effect"]) in cls.VALID_PITCH_STROKE[group][position]
+        return valid_pitch_octave and valid_pitch_effect
 
     def test_returns_only_valid_notes(self):
         """Tests each combination in TRY_COMBINATIONS. Check that only Note objects with valid combinations
@@ -152,7 +149,7 @@ class ToneTester(BaseUnitTestCase):
             with self.subTest(tone=tone, position=position):
                 for i, (extended_range, match_octave) in enumerate(product([True, False], [True, False])):
                     self.assertEqual(
-                        RulesEngine.get_tones_within_range(tone, position, extended_range, match_octave), expected[i]
+                        Instrument.get_tones_within_range(tone, position, extended_range, match_octave), expected[i]
                     )
 
 
@@ -180,7 +177,7 @@ class RuleTester(BaseUnitTestCase):
             for i, (extended_range, exact_match) in enumerate(product([True, False], [True, False])):
                 with self.subTest(tone=tone, position=position, extended_range=extended_range, exact_match=exact_match):
                     self.assertEqual(
-                        RulesEngine.get_kempyung_tones_within_range(tone, position, extended_range, exact_match),
+                        RuleCastToPosition.get_kempyung_tones_within_range(tone, position, extended_range, exact_match),
                         expected[i],
                     )
 
@@ -238,7 +235,7 @@ class RuleTester(BaseUnitTestCase):
     def test_shared_notation_rule(self):
         for position, all_positions, expected in self.data_shared_notation_rule:
             with self.subTest(position=position, all_positions=all_positions):
-                self.assertEqual(RulesEngine.get_shared_notation_rule(position, all_positions), expected)
+                self.assertEqual(RuleCastToPosition.get_shared_notation_rule(position, all_positions), expected)
 
     P_POLOS = Position.PEMADE_POLOS
     P_SANGSIH = Position.PEMADE_SANGSIH
@@ -557,7 +554,7 @@ class RuleTester(BaseUnitTestCase):
     def test_apply_unisono_rule(self):
         for tone, position, all_positions, expected in self.data_shared_notation:
             with self.subTest(tone=tone, position=position, all_positions=all_positions):
-                cast_tone = RulesEngine.cast_to_position(
+                cast_tone = RuleCastToPosition.cast_to_position(
                     tone=tone, position=position, all_positions=all_positions, metadata=[]
                 )
                 self.assertEqual(cast_tone, expected)

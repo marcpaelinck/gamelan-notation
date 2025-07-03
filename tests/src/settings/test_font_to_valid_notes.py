@@ -1,20 +1,13 @@
 from collections import defaultdict
 from typing import Any
 
-from src.common.constants import InstrumentGroup, Pitch, Position, Stroke
+from src.common.constants import InstrumentGroup, PatternType, Pitch, Position, Stroke
 from src.settings.constants import NoteFields
 from src.settings.font_to_valid_notes import get_note_records
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
 
-FIELDS_IN_TUPLE = (
-    NoteFields.POSITION,
-    NoteFields.PITCH,
-    NoteFields.OCTAVE,
-    NoteFields.STROKE,
-    NoteFields.DURATION,
-    NoteFields.REST_AFTER,
-)
+FIELDS_IN_TUPLE = (NoteFields.POSITION, NoteFields.PITCH, NoteFields.OCTAVE, NoteFields.EFFECT, NoteFields.NOTE_VALUE)
 
 
 class SettingsTester(BaseUnitTestCase):
@@ -46,16 +39,14 @@ class SettingsTester(BaseUnitTestCase):
                 NoteFields.POSITION.value: position,
                 NoteFields.PITCH.value: pitch,
                 NoteFields.OCTAVE.value: octave,
-                NoteFields.STROKE.value: stroke,
-                NoteFields.DURATION.value: duration,
-                NoteFields.REST_AFTER.value: rest_after,
+                NoteFields.EFFECT.value: effect,
+                NoteFields.NOTE_VALUE.value: note_value,
             }
             for position in (Position.PEMADE_POLOS, Position.JEGOGAN, Position.REYONG_1)
             for pitch in [Pitch.DING, Pitch.DAING, Pitch.STRIKE, Pitch.DAG, Pitch.DENGDING]
             for octave in (1, 2)
-            for stroke in [Stroke.OPEN, Stroke.MUTED, Stroke.TREMOLO, Stroke.GRACE_NOTE]
-            for duration in (0, 0.25, 1.0)
-            for rest_after in (0,)
+            for effect in [Stroke.OPEN, Stroke.MUTED, PatternType.TREMOLO, Stroke.GRACE_NOTE]
+            for note_value in (0, 0.25, 1.0)
         ]
         # fmt: off
         self.VALID_PITCH_OCTAVE = {
@@ -113,7 +104,7 @@ class SettingsTester(BaseUnitTestCase):
                 if (
                     (valid_PO and valid_SD)
                     and (combination[NoteFields.PITCH], combination[NoteFields.OCTAVE]) in valid_PO
-                    and (combination[NoteFields.STROKE], combination[NoteFields.DURATION]) in valid_SD
+                    and (combination[NoteFields.EFFECT], combination[NoteFields.NOTE_VALUE]) in valid_SD
                 ):
                     self.assertIn(combination, validnotes)
                 else:

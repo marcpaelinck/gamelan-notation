@@ -10,11 +10,13 @@ from mido import MidiFile
 
 from src.common.classes import Beat, Preset
 from src.common.constants import DEFAULT, Pitch, Position
+from src.common.notes import Pattern
 from src.notation2midi.classes import Agent
 from src.notation2midi.execution.execution import Execution
 from src.notation2midi.metadata_classes import PartMeta
 from src.notation2midi.midi.midi_track import MidiTrackX, TimeUnit
 from src.settings.classes import PartForm, RunSettings
+from src.settings.constants import MidiNotesFields
 
 
 class MidiGeneratorAgent(Agent):
@@ -36,6 +38,16 @@ class MidiGeneratorAgent(Agent):
             file=self.run_settings.midi_out_file,
             loop=self.run_settings.notationfile.part.loop,
         )
+        self.midi_dict = {
+            (
+                pos,
+                record[MidiNotesFields.PITCH],
+                record[MidiNotesFields.OCTAVE],
+                record[MidiNotesFields.STROKE],
+            ): record[MidiNotesFields.MIDINOTE]
+            for record in run_settings.data.midinotes
+            for pos in record[MidiNotesFields.POSITIONS]
+        }
 
     @override
     @classmethod
@@ -81,7 +93,12 @@ class MidiGeneratorAgent(Agent):
                 curr_time = track.current_millitime
                 self.part_info.markers[partinfo.name] = int(curr_time)
 
-        track = MidiTrackX(position, Preset.get_preset(position), self.run_settings)
+        track = MidiTrackX(
+            position=position,
+            preset=Preset.get_preset(position),
+            midi_dict=self.midi_dict,
+            run_settings=self.run_settings,
+        )
         # Add silence before the start of the piece, except if the piece should be played in a loop.
         if not self.run_settings.notationfile.part.loop:
             track.increase_current_time(self.run_settings.midi.silence_seconds_before_start, TimeUnit.SECOND)
@@ -137,15 +154,16 @@ class MidiGeneratorAgent(Agent):
             except KeyError:
                 self.logerror(f"No measure found for {position} in beat {beat.full_id}. Program halted.")
                 sys.exit()
-            for note in pass_.generic_notes:
+            for note in pass_.notes:
                 # Retrieve the pattern represented by the note, if any (returns a list containing the note if no pattern)
-                if not note.pattern:
-                    print(f"ERROR {note.pitch} {note.position} has no pattern")
-                for pattnote in note.pattern:
-                    if pattnote:
-                        track.add_note(pattnote)
-                    else:
-                        print(f"ERROR pattern is None for {note.pitch} {note.position}")
+                if isinstance(note, Pattern):
+                    if not note.pattern:
+                        raise ValueError("ERROR pattern %s %s has no pattern" % (note.effect, note.position))
+                    for pattnote in note.pattern:
+                        if pattnote:
+                            track.add_note(pattnote)
+                else:
+                    track.add_note(note)
             beat = self.exec_mgr.next_beat_in_flow(beat)
             # TODO GOTO modify, also for freq type
 

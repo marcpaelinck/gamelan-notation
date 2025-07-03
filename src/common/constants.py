@@ -1,6 +1,6 @@
 # pylint: disable=missing-module-docstring,missing-class-docstring
 from enum import StrEnum
-from typing import Any
+from typing import Any, TypeVar, Union
 
 from pydantic_core import core_schema
 
@@ -227,6 +227,8 @@ class Pitch(NotationEnum):
     STRIKE = "STRIKE"
     STRIKE2 = "STRIKE2"
     TONG = "TONG"
+    EXTENSION = "EXTENSION"
+    SILENCE = "SILENCE"
     NONE = "NONE"
 
 
@@ -238,11 +240,6 @@ class Stroke(NotationEnum):
     KAPAK = "KAPAK"
     DETUT = "DETUT"
     CUNGKUNG = "CUNGKUNG"
-    TREMOLO = "TREMOLO"
-    TREMOLO_ACCELERATING = "TREMOLO_ACCELERATING"
-    NOROT = "NOROT"
-    EXTENSION = "EXTENSION"
-    SILENCE = "SILENCE"
     NONE = "NONE"
 
 
@@ -251,6 +248,9 @@ class PatternType(NotationEnum):
     TREMOLO_ACCELERATING = "TREMOLO_ACCELERATING"
     NOROT = "NOROT"
     NONE = "NONE"
+
+
+Effect = TypeVar("Effect", Stroke, PatternType)
 
 
 class Modifier(NotationEnum):
@@ -272,8 +272,6 @@ class Modifier(NotationEnum):
     TREMOLO = "TREMOLO"
     TREMOLO_ACCELERATING = "TREMOLO_ACCELERATING"
     NOROT = "NOROT"
-    EXTENSION = "EXTENSION"
-    SILENCE = "SILENCE"
 
 
 class ModifierType(NotationEnum):

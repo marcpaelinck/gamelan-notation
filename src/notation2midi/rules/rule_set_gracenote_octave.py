@@ -1,5 +1,3 @@
-from typing import Any
-
 from src.common.constants import Position, Stroke
 from src.common.notes import Note, NoteFactory, Tone
 from src.notation2midi.metadata_classes import MetaData
@@ -23,7 +21,7 @@ class RuleSetGracenoteOctave(Rule):
         """
 
         for pos, (note, nextnote) in enumerate(zip(notes.copy(), notes.copy()[1:] + [None])):
-            if note.stroke is Stroke.GRACE_NOTE and note.pitch in Tone.MELODIC_PITCHES:
+            if note.effect is Stroke.GRACE_NOTE and note.pitch in Tone.MELODIC_PITCHES:
                 if not nextnote or not nextnote.pitch in Tone.MELODIC_PITCHES:
                     raise ValueError(
                         "Grace note not followed by melodic note in %s" % NotePatternGenerator.notes_to_str(notes)
@@ -32,7 +30,7 @@ class RuleSetGracenoteOctave(Rule):
                 # pylint: disable=cell-var-from-loop
                 nearest = sorted(tones, key=lambda x: abs(Instrument.interval(x, nextnote.to_tone())))[0]
                 # pylint: enable=cell-var-from-loop
-                nearest_grace_note = NoteFactory.clone_bound_note(note, octave=nearest.octave)
+                nearest_grace_note = NoteFactory.clone_note(note, octave=nearest.octave)
                 notes[pos] = nearest_grace_note
         return notes
 

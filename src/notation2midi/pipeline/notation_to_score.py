@@ -170,12 +170,12 @@ class ScoreCreatorAgent(Agent):
                 gongan_info[ParserTag.METADATA] = [meta for meta in metadata_list if meta.scope == Scope.GONGAN]
                 self.score.global_metadata.extend([meta for meta in metadata_list if meta.scope == Scope.SCORE])
             for self.curr_measure_id, measures in gongan_info[ParserTag.BEATS].items():
-                # Generate measure content: convert NoteRecord objects to GenericNote objects.
+                # Generate measure content: convert NoteRecord objects to NoteSymbol objects.
                 for _, measure in measures.items():
                     for _, pass_ in measure.passes.items():
                         self.curr_line_nr = pass_.line
                         pass_.generic_notes = [
-                            NoteFactory.get_generic_note(notechars) for notechars in pass_.generic_notes
+                            NoteFactory.create_note_symbol(notechars) for notechars in pass_.generic_notes
                         ]
                         # pass_.notes = self._convert_to_notes(
                         #     pass_.notes,
