@@ -161,17 +161,17 @@ class ScorePostprocessAgent(Agent):
     ):
         silence = Pitch.SILENCE
         extension = Pitch.EXTENSION
-        prev_effects = {
+        prev_pitches = {
             # We select the default pass because pass_seq might not be the corresponding sequence in prev_beat
             # as a consequence of the flow of the score that will be created in a later stage.
-            pos: (prev_beat.get_notes(pos, DEFAULT)[-1].effect if prev_beat else silence)
+            pos: (prev_beat.get_notes(pos, DEFAULT)[-1].pitch if prev_beat else silence)
             for pos in positions
         }
         # Remark: the resttype is EXTENSION if the previous stroke is MUTED or ABBREVIATED.
         # This will avoid undesired muting when a GOTO points to this measure.
         resttypes = {
-            pos: silence if preveffect is silence or pos in (force_silence or []) else extension
-            for pos, preveffect in prev_effects.items()
+            pos: silence if prev_pitch is silence or pos in (force_silence or []) else extension
+            for pos, prev_pitch in prev_pitches.items()
         }
         return {
             position: self._create_rest_measure(
