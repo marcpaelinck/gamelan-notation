@@ -239,8 +239,8 @@ class ScoreValidationAgent(Agent):
                             for seq, (polosnote, sangsihnote) in enumerate(notepairs):
                                 # Check kempyung.
                                 if (
-                                    polosnote.pitch is not Pitch.NONE
-                                    and sangsihnote.pitch is not Pitch.NONE
+                                    polosnote.is_melodic()
+                                    and sangsihnote.is_melodic()
                                     and not (sangsihnote.pitch, sangsihnote.octave)
                                     == kempyung_dict[(polosnote.pitch, polosnote.octave)]
                                 ):
@@ -257,14 +257,12 @@ class ScoreValidationAgent(Agent):
                                             notesymbol=sangsihnote.notesymbol,
                                             symbol="",
                                         )
-                                        # Replace the note pattern
-                                        # pylint: disable=no-member
-                                        # correct_sangsih.pattern.clear()
-                                        # correct_sangsih.pattern.append(correct_sangsih.to_pattern_note())
-                                        # pylint: enable=no-member
+
                                         if not (correct_sangsih):
                                             self.logerror(
-                                                f"Trying to create an incorrect combination {sangsih} {correct_pitch} OCT{correct_octave} {sangsihnote.effect} duration={sangsihnote.duration} while correcting kempyung."
+                                                f"Trying to create an incorrect combination {sangsih} {correct_pitch}"
+                                                f" OCT{correct_octave} {sangsihnote.effect}"
+                                                f" duration={sangsihnote.duration} while correcting kempyung."
                                             )
                                         beat.get_notes(sangsih, DEFAULT)[seq] = correct_sangsih
                                         autocorrected = True
@@ -274,14 +272,18 @@ class ScoreValidationAgent(Agent):
 
                     if incorrect_detected:
                         invalids.append(
-                            f"BEAT {beat.full_id}: {(polos, sangsih)[0].instrumenttype} P=[{''.join((n.symbol for n in beat.measures[(polos, sangsih)[0]].passes[DEFAULT].notes))}] S=[{orig_sangsih_str}]"
+                            f"BEAT {beat.full_id}: {(polos, sangsih)[0].instrumenttype}"
+                            f" P=[{''.join((n.symbol for n in beat.measures[(polos, sangsih)[0]].passes[DEFAULT].notes))}]"
+                            f" S=[{orig_sangsih_str}]"
                         )
                     if autocorrected:
                         corrected_sangsih_str = "".join(
                             (n.symbol for n in beat.measures[(polos, sangsih)[1]].passes[DEFAULT].notes)
                         )
                         corrected.append(
-                            f"BEAT {beat.full_id}: {(polos, sangsih)[0].instrumenttype} P=[{''.join((n.symbol for n in beat.measures[(polos, sangsih)[0]].passes[DEFAULT].notes))}] S=[{orig_sangsih_str}] -> S=[{corrected_sangsih_str}]"
+                            f"BEAT {beat.full_id}: {(polos, sangsih)[0].instrumenttype} "
+                            f" P=[{''.join((n.symbol for n in beat.measures[(polos, sangsih)[0]].passes[DEFAULT].notes))}]"
+                            f" S=[{orig_sangsih_str}] -> S=[{corrected_sangsih_str}]"
                         )
         return invalids, corrected, ignored
 

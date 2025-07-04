@@ -317,16 +317,6 @@ class MidiTrackX(MidiTrack):
                 # Append any delayed note_off messages before appending a new note_on message.
                 self.append_all_and_clear(self.last_noteoff_msgs)
                 self.send_noteon_message(midivalue=midivalue, note=note)
-                # self.append(
-                #     Message(
-                #         type="note_on",
-                #         note=midivalue,
-                #         velocity=self.current_velocity if not note.velocity else note.velocity,
-                #         time=self.current_ticktime - self.ticktime_last_message,
-                #         channel=self.channel,
-                #         skip_checks=True,
-                #     )
-                # )
 
                 if count == 0:
                     # Add helping hand message
@@ -339,19 +329,10 @@ class MidiTrackX(MidiTrack):
             for count, midivalue in enumerate(midinotes):
                 # Do not append the note_off message to the track yet. It might be followed by extension 'notes'.
                 self.send_noteoff_message(midivalue)
-                # self.last_noteoff_msgs.append(
-                #     Message(
-                #         type="note_off",
-                #         note=midivalue,
-                #         time=0,  # the time will be determined by the self.append method
-                #         channel=self.channel,
-                #         skip_checks=True,
-                #     )
-                # )
 
-            if note.effect in (Stroke.ABBREVIATED, Stroke.MUTED):
-                # if the note is abbreviated or muted, it can not be extended.
-                self.append_all_and_clear(self.last_noteoff_msgs)
+            # if note.effect in (Stroke.ABBREVIATED, Stroke.MUTED):
+            #     # if the note is abbreviated or muted, it can not be extended.
+            #     self.append_all_and_clear(self.last_noteoff_msgs)
             self.increase_current_time(note.duration, unit=TimeUnit.NOTE)
         # TODO next two ifs can now be combined
         elif note.pitch is Pitch.SILENCE:
