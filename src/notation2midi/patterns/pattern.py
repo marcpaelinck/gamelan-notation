@@ -15,5 +15,5 @@ class PatternGenerator:
         except:  # pylint: disable=bare-except
             return ""
 
-    # Override this method in each subclass
-    def create_pattern(self, notes: list[Note]) -> None: ...
+    def create_pattern(self, notes: list[Note]) -> None:
+        """Override this method in each subclass"""
