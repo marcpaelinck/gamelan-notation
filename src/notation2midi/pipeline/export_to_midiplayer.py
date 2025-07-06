@@ -4,7 +4,6 @@ from typing import override
 from src.notation2midi.classes import Agent
 from src.settings.classes import Content, PartForm, RunSettings, Song
 from src.settings.constants import PresetsFields
-from src.settings.settings import Settings
 from src.settings.utils import pretty_compact_json
 
 
@@ -202,10 +201,3 @@ class MidiPlayerUpdatePdfAgent(MidiPlayerUpdateAgentModel):
         self._save_midiplayer_content(
             content, self.run_settings.midiplayer.folder, self.run_settings.midiplayer.contentfile
         )
-
-
-if __name__ == "__main__":
-    settings = Settings.get()
-    agent = MidiPlayerUpdateAgentModel(settings)
-    content = agent._get_midiplayer_content(settings.midiplayer.folder, settings.midiplayer.contentfile)
-    agent._update_instrument_info(content)

@@ -1,7 +1,6 @@
 from typing import override
 
-from src.common.classes import Beat
-from src.common.constants import PatternType, Position, Stroke
+from src.common.constants import PatternType, Stroke
 from src.common.notes import Note, NoteFactory, Pattern
 from src.notation2midi.patterns.pattern import PatternGenerator
 from src.settings.classes import SettingsMidiInfo
@@ -10,14 +9,6 @@ from src.settings.classes import SettingsMidiInfo
 class TremoloPatternGenerator(PatternGenerator):
     """Generates note sequences to implement Patterns such as tremolo.
     Adds the sequence to the `pattern` attribute of the Pattern."""
-
-    @classmethod
-    def notes_to_str(cls, measure: list[Note]) -> str:
-        """Returns the concatenated symbols of the given list of notes"""
-        try:
-            return "".join([note.symbol for note in measure])
-        except:  # pylint: disable=bare-except
-            return ""
 
     @override
     def create_pattern(self, notes: list[Note]) -> None:

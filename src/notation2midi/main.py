@@ -26,18 +26,17 @@ logger = Logging.get_logger(__name__)
 
 PIPE = [
     SettingsValidationAgent,
-    NotationParserAgent,  # -> NotationRecords
-    ScoreCreatorAgent,  # -> Score with grouped instruments and UnboundNotes: pitch, modifiers
-    RulesAgent,  # Processes notation for instrument groups: casts notes to individual instruments. -> IScore with BoundNotes: octave, stroke and rel. duration + rule and transformation
-    # should also update grace note octaves
-    NotePatternGeneratorAgent,  # -> PattScore: Score with enhanced BoundNotes containing pattern(MidiNotes) + UUID
+    NotationParserAgent,  # -> Parses the notation to a structure that reflects the notation
+    ScoreCreatorAgent,  # -> Creates a Score object: structure that is used internally
+    RulesAgent,  # -> Applies transformations such as creating multiple staves from a single 'unisono' stave
+    NotePatternGeneratorAgent,  # -> Creates sequences of Note objects to emulate patterns such as tremolo or norot.
     ScorePostprocessAgent,  # Fills empty and shorthand beats + applies metadata. -> CompleteScore
-    ScoreValidationAgent,
-    ExecutionCreatorAgent,  # Creates Execution for the ExtScore -> Execution
-    MidiGeneratorAgent,
-    PDFGeneratorAgent,
-    ScoreToNotationAgent,
-    MidiPlayerUpdatePartAgent,
+    ScoreValidationAgent,  # Validates the score and performs corrections if required.
+    ExecutionCreatorAgent,  # Creates a score Execution: the flow (gongan sequence), tempi and dynamics.
+    MidiGeneratorAgent,  # Generates MIDI output.
+    PDFGeneratorAgent,  # Generates a human-readable PDF score.
+    ScoreToNotationAgent,  # Generates a corrected and standardized input file.
+    MidiPlayerUpdatePartAgent,  # Updates the JSON settings file of the Front End application.
     MidiPlayerUpdatePdfAgent,
 ]
 

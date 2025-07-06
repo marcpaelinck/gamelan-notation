@@ -18,18 +18,7 @@ from typing import Any, Type
 
 from src.common.logger import Logging
 from src.notation2midi.classes import Agent
-from src.notation2midi.pipeline.export_to_midiplayer import (
-    MidiPlayerUpdatePartAgent,
-    MidiPlayerUpdatePdfAgent,
-)
-from src.notation2midi.pipeline.notation_to_score import ScoreCreatorAgent
-from src.notation2midi.pipeline.parse_notation import NotationParserAgent
-from src.notation2midi.pipeline.score_to_midi import MidiGeneratorAgent
-from src.notation2midi.pipeline.score_to_pdf import PDFGeneratorAgent
-from src.notation2midi.pipeline.score_validation import ScoreValidationAgent
 from src.settings.classes import RunSettings
-from src.settings.settings import Settings
-from src.settings.settings_validation import SettingsValidationAgent
 
 logger = Logging.get_logger(__name__)
 
@@ -142,21 +131,3 @@ class PipeLine:
                         self.data[return_type] = return_value
                 else:
                     self.data[agentclass.RETURN_TYPE] = result
-
-
-# FULL SEQUENCE STARTS HERE
-PIPE = [
-    SettingsValidationAgent,
-    NotationParserAgent,
-    ScoreCreatorAgent,
-    ScoreValidationAgent,
-    MidiGeneratorAgent,
-    PDFGeneratorAgent,
-    MidiPlayerUpdatePartAgent,
-    MidiPlayerUpdatePdfAgent,
-]
-
-if __name__ == "__main__":
-    logger.open_logging("NOTATION2MIDI")
-    pipeline = PipeLine(run_settings=Settings.get(), pipe=PIPE)
-    pipeline.execute()

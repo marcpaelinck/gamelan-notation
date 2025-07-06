@@ -7,5 +7,13 @@ class PatternGenerator:
     def __init__(self, run_settings: RunSettings):
         self.run_settings = run_settings
 
-    # Override this in each subclass
+    @classmethod
+    def notes_to_str(cls, notes: list[Note]) -> str:
+        """Returns the concatenated symbols of the given list of notes"""
+        try:
+            return "".join([note.symbol for note in notes])
+        except:  # pylint: disable=bare-except
+            return ""
+
+    # Override this method in each subclass
     def create_pattern(self, notes: list[Note]) -> None: ...
