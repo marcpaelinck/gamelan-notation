@@ -18,6 +18,7 @@ from src.common.notes import Note, NoteFactory
 from src.notation2midi.classes import Agent
 from src.notation2midi.metadata_classes import GonganType, ValidationProperty
 from src.settings.classes import RunSettings
+from src.settings.font_to_valid_notes import ValidNoteGenerator
 
 
 class ScoreValidationAgent(Agent):
@@ -196,7 +197,7 @@ class ScoreValidationAgent(Agent):
     ) -> list[tuple[BeatId, tuple[Position, Position]]]:
         # TODO: currently only works for gong kebyar, not for semar pagulingan
 
-        def note_pairs(beat: Beat, pair: list[InstrumentType]):
+        def note_pairs(beat: Beat, pair: tuple[Position]) -> list[tuple[Note, Note]]:
             return list(
                 zip(
                     beat.measures[pair[0]].passes[DEFAULT].notes,
@@ -204,6 +205,7 @@ class ScoreValidationAgent(Agent):
                 )
             )
 
+        valid_note_generator = ValidNoteGenerator(self.run_settings) if autocorrect else None
         invalids = []
         corrected = []
         ignored = []
@@ -254,8 +256,12 @@ class ScoreValidationAgent(Agent):
                                             octave=correct_octave,
                                             effect=sangsihnote.effect,
                                             note_value=sangsihnote.note_value,
-                                            notesymbol=sangsihnote.notesymbol,
-                                            symbol="",
+                                            symbol=valid_note_generator.get_note_symbol(
+                                                pitch=correct_pitch,
+                                                octave=correct_octave,
+                                                effect=sangsihnote.effect,
+                                                note_value=sangsihnote.note_value,
+                                            ),
                                         )
 
                                         if not (correct_sangsih):

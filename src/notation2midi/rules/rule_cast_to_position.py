@@ -2,8 +2,8 @@ import math
 from collections import defaultdict
 from typing import Any
 
+from src.common.classes import Measure
 from src.common.constants import (
-    InstrumentGroup,
     PatternType,
     Pitch,
     Position,
@@ -11,7 +11,7 @@ from src.common.constants import (
     RuleType,
     RuleValue,
 )
-from src.common.notes import GenericNote, Note, NoteSymbol, Pattern, Tone
+from src.common.notes import GenericNote, Note, Pattern, Tone
 from src.notation2midi.metadata_classes import (
     AutoKempyungMeta,
     MetaData,
@@ -19,7 +19,7 @@ from src.notation2midi.metadata_classes import (
 )
 from src.notation2midi.rules.rules import Instrument, Rule, RuleDefinition
 from src.settings.classes import RunSettings
-from src.settings.constants import RuleFields
+from src.settings.constants import ModifiersFields, RuleFields
 from src.settings.settings import RunSettingsListener
 
 
@@ -35,13 +35,18 @@ class RuleCastToPosition(Rule, RunSettingsListener):
 
     @classmethod
     def cls_initialize(cls, run_settings: RunSettings):
-        cls.MODIFIER_DICT = {row["modifier"]: (row["mod_type"], row["value"]) for row in run_settings.data.modifiers}
+        cls.MODIFIER_DICT = {
+            row[ModifiersFields.MODIFIER]: (row[ModifiersFields.NOTE_ATTRIBUTE], row[ModifiersFields.VALUE])
+            for row in run_settings.data.modifiers
+        }
         cls.RULES = cls._init_ruledefs(run_settings)
 
     def fire(
-        self, notes: list[NoteSymbol], position: Position, all_positions: list[Position], metadata: list[MetaData]
+        self, pass_: Measure.Pass, position: Position, all_positions: list[Position], metadata: list[MetaData]
     ) -> list[Note]:
-        return self.to_bound_notes(notes=notes, position=position, all_positions=all_positions, metadata=metadata)
+        return self.to_bound_notes(
+            notes=pass_.genericnotes, position=position, all_positions=all_positions, metadata=metadata
+        )
 
     @classmethod
     def _init_ruledefs(cls, run_settings: RunSettings) -> dict[Position, dict[RuleType, Any]]:
@@ -233,23 +238,22 @@ class RuleCastToPosition(Rule, RunSettingsListener):
         self, notes: list[GenericNote], position: Position, all_positions: list[Position], metadata: list[MetaData]
     ):
         bound_notes: list[Note | Pattern] = []
-        for base_note in notes:
+        for genericnote in notes:
             tone = self.cast_to_position(
-                tone=Tone(pitch=base_note.pitch, octave=base_note.octave),
+                tone=Tone(pitch=genericnote.pitch, octave=genericnote.octave),
                 position=position,
                 all_positions=all_positions,
                 metadata=metadata,
             )
-            NoteType = Pattern if isinstance(base_note.effect, PatternType) else Note
+            NoteType = Pattern if isinstance(genericnote.effect, PatternType) else Note
             bound_notes.append(
                 NoteType(
                     position=position,
-                    symbol=base_note.symbol,
+                    symbol=genericnote.symbol,
                     pitch=tone.pitch if tone else Pitch.NONE,
                     octave=tone.octave if tone else None,
-                    effect=base_note.effect,
-                    note_value=base_note.note_value,
-                    notesymbol=base_note.notesymbol,
+                    effect=genericnote.effect,
+                    note_value=genericnote.note_value,
                 )
             )
         return bound_notes

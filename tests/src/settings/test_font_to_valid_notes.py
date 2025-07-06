@@ -3,11 +3,17 @@ from typing import Any
 
 from src.common.constants import InstrumentGroup, PatternType, Pitch, Position, Stroke
 from src.settings.constants import NoteFields
-from src.settings.font_to_valid_notes import get_note_records
+from src.settings.font_to_valid_notes import ValidNoteGenerator
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
 
-FIELDS_IN_TUPLE = (NoteFields.POSITION, NoteFields.PITCH, NoteFields.OCTAVE, NoteFields.EFFECT, NoteFields.NOTE_VALUE)
+FIELDS_IN_TUPLE = (
+    NoteFields.POSITION,
+    NoteFields.PITCH,
+    NoteFields.OCTAVE,
+    NoteFields.EFFECT,
+    NoteFields.NOTE_VALUE,
+)
 
 
 class SettingsTester(BaseUnitTestCase):
@@ -21,7 +27,7 @@ class SettingsTester(BaseUnitTestCase):
     ) -> list[dict[str, Any]]:
         # Creates a list of valid notes for Semar Pagulingan
         settings = Settings.get(notation_id="test-semarpagulingan", part_id="full")
-        notes_sp = get_note_records(settings)
+        notes_sp = ValidNoteGenerator(settings).get_note_records()
         return [{field.value: note[field] for field in FIELDS_IN_TUPLE} for note in notes_sp]
 
     def valid_notes_gk(
@@ -29,7 +35,7 @@ class SettingsTester(BaseUnitTestCase):
     ) -> list[dict[str, Any]]:
         # Creates a list of valid notes for  Gong Kebyar
         settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
-        notes_gk = get_note_records(settings)
+        notes_gk = ValidNoteGenerator(settings).get_note_records()
         return [{field.value: note[field] for field in FIELDS_IN_TUPLE} for note in notes_gk]
 
     # Combinations that will be tested
@@ -66,23 +72,23 @@ class SettingsTester(BaseUnitTestCase):
         self.VALID_STROKE_DURATION = {
             InstrumentGroup.SEMAR_PAGULINGAN: {
                 Position.PEMADE_POLOS: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
-                                        (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
-                                        (Stroke.TREMOLO_ACCELERATING, 1.0), (Stroke.NOROT, 1.0), (Stroke.GRACE_NOTE, 0.0)],
+                                        (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (PatternType.TREMOLO, 1.0), 
+                                        (PatternType.TREMOLO_ACCELERATING, 1.0), (PatternType.NOROT, 1.0), (Stroke.GRACE_NOTE, 0.0)],
                 Position.JEGOGAN: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
-                                   (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
-                                   (Stroke.TREMOLO_ACCELERATING, 1.0)],
+                                   (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (PatternType.TREMOLO, 1.0), 
+                                   (PatternType.TREMOLO_ACCELERATING, 1.0)],
                 Position.REYONG_1: [],
             },
             InstrumentGroup.GONG_KEBYAR: {
                 Position.PEMADE_POLOS: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
-                                        (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
-                                        (Stroke.TREMOLO_ACCELERATING, 1.0), (Stroke.NOROT, 1.0), (Stroke.GRACE_NOTE, 0.0)],
+                                        (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (PatternType.TREMOLO, 1.0), 
+                                        (PatternType.TREMOLO_ACCELERATING, 1.0), (PatternType.NOROT, 1.0), (Stroke.GRACE_NOTE, 0.0)],
                 Position.JEGOGAN: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
-                                   (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
-                                   (Stroke.TREMOLO_ACCELERATING, 1.0)],
+                                   (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (PatternType.TREMOLO, 1.0), 
+                                   (PatternType.TREMOLO_ACCELERATING, 1.0)],
                 Position.REYONG_1: [(Stroke.OPEN, 0.25), (Stroke.OPEN, 0.5), (Stroke.OPEN, 1.0), (Stroke.ABBREVIATED, 0.25), (Stroke.ABBREVIATED, 0.5), 
-                                    (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (Stroke.TREMOLO, 1.0), 
-                                    (Stroke.TREMOLO_ACCELERATING, 1.0), (Stroke.GRACE_NOTE, 0.0)],
+                                    (Stroke.ABBREVIATED, 1.0), (Stroke.MUTED, 0.25), (Stroke.MUTED, 0.5), (Stroke.MUTED, 1.0), (PatternType.TREMOLO, 1.0), 
+                                    (PatternType.TREMOLO_ACCELERATING, 1.0), (Stroke.GRACE_NOTE, 0.0)],
             },
         }
 

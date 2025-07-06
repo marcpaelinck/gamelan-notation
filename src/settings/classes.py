@@ -3,7 +3,7 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, TypeVar
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -41,6 +41,7 @@ from src.settings.constants import (
     InstrumentTagFields,
     MidiNotesFields,
     ModifiersFields,
+    NoteFields,
     PresetsFields,
     RuleFields,
     Yaml,
@@ -178,7 +179,7 @@ DATA = {
         "filename": "modifier_file",
         "formats": {
             ModifiersFields.MODIFIER: ([Modifier], Modifier.NONE),
-            ModifiersFields.MOD_TYPE: ([ModifierType], ModifierType.NONE),
+            ModifiersFields.NOTE_ATTRIBUTE: ([NoteFields], None),
             ModifiersFields.VALUE: ([Stroke, PatternType], None),
         },
     },

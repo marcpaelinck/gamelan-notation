@@ -7,19 +7,13 @@ Examples of logic are:
 - Shortcut notation such as norot.
 """
 
-from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, ClassVar, override
 
 from pydantic import BaseModel, Field
 
-from src.common.constants import (
-    InstrumentGroup,
-    Position,
-    RuleParameter,
-    RuleType,
-    RuleValue,
-)
+from src.common.classes import Measure
+from src.common.constants import InstrumentGroup, Position, RuleParameter, RuleType
 from src.common.notes import Tone
 from src.notation2midi.metadata_classes import MetaData
 from src.settings.classes import RunSettings
@@ -118,8 +112,8 @@ class Rule:
 
     # pylint: disable=unused-argument
     def fire(
-        self, notes: list[Any], position: Position, all_positions: list[Position], metadata: list[MetaData]
+        self, pass_: Measure.Pass, position: Position, all_positions: list[Position], metadata: list[MetaData]
     ) -> Any:
-        return notes
+        return None
 
     # pylint: enable=unused-argument

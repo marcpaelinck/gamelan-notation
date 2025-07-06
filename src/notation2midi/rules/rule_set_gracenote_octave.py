@@ -1,3 +1,4 @@
+from src.common.classes import Measure
 from src.common.constants import Position, Stroke
 from src.common.notes import Note, NoteFactory, Tone
 from src.notation2midi.metadata_classes import MetaData
@@ -35,6 +36,6 @@ class RuleSetGracenoteOctave(Rule):
         return notes
 
     def fire(
-        self, notes: list[Note], position: Position, all_positions: list[Position], metadata: list[MetaData]
+        self, pass_: Measure.Pass, position: Position, all_positions: list[Position], metadata: list[MetaData]
     ) -> list[Note]:
-        return self.update_grace_notes_octaves(notes=notes, position=position)
+        return self.update_grace_notes_octaves(notes=pass_.notes, position=position)

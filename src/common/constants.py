@@ -275,10 +275,10 @@ class Modifier(NotationEnum):
 
 
 class ModifierType(NotationEnum):
-    STROKE = "STROKE"
-    OCTAVE = "OCTAVE"
-    PATTERN = "PATTERN"
-    VALUE = "VALUE"
+    # The values should correspond with the names of Note attributes (Except for NONE)
+    EFFECT = "effect"
+    OCTAVE = "octave"
+    NOTE_VALUE = "note_value"
     NONE = "NONE"
 
 

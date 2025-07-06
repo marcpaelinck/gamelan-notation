@@ -2,6 +2,8 @@ from enum import StrEnum
 
 from pydantic_core import core_schema
 
+from src.common.constants import NotationEnum
+
 # Names of the environment variables in the .env and .env.test files
 ENV_VAR_CONFIG_PATH = "GAMELAN_NOTATION_CONFIG_PATH"
 ENV_VAR_NOTATIONS_PATH = "GAMELAN_NOTATION_NOTATIONDOCS_PATH"
@@ -82,12 +84,14 @@ class FontFields(SStrEnum):
 
 
 class ModifiersFields(SStrEnum):
+    """config/font/modifiers.tsv"""
+
     MODIFIER = "modifier"
-    MOD_TYPE = "mod_type"
+    NOTE_ATTRIBUTE = "note_attribute"
     VALUE = "value"
 
 
-class NoteFields(SStrEnum):
+class NoteFields(NotationEnum):
     """Combination of the above two classes"""
 
     GROUP = "group"

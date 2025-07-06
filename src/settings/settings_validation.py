@@ -64,12 +64,12 @@ class SettingsValidationAgent(Agent):
             modtype: {
                 mod[ModifiersFields.MODIFIER]: mod[ModifiersFields.VALUE]
                 for mod in self.run_settings.data.modifiers
-                if mod[ModifiersFields.MOD_TYPE] is modtype
+                if mod[ModifiersFields.NOTE_ATTRIBUTE] is modtype
             }
-            for modtype in [ModifierType.STROKE, ModifierType.OCTAVE]
+            for modtype in [ModifierType.EFFECT, ModifierType.OCTAVE]
         }
         font_df[MidiNotesFields.STROKE] = font_df[FontFields.MODIFIER].apply(
-            lambda x: mod_dict[ModifierType.STROKE].get(x, Stroke.OPEN)
+            lambda x: mod_dict[ModifierType.EFFECT].get(x, Stroke.OPEN)
         )
         font_df[MidiNotesFields.OCTAVE] = font_df[[FontFields.MODIFIER, FontFields.OCTAVE]].apply(
             lambda x: mod_dict[ModifierType.OCTAVE].get(x[FontFields.MODIFIER], x[FontFields.OCTAVE]), axis=1

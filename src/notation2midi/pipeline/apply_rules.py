@@ -1,11 +1,12 @@
-from typing import Any, ClassVar, override
+from typing import ClassVar, override
 
-from src.common.classes import Score
+from src.common.classes import Measure, Score
 from src.common.constants import Position
 from src.notation2midi.classes import Agent
 from src.notation2midi.metadata_classes import MetaData
 from src.notation2midi.rules.rule_cast_to_position import RuleCastToPosition
-from src.notation2midi.rules.rule_process_modifiers import RuleProcessModifiers
+
+# from src.notation2midi.rules.rule_process_modifiers import RuleProcessModifiers
 from src.notation2midi.rules.rule_set_gracenote_octave import RuleSetGracenoteOctave
 from src.notation2midi.rules.rules import Rule
 from src.settings.classes import RunSettings
@@ -22,36 +23,35 @@ class RulesAgent(Agent):
     EXPECTED_INPUT_TYPES = (Agent.InputOutputType.GENERICSCORE,)
     RETURN_TYPE = Agent.InputOutputType.BOUNDSCORE
 
-    _RULES: ClassVar[list[Rule]] = [RuleProcessModifiers, RuleCastToPosition, RuleSetGracenoteOctave]
+    _RULECLASSES: ClassVar[list[Rule]] = [RuleCastToPosition, RuleSetGracenoteOctave]
 
     score: Score
 
     def __init__(self, generic_score: Score):
         super().__init__(generic_score.settings)
         self.score = generic_score
+        self.rules: list[Rule] = [ruleclass(self.run_settings) for ruleclass in self._RULECLASSES]
 
     @override
     @classmethod
     def run_condition_satisfied(cls, run_settings: RunSettings):
         return True
 
-    def execute(self, notes: list[Any], position: Position, all_positions: list[Position], metadata: list[MetaData]):
-        for rule in self._RULES:
-            notes = rule(run_settings=self.run_settings).fire(
-                notes=notes, position=position, all_positions=all_positions, metadata=metadata
-            )
-        return notes
+    def execute(self, pass_: Measure.Pass, position: Position, all_positions: list[Position], metadata: list[MetaData]):
+        for rule in self.rules:
+            pass_.notes = rule.fire(pass_=pass_, position=position, all_positions=all_positions, metadata=metadata)
+        return pass_.notes
 
     @override
     def _main(self):
-        for rule in self._RULES:
+        for rule in self.rules:
             self.loginfo(f"Rule: {rule.NAME}")
         for gongan in self.gongan_iterator(self.score):
             for beat in self.beat_iterator(gongan):
                 for position, measure in beat.measures.items():
                     for pass_ in self.pass_iterator(measure):
                         bound_notes = self.execute(
-                            notes=pass_.notesymbols,
+                            pass_=pass_,
                             position=position,
                             all_positions=measure.all_positions,
                             metadata=gongan.metadata,
