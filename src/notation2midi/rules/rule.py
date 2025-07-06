@@ -10,7 +10,7 @@ Examples of logic are:
 from dataclasses import dataclass
 from typing import Any, ClassVar, override
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from src.common.classes import Measure
 from src.common.constants import InstrumentGroup, Position, RuleParameter, RuleType

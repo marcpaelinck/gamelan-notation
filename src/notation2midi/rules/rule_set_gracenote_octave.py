@@ -2,8 +2,8 @@ from src.common.classes import Measure
 from src.common.constants import Position, Stroke
 from src.common.notes import Note, NoteFactory, Tone
 from src.notation2midi.metadata_classes import MetaData
-from src.notation2midi.note_patterns import NotePatternGenerator
-from src.notation2midi.rules.rules import Instrument, Rule
+from src.notation2midi.patterns.tremolo_pattern import TremoloPatternGenerator
+from src.notation2midi.rules.rule import Instrument, Rule
 
 
 class RuleSetGracenoteOctave(Rule):
@@ -25,7 +25,7 @@ class RuleSetGracenoteOctave(Rule):
             if note.effect is Stroke.GRACE_NOTE and note.pitch in Tone.MELODIC_PITCHES:
                 if not nextnote or not nextnote.pitch in Tone.MELODIC_PITCHES:
                     raise ValueError(
-                        "Grace note not followed by melodic note in %s" % NotePatternGenerator.notes_to_str(notes)
+                        "Grace note not followed by melodic note in %s" % TremoloPatternGenerator.notes_to_str(notes)
                     )
                 tones = Instrument.get_tones_within_range(note.to_tone(), position=position, match_octave=False)
                 # pylint: disable=cell-var-from-loop

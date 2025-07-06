@@ -17,7 +17,7 @@ from src.notation2midi.metadata_classes import (
     MetaData,
     MetaDataSwitch,
 )
-from src.notation2midi.rules.rules import Instrument, Rule, RuleDefinition
+from src.notation2midi.rules.rule import Instrument, Rule, RuleDefinition
 from src.settings.classes import RunSettings
 from src.settings.constants import ModifiersFields, RuleFields
 from src.settings.settings import RunSettingsListener

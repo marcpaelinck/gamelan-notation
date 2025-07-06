@@ -10,8 +10,8 @@ from src.common.constants import (
     Stroke,
 )
 from src.common.notes import Note, Tone
+from src.notation2midi.rules.rule import Instrument
 from src.notation2midi.rules.rule_cast_to_position import RuleCastToPosition
-from src.notation2midi.rules.rules import Instrument
 from src.settings.constants import NoteFields
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase

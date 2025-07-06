@@ -4,11 +4,11 @@ from src.common.classes import Measure, Score
 from src.common.constants import Position
 from src.notation2midi.classes import Agent
 from src.notation2midi.metadata_classes import MetaData
+from src.notation2midi.rules.rule import Rule
 from src.notation2midi.rules.rule_cast_to_position import RuleCastToPosition
 
 # from src.notation2midi.rules.rule_process_modifiers import RuleProcessModifiers
 from src.notation2midi.rules.rule_set_gracenote_octave import RuleSetGracenoteOctave
-from src.notation2midi.rules.rules import Rule
 from src.settings.classes import RunSettings
 
 
@@ -39,7 +39,10 @@ class RulesAgent(Agent):
 
     def execute(self, pass_: Measure.Pass, position: Position, all_positions: list[Position], metadata: list[MetaData]):
         for rule in self.rules:
-            pass_.notes = rule.fire(pass_=pass_, position=position, all_positions=all_positions, metadata=metadata)
+            try:
+                pass_.notes = rule.fire(pass_=pass_, position=position, all_positions=all_positions, metadata=metadata)
+            except ValueError as e:
+                self.logerror(str(e))
         return pass_.notes
 
     @override

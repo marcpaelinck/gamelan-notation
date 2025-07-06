@@ -1,15 +1,15 @@
+from typing import override
+
 from src.common.classes import Beat
 from src.common.constants import PatternType, Position, Stroke
 from src.common.notes import Note, NoteFactory, Pattern
-from src.settings.classes import RunSettings, SettingsMidiInfo
+from src.notation2midi.patterns.pattern import PatternGenerator
+from src.settings.classes import SettingsMidiInfo
 
 
-class NotePatternGenerator:
+class TremoloPatternGenerator(PatternGenerator):
     """Generates note sequences to implement Patterns such as tremolo.
     Adds the sequence to the `pattern` attribute of the Pattern."""
-
-    def __init__(self, run_settings: RunSettings):
-        self.run_settings = run_settings
 
     @classmethod
     def notes_to_str(cls, measure: list[Note]) -> str:
@@ -19,7 +19,8 @@ class NotePatternGenerator:
         except:  # pylint: disable=bare-except
             return ""
 
-    def generate_tremolo(self, beat: Beat, position: Position, passnr: int) -> None:
+    @override
+    def create_pattern(self, notes: list[Note]) -> None:
         """Generates the note sequence for a tremolo.
             TREMOLO: The duration and pitch will be that of the given note.
             TREMOLO_ACCELERATING: The pitch will be that of the given note(s), the duration will be derived
@@ -35,8 +36,6 @@ class NotePatternGenerator:
         """
         midi: SettingsMidiInfo = self.run_settings.midi
         tremolo: SettingsMidiInfo.TremoloInfo = midi.tremolo
-        # patterns: list[NotePattern] = []
-        notes: list[Note] = beat.measures[position].passes[passnr].notes
         curr_noteseq = 0
 
         while curr_noteseq < len(notes):

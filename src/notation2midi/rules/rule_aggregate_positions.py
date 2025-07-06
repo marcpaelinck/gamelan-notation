@@ -1,4 +1,4 @@
-from src.notation2midi.rules.rules import Rule
+from src.notation2midi.rules.rule import Rule
 
 
 class RuleAggregatePositions(Rule):
