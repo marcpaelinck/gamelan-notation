@@ -117,14 +117,14 @@ class ValidNoteGenerator:
 
     def get_note_records(self) -> list[dict[str, Any]]:
         note_list = []
-        all_note_values = [1, 0.5, 0.25]
+        all_note_values = [1.0, 0.5, 0.25]
 
         for record in self.instrument_data:
             instrumenttype = record[InstrumentFields.INSTRUMENTTYPE]
             position: Position = record[InstrumentFields.POSITION]
             tones = {tone for tone in record[InstrumentFields.TONES] + record[InstrumentFields.EXTENDED_TONES]}
             strokes = set(record[InstrumentFields.STROKES])
-            grace = {Stroke.GRACE_NOTE}
+            grace = {stroke for stroke in strokes if stroke is Stroke.GRACE_NOTE}
             patterns = set(record[InstrumentFields.PATTERNS])
             rests = record[InstrumentFields.RESTS]
 
@@ -152,7 +152,7 @@ class ValidNoteGenerator:
             # Grace Notes
             # TODO grace_notes always have note_value==0 and therefore need to be treated separately.
             # Is there a more generic way to do this?
-            note_values = [0]
+            note_values = [0.0]
             for (pitch, octave), effect, note_value in product(tones, grace, note_values):
                 if not effect in self.effect_dict or pitch in self.effect_dict[effect]:
                     note_list.append(
@@ -165,14 +165,13 @@ class ValidNoteGenerator:
                             pitch=pitch,
                             octave=octave,
                             effect=effect,
-                            note_value=0,
+                            note_value=note_value,
                             modifier=Modifier.NONE,
                         ).model_dump()
                     )
 
             # Patterns (only melodic notes, exclude DENGDING)
-            # TODO grace_notes are added here. Is there a more generic way to do this?
-            note_values = [1]
+            note_values = [1.0]
             for (pitch, octave), effect, note_value in product(tones, patterns, note_values):
                 if not effect in self.effect_dict or pitch in self.effect_dict[effect]:
                     note_list.append(
@@ -185,7 +184,7 @@ class ValidNoteGenerator:
                             pitch=pitch,
                             octave=octave,
                             effect=effect,
-                            note_value=1,
+                            note_value=note_value,
                             modifier=Modifier.NONE,
                         ).model_dump()
                     )

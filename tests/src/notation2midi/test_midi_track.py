@@ -6,7 +6,9 @@ from mido import Message
 
 from src.common.classes import Preset
 from src.common.constants import Position
+from src.notation2midi.execution.execution import Execution
 from src.notation2midi.midi.midi_track import MidiTrackX
+from src.notation2midi.pipeline.score_to_midi import MidiGeneratorAgent
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
 
@@ -27,7 +29,10 @@ class TestSpecialNotes(BaseUnitTestCase):
         self.run_settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
         position = Position.PEMADE_POLOS
         preset = Preset.get_preset(position)
-        self.midi_track: MidiTrackX = MidiTrackX(position, preset, self.run_settings)
+        midi_generator = MidiGeneratorAgent(run_settings=self.run_settings, execution=Execution(score=None))
+        self.midi_track: MidiTrackX = MidiTrackX(
+            position, preset=preset, midi_dict=midi_generator.midi_dict, run_settings=self.run_settings
+        )
 
     def test_process_grace_note_with_preceding_rest_or_note(self):
         """Note duration should be half the value of the previous note or rest,

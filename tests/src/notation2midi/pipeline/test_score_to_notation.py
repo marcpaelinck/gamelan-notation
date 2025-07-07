@@ -1,7 +1,7 @@
 # pylint: disable=missing-module-docstring, missing-class-docstring, missing-function-docstring, line-too-long, invalid-name
 
 from src.common.constants import DEFAULT, Position
-from src.common.notes import Note
+from src.common.notes import Note, NoteFactory
 from src.notation2midi.pipeline.score_to_notation import ScoreToNotationAgent
 from src.settings.constants import InstrumentFields
 from src.settings.settings import Settings
@@ -15,7 +15,7 @@ class ScoreToNotationTester(BaseUnitTestCase):
 
     def setUp(self):
         self.settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
-        self.symbol_to_note_lookup = {(note.position, note.symbol): note for note in Note.VALIDNOTES}
+        self.symbol_to_note_lookup = {(note.position, note.symbol): note for note in NoteFactory.VALID_NOTES}
 
         self.notation_data = [
             (["i", "I", "o", "O", "e", "E", "u", "U", "a", "A"], "iIoOeEuUaA"),

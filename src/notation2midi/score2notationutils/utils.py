@@ -132,7 +132,9 @@ def is_silent(gongan: Gongan, position: Position, passid: PassID) -> bool:  # he
     """
     no_occurrence = sum((beat.get_notes(position, passid, none=[]) for beat in gongan.beats), []) == []
     all_rests = all(
-        note.pitch == Pitch.NONE for beat in gongan.beats for note in beat.get_notes(position, passid, none=[])
+        note.pitch in [Pitch.EXTENSION, Pitch.SILENCE]
+        for beat in gongan.beats
+        for note in beat.get_notes(position, passid, none=[])
     )
     return no_occurrence or all_rests
 

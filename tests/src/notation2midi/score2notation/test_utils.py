@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 
 from src.common.classes import Gongan
 from src.common.constants import Position, Stroke
+from src.common.notes import NoteFactory
 from src.notation2midi.execution.execution import Score
 from src.notation2midi.metadata_classes import AutoKempyungMeta, MetaDataSwitch
 from src.notation2midi.score2notationutils.utils import (
@@ -35,12 +36,13 @@ class TestUtils(BaseUnitTestCase):
 
     def test_measure_to_str(self):
         P = PositionNote(position=Position.PEMADE_POLOS)
-        GR_DENG1 = P.DENG1.model_copy_x(stroke=Stroke.GRACE_NOTE, duration=0)
-        GR_DING2 = P.DING2.model_copy_x(stroke=Stroke.GRACE_NOTE, duration=0, symbol="I<")
+        GR_DENG1 = NoteFactory.clone_note(P.DENG1, effect=Stroke.GRACE_NOTE, note_value=0)
+        GR_DING2 = NoteFactory.clone_note(P.DING2, effect=Stroke.GRACE_NOTE, note_value=0)
         measures = [
             ("simple", [P.DANG0, P.DING1, P.DENG1, P.DUNG1], "a,ieu"),
             ("HTML char", [P.DANG0, P.DING1, P.DENG1, P.DING2], "a,iei&lt;"),
             ("Grace note U1", [P.DANG0, P.DING1, GR_DENG1, P.DUNG1], "a,iEu"),
+            # Be aware that measure_to_str_rml_safe removes the pitch modifier of grace notes.
             ("Grace note I2", [P.DANG0, P.DING1, GR_DING2, P.DANG1], "a,iIa"),
             ("Silence", [P.EXTENSION, P.EXTENSION, P.SILENCE, P.SILENCE], "--.."),
             ("Empty", [], ""),
