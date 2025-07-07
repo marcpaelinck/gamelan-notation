@@ -24,7 +24,7 @@ from src.settings.constants import (
 class ValidNote(BaseModel):
     # Class used to create notes with validated field values. Only int values may be None,
     # other values will raise an exception if missing, malformed or None (we use Pydantic to check this).
-    # We don't use the Note class here to avoid circular references.
+    # We don't use the src.common.notes.Note class here to avoid circular references.
     model_config = ConfigDict(extra="forbid", frozen=True, revalidate_instances="always")
 
     instrumenttype: InstrumentType
@@ -34,12 +34,14 @@ class ValidNote(BaseModel):
     octave: int | None
     effect: Union[Stroke, PatternType]
     note_value: float | None
-    modifier: Modifier
 
 
 class ValidNoteGenerator:
+    """This class is used to generates a list of ValidNote 'records' that represents all valid combinations
+    of the ValidNote attributes. Method get_valid_note_records returns this list."""
 
     def __init__(self, run_settings: RunSettings):
+        """Retrieve font and instrument config data"""
         self.run_settings = run_settings
         self.font_sorting_order = {
             sym[FontFields.SYMBOL]: (
@@ -115,94 +117,43 @@ class ValidNoteGenerator:
             symbol += char
         return self.normalize_symbol(symbol)
 
-    def get_note_records(self) -> list[dict[str, Any]]:
+    def get_valid_note_records(self) -> list[dict[str, Any]]:
+        """Returns a list of all possible ValidNote instances."""
         note_list = []
-        all_note_values = [1.0, 0.5, 0.25]
 
         for record in self.instrument_data:
             instrumenttype = record[InstrumentFields.INSTRUMENTTYPE]
             position: Position = record[InstrumentFields.POSITION]
             tones = {tone for tone in record[InstrumentFields.TONES] + record[InstrumentFields.EXTENDED_TONES]}
             strokes = set(record[InstrumentFields.STROKES])
-            grace = {stroke for stroke in strokes if stroke is Stroke.GRACE_NOTE}
+            grace_stroke = {Stroke.GRACE_NOTE} if Stroke.GRACE_NOTE in strokes else set()
             patterns = set(record[InstrumentFields.PATTERNS])
-            rests = record[InstrumentFields.RESTS]
+            rests = list(product(record[InstrumentFields.RESTS], [None]))
+
+            valid_melodics = product(tones, strokes - grace_stroke, [1.0, 0.5, 0.25])
+            valid_grace = product(tones, grace_stroke, [0.0])
+            valid_patterns = product(tones, patterns, [1.0])
+            valid_rests = product(rests, [Stroke.NONE], [1.0, 0.5, 0.25])
 
             # Strokes (OPEN, ABBREVIATED, MUTED)
             # TODO grace_notes are excluded here and included in the next section. Is there a more elegant way to
             #  treat grace notes separately?
-            note_values = all_note_values
-            for (pitch, octave), effect, note_value in product(tones, strokes - grace, note_values):
-                if not effect in self.effect_dict or pitch in self.effect_dict[effect]:
-                    note_list.append(
-                        ValidNote(
-                            instrumenttype=instrumenttype,
-                            position=position,
-                            symbol=self.get_note_symbol(
-                                pitch=pitch, octave=octave, effect=effect, note_value=note_value
-                            ),
-                            pitch=pitch,
-                            octave=octave,
-                            effect=effect,
-                            note_value=note_value,
-                            modifier=Modifier.NONE,
-                        ).model_dump()
-                    )
-
-            # Grace Notes
-            # TODO grace_notes always have note_value==0 and therefore need to be treated separately.
-            # Is there a more generic way to do this?
-            note_values = [0.0]
-            for (pitch, octave), effect, note_value in product(tones, grace, note_values):
-                if not effect in self.effect_dict or pitch in self.effect_dict[effect]:
-                    note_list.append(
-                        ValidNote(
-                            instrumenttype=instrumenttype,
-                            position=position,
-                            symbol=self.get_note_symbol(
-                                pitch=pitch, octave=octave, effect=effect, note_value=note_value
-                            ),
-                            pitch=pitch,
-                            octave=octave,
-                            effect=effect,
-                            note_value=note_value,
-                            modifier=Modifier.NONE,
-                        ).model_dump()
-                    )
-
-            # Patterns (only melodic notes, exclude DENGDING)
-            note_values = [1.0]
-            for (pitch, octave), effect, note_value in product(tones, patterns, note_values):
-                if not effect in self.effect_dict or pitch in self.effect_dict[effect]:
-                    note_list.append(
-                        ValidNote(
-                            instrumenttype=instrumenttype,
-                            position=position,
-                            symbol=self.get_note_symbol(
-                                pitch=pitch, octave=octave, effect=effect, note_value=note_value
-                            ),
-                            pitch=pitch,
-                            octave=octave,
-                            effect=effect,
-                            note_value=note_value,
-                            modifier=Modifier.NONE,
-                        ).model_dump()
-                    )
-
-            # Rests
-            note_values = all_note_values
-            for rest, note_value in product(rests, note_values):
-                note_list.append(
-                    ValidNote(
-                        instrumenttype=instrumenttype,
-                        position=position,
-                        symbol=self.get_note_symbol(pitch=rest, octave=None, effect=Stroke.NONE, note_value=note_value),
-                        pitch=rest,
-                        octave=None,
-                        effect=Stroke.NONE,
-                        note_value=note_value,
-                        modifier=Modifier.NONE,
-                    ).model_dump()
-                )
+            for valid_combinations in (valid_melodics, valid_grace, valid_patterns, valid_rests):
+                for (pitch, octave), effect, note_value in valid_combinations:
+                    if not effect in self.effect_dict or pitch in self.effect_dict[effect]:
+                        note_list.append(
+                            ValidNote(
+                                instrumenttype=instrumenttype,
+                                position=position,
+                                symbol=self.get_note_symbol(
+                                    pitch=pitch, octave=octave, effect=effect, note_value=note_value
+                                ),
+                                pitch=pitch,
+                                octave=octave,
+                                effect=effect,
+                                note_value=note_value,
+                                # modifier=Modifier.NONE,
+                            ).model_dump()
+                        )
 
         return note_list

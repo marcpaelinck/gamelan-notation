@@ -112,7 +112,7 @@ class NoteFactory(BaseModel, RunSettingsListener):
             Note.Fields.NOTE_VALUE,
         ]
         cls._NOTE_GENERATOR = ValidNoteGenerator(run_settings)
-        valid_records = cls._NOTE_GENERATOR.get_note_records()
+        valid_records = cls._NOTE_GENERATOR.get_valid_note_records()
         cls.VALID_NOTES = {Note(**record) for record in valid_records}
         cls.VALID_GENERICNOTES = {GenericNote(**record) for record in valid_records}
         cls._POS_P_O_E_V_TO_VALID_NOTE = {

@@ -27,7 +27,7 @@ class SettingsTester(BaseUnitTestCase):
     ) -> list[dict[str, Any]]:
         # Creates a list of valid notes for Semar Pagulingan
         settings = Settings.get(notation_id="test-semarpagulingan", part_id="full")
-        notes_sp = ValidNoteGenerator(settings).get_note_records()
+        notes_sp = ValidNoteGenerator(settings).get_valid_note_records()
         return [{field.value: note[field] for field in FIELDS_IN_TUPLE} for note in notes_sp]
 
     def valid_notes_gk(
@@ -35,7 +35,7 @@ class SettingsTester(BaseUnitTestCase):
     ) -> list[dict[str, Any]]:
         # Creates a list of valid notes for  Gong Kebyar
         settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
-        notes_gk = ValidNoteGenerator(settings).get_note_records()
+        notes_gk = ValidNoteGenerator(settings).get_valid_note_records()
         return [{field.value: note[field] for field in FIELDS_IN_TUPLE} for note in notes_gk]
 
     # Combinations that will be tested
