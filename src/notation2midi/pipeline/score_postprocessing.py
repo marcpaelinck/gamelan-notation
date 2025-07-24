@@ -39,14 +39,14 @@ class ScorePostprocessAgent(Agent):
     """Fills empty and shorthand beats and applies metadata."""
 
     LOGGING_MESSAGE = "POSTPROCESSING SCORE"
-    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.BOUNDSCORE,)
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.PATTERNSCORE,)
     RETURN_TYPE = Agent.InputOutputType.COMPLETESCORE
 
     score: Score
 
-    def __init__(self, bound_score: Score):
-        super().__init__(bound_score.settings)
-        self.score = bound_score
+    def __init__(self, pattern_score: Score):
+        super().__init__(pattern_score.settings)
+        self.score = pattern_score
 
     @override
     @classmethod

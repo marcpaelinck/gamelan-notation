@@ -1,7 +1,10 @@
 # pylint: disable=missing-module-docstring, missing-class-docstring, missing-function-docstring, line-too-long, invalid-name
 
+from unittest.mock import MagicMock
+
+from src.common.classes import Score
 from src.common.constants import DEFAULT, Position
-from src.common.notes import Note, NoteFactory
+from src.common.notes import NoteFactory
 from src.notation2midi.pipeline.score_to_notation import ScoreToNotationAgent
 from src.settings.constants import InstrumentFields
 from src.settings.settings import Settings
@@ -14,7 +17,9 @@ from tests.src.utils_for_tests import PositionNote, create_gongan
 class ScoreToNotationTester(BaseUnitTestCase):
 
     def setUp(self):
-        self.settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
+        settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
+        self.score = MagicMock(spec=Score)
+        self.score.settings = settings
         self.symbol_to_note_lookup = {(note.position, note.symbol): note for note in NoteFactory.VALID_NOTES}
 
         self.notation_data = [
@@ -48,14 +53,14 @@ class ScoreToNotationTester(BaseUnitTestCase):
         # fmt: on
 
     def test_notelist_to_string(self):
-        agent = ScoreToNotationAgent(self.settings, None)
+        agent = ScoreToNotationAgent(self.score)
         for chars, expected in self.notation_data:
             with self.subTest(chars=chars):
                 char_list = [self.symbol_to_note_lookup[(Position.PEMADE_POLOS, c)] for c in chars]
                 self.assertEqual(agent._notelist_to_string(char_list), expected)
 
     def test_gongan_to_records(self):
-        agent = ScoreToNotationAgent(self.settings, None)
+        agent = ScoreToNotationAgent(self.score)
         for gongan, expected in self.gongan_data:
             with self.subTest(gongan=gongan.id):
                 self.assertEqual(agent._gongan_to_records(gongan), expected, "Failed for gongan %s" % gongan.id)

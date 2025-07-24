@@ -10,6 +10,8 @@ class TremoloPatternGenerator(PatternGenerator):
     """Generates note sequences to implement Patterns such as tremolo.
     Adds the sequence to the `pattern` attribute of the Pattern."""
 
+    NAME = "Tremolo and Accelerating Tremolo"
+
     @override
     def create_pattern(self, notes: list[Note]) -> None:
         """Generates the note sequence for a tremolo.

@@ -1,5 +1,6 @@
 import os
 import unittest
+from xml.etree.ElementTree import TreeBuilder
 
 import pytest
 
@@ -37,7 +38,7 @@ class IntegrationTester(BaseUnitTestCase):
                 os.remove(file_path)
 
     #######################################################################################################################################################
-    RUN_INTEGRATION_TEST = False  # <== SET TO True TO RUN THIS TEST (0.5 MIN. OR MORE RUNTIME)
+    RUN_INTEGRATION_TEST = TreeBuilder  # <== SET TO True TO RUN THIS TEST (0.5 MIN. OR MORE RUNTIME)
     RUN_SMALL_TEST = False  # <== a small test will only run the given titles and save the results in "./tests/data/notation/_integration_test_small/output"
     SMALL_TEST_NOTATIONS = ["puspamekar"]
     #######################################################################################################################################################

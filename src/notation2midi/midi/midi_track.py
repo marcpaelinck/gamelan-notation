@@ -43,7 +43,7 @@ class MidiTrackX(MidiTrack):
     # The time of this message will be delayed if an extension note is encountered.
     last_note: Note = None
     last_helpinghand_msg: MetaMessage = None
-    last_noteoff_msgs: list[Message] = []
+    open_noteoff_msgs: list[Message] = []  # unsaved note off messages of notes currently playing
     ticktime_last_message: int = 0
     current_ticktime: int = 0
     # current and prev millitimes are used for the panggul animation
@@ -94,7 +94,7 @@ class MidiTrackX(MidiTrack):
         """
         # Do not append the note_off message to the track yet. It might be followed by extension 'notes'.
         # self.set_bank_and_preset()
-        self.last_noteoff_msgs.append(
+        self.open_noteoff_msgs.append(
             Message(
                 type="note_off",
                 note=midivalue,
@@ -278,8 +278,8 @@ class MidiTrackX(MidiTrack):
         """Removes the last helping hand message if it has not been updated."""
         if self.last_helpinghand_msg and "{time_until}" in self.last_helpinghand_msg.text:
             self._update_prev_helpinghand_message(note=None, is_last=True)
-        if self.last_noteoff_msgs:
-            self.append_all_and_clear(self.last_noteoff_msgs)
+        if self.open_noteoff_msgs:
+            self.append_all_and_clear(self.open_noteoff_msgs)
 
     def get_midinote(self, note: Note) -> list[int]:
         return self.midi_dict.get((note.position, note.pitch, note.octave, note.effect))
@@ -315,7 +315,7 @@ class MidiTrackX(MidiTrack):
                     self.increase_current_time(-grace_tick_duration, TimeUnit.TICK)
 
                 # Append any delayed note_off messages before appending a new note_on message.
-                self.append_all_and_clear(self.last_noteoff_msgs)
+                self.append_all_and_clear(self.open_noteoff_msgs)
                 self.send_noteon_message(midivalue=midivalue, note=note)
 
                 if count == 0:
@@ -337,7 +337,7 @@ class MidiTrackX(MidiTrack):
         # TODO next two ifs can now be combined
         elif note.pitch is Pitch.SILENCE:
             # Increment time since last note ended
-            self.append_all_and_clear(self.last_noteoff_msgs)
+            self.append_all_and_clear(self.open_noteoff_msgs)
             self.increase_current_time(note.duration, unit=TimeUnit.NOTE)
         elif note.pitch is Pitch.EXTENSION:
             # Extension of note duration: add duration to last note

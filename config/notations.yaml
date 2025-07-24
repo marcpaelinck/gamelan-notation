@@ -45,8 +45,8 @@ notationfiles:
     cendrawasih:
         title: Cendrawasih
         subfolder: cendrawasih
-        midi_out_file_pattern: !!str "${{_PARENT_.title}}_{part_id}_${{midi.midiversion}}_TEST.mid"
-        pdf_out_file_pattern: !!str "${{_PARENT_.title}}_{part_id}_${{midi.midiversion}}_TEST.pdf"
+        midi_out_file_pattern: !!str "${{_PARENT_.title}}_{part_id}_${{midi.midiversion}}.mid"
+        pdf_out_file_pattern: !!str "${{_PARENT_.title}}_{part_id}_${{midi.midiversion}}.pdf"
         parts:
             full:
                 name: entire piece
@@ -317,6 +317,15 @@ notationfiles:
             full:
                 name: entire piece
                 file: Sinom Ladrang_GK_ubit4_font5.tsv
+                loop: false
+    terunajaya:
+        title: Teruna Jaya
+        subfolder: teruna jaya
+        instrumentgroup: GONG_KEBYAR
+        parts:
+            full:
+                name: entire piece
+                file: Teruna Jaya.tsv
                 loop: false
     test-gk:
         production: false

@@ -207,6 +207,10 @@
                                         }
                                 }
                         ]
+                }, 
+                {"title": "Teruna Jaya", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Teruna Jaya_full_GAMELAN1.pdf", "notation_version": "22-jul-2025", "parts": [
+                                {"part": "entire piece", "file": "Teruna Jaya_full_GAMELAN1.mid", "loop": false, "markers": {}}
+                        ]
                 }], 
         "instrumentgroups": {
                 "GONG_KEBYAR": [

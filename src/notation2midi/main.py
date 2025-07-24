@@ -3,7 +3,6 @@
 from tkinter.messagebox import askyesno
 
 from src.common.logger import Logging
-from src.common.pipeline import PipeLine
 from src.notation2midi.pipeline.apply_rules import RulesAgent
 from src.notation2midi.pipeline.create_execution import ExecutionCreatorAgent
 from src.notation2midi.pipeline.create_note_patterns import NotePatternGeneratorAgent
@@ -13,14 +12,15 @@ from src.notation2midi.pipeline.export_to_midiplayer import (
 )
 from src.notation2midi.pipeline.notation_to_score import ScoreCreatorAgent
 from src.notation2midi.pipeline.parse_notation import NotationParserAgent
+from src.notation2midi.pipeline.pipeline import PipeLine
 from src.notation2midi.pipeline.score_postprocessing import ScorePostprocessAgent
 from src.notation2midi.pipeline.score_to_midi import MidiGeneratorAgent
 from src.notation2midi.pipeline.score_to_notation import ScoreToNotationAgent
 from src.notation2midi.pipeline.score_to_pdf import PDFGeneratorAgent
 from src.notation2midi.pipeline.score_validation import ScoreValidationAgent
+from src.notation2midi.pipeline.settings_validation import SettingsValidationAgent
 from src.settings.classes import RunSettings, RunType
 from src.settings.settings import Settings
-from src.settings.settings_validation import SettingsValidationAgent
 
 logger = Logging.get_logger(__name__)
 

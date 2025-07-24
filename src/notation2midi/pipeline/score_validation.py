@@ -8,7 +8,6 @@ from src.common.constants import (
     BeatId,
     Duration,
     InstrumentGroup,
-    InstrumentType,
     Octave,
     Pitch,
     Position,
@@ -24,7 +23,7 @@ from src.settings.font_to_valid_notes import ValidNoteGenerator
 class ScoreValidationAgent(Agent):
 
     LOGGING_MESSAGE = "VALIDATING SCORE"
-    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.COMPLETESCORE)
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.COMPLETESCORE,)
     RETURN_TYPE = None
     POSITIONS_AUTOCORRECT_UNEQUAL_MEASURES = [
         Position.UGAL,
@@ -38,8 +37,8 @@ class ScoreValidationAgent(Agent):
         (Position.KANTILAN_POLOS, Position.KANTILAN_SANGSIH),
     ]
 
-    def __init__(self, run_settings: RunSettings, complete_score: Score):
-        super().__init__(run_settings)
+    def __init__(self, complete_score: Score):
+        super().__init__(complete_score.settings)
         self.score = complete_score
 
     @override

@@ -63,15 +63,11 @@ class PipeLine:
         for agentclass in self.pipe:
             if agentclass.EXPECTED_INPUT_TYPES:
                 missing_input = ", ".join(
-                    [
-                        f"'{keyword.value}'"
-                        for keyword in agentclass.EXPECTED_INPUT_TYPES
-                        if keyword not in available_data
-                    ]
+                    [f"'{keyword}'" for keyword in agentclass.EXPECTED_INPUT_TYPES if keyword not in available_data]
                 )
                 if missing_input:
                     logger.error(
-                        f"Invalid pipeline sequence: missing input {missing_input} for {agentclass.LOGGING_MESSAGE.name}."
+                        f"Invalid pipeline sequence: missing input {missing_input} for {agentclass.LOGGING_MESSAGE}."
                     )
                     return False
             if agentclass.RETURN_TYPE:

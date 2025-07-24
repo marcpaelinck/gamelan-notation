@@ -247,6 +247,8 @@ class PatternType(NotationEnum):
     TREMOLO = "TREMOLO"
     TREMOLO_ACCELERATING = "TREMOLO_ACCELERATING"
     NOROT = "NOROT"
+    RAKE_LEFT = "RAKE_LEFT"
+    RAKE_RIGHT = "RAKE_RIGHT"
     NONE = "NONE"
 
 
@@ -260,7 +262,7 @@ class Modifier(NotationEnum):
     # 2. octave modifiers
     # 3. stroke modifiers
     # 4. duration modifiers
-    # 5. other modifiers
+    # 5. pattern modifiers
     NONE = "NONE"
     OCTAVE_0 = "OCTAVE_0"
     OCTAVE_2 = "OCTAVE_2"
@@ -272,6 +274,8 @@ class Modifier(NotationEnum):
     TREMOLO = "TREMOLO"
     TREMOLO_ACCELERATING = "TREMOLO_ACCELERATING"
     NOROT = "NOROT"
+    RAKE_LEFT = "RAKE_LEFT"
+    RAKE_RIGHT = "RAKE_RIGHT"
 
 
 class ModifierType(NotationEnum):

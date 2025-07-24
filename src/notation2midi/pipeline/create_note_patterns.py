@@ -4,6 +4,7 @@ from src.common.classes import Score
 from src.common.notes import Note
 from src.notation2midi.classes import Agent
 from src.notation2midi.patterns.pattern import PatternGenerator
+from src.notation2midi.patterns.rake_pattern import RakePatternGenerator
 from src.notation2midi.patterns.tremolo_pattern import TremoloPatternGenerator
 from src.settings.classes import RunSettings
 
@@ -19,7 +20,7 @@ class NotePatternGeneratorAgent(Agent):
     EXPECTED_INPUT_TYPES = (Agent.InputOutputType.BOUNDSCORE,)
     RETURN_TYPE = Agent.InputOutputType.PATTERNSCORE
 
-    _PATTERNCLASSES: ClassVar[list[PatternGenerator]] = [TremoloPatternGenerator]
+    _PATTERNCLASSES: ClassVar[list[PatternGenerator]] = [TremoloPatternGenerator, RakePatternGenerator]
 
     score: Score
 
@@ -41,9 +42,12 @@ class NotePatternGeneratorAgent(Agent):
 
     @override
     def _main(self):
+        for pattern in self.pattern_generators:
+            self.loginfo(f"Pattern: {pattern.NAME}")
         for gongan in self.gongan_iterator(self.score):
             for beat in self.beat_iterator(gongan):
                 for measure in beat.measures.values():
                     for pass_ in measure.passes.values():
                         self.curr_line_nr = pass_.line
                         self.execute(pass_.notes)
+        return self.score

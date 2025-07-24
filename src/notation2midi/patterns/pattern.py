@@ -4,6 +4,8 @@ from src.settings.classes import RunSettings
 
 class PatternGenerator:
 
+    NAME = "GENERIC PATTERN GENERATOR"  # replace in each subclassed rule
+
     def __init__(self, run_settings: RunSettings):
         self.run_settings = run_settings
 

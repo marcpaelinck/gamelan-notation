@@ -11,4 +11,4 @@ THEREFORE ONLY A BASIC VALIDITY CHECK IS PERFORMED HERE.
 
 (* A note consists of a pitch symbol followed by one or more modifiers *)
 (* This definition splits the notation into separate 'note' strings *)
-note = /[\(\)\*-\.089ABEGIOPSTUXabeinorstuxy][,\/:;<=\?_]*/ ;
+note = /[\(\)\*-\.089ABEGIOPSTUXabeinorstuxy][,\/:;<=\?_\[\]]*/ ;

@@ -172,9 +172,12 @@ class ScoreCreatorAgent(Agent):
                 for _, measure in measures.items():
                     for _, pass_ in measure.passes.items():
                         self.curr_line_nr = pass_.line
-                        pass_.genericnotes = [
-                            NoteFactory.genericnote_from_notesymbol(notechars) for notechars in pass_.notesymbols
-                        ]
+                        try:
+                            pass_.genericnotes = [
+                                NoteFactory.genericnote_from_notesymbol(notechars) for notechars in pass_.notesymbols
+                            ]
+                        except ValueError as err:
+                            self.logerror(str(err))
 
                 # Create the beat and add it to the list of beats
                 new_beat = Beat(

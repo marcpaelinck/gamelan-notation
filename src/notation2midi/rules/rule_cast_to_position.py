@@ -11,7 +11,7 @@ from src.common.constants import (
     RuleType,
     RuleValue,
 )
-from src.common.notes import GenericNote, Note, Pattern, Tone
+from src.common.notes import GenericNote, Note, NoteFactory, Pattern, Tone
 from src.notation2midi.metadata_classes import (
     AutoKempyungMeta,
     MetaData,
@@ -150,7 +150,12 @@ class RuleCastToPosition(Rule, RunSettingsListener):
 
     @classmethod
     def cast_to_position(
-        cls, tone: Tone, position: Position, all_positions: set[Position], metadata: list[MetaData]
+        cls,
+        tone: Tone,
+        position: Position,
+        all_positions: set[Position],
+        metadata: list[MetaData],
+        inverse: bool = False,
     ) -> Tone | None:
         """Returns the equivalent tone for `position`, given that the same notation is common for `all_positions`.
         This method uses instrument rules that describe how to interpret a common notation line for multiple
@@ -212,7 +217,7 @@ class RuleCastToPosition(Rule, RunSettingsListener):
                     if autokempyung:
                         # select kempyung tone that lies immediately above the given tone
                         tones = cls.get_kempyung_tones_within_range(
-                            tone, position, extended_range=False, exact_octave_match=True
+                            tone, position, extended_range=False, exact_octave_match=True, inverse=inverse
                         )
                     else:
                         tones = Instrument.get_tones_within_range(
@@ -222,7 +227,7 @@ class RuleCastToPosition(Rule, RunSettingsListener):
                     if autokempyung:
                         # select kempyung pitch that lies within instrument's range
                         tones = cls.get_kempyung_tones_within_range(
-                            tone, position, extended_range=False, exact_octave_match=False
+                            tone, position, extended_range=False, exact_octave_match=False, inverse=inverse
                         )
                     else:
                         tones = Instrument.get_tones_within_range(
@@ -245,15 +250,23 @@ class RuleCastToPosition(Rule, RunSettingsListener):
                 all_positions=all_positions,
                 metadata=metadata,
             )
-            NoteType = Pattern if isinstance(genericnote.effect, PatternType) else Note
-            bound_notes.append(
-                NoteType(
-                    position=position,
-                    symbol=genericnote.symbol,
-                    pitch=tone.pitch if tone else Pitch.NONE,
-                    octave=tone.octave if tone else None,
-                    effect=genericnote.effect,
-                    note_value=genericnote.note_value,
-                )
+            bound_note = NoteFactory.create_note(
+                position=position,
+                pitch=tone.pitch if tone else Pitch.NONE,
+                octave=tone.octave if tone else None,
+                effect=genericnote.effect,
+                note_value=genericnote.note_value,
+                transformation=tone.transformation,
             )
+            if isinstance(genericnote.effect, PatternType):
+                bound_note = Pattern(
+                    position=position,
+                    symbol=bound_note.symbol,
+                    pitch=bound_note.pitch,
+                    octave=bound_note.octave,
+                    effect=bound_note.effect,
+                    note_value=bound_note.note_value,
+                    transformation=tone.transformation,
+                )
+            bound_notes.append(bound_note)
         return bound_notes

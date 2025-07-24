@@ -50,7 +50,7 @@ class PDFGeneratorAgent(Agent):
     """PDF generator"""
 
     LOGGING_MESSAGE = "EXPORTING PDF NOTATION"
-    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.GENERICSCORE)
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.COMPLETESCORE,)
     RETURN_TYPE = Agent.InputOutputType.PDFFILE
 
     TAG_COLWIDTH = 2.3 * cm
@@ -59,18 +59,18 @@ class PDFGeneratorAgent(Agent):
     W = 0
     H = 1
 
-    def __init__(self, run_settings: RunSettings, complete_score: Score):
-        super().__init__(run_settings)
+    def __init__(self, complete_score: Score):
+        super().__init__(complete_score.settings)
         self.score = complete_score
         self.template = NotationTemplate(self.score.settings)
         self.current_tempo = -1
         self.current_dynamics = -1  # Not used currently
         registerFont(TTFont("Bali Music 5", self.run_settings.configdata.font.ttf_filepath))
         self.story = []
-        self.omit_octave_diacritics = run_settings.pdf_converter.omit_octave_diacritics
+        self.omit_octave_diacritics = self.run_settings.pdf_converter.omit_octave_diacritics
         self.octave_diacritics = [
             rec[FontFields.SYMBOL]
-            for rec in run_settings.data.font
+            for rec in self.run_settings.data.font
             if rec[FontFields.MODIFIER] in [Modifier.OCTAVE_0, Modifier.OCTAVE_2]
         ]
 

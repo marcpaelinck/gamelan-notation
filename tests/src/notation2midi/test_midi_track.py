@@ -46,6 +46,6 @@ class TestSpecialNotes(BaseUnitTestCase):
         self.midi_track.current_ticktime = 0
         self.midi_track.ticktime_last_message = 0
         self.midi_track.last_note = None
-        self.midi_track.last_noteoff_msgs = [Message("note_off", note=60, time=100)]
+        self.midi_track.open_noteoff_msgs = [Message("note_off", note=60, time=100)]
         midi_duration = self.midi_track._grace_note_duration()
         assert midi_duration == 0

@@ -24,6 +24,8 @@ from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
 from tests.src.utils_for_tests import PositionNote
 
+# pylint: disable=protected-access
+
 
 def create_beat(beat_id: int = 1, content: dict[PositionNote, list[Note]] = None):
     measures = {
@@ -237,10 +239,10 @@ class TestTScorePostprocessAgent(BaseUnitTestCase):
                 ),
                 value := lambda: gongan.beats[0].measures[P.position].passes[DEFAULT].notes,
                 expected := [
-                    NoteFactory.clone_note(P.DONG1, octave=0, transformation=RuleValue.SAME_PITCH),
+                    NoteFactory.clone_note(P.DONG1, octave=0),
                     P.SILENCE,
-                    NoteFactory.clone_note(P.DENG1, octave=0, transformation=RuleValue.SAME_PITCH),
-                    NoteFactory.clone_note(P.DONG1, octave=0, transformation=RuleValue.SAME_PITCH),
+                    NoteFactory.clone_note(P.DENG1, octave=0),
+                    NoteFactory.clone_note(P.DONG1, octave=0),
                 ],
             ),
             #     add SuppressMeta

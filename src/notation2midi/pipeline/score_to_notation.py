@@ -18,12 +18,11 @@ class ScoreToNotationAgent(Agent):
     """Saves a corrected version of the notation input file"""
 
     LOGGING_MESSAGE = "EXPORTING CORRECTED NOTATION"
-    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.GENERICSCORE)
+    EXPECTED_INPUT_TYPES = (Agent.InputOutputType.GENERICSCORE,)
     RETURN_TYPE = None
 
-    def __init__(self, run_settings: RunSettings, complete_score: Score):
-        super().__init__(run_settings)
-        self.run_settings = run_settings
+    def __init__(self, complete_score: Score):
+        super().__init__(complete_score.settings)
         self.score = complete_score
 
     @override
