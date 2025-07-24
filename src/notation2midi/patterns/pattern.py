@@ -1,5 +1,5 @@
 from src.common.notes import Note
-from src.settings.classes import RunSettings
+from src.settings.classes import RunSettings, SettingsMidiInfo, SettingsPatternInfo
 
 
 class PatternGenerator:
@@ -8,6 +8,8 @@ class PatternGenerator:
 
     def __init__(self, run_settings: RunSettings):
         self.run_settings = run_settings
+        self.midisettings: SettingsMidiInfo = self.run_settings.midi
+        self.patternsettings: SettingsPatternInfo = self.run_settings.patterns
 
     @classmethod
     def notes_to_str(cls, notes: list[Note]) -> str:

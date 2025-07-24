@@ -3,7 +3,7 @@ from typing import override
 from src.common.constants import PatternType, Stroke
 from src.common.notes import Note, NoteFactory, Pattern
 from src.notation2midi.patterns.pattern import PatternGenerator
-from src.settings.classes import SettingsMidiInfo
+from src.settings.classes import SettingsPatternInfo
 
 
 class TremoloPatternGenerator(PatternGenerator):
@@ -27,8 +27,7 @@ class TremoloPatternGenerator(PatternGenerator):
         Returns:
             list[Note]: The resulting notes
         """
-        midi: SettingsMidiInfo = self.run_settings.midi
-        tremolo: SettingsMidiInfo.TremoloInfo = midi.tremolo
+        tremolo: SettingsPatternInfo.TremoloInfo = self.patternsettings.tremolo
         curr_noteseq = 0
 
         while curr_noteseq < len(notes):
@@ -65,7 +64,7 @@ class TremoloPatternGenerator(PatternGenerator):
                 }
                 generated_notes.extend([NoteFactory.create_note(**attributes) for _ in range(nr_of_notes)])
             elif tremolo_patterns[0].effect is PatternType.TREMOLO_ACCELERATING:
-                durations = [i / midi.base_note_time for i in tremolo.accelerating_pattern]
+                durations = [i / self.midisettings.base_note_time for i in tremolo.accelerating_pattern]
                 note_idx = 0  # Index of the next pattern to select from the `tremolo_patterns` list
                 for _, (duration, velocity) in enumerate(zip(durations, tremolo.accelerating_velocity)):
                     attributes = tremolo_patterns[note_idx].model_dump()

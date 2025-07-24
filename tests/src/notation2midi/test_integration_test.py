@@ -43,7 +43,7 @@ class IntegrationTester(BaseUnitTestCase):
     SMALL_TEST_NOTATIONS = ["puspamekar"]
     #######################################################################################################################################################
 
-    @pytest.mark.skipif(RUN_INTEGRATION_TEST is False, reason="Set RUN_INTEGRATION_TEST=True to run the test")
+    @pytest.mark.skipif(RUN_INTEGRATION_TEST is True, reason="Set RUN_INTEGRATION_TEST=True to run the test")
     @unittest.skipIf(RUN_INTEGRATION_TEST is False, reason="Set RUN_INTEGRATION_TEST=True to run the test")
     def test_integrationtest(self):
         """

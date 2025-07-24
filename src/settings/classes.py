@@ -270,14 +270,6 @@ class SettingsInstrumentInfo(BaseModel):
 
 class SettingsMidiInfo(BaseModel):
     # Implementation of tremolo notes. First two parameters are in 1/base_note_time. E.g. if base_note_time=24, then 24 is a standard note duration.
-    class TremoloInfo(BaseModel):
-        notes_per_quarternote: int  # should be a divisor of base_note_time
-        accelerating_pattern: list[
-            int
-        ]  # relative duration of the notes. Even number so that alternating note patterns end on the second note
-        accelerating_velocity: list[
-            float
-        ]  # Relative velocity value (0-1) for each note. Same number of values as accelerating_pattern.
 
     folder: str
     midi_definition_file: str
@@ -290,7 +282,6 @@ class SettingsMidiInfo(BaseModel):
     default_dynamics: DynamicLevel
     silence_seconds_before_start: int  # silence before first note
     silence_seconds_after_end: int  # silence after last note
-    tremolo: TremoloInfo
 
     @property
     def notes_filepath(self):
@@ -299,6 +290,25 @@ class SettingsMidiInfo(BaseModel):
     @property
     def presets_filepath(self):
         return os.path.join(self.folder, self.presets_file)
+
+
+class SettingsPatternInfo(BaseModel):
+
+    class TremoloInfo(BaseModel):
+        notes_per_quarternote: int  # should be a divisor of base_note_time
+        accelerating_pattern: list[
+            int
+        ]  # relative duration of the notes. Even number so that alternating note patterns end on the second note
+        accelerating_velocity: list[
+            float
+        ]  # Relative velocity value (0-1) for each note. Same number of values as accelerating_pattern.
+
+    class RakeInfo(BaseModel):
+        number_of_notes: int  # This number will be truncated if there are less notes until the the beginning/end of the instrument's range.
+        duration_seconds: float  # This value will be converted to an integer number of ticks.
+
+    tremolo: TremoloInfo
+    rake: RakeInfo
 
 
 class SettingsFontInfo(BaseModel):
@@ -461,6 +471,7 @@ class Data(BaseModel):
 class ConfigData(BaseModel):
     instruments: SettingsInstrumentInfo
     midi: SettingsMidiInfo
+    patterns: SettingsPatternInfo
     font: SettingsFontInfo
     notation: SettingsNotationInfo
     grammar: SettingsGrammarInfo
@@ -496,6 +507,10 @@ class RunSettings(BaseModel):
     @property
     def midi(self) -> SettingsMidiInfo:
         return self.configdata.midi
+
+    @property
+    def patterns(self) -> SettingsPatternInfo:
+        return self.configdata.patterns
 
     @property
     def font(self) -> SettingsFontInfo:

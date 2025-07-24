@@ -44,6 +44,7 @@ class MidiTrackX(MidiTrack):
     last_note: Note = None
     last_helpinghand_msg: MetaMessage = None
     open_noteoff_msgs: list[Message] = []  # unsaved note off messages of notes currently playing
+    open_notes: list[Note] = []  # notes that are currently on (i.e. `note_off` message is not yet saved to the track)
     ticktime_last_message: int = 0
     current_ticktime: int = 0
     # current and prev millitimes are used for the panggul animation
@@ -133,15 +134,28 @@ class MidiTrackX(MidiTrack):
         super().append(message, **kwargs)
         self.ticktime_last_message += message.time
 
-    def append_all_and_clear(self, messages: list[Message]):
-        """Appends a list of messages and removes them from the list.
+    def close_open_notes(self, force: bool):
+        """Appends note_off messages for currently playing notes and removes them from self.open_notes.
         Args:
-            messages (list[Message]): the list of messages
+           force: if True, all notes will be closed, including notes whose attribute sustain_on_next_note is True.
         """
-        for msg in messages:
-            msg.time = self.current_ticktime - self.ticktime_last_message
-            self.append(msg)
-        messages.clear()
+        # TODO There is no check that all notes have different midi notes. As a consequence
+        # multiple note_off messages might be added for the same midi note.
+        # Solution: keep 2 lists of open midi notes (sustained and non-sustained) instead of a list of open Note objects.
+        for note in self.open_notes:
+            if not note.sustain_on_next_note or force:
+                midinotes = self.get_midinotes(note)
+                for midivalue in midinotes:
+                    self.append(
+                        Message(
+                            type="note_off",
+                            note=midivalue,
+                            time=self.current_ticktime - self.ticktime_last_message,
+                            channel=self.channel,
+                            skip_checks=False,
+                        )
+                    )
+                self.open_notes.remove(note)
 
     def total_tick_time(self):
         """Returns the total tick time in the track's message list."""
@@ -265,7 +279,7 @@ class MidiTrackX(MidiTrack):
             octave = note.octave
             time_until = int(self.current_millitime - self.last_hh_millitime)
             self.last_hh_millitime = self.current_millitime
-        text = self.last_helpinghand_msg.text
+        text: str = self.last_helpinghand_msg.text
         text = (
             text.replace("{pitch}", f"{pitch}")
             .replace("{octave}", f"{octave}")
@@ -278,10 +292,11 @@ class MidiTrackX(MidiTrack):
         """Removes the last helping hand message if it has not been updated."""
         if self.last_helpinghand_msg and "{time_until}" in self.last_helpinghand_msg.text:
             self._update_prev_helpinghand_message(note=None, is_last=True)
-        if self.open_noteoff_msgs:
-            self.append_all_and_clear(self.open_noteoff_msgs)
+        if self.open_notes:
+            self.close_open_notes(force=True)
 
-    def get_midinote(self, note: Note) -> list[int]:
+    def get_midinotes(self, note: Note) -> list[int]:
+        """Return a list of midi values that correspond with the given Note object."""
         return self.midi_dict.get((note.position, note.pitch, note.octave, note.effect))
 
     def add_note(self, note: Note):
@@ -295,7 +310,7 @@ class MidiTrackX(MidiTrack):
             ValueError: _description_
         """
         if note.pitch not in (Pitch.EXTENSION, Pitch.SILENCE):
-            midinotes = self.get_midinote(note)
+            midinotes = self.get_midinotes(note)
             # Set ON and OFF messages for actual note
             # In case of multiple midi notes, all notes should start and stop at the same time.
             for count, midivalue in enumerate(midinotes):
@@ -314,8 +329,9 @@ class MidiTrackX(MidiTrack):
                     # We then reset it to its former value.
                     self.increase_current_time(-grace_tick_duration, TimeUnit.TICK)
 
-                # Append any delayed note_off messages before appending a new note_on message.
-                self.append_all_and_clear(self.open_noteoff_msgs)
+                # Add note_off messages of open notes before appending a new note_on message.
+                # (ignore open notes that have off_on_next_note=False)
+                self.close_open_notes(force=False)
                 self.send_noteon_message(midivalue=midivalue, note=note)
 
                 if count == 0:
@@ -326,9 +342,8 @@ class MidiTrackX(MidiTrack):
                     self.increase_current_time(grace_tick_duration, unit=TimeUnit.TICK)
                     self.last_helpinghand_msg = new_helpinghand_msg
 
-            for count, midivalue in enumerate(midinotes):
-                # Do not append the note_off message to the track yet. It might be followed by extension 'notes'.
-                self.send_noteoff_message(midivalue)
+            # Keep track of open notes. Their note_off messages will be generated when the next note starts.
+            self.open_notes.append(note)
 
             # if note.effect in (Stroke.ABBREVIATED, Stroke.MUTED):
             #     # if the note is abbreviated or muted, it can not be extended.
@@ -336,8 +351,8 @@ class MidiTrackX(MidiTrack):
             self.increase_current_time(note.duration, unit=TimeUnit.NOTE)
         # TODO next two ifs can now be combined
         elif note.pitch is Pitch.SILENCE:
-            # Increment time since last note ended
-            self.append_all_and_clear(self.open_noteoff_msgs)
+            # Close all open notes and increment time since last note ended
+            self.close_open_notes(force=True)
             self.increase_current_time(note.duration, unit=TimeUnit.NOTE)
         elif note.pitch is Pitch.EXTENSION:
             # Extension of note duration: add duration to last note
