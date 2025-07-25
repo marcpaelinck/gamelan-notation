@@ -1,5 +1,5 @@
 # pylint: disable=missing-module-docstring,missing-class-docstring
-from enum import StrEnum
+from enum import StrEnum, auto
 from typing import Any, TypeVar
 
 from pydantic_core import core_schema
@@ -284,6 +284,11 @@ class ModifierType(NotationEnum):
     OCTAVE = "octave"
     NOTE_VALUE = "note_value"
     NONE = "NONE"
+
+
+class SustainType(StrEnum):
+    SUSTAIN = auto()  # Note should only be switched off if the same note or a SILENCE is encountered.
+    OFF_ON_NEXT_NOTE = auto()  # Switch off note when next note starts.
 
 
 class AnimationProfiles(NotationEnum):

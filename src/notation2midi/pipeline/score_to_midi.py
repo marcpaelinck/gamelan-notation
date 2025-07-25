@@ -9,7 +9,7 @@ from typing import override
 from mido import MidiFile
 
 from src.common.classes import Beat, Preset
-from src.common.constants import DEFAULT, Pitch, Position
+from src.common.constants import DEFAULT, Pitch, Position, Stroke
 from src.common.notes import Pattern
 from src.notation2midi.classes import Agent
 from src.notation2midi.execution.execution import Execution
@@ -38,13 +38,13 @@ class MidiGeneratorAgent(Agent):
             file=self.run_settings.midi_out_file,
             loop=self.run_settings.notationfile.part.loop,
         )
-        self.midi_dict = {
+        self.midi_dict: dict[tuple[Pitch, int, Stroke], set[int]] = {
             (
                 pos,
                 record[MidiNotesFields.PITCH],
                 record[MidiNotesFields.OCTAVE],
                 record[MidiNotesFields.STROKE],
-            ): record[MidiNotesFields.MIDINOTE]
+            ): set(record[MidiNotesFields.MIDINOTE])
             for record in run_settings.data.midinotes.filterOn(run_settings.instrumentgroup)
             for pos in record[MidiNotesFields.POSITIONS]
         }

@@ -27,10 +27,26 @@ midi:
     default_dynamics: mf
     silence_seconds_before_start: 3 
     silence_seconds_after_end: 10
+patterns:
     tremolo:
+        # TREMOLO
+        # notes_per_quarternote -  tremolo frequency (number of beats per time unit). Should be a divisor of base_note_time.
+        # The tremolo respects the note duration, i.e. a tremolo of one base note will last for `base_note_time` duration.
+        # The duration of the tremolo can be extended by adding consecutive tremolo notes. This will not alter the tremolo frequency.
+        # ACCELERATING TREMOLO
+        # The duration and beat frequencies of this type of tremolo is currently fixed and is independent of the number of base notes.
+        # The effect of two consecutive tremolo notes is that these notes will be alternated throughout the pattern.
+        # e.g. consecutive acc tremolo notes DONG and DENG will result in a pattern DONG-DENG-DONG-DENG etc. with as many notes as the 
+        # length of `accelerating_pattern`. The total duration will be the same as the duration of a single acc tremolo note.
+        # accelerating_pattern - relative duration of the notes in midi ticks. E.g. if base_note_time=24, then 24 is a standard note duration.
+        #                        The list should contain an even number of values so that alternating note patterns end on the second note.
+        # accelerating_velocity - Relative velocity value (0-1) for each note. The number of values should match that of `accelerating_pattern`.
         notes_per_quarternote: 3
         accelerating_pattern: [48, 40, 32, 26, 22, 18, 14, 10, 10, 10, 10, 10]
         accelerating_velocity: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5]
+    rake:
+        number_of_notes: 6   # This number will be truncated if there are less notes until the the beginning/end of the instrument's range.
+        duration_seconds: .4 # This value will be converted to an integer number of ticks.
 notation:
     gongantypes_without_kempli: [KEBYAR, GINEMAN, GENDERAN]
 font:
