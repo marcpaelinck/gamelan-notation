@@ -43,8 +43,8 @@ class RuleCastToPosition(Rule, RunSettingsListener):
 
     def fire(
         self, pass_: Measure.Pass, position: Position, all_positions: list[Position], metadata: list[MetaData]
-    ) -> list[Note]:
-        return self.to_bound_notes(
+    ) -> None:
+        pass_.notes = self.to_bound_notes(
             notes=pass_.genericnotes, position=position, all_positions=all_positions, metadata=metadata
         )
 

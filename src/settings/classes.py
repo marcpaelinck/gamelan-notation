@@ -305,7 +305,7 @@ class SettingsPatternInfo(BaseModel):
 
     class RakeInfo(BaseModel):
         number_of_notes: int  # This number will be truncated if there are less notes until the the beginning/end of the instrument's range.
-        duration_seconds: float  # This value will be converted to an integer number of ticks.
+        duration_in_basenotes: float  # This value will be converted to an integer number of ticks.
 
     tremolo: TremoloInfo
     rake: RakeInfo

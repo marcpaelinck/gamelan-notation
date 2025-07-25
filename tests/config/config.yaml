@@ -46,7 +46,7 @@ patterns:
         accelerating_velocity: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5]
     rake:
         number_of_notes: 6   # This number will be truncated if there are less notes until the the beginning/end of the instrument's range.
-        duration_seconds: .4 # This value will be converted to an integer number of ticks.
+        duration_in_basenotes: .5 # Must be <=1. Should ideally be a fixed time in (milli-)seconds. Not implemented yet due to dependency of tempo.
 notation:
     gongantypes_without_kempli: [KEBYAR, GINEMAN, GENDERAN]
 font:

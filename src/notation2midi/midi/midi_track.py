@@ -4,7 +4,7 @@ It is used by the MidiGenerator (score_to_midi module).
 
 import json
 from collections import defaultdict
-from enum import Enum, StrEnum, auto
+from enum import Enum
 from typing import override
 
 from mido import Message, MetaMessage, MidiTrack, bpm2tempo

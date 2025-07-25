@@ -113,7 +113,7 @@ class Rule:
     # pylint: disable=unused-argument
     def fire(
         self, pass_: Measure.Pass, position: Position, all_positions: list[Position], metadata: list[MetaData]
-    ) -> Any:
+    ) -> None:
         return None
 
     # pylint: enable=unused-argument

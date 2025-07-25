@@ -23,7 +23,7 @@ class RulesAgent(Agent):
     EXPECTED_INPUT_TYPES = (Agent.InputOutputType.GENERICSCORE,)
     RETURN_TYPE = Agent.InputOutputType.BOUNDSCORE
 
-    _RULECLASSES: ClassVar[list[Rule]] = [RuleCastToPosition, RuleSetGracenoteOctave]
+    _RULECLASSES: ClassVar[list[Rule]] = [RuleSetGracenoteOctave, RuleCastToPosition]
 
     score: Score
 
@@ -40,10 +40,10 @@ class RulesAgent(Agent):
     def execute(self, pass_: Measure.Pass, position: Position, all_positions: list[Position], metadata: list[MetaData]):
         for rule in self.rules:
             try:
-                pass_.notes = rule.fire(pass_=pass_, position=position, all_positions=all_positions, metadata=metadata)
+                rule.fire(pass_=pass_, position=position, all_positions=all_positions, metadata=metadata)
             except ValueError as e:
                 self.logerror(str(e))
-        return pass_.notes
+        # return pass_.notes
 
     @override
     def _main(self):
@@ -53,11 +53,11 @@ class RulesAgent(Agent):
             for beat in self.beat_iterator(gongan):
                 for position, measure in beat.measures.items():
                     for pass_ in self.pass_iterator(measure):
-                        bound_notes = self.execute(
+                        self.execute(
                             pass_=pass_,
                             position=position,
                             all_positions=measure.all_positions,
                             metadata=gongan.metadata,
                         )
-                        pass_.notes = bound_notes
+                        # pass_.notes = bound_notes
         return self.score
