@@ -208,10 +208,10 @@
                                 }
                         ]
                 }, 
-                {"title": "Teruna Jaya", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Teruna Jaya_full_GAMELAN1.pdf", "notation_version": "25-jul-2025", "parts": [
+                {"title": "Teruna Jaya", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "Teruna Jaya_full_GAMELAN1.pdf", "notation_version": "26-jul-2025", "parts": [
                                 {"part": "entire piece", "file": "Teruna Jaya_full_GAMELAN1.mid", "loop": false, "markers": {
-                                                "kebyar": 0.03193085904654455, 
-                                                "intro": 0.4891062552552872
+                                                "kebyar": 0.022899190131975666, 
+                                                "intro": 0.35139570563854394
                                         }
                                 }
                         ]

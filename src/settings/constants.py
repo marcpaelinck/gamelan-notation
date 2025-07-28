@@ -138,10 +138,12 @@ class RuleFields(SStrEnum):
     GROUP = "group"
     RULETYPE = "ruletype"
     POSITIONS = "positions"
-    PARAMETER1 = "parameter1"
+    CONDITION1 = "condition1"
     VALUE1 = "value1"
-    PARAMETER2 = "parameter2"
+    CONDITION2 = "condition2"
     VALUE2 = "value2"
+    ACTION = "action"
+    ACTIONVALUE = "actionvalue"
 
 
 class EffectsFields(SStrEnum):

@@ -173,7 +173,7 @@ def equivalent(note1: Note, note2: Note, positions: list[Position], metadata: Me
     """
     if note2.is_melodic():
         tone2cast: Tone = RuleCastToPosition.cast_to_position(
-            tone=note2.to_tone(), position=note1.position, all_positions=positions, metadata=metadata
+            note=note2, position=note1.position, all_positions=positions, metadata=metadata
         )
         if not tone2cast:
             return False

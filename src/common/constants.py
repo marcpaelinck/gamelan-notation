@@ -148,6 +148,7 @@ class RuleParameter(NotationEnum):
     NOTE_PAIRS = "NOTE_PAIRS"
     SHARED_BY = "SHARED_BY"
     TRANSFORM = "TRANSFORM"
+    PATTERNTYPE = "PATTERNTYPE"
 
 
 class RuleValue(NotationEnum):

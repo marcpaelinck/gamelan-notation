@@ -19,7 +19,6 @@ from src.common.constants import (
     InstrumentType,
     MidiVersion,
     Modifier,
-    ModifierType,
     NotationFontVersion,
     NoteOct,
     PatternType,
@@ -106,10 +105,12 @@ DATA = {
             RuleFields.GROUP: ([InstrumentGroup], None),
             RuleFields.RULETYPE: ([RuleType], None),
             RuleFields.POSITIONS: ([Position, RuleValue], None),
-            RuleFields.PARAMETER1: ([RuleParameter], []),
+            RuleFields.CONDITION1: ([RuleParameter], []),
             RuleFields.VALUE1: ([RuleValue, Pitch, Position], []),
-            RuleFields.PARAMETER2: ([RuleParameter], []),
-            RuleFields.VALUE2: ([RuleValue], []),
+            RuleFields.CONDITION2: ([RuleParameter], []),
+            RuleFields.VALUE2: ([RuleValue, PatternType], []),
+            RuleFields.ACTION: ([RuleParameter], []),
+            RuleFields.ACTIONVALUE: ([RuleValue], []),
         },
     },
     "effects": {
@@ -446,8 +447,10 @@ class SettingsOptions(BaseModel):
 
 
 class RecordList(list):
+    """A list of similar dict objects, each representing a row in table"""
 
     def filterOn(self, group: InstrumentGroup):
+        """Returns a list of records whose `group` field value matches the given group"""
         if len(self) > 1 and "group" in self[0]:
             return [el for el in self if el["group"] == group]
         else:

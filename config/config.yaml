@@ -33,7 +33,6 @@ midi:
     silence_seconds_after_end: 10
 patterns:
     tremolo:
-        # TREMOLO
         # notes_per_quarternote -  tremolo frequency (number of beats per time unit). Should be a divisor of base_note_time.
         # The tremolo respects the note duration, i.e. a tremolo of one base note will last for `base_note_time` duration.
         # The duration of the tremolo can be extended by adding consecutive tremolo notes. This will not alter the tremolo frequency.
@@ -49,8 +48,15 @@ patterns:
         accelerating_pattern: [48, 40, 32, 26, 22, 18, 14, 10, 10, 10, 10, 10]
         accelerating_velocity: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5]
     rake:
-        number_of_notes: 6   # This number will be truncated if there are less notes until the the beginning/end of the instrument's range.
-        duration_in_basenotes: .5 # Must be <=1. Should ideally be a fixed time in (milli-)seconds. Not implemented yet due to dependency of tempo.
+        # A base note has a duration of 24 MIDI ticks, and each note of the pattern should last for an integer number of ticks.
+        # This means that (24/number_of_notes)*duration_in_basenotes should yield an (almost) integer value. This is necessary
+        # to ensure that the track synchronization is not disrupted.
+        # If the end of the instrument's range is reached before the entire pattern could be generated, rests will be generated for the
+        # remaining pattern notes.
+        # Examples of valid value pairs: (6, .5), (8, .667), (12, 1.0). In case of a gangsa with 10 keys the last pattern in these examples
+        # -if started on the first key- will generate 10 notes of 2 ticks each and two rests also of 2 ticks each.
+        number_of_notes: 8   # This number will be truncated if there are less notes until the the beginning/end of the instrument's range.
+        duration_in_basenotes: .667 # Must be <=1. Should ideally be a fixed time in (milli-)seconds. Not implemented yet due to dependency of tempo.
 notation:
     gongantypes_without_kempli: [KEBYAR, GINEMAN, GENDERAN]
 font:

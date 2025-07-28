@@ -193,8 +193,10 @@ class NoteFactory(BaseModel, RunSettingsListener):
         return cls.create_note(**new_kwargs)
 
     @classmethod
-    def get_whole_rest_note(cls, position: Position, resttype: Pitch):
-        return cls.create_note(position=position, pitch=resttype, octave=None, effect=Stroke.NONE, note_value=1)
+    def create_rest(cls, position: Position, resttype: Pitch, note_value: float = 1.0, **kwargs):
+        return cls.create_note(
+            position=position, pitch=resttype, octave=None, effect=Stroke.NONE, note_value=note_value, **kwargs
+        )
 
     @classmethod
     def get_all_p_o_e(cls, position: Position) -> list[tuple[Pitch, Octave, Effect]]:

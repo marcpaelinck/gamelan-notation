@@ -78,8 +78,9 @@ class RuleCastToPosition(Rule, RunSettingsListener):
                         parameters={
                             record[parm]: record[val]
                             for parm, val in [
-                                (RuleFields.PARAMETER1, RuleFields.VALUE1),
-                                (RuleFields.PARAMETER2, RuleFields.VALUE2),
+                                (RuleFields.CONDITION1, RuleFields.VALUE1),
+                                (RuleFields.CONDITION2, RuleFields.VALUE2),
+                                (RuleFields.ACTION, RuleFields.ACTIONVALUE),
                             ]
                             if record[parm]
                         },
@@ -135,15 +136,50 @@ class RuleCastToPosition(Rule, RunSettingsListener):
         )
 
     @classmethod
-    def get_shared_notation_rule(cls, position: Position, unisono_positions: set[Position]) -> RuleDefinition:
-        rules: list[RuleDefinition] = cls.RULES.get(position, {}).get(
-            RuleType.UNISONO, None
-        )  # or self. _RULES.get(RuleValue.ANY, {}).get(RuleType.SHARED_NOTATION, None)
+    def get_shared_notation_rule(
+        cls, position: Position, note: GenericNote, unisono_positions: set[Position]
+    ) -> RuleDefinition:
+        rules: list[RuleDefinition] = cls.RULES.get(position, {}).get(RuleType.UNISONO, None)
         if rules:
-            rule = next(
-                (rule for rule in rules if set(rule.parameters[RuleParameter.SHARED_BY]) == set(unisono_positions)),
-                None,
-            ) or next((rule for rule in rules if rule.parameters[RuleParameter.SHARED_BY] == RuleValue.ANY), None)
+            # Try to match a rule, starting with the most specific match
+            rule = (
+                next(
+                    (
+                        rule
+                        for rule in rules
+                        if set(rule.parameters[RuleParameter.SHARED_BY]) == set(unisono_positions)
+                        and note.effect in set(rule.parameters[RuleParameter.PATTERNTYPE])
+                    ),
+                    None,
+                )
+                or next(
+                    (
+                        rule
+                        for rule in rules
+                        if set(rule.parameters[RuleParameter.SHARED_BY]) == set(unisono_positions)
+                        and rule.parameters[RuleParameter.PATTERNTYPE] is RuleValue.ANY
+                    ),
+                    None,
+                )
+                or next(
+                    (
+                        rule
+                        for rule in rules
+                        if rule.parameters[RuleParameter.SHARED_BY] is RuleValue.ANY
+                        and note.effect in set(rule.parameters[RuleParameter.PATTERNTYPE])
+                    ),
+                    None,
+                )
+                or next(
+                    (
+                        rule
+                        for rule in rules
+                        if rule.parameters[RuleParameter.SHARED_BY] is RuleValue.ANY
+                        and rule.parameters[RuleParameter.PATTERNTYPE] is RuleValue.ANY
+                    ),
+                    None,
+                )
+            )
             if rule:
                 return rule.parameters[RuleParameter.TRANSFORM]
         return None
@@ -151,7 +187,7 @@ class RuleCastToPosition(Rule, RunSettingsListener):
     @classmethod
     def cast_to_position(
         cls,
-        tone: Tone,
+        note: GenericNote,
         position: Position,
         all_positions: set[Position],
         metadata: list[MetaData],
@@ -188,17 +224,18 @@ class RuleCastToPosition(Rule, RunSettingsListener):
                 autokempyung = False
 
         # Rules only apply to melodic pitches.
-        if not tone.is_melodic():
-            return tone
+        if not note.is_melodic():
+            return note.to_tone()
 
         rule = (
             [RuleValue.SAME_TONE_EXTENDED]
             if len(all_positions) == 1
-            else cls.get_shared_notation_rule(position, set(all_positions))
+            else cls.get_shared_notation_rule(position, note, set(all_positions))
         )
         if not rule:
             raise ValueError(f"No unisono rule found for {position}.")
 
+        tone = note.to_tone()
         for action in rule:
             match action:
                 case RuleValue.SAME_TONE:
@@ -245,7 +282,7 @@ class RuleCastToPosition(Rule, RunSettingsListener):
         bound_notes: list[Note | Pattern] = []
         for genericnote in notes:
             tone = self.cast_to_position(
-                tone=Tone(pitch=genericnote.pitch, octave=genericnote.octave),
+                note=genericnote,
                 position=position,
                 all_positions=all_positions,
                 metadata=metadata,

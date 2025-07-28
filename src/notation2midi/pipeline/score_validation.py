@@ -1,3 +1,4 @@
+import logging
 import math
 from itertools import product
 from typing import Any, override
@@ -103,7 +104,7 @@ class ScoreValidationAgent(Agent):
                     #  which is the mode (= most occurring duration) of all measure durations.
                     corrected_positions = dict()
                     for position, notes in unequal_lengths.items():
-                        filler = NoteFactory.get_whole_rest_note(position, Pitch.EXTENSION)
+                        filler = NoteFactory.create_rest(position, Pitch.EXTENSION, note_value=1.0)
                         uncorrected_position = {position: sum(note.duration for note in notes)}
                         # Empty measures will always be corrected.
                         if position in self.POSITIONS_AUTOCORRECT_UNEQUAL_MEASURES or not notes:
@@ -358,7 +359,8 @@ class ScoreValidationAgent(Agent):
                 self.score.settings.instrumentgroup == InstrumentGroup.GONG_KEBYAR
                 and self.score.settings.notationfile.autocorrect_kempyung
             ):
-                invalids, corrected, ignored = self._incorrect_kempyung(gongan, autocorrect=autocorrect)
+                # OVERRULE AUTOCORRECT SETTING
+                invalids, corrected, ignored = self._incorrect_kempyung(gongan, autocorrect=False)
                 remaining_incorrect_kempyung.extend(invalids)
                 corrected_invalid_kempyung.extend(corrected)
                 ignored_invalid_kempyung.extend(ignored)
@@ -372,7 +374,12 @@ class ScoreValidationAgent(Agent):
                 loglevel(f"    {str(element)}")
 
         def log_results(
-            title_ok: str, title_error: str, corrected: list[Any], ignored: list[Any], remaining: list[Any]
+            title_ok: str,
+            title_error: str,
+            corrected: list[Any],
+            ignored: list[Any],
+            remaining: list[Any],
+            loglevels: tuple[int] = (logging.ERROR, logging.WARNING, logging.INFO),
         ) -> None:
             error = len(remaining) > 0
             warning = len(corrected) + len(ignored) > 0
@@ -382,11 +389,11 @@ class ScoreValidationAgent(Agent):
                 else f"{title_error}: corrected {len(corrected)}, ignored {len(ignored)}, remaining: {len(remaining)}"
             )
             if error:
-                self.logerror(message)
+                self.logger.log(loglevels[0], message)
             elif warning:
-                self.logwarning(message)
+                self.logger.log(loglevels[1], message)
             else:
-                self.loginfo(message)
+                self.logger.log(loglevels[2], message)
             if detailed_logging:
                 if corrected:
                     self.logwarning(f"corrected:{corrected}")
@@ -422,6 +429,7 @@ class ScoreValidationAgent(Agent):
             corrected_invalid_kempyung,
             ignored_invalid_kempyung,
             remaining_incorrect_kempyung,
+            (logging.WARNING, logging.WARNING, logging.INFO),
         )
 
         return None
