@@ -16,7 +16,7 @@ from src.common.constants import (
 )
 from src.common.notes import Note, NoteFactory
 from src.notation2midi.classes import Agent
-from src.notation2midi.metadata_classes import GonganType, ValidationProperty
+from src.notation2midi.metadata_classes import GonganType, MetaType, ValidationProperty
 from src.settings.classes import RunSettings
 from src.settings.font_to_valid_notes import ValidNoteGenerator
 
@@ -359,8 +359,7 @@ class ScoreValidationAgent(Agent):
                 self.score.settings.instrumentgroup == InstrumentGroup.GONG_KEBYAR
                 and self.score.settings.notationfile.autocorrect_kempyung
             ):
-                # OVERRULE AUTOCORRECT SETTING
-                invalids, corrected, ignored = self._incorrect_kempyung(gongan, autocorrect=False)
+                invalids, corrected, ignored = self._incorrect_kempyung(gongan, autocorrect=autocorrect)
                 remaining_incorrect_kempyung.extend(invalids)
                 corrected_invalid_kempyung.extend(corrected)
                 ignored_invalid_kempyung.extend(ignored)
@@ -380,6 +379,7 @@ class ScoreValidationAgent(Agent):
             ignored: list[Any],
             remaining: list[Any],
             loglevels: tuple[int] = (logging.ERROR, logging.WARNING, logging.INFO),
+            global_ignore: bool = False,
         ) -> None:
             error = len(remaining) > 0
             warning = len(corrected) + len(ignored) > 0
@@ -398,7 +398,10 @@ class ScoreValidationAgent(Agent):
                 if corrected:
                     self.logwarning(f"corrected:{corrected}")
                 if ignored:
-                    log_list(self.logger.warning, "ignored:", ignored)
+                    if global_ignore:
+                        log_list(self.logger.warning, "ignored:", ["All beats ignored due to global override"])
+                    else:
+                        log_list(self.logger.warning, "ignored:", ignored)
             if remaining:
                 log_list(self.logger.error, "remaining invalids:", remaining)
 
@@ -423,13 +426,16 @@ class ScoreValidationAgent(Agent):
             ignored_note_out_of_range,
             remaining_note_out_of_range,
         )
+        global_kempyung_ignore = any(
+            (meta for meta in self.score.metadata(MetaType.VALIDATION) if ValidationProperty.KEMPYUNG in meta.ignore)
+        )
         log_results(
             "ALL KEMPYUNG PARTS ARE CORRECT",
             "INCORRECT KEMPYUNG",
             corrected_invalid_kempyung,
             ignored_invalid_kempyung,
             remaining_incorrect_kempyung,
-            (logging.WARNING, logging.WARNING, logging.INFO),
+            global_ignore=global_kempyung_ignore,
         )
 
         return None

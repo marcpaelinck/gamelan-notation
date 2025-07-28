@@ -9,7 +9,7 @@ from src.common.constants import (
     RuleValue,
     Stroke,
 )
-from src.common.notes import Note, NoteFactory, Tone
+from src.common.notes import GenericNote, Note, NoteFactory, Tone
 from src.notation2midi.rules.rule import Instrument
 from src.notation2midi.rules.rule_cast_to_position import RuleCastToPosition
 from src.settings.constants import NoteFields
@@ -196,26 +196,38 @@ class RuleTester(BaseUnitTestCase):
     data_shared_notation_rule = [
         (
             Position.PEMADE_SANGSIH,
+            GenericNote(symbol="u", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             {Position.PEMADE_SANGSIH, Position.KANTILAN_SANGSIH},
             [RuleValue.SAME_TONE],
         ),
         (
             Position.PEMADE_SANGSIH,
+            GenericNote(symbol="u", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             {Position.PEMADE_POLOS, Position.PEMADE_SANGSIH},
             [RuleValue.EXACT_KEMPYUNG, RuleValue.SAME_TONE, RuleValue.SAME_PITCH],
         ),
         (
             Position.PEMADE_SANGSIH,
+            # Rake pattern pitch should not be cast to kempyung
+            GenericNote(symbol="u", pitch=Pitch.DONG, octave=1, effect=PatternType.RAKE_LEFT),
+            {Position.PEMADE_POLOS, Position.PEMADE_SANGSIH},
+            [RuleValue.SAME_TONE, RuleValue.SAME_PITCH],
+        ),
+        (
+            Position.PEMADE_SANGSIH,
+            GenericNote(symbol="u", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             {Position.UGAL, Position.PEMADE_SANGSIH},
             [RuleValue.EXACT_KEMPYUNG, RuleValue.SAME_TONE, RuleValue.SAME_PITCH],
         ),
         (
             Position.REYONG_3,
+            GenericNote(symbol="u", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             {Position.REYONG_1, Position.REYONG_2, Position.REYONG_3, Position.REYONG_4},
             [RuleValue.SAME_PITCH, RuleValue.KEMPYUNG],
         ),
         (
             Position.REYONG_3,
+            GenericNote(symbol="u", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             {
                 Position.PEMADE_POLOS,
                 Position.PEMADE_SANGSIH,
@@ -228,11 +240,13 @@ class RuleTester(BaseUnitTestCase):
         ),
         (
             Position.REYONG_3,
+            GenericNote(symbol="o", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             {Position.REYONG_1, Position.REYONG_3},
             [RuleValue.SAME_PITCH_EXTENDED_RANGE],
         ),
         (
             Position.UGAL,
+            GenericNote(symbol="o", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             {
                 Position.UGAL,
                 Position.PEMADE_POLOS,
@@ -245,9 +259,9 @@ class RuleTester(BaseUnitTestCase):
     ]
 
     def test_shared_notation_rule(self):
-        for position, all_positions, expected in self.data_shared_notation_rule:
-            with self.subTest(position=position, all_positions=all_positions):
-                self.assertEqual(RuleCastToPosition.get_casting_rule(position, all_positions), expected)
+        for position, note, all_positions, expected in self.data_shared_notation_rule:
+            with self.subTest(position=position, note=note, all_positions=all_positions):
+                self.assertEqual(RuleCastToPosition.get_casting_rule(position, note, all_positions), expected)
 
     P_POLOS = Position.PEMADE_POLOS
     P_SANGSIH = Position.PEMADE_SANGSIH
@@ -262,311 +276,339 @@ class RuleTester(BaseUnitTestCase):
 
     data_shared_notation = [
         [
-            Tone(pitch=Pitch.DONG, octave=0),
+            GenericNote(symbol="o,", pitch=Pitch.DONG, octave=0, effect=Stroke.OPEN),
             P_SANGSIH,
             GANGSA,
             Tone(pitch=Pitch.DANG, octave=0, transformation=RuleValue.EXACT_KEMPYUNG),
         ],
         [
-            Tone(pitch=Pitch.DENG, octave=0),
+            GenericNote(symbol="o,", pitch=Pitch.DONG, octave=0, effect=PatternType.TREMOLO),
+            P_SANGSIH,
+            GANGSA,
+            Tone(pitch=Pitch.DANG, octave=0, transformation=RuleValue.EXACT_KEMPYUNG),
+        ],
+        [
+            GenericNote(symbol="o", pitch=Pitch.DONG, octave=0, effect=PatternType.RAKE_LEFT),
+            P_SANGSIH,
+            GANGSA,
+            Tone(pitch=Pitch.DONG, octave=0, transformation=RuleValue.SAME_TONE),
+        ],
+        [
+            GenericNote(symbol="o", pitch=Pitch.DONG, octave=0, effect=PatternType.RAKE_LEFT),
+            P_SANGSIH,
+            GANGSA,
+            Tone(pitch=Pitch.DONG, octave=0, transformation=RuleValue.SAME_TONE),
+        ],
+        [
+            # 5
+            GenericNote(symbol="e", pitch=Pitch.DENG, octave=0, effect=Stroke.OPEN),
             P_SANGSIH,
             GANGSA,
             Tone(pitch=Pitch.DING, octave=1, transformation=RuleValue.EXACT_KEMPYUNG),
         ],
         [
-            Tone(pitch=Pitch.DUNG, octave=0),
+            GenericNote(symbol="u", pitch=Pitch.DUNG, octave=0, effect=Stroke.OPEN),
             P_SANGSIH,
             GANGSA,
             Tone(pitch=Pitch.DONG, octave=1, transformation=RuleValue.EXACT_KEMPYUNG),
         ],
         [
-            Tone(pitch=Pitch.DANG, octave=0),
+            GenericNote(symbol="a", pitch=Pitch.DANG, octave=0, effect=Stroke.OPEN),
             P_SANGSIH,
             GANGSA,
             Tone(pitch=Pitch.DENG, octave=1, transformation=RuleValue.EXACT_KEMPYUNG),
         ],
         [
-            Tone(pitch=Pitch.DING, octave=1),
+            GenericNote(symbol="i", pitch=Pitch.DING, octave=1, effect=Stroke.OPEN),
             P_SANGSIH,
             GANGSA,
             Tone(pitch=Pitch.DUNG, octave=1, transformation=RuleValue.EXACT_KEMPYUNG),
         ],
         [
-            Tone(pitch=Pitch.DONG, octave=1),
+            GenericNote(symbol="o", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             P_SANGSIH,
             GANGSA,
             Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.EXACT_KEMPYUNG),
         ],
         [
-            Tone(pitch=Pitch.DENG, octave=1),
+            # 10
+            GenericNote(symbol="e", pitch=Pitch.DENG, octave=1, effect=Stroke.OPEN),
             P_SANGSIH,
             GANGSA,
             Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.EXACT_KEMPYUNG),
         ],
         [
-            Tone(pitch=Pitch.DUNG, octave=1),
+            GenericNote(symbol="u", pitch=Pitch.DUNG, octave=1, effect=Stroke.OPEN),
             P_SANGSIH,
             GANGSA,
             Tone(pitch=Pitch.DUNG, octave=1, transformation=RuleValue.SAME_TONE),
         ],
         [
-            Tone(pitch=Pitch.DANG, octave=1),
+            GenericNote(symbol="a", pitch=Pitch.DANG, octave=1, effect=Stroke.OPEN),
             P_SANGSIH,
             GANGSA,
             Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.SAME_TONE),
         ],
         [
-            Tone(pitch=Pitch.DING, octave=2),
+            GenericNote(symbol="i", pitch=Pitch.DING, octave=2, effect=Stroke.OPEN),
             P_SANGSIH,
             GANGSA,
             Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.SAME_TONE),
         ],
         [
-            Tone(pitch=Pitch.DONG, octave=0),
+            GenericNote(symbol="o,", pitch=Pitch.DONG, octave=0, effect=Stroke.OPEN),
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
             Tone(pitch=Pitch.DONG, octave=0, transformation=RuleValue.SAME_TONE),
         ],
         [
-            Tone(pitch=Pitch.DENG, octave=0),
+            # 15
+            GenericNote(symbol="e", pitch=Pitch.DENG, octave=0, effect=Stroke.OPEN),
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
             Tone(pitch=Pitch.DENG, octave=0, transformation=RuleValue.SAME_TONE),
         ],
         [
-            Tone(pitch=Pitch.DUNG, octave=0),
+            GenericNote(symbol="u", pitch=Pitch.DUNG, octave=0, effect=Stroke.OPEN),
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
             Tone(pitch=Pitch.DUNG, octave=0, transformation=RuleValue.SAME_TONE),
         ],
         [
-            Tone(pitch=Pitch.DANG, octave=0),
+            GenericNote(symbol="a", pitch=Pitch.DANG, octave=0, effect=Stroke.OPEN),
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
             Tone(pitch=Pitch.DANG, octave=0, transformation=RuleValue.SAME_TONE),
         ],
         [
-            Tone(pitch=Pitch.DING, octave=1),
+            GenericNote(symbol="i", pitch=Pitch.DING, octave=1, effect=Stroke.OPEN),
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
             Tone(pitch=Pitch.DING, octave=1, transformation=RuleValue.SAME_TONE),
         ],
         [
-            Tone(pitch=Pitch.DONG, octave=1),
+            GenericNote(symbol="o", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
             Tone(pitch=Pitch.DONG, octave=1, transformation=RuleValue.SAME_TONE),
         ],
         [
-            Tone(pitch=Pitch.DENG, octave=1),
+            # 20
+            GenericNote(symbol="e", pitch=Pitch.DENG, octave=1, effect=Stroke.OPEN),
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
             Tone(pitch=Pitch.DENG, octave=1, transformation=RuleValue.SAME_TONE),
         ],
         [
-            Tone(pitch=Pitch.DUNG, octave=1),
+            GenericNote(symbol="u", pitch=Pitch.DUNG, octave=1, effect=Stroke.OPEN),
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
             Tone(pitch=Pitch.DUNG, octave=1, transformation=RuleValue.SAME_TONE),
         ],
         [
-            Tone(pitch=Pitch.DANG, octave=1),
+            GenericNote(symbol="a", pitch=Pitch.DANG, octave=1, effect=Stroke.OPEN),
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
             Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.SAME_TONE),
         ],
         [
-            Tone(pitch=Pitch.DING, octave=2),
+            GenericNote(symbol="i", pitch=Pitch.DING, octave=2, effect=Stroke.OPEN),
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
             Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.SAME_TONE),
         ],
         [
-            Tone(pitch=Pitch.DENG, octave=0),
+            GenericNote(symbol="e", pitch=Pitch.DENG, octave=0, effect=Stroke.OPEN),
             R_1,
             REYONG,
             Tone(pitch=Pitch.DENG, octave=0, transformation=RuleValue.SAME_PITCH),
         ],
         [
-            Tone(pitch=Pitch.DUNG, octave=0),
+            # 25
+            GenericNote(symbol="u", pitch=Pitch.DUNG, octave=0, effect=Stroke.OPEN),
             R_1,
             REYONG,
             Tone(pitch=Pitch.DUNG, octave=0, transformation=RuleValue.SAME_PITCH),
         ],
         [
-            Tone(pitch=Pitch.DANG, octave=0),
+            GenericNote(symbol="a", pitch=Pitch.DANG, octave=0, effect=Stroke.OPEN),
             R_1,
             REYONG,
             Tone(pitch=Pitch.DANG, octave=0, transformation=RuleValue.SAME_PITCH),
         ],
         [
-            Tone(pitch=Pitch.DING, octave=1),
+            GenericNote(symbol="i", pitch=Pitch.DING, octave=1, effect=Stroke.OPEN),
             R_1,
             REYONG,
             Tone(pitch=Pitch.DUNG, octave=0, transformation=RuleValue.KEMPYUNG),
         ],
         [
-            Tone(pitch=Pitch.DONG, octave=1),
+            GenericNote(symbol="o", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             R_1,
             REYONG,
             Tone(pitch=Pitch.DANG, octave=0, transformation=RuleValue.KEMPYUNG),
         ],
         [
-            Tone(pitch=Pitch.DENG, octave=0),
+            GenericNote(symbol="e", pitch=Pitch.DENG, octave=0, effect=Stroke.OPEN),
             R_2,
             REYONG,
             Tone(pitch=Pitch.DENG, octave=1, transformation=RuleValue.SAME_PITCH),
         ],
         [
-            Tone(pitch=Pitch.DUNG, octave=0),
+            # 30
+            GenericNote(symbol="u", pitch=Pitch.DUNG, octave=0, effect=Stroke.OPEN),
             R_2,
             REYONG,
             Tone(pitch=Pitch.DONG, octave=1, transformation=RuleValue.KEMPYUNG),
         ],
         [
-            Tone(pitch=Pitch.DANG, octave=0),
+            GenericNote(symbol="a", pitch=Pitch.DANG, octave=0, effect=Stroke.OPEN),
             R_2,
             REYONG,
             Tone(pitch=Pitch.DENG, octave=1, transformation=RuleValue.KEMPYUNG),
         ],
         [
-            Tone(pitch=Pitch.DING, octave=1),
+            GenericNote(symbol="i", pitch=Pitch.DING, octave=1, effect=Stroke.OPEN),
             R_2,
             REYONG,
             Tone(pitch=Pitch.DING, octave=1, transformation=RuleValue.SAME_PITCH),
         ],
         [
-            Tone(pitch=Pitch.DONG, octave=1),
+            GenericNote(symbol="o", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             R_2,
             REYONG,
             Tone(pitch=Pitch.DONG, octave=1, transformation=RuleValue.SAME_PITCH),
         ],
         [
-            Tone(pitch=Pitch.DENG, octave=0),
+            GenericNote(symbol="e", pitch=Pitch.DENG, octave=0, effect=Stroke.OPEN),
             R_3,
             REYONG,
             Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.KEMPYUNG),
         ],
         [
-            Tone(pitch=Pitch.DUNG, octave=0),
+            # 35
+            GenericNote(symbol="u", pitch=Pitch.DUNG, octave=0, effect=Stroke.OPEN),
             R_3,
             REYONG,
             Tone(pitch=Pitch.DUNG, octave=1, transformation=RuleValue.SAME_PITCH),
         ],
         [
-            Tone(pitch=Pitch.DANG, octave=0),
+            GenericNote(symbol="a", pitch=Pitch.DANG, octave=0, effect=Stroke.OPEN),
             R_3,
             REYONG,
             Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.SAME_PITCH),
         ],
         [
-            Tone(pitch=Pitch.DING, octave=1),
+            GenericNote(symbol="i", pitch=Pitch.DING, octave=1, effect=Stroke.OPEN),
             R_3,
             REYONG,
             Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.SAME_PITCH),
         ],
         [
-            Tone(pitch=Pitch.DONG, octave=1),
+            GenericNote(symbol="o", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             R_3,
             REYONG,
             Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.KEMPYUNG),
         ],
         [
-            Tone(pitch=Pitch.DENG, octave=0),
+            GenericNote(symbol="e", pitch=Pitch.DENG, octave=0, effect=Stroke.OPEN),
             R_3,
             {R_1, R_3},
             Tone(pitch=Pitch.DENG, octave=1, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
         [
-            Tone(pitch=Pitch.DUNG, octave=0),
+            # 40
+            GenericNote(symbol="u", pitch=Pitch.DUNG, octave=0, effect=Stroke.OPEN),
             R_3,
             {R_1, R_3},
             Tone(pitch=Pitch.DUNG, octave=1, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
         [
-            Tone(pitch=Pitch.DANG, octave=0),
+            GenericNote(symbol="a", pitch=Pitch.DANG, octave=0, effect=Stroke.OPEN),
             R_3,
             {R_1, R_3},
             Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
         [
-            Tone(pitch=Pitch.DING, octave=1),
+            GenericNote(symbol="i", pitch=Pitch.DING, octave=1, effect=Stroke.OPEN),
             R_3,
             {R_1, R_3},
             Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
         [
-            Tone(pitch=Pitch.DONG, octave=1),
+            GenericNote(symbol="o", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             R_3,
             {R_1, R_3},
             Tone(pitch=Pitch.DONG, octave=2, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
         [
-            Tone(pitch=Pitch.DENG, octave=0),
+            GenericNote(symbol="e", pitch=Pitch.DENG, octave=0, effect=Stroke.OPEN),
             R_4,
             REYONG,
             Tone(pitch=Pitch.DENG, octave=2, transformation=RuleValue.SAME_PITCH),
         ],
         [
-            Tone(pitch=Pitch.DUNG, octave=0),
+            # 45
+            GenericNote(symbol="u", pitch=Pitch.DUNG, octave=0, effect=Stroke.OPEN),
             R_4,
             REYONG,
             Tone(pitch=Pitch.DUNG, octave=2, transformation=RuleValue.SAME_PITCH),
         ],
         [
-            Tone(pitch=Pitch.DANG, octave=0),
+            GenericNote(symbol="a", pitch=Pitch.DANG, octave=0, effect=Stroke.OPEN),
             R_4,
             REYONG,
             Tone(pitch=Pitch.DENG, octave=2, transformation=RuleValue.KEMPYUNG),
         ],
         [
-            Tone(pitch=Pitch.DING, octave=1),
+            GenericNote(symbol="i", pitch=Pitch.DING, octave=1, effect=Stroke.OPEN),
             R_4,
             REYONG,
             Tone(pitch=Pitch.DUNG, octave=2, transformation=RuleValue.KEMPYUNG),
         ],
         [
-            Tone(pitch=Pitch.DONG, octave=1),
+            GenericNote(symbol="o", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             R_4,
             REYONG,
             Tone(pitch=Pitch.DONG, octave=2, transformation=RuleValue.SAME_PITCH),
         ],
         [
-            Tone(pitch=Pitch.DENG, octave=0),
+            GenericNote(symbol="e", pitch=Pitch.DENG, octave=0, effect=Stroke.OPEN),
             R_4,
             {R_2, R_4},
             Tone(pitch=Pitch.DENG, octave=2, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
         [
-            Tone(pitch=Pitch.DUNG, octave=0),
+            # 50
+            GenericNote(symbol="u", pitch=Pitch.DUNG, octave=0, effect=Stroke.OPEN),
             R_4,
             {R_2, R_4},
             Tone(pitch=Pitch.DUNG, octave=2, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
         [
-            Tone(pitch=Pitch.DANG, octave=0),
+            GenericNote(symbol="a", pitch=Pitch.DANG, octave=0, effect=Stroke.OPEN),
             R_4,
             {R_2, R_4},
             Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
         [
-            Tone(pitch=Pitch.DING, octave=1),
+            GenericNote(symbol="i", pitch=Pitch.DING, octave=1, effect=Stroke.OPEN),
             R_4,
             {R_2, R_4},
             Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
         [
-            Tone(pitch=Pitch.DONG, octave=1),
+            GenericNote(symbol="o", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             R_4,
             {R_2, R_4},
             Tone(pitch=Pitch.DONG, octave=2, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
     ]
 
-    def test_apply_unisono_rule(self):
-        for tone, position, all_positions, expected in self.data_shared_notation:
-            with self.subTest(tone=tone, position=position, all_positions=all_positions):
+    def test_apply_casting_rule(self):
+        for counter, (note, position, all_positions, expected) in enumerate(self.data_shared_notation, start=1):
+            with self.subTest(nr=counter, note=note, position=position, all_positions=all_positions):
                 cast_tone = RuleCastToPosition.cast_to_position(
-                    tone=tone, position=position, all_positions=all_positions, metadata=[]
+                    note=note, position=position, all_positions=all_positions, metadata=[]
                 )
                 self.assertEqual(cast_tone, expected)

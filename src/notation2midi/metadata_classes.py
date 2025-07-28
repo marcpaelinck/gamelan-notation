@@ -1,4 +1,5 @@
 # pylint: disable=missing-class-docstring
+from enum import auto
 from typing import Annotated, ClassVar, Literal, Union, override
 
 from pydantic import BaseModel, Field, TypeAdapter, ValidationInfo, field_validator
@@ -32,8 +33,25 @@ class Scope(NotationEnum):
     SCORE = "SCORE"
 
 
+class MetaType(NotationEnum):
+    AUTOKEMPYUNG = "AUTOKEMPYUNG"
+    DYNAMICS = "DYNAMICS"
+    GONGAN = "GONGAN"
+    GOTO = "GOTO"
+    KEMPLI = "KEMPLI"
+    LABEL = "LABEL"
+    LOOP = "LOOP"
+    OCTAVATE = "OCTAVATE"
+    PART = "PART"
+    SEQUENCE = "SEQUENCE"
+    SUPPRESS = "SUPPRESS"
+    TEMPO = "TEMPO"
+    VALIDATION = "VALIDATION"
+    WAIT = "WAIT"
+
+
 class MetaDataBaseModel(BaseModel, RunSettingsListener):
-    metatype: Literal[""]
+    metatype: MetaType
     scope: Scope = Scope.GONGAN
     line: int = None
     processingorder: ClassVar[int] = 99
@@ -78,8 +96,16 @@ class GradualChangeMetadata(MetaDataBaseModel):
 # THE METADATA CLASSES
 
 
+class AutoKempyungMeta(MetaDataBaseModel):
+    metatype: Literal[MetaType.AUTOKEMPYUNG] = MetaType.AUTOKEMPYUNG
+    status: MetaDataSwitch
+    scope: Scope = Scope.GONGAN
+    positions: list[Position] = None  # PositionsFromTag
+    DEFAULTPARAM = "status"
+
+
 class DynamicsMeta(GradualChangeMetadata):
-    metatype: Literal["DYNAMICS"] = "DYNAMICS"
+    metatype: Literal[MetaType.DYNAMICS] = MetaType.DYNAMICS
     # Currently, an empty list stands for all positions.
     positions: list[Position]  # PositionsFromTag
     abbreviation: str = ""
@@ -105,13 +131,13 @@ class DynamicsMeta(GradualChangeMetadata):
 
 
 class GonganMeta(MetaDataBaseModel):
-    metatype: Literal["GONGAN"] = "GONGAN"
+    metatype: Literal[MetaType.GONGAN] = MetaType.GONGAN
     type: GonganType
     DEFAULTPARAM = "type"
 
 
 class GoToMeta(MetaDataBaseModel):
-    metatype: Literal["GOTO"] = "GOTO"
+    metatype: Literal[MetaType.GOTO] = MetaType.GOTO
     label: str
     from_beat: int = -1  # Beat number from which to goto. Default is last beat of the gongan.
     passes: list[int] = Field(default_factory=list)  # On which pass(es) should goto be performed?
@@ -125,23 +151,15 @@ class GoToMeta(MetaDataBaseModel):
 
 
 class KempliMeta(MetaDataBaseModel):
-    metatype: Literal["KEMPLI"] = "KEMPLI"
+    metatype: Literal[MetaType.KEMPLI] = MetaType.KEMPLI
     status: MetaDataSwitch
     beats: list[int] = Field(default_factory=list)
     scope: Scope = Scope.GONGAN
     DEFAULTPARAM = "status"
 
 
-class AutoKempyungMeta(MetaDataBaseModel):
-    metatype: Literal["AUTOKEMPYUNG"] = "AUTOKEMPYUNG"
-    status: MetaDataSwitch
-    scope: Scope = Scope.GONGAN
-    positions: list[Position] = None  # PositionsFromTag
-    DEFAULTPARAM = "status"
-
-
 class LabelMeta(MetaDataBaseModel):
-    metatype: Literal["LABEL"] = "LABEL"
+    metatype: Literal[MetaType.LABEL] = MetaType.LABEL
     name: str
     beat: int = 1
     # Make sure that labels are processed before gotos in same gongan.
@@ -155,14 +173,14 @@ class LabelMeta(MetaDataBaseModel):
 
 
 class LoopMeta(MetaDataBaseModel):
-    metatype: Literal["LOOP"] = "LOOP"
+    metatype: Literal[MetaType.LOOP] = MetaType.LOOP
     count: int = 1
     frequency: FrequencyType = FrequencyType.ALWAYS  # FrequencyType.ONCE: only first pass
     DEFAULTPARAM = "count"
 
 
 class OctavateMeta(MetaDataBaseModel):
-    metatype: Literal["OCTAVATE"] = "OCTAVATE"
+    metatype: Literal[MetaType.OCTAVATE] = MetaType.OCTAVATE
     instrument: InstrumentType  # InstrumentFromTag
     octaves: int
     scope: Scope = Scope.GONGAN
@@ -170,20 +188,20 @@ class OctavateMeta(MetaDataBaseModel):
 
 
 class PartMeta(MetaDataBaseModel):
-    metatype: Literal["PART"] = "PART"
+    metatype: Literal[MetaType.PART] = MetaType.PART
     name: str
     DEFAULTPARAM = "name"
 
 
 class SequenceMeta(MetaDataBaseModel):
-    metatype: Literal["SEQUENCE"] = "SEQUENCE"
+    metatype: Literal[MetaType.SEQUENCE] = MetaType.SEQUENCE
     value: list[str] = Field(default_factory=list)
     frequency: FrequencyType = FrequencyType.ALWAYS
     DEFAULTPARAM = "value"
 
 
 class SuppressMeta(MetaDataBaseModel):
-    metatype: Literal["SUPPRESS"] = "SUPPRESS"
+    metatype: Literal[MetaType.SUPPRESS] = MetaType.SUPPRESS
     positions: list[Position]  # PositionsFromTag
     passes: list[int] = Field(default_factory=list)
     beats: list[int] = Field(default_factory=list)
@@ -191,12 +209,12 @@ class SuppressMeta(MetaDataBaseModel):
 
 
 class TempoMeta(GradualChangeMetadata):
-    metatype: Literal["TEMPO"] = "TEMPO"
+    metatype: Literal[MetaType.TEMPO] = MetaType.TEMPO
     DEFAULTPARAM = "value"
 
 
 class ValidationMeta(MetaDataBaseModel):
-    metatype: Literal["VALIDATION"] = "VALIDATION"
+    metatype: Literal[MetaType.VALIDATION] = MetaType.VALIDATION
     beats: list[int] = Field(default_factory=list)
     ignore: list[ValidationProperty]
     scope: Scope = Scope.GONGAN
@@ -204,7 +222,7 @@ class ValidationMeta(MetaDataBaseModel):
 
 
 class WaitMeta(MetaDataBaseModel):
-    metatype: Literal["WAIT"] = "WAIT"
+    metatype: Literal[MetaType.WAIT] = MetaType.WAIT
     seconds: float = None
     after: bool = True
     passes: list[int] = Field(

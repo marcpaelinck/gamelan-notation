@@ -23,6 +23,7 @@ from src.notation2midi.metadata_classes import (
     GoToMeta,
     MetaData,
     MetaDataType,
+    MetaType,
     SequenceMeta,
     ValidationProperty,
 )
@@ -281,10 +282,8 @@ class Score:
     midifile_duration: int = None
     part_info: Part = None
 
-
-class IScore(Score):
-    """The content of this class is the same as that of Score.
-    However the pass.notes list will contain INotes instead of Notes"""
+    def metadata(self, metatype: MetaType):
+        return [meta for meta in self.global_metadata if meta.metatype is metatype]
 
 
 @dataclass
