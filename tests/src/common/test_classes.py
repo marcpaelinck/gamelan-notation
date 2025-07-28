@@ -247,7 +247,7 @@ class RuleTester(BaseUnitTestCase):
     def test_shared_notation_rule(self):
         for position, all_positions, expected in self.data_shared_notation_rule:
             with self.subTest(position=position, all_positions=all_positions):
-                self.assertEqual(RuleCastToPosition.get_shared_notation_rule(position, all_positions), expected)
+                self.assertEqual(RuleCastToPosition.get_casting_rule(position, all_positions), expected)
 
     P_POLOS = Position.PEMADE_POLOS
     P_SANGSIH = Position.PEMADE_SANGSIH

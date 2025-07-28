@@ -139,9 +139,9 @@ class RuleFields(SStrEnum):
     RULETYPE = "ruletype"
     POSITIONS = "positions"
     CONDITION1 = "condition1"
-    VALUE1 = "value1"
+    CONDITIONVALUE1 = "conditionvalue1"
     CONDITION2 = "condition2"
-    VALUE2 = "value2"
+    CONDITIONVALUE2 = "conditionvalue2"
     ACTION = "action"
     ACTIONVALUE = "actionvalue"
 

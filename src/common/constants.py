@@ -141,14 +141,17 @@ class GonganType(NotationEnum):
 
 class RuleType(NotationEnum):
     KEMPYUNG = "KEMPYUNG"
-    UNISONO = "UNISONO"
+    CAST_TO_POSITION = "CAST_TO_POSITION"
 
 
-class RuleParameter(NotationEnum):
-    NOTE_PAIRS = "NOTE_PAIRS"
+class RuleCondition(NotationEnum):
     SHARED_BY = "SHARED_BY"
-    TRANSFORM = "TRANSFORM"
     PATTERNTYPE = "PATTERNTYPE"
+
+
+class RuleAction(NotationEnum):
+    DEFINITION = "DEFINITION"
+    TRANSFORM = "TRANSFORM"
 
 
 class RuleValue(NotationEnum):

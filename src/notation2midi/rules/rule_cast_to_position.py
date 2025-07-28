@@ -7,7 +7,8 @@ from src.common.constants import (
     PatternType,
     Pitch,
     Position,
-    RuleParameter,
+    RuleAction,
+    RuleCondition,
     RuleType,
     RuleValue,
 )
@@ -75,15 +76,15 @@ class RuleCastToPosition(Rule, RunSettingsListener):
                     RuleDefinition(
                         ruletype=record[RuleFields.RULETYPE],
                         positions=record[RuleFields.POSITIONS],
-                        parameters={
+                        conditions={
                             record[parm]: record[val]
                             for parm, val in [
-                                (RuleFields.CONDITION1, RuleFields.VALUE1),
-                                (RuleFields.CONDITION2, RuleFields.VALUE2),
-                                (RuleFields.ACTION, RuleFields.ACTIONVALUE),
+                                (RuleFields.CONDITION1, RuleFields.CONDITIONVALUE1),
+                                (RuleFields.CONDITION2, RuleFields.CONDITIONVALUE2),
                             ]
                             if record[parm]
                         },
+                        action={record[RuleFields.ACTION]: record[RuleFields.ACTIONVALUE]},
                     )
                 )
         return ruledict
@@ -93,7 +94,7 @@ class RuleCastToPosition(Rule, RunSettingsListener):
         return next(
             (
                 (p if inverse else k)
-                for p, k in cls.RULES[position][RuleType.KEMPYUNG][0].parameters[RuleParameter.NOTE_PAIRS]
+                for p, k in cls.RULES[position][RuleType.KEMPYUNG][0].action[RuleAction.DEFINITION]
                 if (k if inverse else p) is pitch
             ),
             None,
@@ -136,10 +137,10 @@ class RuleCastToPosition(Rule, RunSettingsListener):
         )
 
     @classmethod
-    def get_shared_notation_rule(
+    def get_casting_rule(
         cls, position: Position, note: GenericNote, unisono_positions: set[Position]
     ) -> RuleDefinition:
-        rules: list[RuleDefinition] = cls.RULES.get(position, {}).get(RuleType.UNISONO, None)
+        rules: list[RuleDefinition] = cls.RULES.get(position, {}).get(RuleType.CAST_TO_POSITION, None)
         if rules:
             # Try to match a rule, starting with the most specific match
             rule = (
@@ -147,8 +148,8 @@ class RuleCastToPosition(Rule, RunSettingsListener):
                     (
                         rule
                         for rule in rules
-                        if set(rule.parameters[RuleParameter.SHARED_BY]) == set(unisono_positions)
-                        and note.effect in set(rule.parameters[RuleParameter.PATTERNTYPE])
+                        if set(rule.conditions[RuleCondition.SHARED_BY]) == set(unisono_positions)
+                        and note.effect in set(rule.conditions[RuleCondition.PATTERNTYPE])
                     ),
                     None,
                 )
@@ -156,8 +157,8 @@ class RuleCastToPosition(Rule, RunSettingsListener):
                     (
                         rule
                         for rule in rules
-                        if set(rule.parameters[RuleParameter.SHARED_BY]) == set(unisono_positions)
-                        and rule.parameters[RuleParameter.PATTERNTYPE] is RuleValue.ANY
+                        if set(rule.conditions[RuleCondition.SHARED_BY]) == set(unisono_positions)
+                        and rule.conditions[RuleCondition.PATTERNTYPE] is RuleValue.ANY
                     ),
                     None,
                 )
@@ -165,8 +166,8 @@ class RuleCastToPosition(Rule, RunSettingsListener):
                     (
                         rule
                         for rule in rules
-                        if rule.parameters[RuleParameter.SHARED_BY] is RuleValue.ANY
-                        and note.effect in set(rule.parameters[RuleParameter.PATTERNTYPE])
+                        if rule.conditions[RuleCondition.SHARED_BY] is RuleValue.ANY
+                        and note.effect in set(rule.conditions[RuleCondition.PATTERNTYPE])
                     ),
                     None,
                 )
@@ -174,14 +175,14 @@ class RuleCastToPosition(Rule, RunSettingsListener):
                     (
                         rule
                         for rule in rules
-                        if rule.parameters[RuleParameter.SHARED_BY] is RuleValue.ANY
-                        and rule.parameters[RuleParameter.PATTERNTYPE] is RuleValue.ANY
+                        if rule.conditions[RuleCondition.SHARED_BY] is RuleValue.ANY
+                        and rule.conditions[RuleCondition.PATTERNTYPE] is RuleValue.ANY
                     ),
                     None,
                 )
             )
             if rule:
-                return rule.parameters[RuleParameter.TRANSFORM]
+                return rule.action[RuleAction.TRANSFORM]
         return None
 
     @classmethod
@@ -230,7 +231,7 @@ class RuleCastToPosition(Rule, RunSettingsListener):
         rule = (
             [RuleValue.SAME_TONE_EXTENDED]
             if len(all_positions) == 1
-            else cls.get_shared_notation_rule(position, note, set(all_positions))
+            else cls.get_casting_rule(position, note, set(all_positions))
         )
         if not rule:
             raise ValueError(f"No unisono rule found for {position}.")

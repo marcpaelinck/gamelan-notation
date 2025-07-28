@@ -13,7 +13,13 @@ from typing import Any, ClassVar, override
 from pydantic import BaseModel
 
 from src.common.classes import Measure
-from src.common.constants import InstrumentGroup, Position, RuleParameter, RuleType
+from src.common.constants import (
+    InstrumentGroup,
+    Position,
+    RuleAction,
+    RuleCondition,
+    RuleType,
+)
 from src.common.notes import Tone
 from src.notation2midi.metadata_classes import MetaData
 from src.settings.classes import RunSettings
@@ -25,7 +31,8 @@ from src.settings.settings import RunSettingsListener
 class RuleDefinition:
     ruletype: RuleType
     positions: Position
-    parameters: dict[RuleParameter, Any]
+    conditions: dict[RuleCondition, Any]
+    action: dict[RuleAction, Any]
 
 
 class Instrument(BaseModel, RunSettingsListener):
