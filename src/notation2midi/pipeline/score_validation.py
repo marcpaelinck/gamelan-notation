@@ -427,7 +427,11 @@ class ScoreValidationAgent(Agent):
             remaining_note_out_of_range,
         )
         global_kempyung_ignore = any(
-            (meta for meta in self.score.metadata(MetaType.VALIDATION) if ValidationProperty.KEMPYUNG in meta.ignore)
+            (
+                meta
+                for meta in self.score.global_metadata[MetaType.VALIDATION]
+                if ValidationProperty.KEMPYUNG in meta.ignore
+            )
         )
         log_results(
             "ALL KEMPYUNG PARTS ARE CORRECT",

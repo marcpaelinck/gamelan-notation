@@ -1,9 +1,10 @@
+from collections import defaultdict
 from typing import ClassVar, override
 
 from src.common.classes import Measure, Score
 from src.common.constants import Position
 from src.notation2midi.classes import Agent
-from src.notation2midi.metadata_classes import MetaData
+from src.notation2midi.metadata_classes import MetaData, MetaType
 from src.notation2midi.rules.rule import Rule
 from src.notation2midi.rules.rule_cast_to_position import RuleCastToPosition
 
@@ -37,7 +38,13 @@ class RulesAgent(Agent):
     def run_condition_satisfied(cls, run_settings: RunSettings):
         return True
 
-    def execute(self, pass_: Measure.Pass, position: Position, all_positions: list[Position], metadata: list[MetaData]):
+    def execute(
+        self,
+        pass_: Measure.Pass,
+        position: Position,
+        all_positions: list[Position],
+        metadata: defaultdict[MetaType, list[MetaData]],
+    ):
         for rule in self.rules:
             try:
                 rule.fire(pass_=pass_, position=position, all_positions=all_positions, metadata=metadata)

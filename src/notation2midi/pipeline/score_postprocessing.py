@@ -24,6 +24,7 @@ from src.notation2midi.metadata_classes import (
     LabelMeta,
     LoopMeta,
     MetaDataSwitch,
+    MetaType,
     OctavateMeta,
     PartMeta,
     SequenceMeta,
@@ -265,7 +266,7 @@ class ScorePostprocessAgent(Agent):
 
     def _has_kempli_beat(self, gongan: Gongan):
         return (
-            not (kempli := gongan.get_metadata(KempliMeta)) or kempli.status != MetaDataSwitch.OFF
+            not (kempli := gongan.metadata[MetaType.KEMPLI]) or kempli[0].status != MetaDataSwitch.OFF
         ) and gongan.gongantype not in self.run_settings.configdata.notation.gongantypes_without_kempli
 
     def _move_beat_to_start(self) -> None:
@@ -328,8 +329,8 @@ class ScorePostprocessAgent(Agent):
             metadata (list[MetaData]): The metadata to process.
             gongan (Gongan): The gongan to which the metadata applies.
         """
-        metadata = gongan.metadata.copy() + self.score.global_metadata
-        for meta in sorted(metadata, key=lambda x: x.processingorder):
+        # Note that gongan.metadata also contains a copy of the score's global metadta. See notation_to_score.
+        for meta in sorted(sum(gongan.metadata.values(), []), key=lambda x: x.processingorder):
             self.curr_line_nr = meta.line
             match meta:
                 case AutoKempyungMeta():

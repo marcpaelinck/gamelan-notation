@@ -5,7 +5,7 @@ from src.common.classes import Beat, Gongan, Measure
 from src.common.constants import DEFAULT, DynamicLevel, Position
 from src.common.notes import Note
 from src.notation2midi.execution.execution import Dynamics, Score
-from src.notation2midi.metadata_classes import DynamicsMeta, MetaDataBaseModel
+from src.notation2midi.metadata_classes import DynamicsMeta, MetaDataBaseModel, MetaType
 from src.notation2midi.pipeline.create_execution import ExecutionCreatorAgent
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
@@ -57,7 +57,7 @@ class TestDictToScoreConverter(BaseUnitTestCase):
         mock_score.global_metadata = []
         return ExecutionCreatorAgent(mock_score)
 
-    def create_gongan_with_metadata(self, gongan_id: int, meta_list: list[MetaDataBaseModel]):
+    def create_gongan_with_metadata(self, gongan_id: int, meta_dict: dict[MetaType, MetaDataBaseModel]):
         beats = [
             create_beat(
                 1,
@@ -78,7 +78,7 @@ class TestDictToScoreConverter(BaseUnitTestCase):
                 },
             ),
         ]
-        return Gongan(id=gongan_id, beats=beats, metadata=meta_list)
+        return Gongan(id=gongan_id, beats=beats, metadata=meta_dict)
 
     def test_apply_meta(self):
         # Test for _apply_metadata method
@@ -91,18 +91,21 @@ class TestDictToScoreConverter(BaseUnitTestCase):
             (
                 gongan := self.create_gongan_with_metadata(
                     1,
-                    [
-                        DynamicsMeta(
-                            abbreviation=DynamicLevel.PIANISSIMO,
-                            first_beat=1,
-                            positions=[Position.PEMADE_POLOS, Position.PEMADE_SANGSIH],
-                        )
-                    ],
+                    {
+                        MetaType.DYNAMICS: [
+                            DynamicsMeta(
+                                abbreviation=DynamicLevel.PIANISSIMO,
+                                first_beat=1,
+                                positions=[Position.PEMADE_POLOS, Position.PEMADE_SANGSIH],
+                            )
+                        ]
+                    },
                 ),
                 value := lambda: converter.execution.dynamics(gongan.beats[0]),
                 expected := Dynamics(
                     value_dict={
-                        (pos, DEFAULT, DEFAULT): gongan.metadata[0].value for pos in gongan.metadata[0].positions
+                        (pos, DEFAULT, DEFAULT): gongan.metadata[MetaType.DYNAMICS][0].value
+                        for pos in gongan.metadata[MetaType.DYNAMICS][0].positions
                     },
                     gradual=False,
                 ),

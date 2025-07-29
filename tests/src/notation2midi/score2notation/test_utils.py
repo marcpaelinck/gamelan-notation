@@ -5,7 +5,11 @@ from src.common.classes import Gongan
 from src.common.constants import Position, Stroke
 from src.common.notes import NoteFactory
 from src.notation2midi.execution.execution import Score
-from src.notation2midi.metadata_classes import AutoKempyungMeta, MetaDataSwitch
+from src.notation2midi.metadata_classes import (
+    AutoKempyungMeta,
+    MetaDataSwitch,
+    MetaType,
+)
 from src.notation2midi.score2notationutils.utils import (
     aggregate_positions,
     clean_staves,
@@ -105,11 +109,11 @@ class TestUtils(BaseUnitTestCase):
 
     def test_has_kempli_beat(self):
         gongans = [
-            ({"id": 1, "metadata": [{"metatype": "KEMPLI", "status": "on"}]}, True),
-            ({"id": 2, "metadata": [{"metatype": "KEMPLI", "status": "off"}]}, False),
-            ({"id": 3, "metadata": [{"metatype": "GONGAN", "type": "regular"}]}, True),
-            ({"id": 4, "metadata": [{"metatype": "GONGAN", "type": "kebyar"}]}, False),
-            ({"id": 5, "metadata": [{"metatype": "GONGAN", "type": "gineman"}]}, False),
+            ({"id": 1, "metadata": {MetaType.KEMPLI: [{"metatype": "KEMPLI", "status": "on"}]}}, True),
+            ({"id": 2, "metadata": {MetaType.KEMPLI: [{"metatype": "KEMPLI", "status": "off"}]}}, False),
+            ({"id": 3, "metadata": {MetaType.GONGAN: [{"metatype": "GONGAN", "type": "regular"}]}}, True),
+            ({"id": 4, "metadata": {MetaType.GONGAN: [{"metatype": "GONGAN", "type": "kebyar"}]}}, False),
+            ({"id": 5, "metadata": {MetaType.GONGAN: [{"metatype": "GONGAN", "type": "gineman"}]}}, False),
         ]
         for record, expected in gongans:
             with self.subTest(gongan_id=record["id"]):
@@ -161,7 +165,9 @@ class TestUtils(BaseUnitTestCase):
                         KP.position: {-1: [[KP.DANG0, KP.DING2]]},
                         KS.position: {-1: [[KS.DANG0, KS.DING2]]},
                     },
-                    metadata=[AutoKempyungMeta(metatype="AUTOKEMPYUNG", status=MetaDataSwitch.OFF)],
+                    metadata={
+                        MetaType.AUTOKEMPYUNG: [AutoKempyungMeta(metatype="AUTOKEMPYUNG", status=MetaDataSwitch.OFF)]
+                    },
                 ),
                 {(Position.PEMADE_POLOS, -1): "GANGSA"},
             ),
@@ -188,7 +194,9 @@ class TestUtils(BaseUnitTestCase):
                         KP.position: {-1: [[KP.DANG0, KP.DING2]]},
                         KS.position: {-1: [[KS.DENG1, KS.DING2]]},
                     },
-                    metadata=[AutoKempyungMeta(metatype="AUTOKEMPYUNG", status=MetaDataSwitch.OFF)],
+                    metadata={
+                        MetaType.AUTOKEMPYUNG: [AutoKempyungMeta(metatype="AUTOKEMPYUNG", status=MetaDataSwitch.OFF)]
+                    },
                 ),
                 {(Position.PEMADE_POLOS, -1): "GANGSA_P", (Position.PEMADE_SANGSIH, -1): "GANGSA_S"},
             ),

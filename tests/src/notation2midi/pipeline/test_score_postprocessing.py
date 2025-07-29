@@ -16,6 +16,7 @@ from src.notation2midi.metadata_classes import (
     KempliMeta,
     MetaDataBaseModel,
     MetaDataSwitch,
+    MetaType,
     OctavateMeta,
 )
 from src.notation2midi.pipeline.score_postprocessing import ScorePostprocessAgent
@@ -64,7 +65,7 @@ def get_score(run_settings: RunSettings):
         gongans=[
             Gongan(
                 id=1,
-                metadata=[KempliMeta(metatype="KEMPLI", status=MetaDataSwitch.OFF)],
+                metadata={MetaType.KEMPLI: [KempliMeta(metatype="KEMPLI", status=MetaDataSwitch.OFF)]},
                 beats=[
                     beat1 := Beat(
                         id=1,
@@ -92,7 +93,7 @@ def get_score(run_settings: RunSettings):
             ),
             Gongan(
                 id=2,
-                metadata=[],
+                metadata={},
                 beats=[
                     beat3 := Beat(
                         id=1,
@@ -185,7 +186,7 @@ class TestTScorePostprocessAgent(BaseUnitTestCase):
             result[Position.CALUNG].passes[DEFAULT].notes, [Ca.SILENCE, Ca.SILENCE, Ca.SILENCE, Ca.SILENCE]
         )
 
-    def create_gongan_with_metadata(self, gongan_id: int, meta_list: list[MetaDataBaseModel]):
+    def create_gongan_with_metadata(self, gongan_id: int, meta_dict: dict[MetaType, list[MetaDataBaseModel]]):
         beats = [
             create_beat(
                 1,
@@ -206,7 +207,7 @@ class TestTScorePostprocessAgent(BaseUnitTestCase):
                 },
             ),
         ]
-        return Gongan(id=gongan_id, beats=beats, metadata=meta_list)
+        return Gongan(id=gongan_id, beats=beats, metadata=meta_dict)
 
     def test_apply_meta(self):
         # Test for _apply_metadata method
@@ -217,25 +218,27 @@ class TestTScorePostprocessAgent(BaseUnitTestCase):
         # lambda is used to delay the calculation of the value to be tested
         tests = [
             (
-                gongan := self.create_gongan_with_metadata(2, [GonganMeta(type=GonganType.KEBYAR)]),
+                gongan := self.create_gongan_with_metadata(2, {MetaType.GONGAN: [GonganMeta(type=GonganType.KEBYAR)]}),
                 value := lambda: (gongan.gongantype, all(not beat.has_kempli_beat for beat in gongan.beats)),
                 expected := (GonganType.KEBYAR, True),
             ),
             (
-                gongan := self.create_gongan_with_metadata(3, [GonganMeta(type=GonganType.REGULAR)]),
+                gongan := self.create_gongan_with_metadata(3, {MetaType.GONGAN: [GonganMeta(type=GonganType.REGULAR)]}),
                 value := lambda: (gongan.gongantype, all(beat.has_kempli_beat for beat in gongan.beats)),
                 expected := (GonganType.REGULAR, True),
             ),
             # add GotoMeta
             (
-                gongan := self.create_gongan_with_metadata(4, [KempliMeta(status=MetaDataSwitch.OFF)]),
+                gongan := self.create_gongan_with_metadata(
+                    4, {MetaType.KEMPLI: [KempliMeta(status=MetaDataSwitch.OFF)]}
+                ),
                 value := lambda: (gongan.gongantype, all(not beat.has_kempli_beat for beat in gongan.beats)),
                 expected := (GonganType.REGULAR, True),
             ),
             # add LabelMeta
             (
                 gongan := self.create_gongan_with_metadata(
-                    5, [OctavateMeta(instrument=InstrumentType.PEMADE, octaves=-1)]
+                    5, {MetaType.OCTAVATE: [OctavateMeta(instrument=InstrumentType.PEMADE, octaves=-1)]}
                 ),
                 value := lambda: gongan.beats[0].measures[P.position].passes[DEFAULT].notes,
                 expected := [

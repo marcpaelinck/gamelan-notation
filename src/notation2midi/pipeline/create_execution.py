@@ -93,8 +93,7 @@ class ExecutionCreatorAgent(Agent):
                 cycle=gotometa.cycle,
             )
 
-        metadata = gongan.metadata.copy() + self.score.global_metadata
-        for meta in sorted(metadata, key=lambda x: x.processingorder):
+        for meta in sorted(sum(gongan.metadata.values(), []), key=lambda x: x.processingorder):
             self.curr_line_nr = meta.line
             match meta:
                 case GoToMeta():

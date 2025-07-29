@@ -6,7 +6,6 @@ from pydantic import (
     Field,
     TypeAdapter,
     ValidationInfo,
-    computed_field,
     field_validator,
     model_validator,
 )

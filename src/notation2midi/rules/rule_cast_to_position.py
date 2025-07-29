@@ -13,11 +13,7 @@ from src.common.constants import (
     RuleValue,
 )
 from src.common.notes import GenericNote, Note, NoteFactory, Pattern, Tone
-from src.notation2midi.metadata_classes import (
-    AutoKempyungMeta,
-    MetaData,
-    MetaDataSwitch,
-)
+from src.notation2midi.metadata_classes import MetaData, MetaDataSwitch, MetaType
 from src.notation2midi.rules.rule import Instrument, Rule, RuleDefinition
 from src.settings.classes import RunSettings
 from src.settings.constants import ModifiersFields, RuleFields
@@ -191,7 +187,7 @@ class RuleCastToPosition(Rule, RunSettingsListener):
         note: GenericNote,
         position: Position,
         all_positions: set[Position],
-        metadata: list[MetaData],
+        metadata: defaultdict[MetaType, list[MetaData]],
         inverse: bool = False,
     ) -> Tone | None:
         """Returns the equivalent tone for `position`, given that the same notation is common for `all_positions`.
@@ -214,16 +210,6 @@ class RuleCastToPosition(Rule, RunSettingsListener):
         elif position not in all_positions:
             raise ValueError("Trying to cast a note to %s which is not in %s." % (position, all_positions))
 
-        # Select metadata that affects the rules
-        autokempyung = True
-        for meta in metadata:
-            if (
-                isinstance(meta, AutoKempyungMeta)
-                and meta.status == MetaDataSwitch.OFF
-                and (not meta.positions or position in meta.positions)
-            ):
-                autokempyung = False
-
         # Rules only apply to melodic pitches.
         if not note.is_melodic():
             return note.to_tone()
@@ -235,6 +221,13 @@ class RuleCastToPosition(Rule, RunSettingsListener):
         )
         if not rule:
             raise ValueError(f"No unisono rule found for {position}.")
+
+        # Check metadata that affects the rule and modify the rule accordingly
+        for meta in metadata[MetaType.AUTOKEMPYUNG]:
+            if meta.status == MetaDataSwitch.OFF and (not meta.positions or position in meta.positions):
+                if RuleValue.EXACT_KEMPYUNG in rule:
+                    rule = rule.copy()
+                    rule.remove(RuleValue.EXACT_KEMPYUNG)
 
         tone = note.to_tone()
         for action in rule:
@@ -252,25 +245,15 @@ class RuleCastToPosition(Rule, RunSettingsListener):
                     # retain pitch, select octave within instrument's extended range
                     tones = Instrument.get_tones_within_range(tone, position, extended_range=True, match_octave=False)
                 case RuleValue.EXACT_KEMPYUNG:
-                    if autokempyung:
-                        # select kempyung tone that lies immediately above the given tone
-                        tones = cls.get_kempyung_tones_within_range(
-                            tone, position, extended_range=False, exact_octave_match=True, inverse=inverse
-                        )
-                    else:
-                        tones = Instrument.get_tones_within_range(
-                            tone, position, extended_range=False, match_octave=True
-                        ) or Instrument.get_tones_within_range(tone, position, extended_range=False, match_octave=False)
+                    # select kempyung tone that lies immediately above the given tone
+                    tones = cls.get_kempyung_tones_within_range(
+                        tone, position, extended_range=False, exact_octave_match=True, inverse=inverse
+                    )
                 case RuleValue.KEMPYUNG:
-                    if autokempyung:
-                        # select kempyung pitch that lies within instrument's range
-                        tones = cls.get_kempyung_tones_within_range(
-                            tone, position, extended_range=False, exact_octave_match=False, inverse=inverse
-                        )
-                    else:
-                        tones = Instrument.get_tones_within_range(
-                            tone, position, extended_range=False, match_octave=True
-                        ) or Instrument.get_tones_within_range(tone, position, extended_range=False, match_octave=False)
+                    # select kempyung pitch that lies within instrument's range
+                    tones = cls.get_kempyung_tones_within_range(
+                        tone, position, extended_range=False, exact_octave_match=False, inverse=inverse
+                    )
                 case _:
                     raise ValueError("Unknown action %s" % action)
             if tones:

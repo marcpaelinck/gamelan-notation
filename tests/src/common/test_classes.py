@@ -1,3 +1,4 @@
+from collections import defaultdict
 from itertools import product
 from typing import Any
 
@@ -10,6 +11,13 @@ from src.common.constants import (
     Stroke,
 )
 from src.common.notes import GenericNote, Note, NoteFactory, Tone
+from src.notation2midi.metadata_classes import (
+    AutoKempyungMeta,
+    MetaDataSwitch,
+    MetaType,
+    ValidationMeta,
+    ValidationProperty,
+)
 from src.notation2midi.rules.rule import Instrument
 from src.notation2midi.rules.rule_cast_to_position import RuleCastToPosition
 from src.settings.constants import NoteFields
@@ -275,16 +283,23 @@ class RuleTester(BaseUnitTestCase):
     REYONG = {R_1, R_2, R_3, R_4}
 
     data_shared_notation = [
+        # generic note
+        # casting position
+        # shared positions
+        # expected result if autokempyung=ON
+        # expected result if autokempyung=OFF for PEMADE_SANGSIH
         [
             GenericNote(symbol="o,", pitch=Pitch.DONG, octave=0, effect=Stroke.OPEN),
             P_SANGSIH,
             GANGSA,
             Tone(pitch=Pitch.DANG, octave=0, transformation=RuleValue.EXACT_KEMPYUNG),
+            Tone(pitch=Pitch.DONG, octave=0, transformation=RuleValue.SAME_TONE),
         ],
         [
             GenericNote(symbol="o,", pitch=Pitch.DONG, octave=0, effect=PatternType.TREMOLO),
-            P_SANGSIH,
+            K_SANGSIH,
             GANGSA,
+            Tone(pitch=Pitch.DANG, octave=0, transformation=RuleValue.EXACT_KEMPYUNG),
             Tone(pitch=Pitch.DANG, octave=0, transformation=RuleValue.EXACT_KEMPYUNG),
         ],
         [
@@ -292,11 +307,13 @@ class RuleTester(BaseUnitTestCase):
             P_SANGSIH,
             GANGSA,
             Tone(pitch=Pitch.DONG, octave=0, transformation=RuleValue.SAME_TONE),
+            Tone(pitch=Pitch.DONG, octave=0, transformation=RuleValue.SAME_TONE),
         ],
         [
             GenericNote(symbol="o", pitch=Pitch.DONG, octave=0, effect=PatternType.RAKE_LEFT),
-            P_SANGSIH,
+            K_SANGSIH,
             GANGSA,
+            Tone(pitch=Pitch.DONG, octave=0, transformation=RuleValue.SAME_TONE),
             Tone(pitch=Pitch.DONG, octave=0, transformation=RuleValue.SAME_TONE),
         ],
         [
@@ -305,11 +322,13 @@ class RuleTester(BaseUnitTestCase):
             P_SANGSIH,
             GANGSA,
             Tone(pitch=Pitch.DING, octave=1, transformation=RuleValue.EXACT_KEMPYUNG),
+            Tone(pitch=Pitch.DENG, octave=0, transformation=RuleValue.SAME_TONE),
         ],
         [
             GenericNote(symbol="u", pitch=Pitch.DUNG, octave=0, effect=Stroke.OPEN),
-            P_SANGSIH,
+            K_SANGSIH,
             GANGSA,
+            Tone(pitch=Pitch.DONG, octave=1, transformation=RuleValue.EXACT_KEMPYUNG),
             Tone(pitch=Pitch.DONG, octave=1, transformation=RuleValue.EXACT_KEMPYUNG),
         ],
         [
@@ -317,11 +336,13 @@ class RuleTester(BaseUnitTestCase):
             P_SANGSIH,
             GANGSA,
             Tone(pitch=Pitch.DENG, octave=1, transformation=RuleValue.EXACT_KEMPYUNG),
+            Tone(pitch=Pitch.DANG, octave=0, transformation=RuleValue.SAME_TONE),
         ],
         [
             GenericNote(symbol="i", pitch=Pitch.DING, octave=1, effect=Stroke.OPEN),
-            P_SANGSIH,
+            K_SANGSIH,
             GANGSA,
+            Tone(pitch=Pitch.DUNG, octave=1, transformation=RuleValue.EXACT_KEMPYUNG),
             Tone(pitch=Pitch.DUNG, octave=1, transformation=RuleValue.EXACT_KEMPYUNG),
         ],
         [
@@ -329,12 +350,14 @@ class RuleTester(BaseUnitTestCase):
             P_SANGSIH,
             GANGSA,
             Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.EXACT_KEMPYUNG),
+            Tone(pitch=Pitch.DONG, octave=1, transformation=RuleValue.SAME_TONE),
         ],
         [
             # 10
             GenericNote(symbol="e", pitch=Pitch.DENG, octave=1, effect=Stroke.OPEN),
-            P_SANGSIH,
+            K_SANGSIH,
             GANGSA,
+            Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.EXACT_KEMPYUNG),
             Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.EXACT_KEMPYUNG),
         ],
         [
@@ -342,11 +365,13 @@ class RuleTester(BaseUnitTestCase):
             P_SANGSIH,
             GANGSA,
             Tone(pitch=Pitch.DUNG, octave=1, transformation=RuleValue.SAME_TONE),
+            Tone(pitch=Pitch.DUNG, octave=1, transformation=RuleValue.SAME_TONE),
         ],
         [
             GenericNote(symbol="a", pitch=Pitch.DANG, octave=1, effect=Stroke.OPEN),
-            P_SANGSIH,
+            K_SANGSIH,
             GANGSA,
+            Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.SAME_TONE),
             Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.SAME_TONE),
         ],
         [
@@ -354,11 +379,13 @@ class RuleTester(BaseUnitTestCase):
             P_SANGSIH,
             GANGSA,
             Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.SAME_TONE),
+            Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.SAME_TONE),
         ],
         [
             GenericNote(symbol="o,", pitch=Pitch.DONG, octave=0, effect=Stroke.OPEN),
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
+            Tone(pitch=Pitch.DONG, octave=0, transformation=RuleValue.SAME_TONE),
             Tone(pitch=Pitch.DONG, octave=0, transformation=RuleValue.SAME_TONE),
         ],
         [
@@ -367,11 +394,13 @@ class RuleTester(BaseUnitTestCase):
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
             Tone(pitch=Pitch.DENG, octave=0, transformation=RuleValue.SAME_TONE),
+            Tone(pitch=Pitch.DENG, octave=0, transformation=RuleValue.SAME_TONE),
         ],
         [
             GenericNote(symbol="u", pitch=Pitch.DUNG, octave=0, effect=Stroke.OPEN),
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
+            Tone(pitch=Pitch.DUNG, octave=0, transformation=RuleValue.SAME_TONE),
             Tone(pitch=Pitch.DUNG, octave=0, transformation=RuleValue.SAME_TONE),
         ],
         [
@@ -379,17 +408,20 @@ class RuleTester(BaseUnitTestCase):
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
             Tone(pitch=Pitch.DANG, octave=0, transformation=RuleValue.SAME_TONE),
+            Tone(pitch=Pitch.DANG, octave=0, transformation=RuleValue.SAME_TONE),
         ],
         [
             GenericNote(symbol="i", pitch=Pitch.DING, octave=1, effect=Stroke.OPEN),
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
             Tone(pitch=Pitch.DING, octave=1, transformation=RuleValue.SAME_TONE),
+            Tone(pitch=Pitch.DING, octave=1, transformation=RuleValue.SAME_TONE),
         ],
         [
             GenericNote(symbol="o", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
+            Tone(pitch=Pitch.DONG, octave=1, transformation=RuleValue.SAME_TONE),
             Tone(pitch=Pitch.DONG, octave=1, transformation=RuleValue.SAME_TONE),
         ],
         [
@@ -398,11 +430,13 @@ class RuleTester(BaseUnitTestCase):
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
             Tone(pitch=Pitch.DENG, octave=1, transformation=RuleValue.SAME_TONE),
+            Tone(pitch=Pitch.DENG, octave=1, transformation=RuleValue.SAME_TONE),
         ],
         [
             GenericNote(symbol="u", pitch=Pitch.DUNG, octave=1, effect=Stroke.OPEN),
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
+            Tone(pitch=Pitch.DUNG, octave=1, transformation=RuleValue.SAME_TONE),
             Tone(pitch=Pitch.DUNG, octave=1, transformation=RuleValue.SAME_TONE),
         ],
         [
@@ -410,17 +444,20 @@ class RuleTester(BaseUnitTestCase):
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
             Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.SAME_TONE),
+            Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.SAME_TONE),
         ],
         [
             GenericNote(symbol="i", pitch=Pitch.DING, octave=2, effect=Stroke.OPEN),
             P_SANGSIH,
             {K_SANGSIH, P_SANGSIH},
             Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.SAME_TONE),
+            Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.SAME_TONE),
         ],
         [
             GenericNote(symbol="e", pitch=Pitch.DENG, octave=0, effect=Stroke.OPEN),
             R_1,
             REYONG,
+            Tone(pitch=Pitch.DENG, octave=0, transformation=RuleValue.SAME_PITCH),
             Tone(pitch=Pitch.DENG, octave=0, transformation=RuleValue.SAME_PITCH),
         ],
         [
@@ -429,11 +466,13 @@ class RuleTester(BaseUnitTestCase):
             R_1,
             REYONG,
             Tone(pitch=Pitch.DUNG, octave=0, transformation=RuleValue.SAME_PITCH),
+            Tone(pitch=Pitch.DUNG, octave=0, transformation=RuleValue.SAME_PITCH),
         ],
         [
             GenericNote(symbol="a", pitch=Pitch.DANG, octave=0, effect=Stroke.OPEN),
             R_1,
             REYONG,
+            Tone(pitch=Pitch.DANG, octave=0, transformation=RuleValue.SAME_PITCH),
             Tone(pitch=Pitch.DANG, octave=0, transformation=RuleValue.SAME_PITCH),
         ],
         [
@@ -441,17 +480,20 @@ class RuleTester(BaseUnitTestCase):
             R_1,
             REYONG,
             Tone(pitch=Pitch.DUNG, octave=0, transformation=RuleValue.KEMPYUNG),
+            Tone(pitch=Pitch.DUNG, octave=0, transformation=RuleValue.KEMPYUNG),
         ],
         [
             GenericNote(symbol="o", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             R_1,
             REYONG,
             Tone(pitch=Pitch.DANG, octave=0, transformation=RuleValue.KEMPYUNG),
+            Tone(pitch=Pitch.DANG, octave=0, transformation=RuleValue.KEMPYUNG),
         ],
         [
             GenericNote(symbol="e", pitch=Pitch.DENG, octave=0, effect=Stroke.OPEN),
             R_2,
             REYONG,
+            Tone(pitch=Pitch.DENG, octave=1, transformation=RuleValue.SAME_PITCH),
             Tone(pitch=Pitch.DENG, octave=1, transformation=RuleValue.SAME_PITCH),
         ],
         [
@@ -460,11 +502,13 @@ class RuleTester(BaseUnitTestCase):
             R_2,
             REYONG,
             Tone(pitch=Pitch.DONG, octave=1, transformation=RuleValue.KEMPYUNG),
+            Tone(pitch=Pitch.DONG, octave=1, transformation=RuleValue.KEMPYUNG),
         ],
         [
             GenericNote(symbol="a", pitch=Pitch.DANG, octave=0, effect=Stroke.OPEN),
             R_2,
             REYONG,
+            Tone(pitch=Pitch.DENG, octave=1, transformation=RuleValue.KEMPYUNG),
             Tone(pitch=Pitch.DENG, octave=1, transformation=RuleValue.KEMPYUNG),
         ],
         [
@@ -472,17 +516,20 @@ class RuleTester(BaseUnitTestCase):
             R_2,
             REYONG,
             Tone(pitch=Pitch.DING, octave=1, transformation=RuleValue.SAME_PITCH),
+            Tone(pitch=Pitch.DING, octave=1, transformation=RuleValue.SAME_PITCH),
         ],
         [
             GenericNote(symbol="o", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             R_2,
             REYONG,
             Tone(pitch=Pitch.DONG, octave=1, transformation=RuleValue.SAME_PITCH),
+            Tone(pitch=Pitch.DONG, octave=1, transformation=RuleValue.SAME_PITCH),
         ],
         [
             GenericNote(symbol="e", pitch=Pitch.DENG, octave=0, effect=Stroke.OPEN),
             R_3,
             REYONG,
+            Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.KEMPYUNG),
             Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.KEMPYUNG),
         ],
         [
@@ -491,11 +538,13 @@ class RuleTester(BaseUnitTestCase):
             R_3,
             REYONG,
             Tone(pitch=Pitch.DUNG, octave=1, transformation=RuleValue.SAME_PITCH),
+            Tone(pitch=Pitch.DUNG, octave=1, transformation=RuleValue.SAME_PITCH),
         ],
         [
             GenericNote(symbol="a", pitch=Pitch.DANG, octave=0, effect=Stroke.OPEN),
             R_3,
             REYONG,
+            Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.SAME_PITCH),
             Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.SAME_PITCH),
         ],
         [
@@ -503,17 +552,20 @@ class RuleTester(BaseUnitTestCase):
             R_3,
             REYONG,
             Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.SAME_PITCH),
+            Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.SAME_PITCH),
         ],
         [
             GenericNote(symbol="o", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             R_3,
             REYONG,
             Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.KEMPYUNG),
+            Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.KEMPYUNG),
         ],
         [
             GenericNote(symbol="e", pitch=Pitch.DENG, octave=0, effect=Stroke.OPEN),
             R_3,
             {R_1, R_3},
+            Tone(pitch=Pitch.DENG, octave=1, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
             Tone(pitch=Pitch.DENG, octave=1, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
         [
@@ -522,11 +574,13 @@ class RuleTester(BaseUnitTestCase):
             R_3,
             {R_1, R_3},
             Tone(pitch=Pitch.DUNG, octave=1, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
+            Tone(pitch=Pitch.DUNG, octave=1, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
         [
             GenericNote(symbol="a", pitch=Pitch.DANG, octave=0, effect=Stroke.OPEN),
             R_3,
             {R_1, R_3},
+            Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
             Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
         [
@@ -534,17 +588,20 @@ class RuleTester(BaseUnitTestCase):
             R_3,
             {R_1, R_3},
             Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
+            Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
         [
             GenericNote(symbol="o", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             R_3,
             {R_1, R_3},
             Tone(pitch=Pitch.DONG, octave=2, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
+            Tone(pitch=Pitch.DONG, octave=2, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
         [
             GenericNote(symbol="e", pitch=Pitch.DENG, octave=0, effect=Stroke.OPEN),
             R_4,
             REYONG,
+            Tone(pitch=Pitch.DENG, octave=2, transformation=RuleValue.SAME_PITCH),
             Tone(pitch=Pitch.DENG, octave=2, transformation=RuleValue.SAME_PITCH),
         ],
         [
@@ -553,11 +610,13 @@ class RuleTester(BaseUnitTestCase):
             R_4,
             REYONG,
             Tone(pitch=Pitch.DUNG, octave=2, transformation=RuleValue.SAME_PITCH),
+            Tone(pitch=Pitch.DUNG, octave=2, transformation=RuleValue.SAME_PITCH),
         ],
         [
             GenericNote(symbol="a", pitch=Pitch.DANG, octave=0, effect=Stroke.OPEN),
             R_4,
             REYONG,
+            Tone(pitch=Pitch.DENG, octave=2, transformation=RuleValue.KEMPYUNG),
             Tone(pitch=Pitch.DENG, octave=2, transformation=RuleValue.KEMPYUNG),
         ],
         [
@@ -565,17 +624,20 @@ class RuleTester(BaseUnitTestCase):
             R_4,
             REYONG,
             Tone(pitch=Pitch.DUNG, octave=2, transformation=RuleValue.KEMPYUNG),
+            Tone(pitch=Pitch.DUNG, octave=2, transformation=RuleValue.KEMPYUNG),
         ],
         [
             GenericNote(symbol="o", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             R_4,
             REYONG,
             Tone(pitch=Pitch.DONG, octave=2, transformation=RuleValue.SAME_PITCH),
+            Tone(pitch=Pitch.DONG, octave=2, transformation=RuleValue.SAME_PITCH),
         ],
         [
             GenericNote(symbol="e", pitch=Pitch.DENG, octave=0, effect=Stroke.OPEN),
             R_4,
             {R_2, R_4},
+            Tone(pitch=Pitch.DENG, octave=2, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
             Tone(pitch=Pitch.DENG, octave=2, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
         [
@@ -584,11 +646,13 @@ class RuleTester(BaseUnitTestCase):
             R_4,
             {R_2, R_4},
             Tone(pitch=Pitch.DUNG, octave=2, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
+            Tone(pitch=Pitch.DUNG, octave=2, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
         [
             GenericNote(symbol="a", pitch=Pitch.DANG, octave=0, effect=Stroke.OPEN),
             R_4,
             {R_2, R_4},
+            Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
             Tone(pitch=Pitch.DANG, octave=1, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
         [
@@ -596,19 +660,34 @@ class RuleTester(BaseUnitTestCase):
             R_4,
             {R_2, R_4},
             Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
+            Tone(pitch=Pitch.DING, octave=2, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
         [
             GenericNote(symbol="o", pitch=Pitch.DONG, octave=1, effect=Stroke.OPEN),
             R_4,
             {R_2, R_4},
             Tone(pitch=Pitch.DONG, octave=2, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
+            Tone(pitch=Pitch.DONG, octave=2, transformation=RuleValue.SAME_PITCH_EXTENDED_RANGE),
         ],
     ]
 
     def test_apply_casting_rule(self):
-        for counter, (note, position, all_positions, expected) in enumerate(self.data_shared_notation, start=1):
+        autokempyung_on_meta = defaultdict(list)
+        autokempyung_off_meta = defaultdict(list)
+        autokempyung_off_meta[MetaType.AUTOKEMPYUNG] = [
+            AutoKempyungMeta(
+                metatype=MetaType.AUTOKEMPYUNG, status=MetaDataSwitch.OFF, positions=[Position.PEMADE_SANGSIH]
+            )
+        ]
+        for counter, (note, position, all_positions, expected0, expected1) in enumerate(
+            self.data_shared_notation, start=1
+        ):
             with self.subTest(nr=counter, note=note, position=position, all_positions=all_positions):
                 cast_tone = RuleCastToPosition.cast_to_position(
-                    note=note, position=position, all_positions=all_positions, metadata=[]
+                    note=note, position=position, all_positions=all_positions, metadata=autokempyung_on_meta
                 )
-                self.assertEqual(cast_tone, expected)
+                self.assertEqual(cast_tone, expected0)
+                cast_tone = RuleCastToPosition.cast_to_position(
+                    note=note, position=position, all_positions=all_positions, metadata=autokempyung_off_meta
+                )
+                self.assertEqual(cast_tone, expected1)

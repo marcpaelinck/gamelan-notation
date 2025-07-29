@@ -25,6 +25,7 @@ from src.notation2midi.metadata_classes import (
     LabelMeta,
     LoopMeta,
     MetaData,
+    MetaType,
     PartMeta,
     SequenceMeta,
     TempoMeta,
@@ -295,14 +296,14 @@ class PDFGeneratorAgent(Agent):
         if above_notation:
             # Content that should occur before the notation part of the gongan
             # still to add: SuppressMeta
-            if metalist := metadict.get(PartMeta, None):
+            if metalist := gongan.metadata[MetaType.PART]:
                 content = self._append_single_metadata_type(
-                    content, metalist=metalist, **self.template.metaFormatParameters[PartMeta]
+                    content, metalist=metalist, **self.template.metaFormatParameters[MetaType.PART]
                 )
 
             content = self._append_comments(content, gongan.comments)
 
-            for metatype in [TempoMeta, DynamicsMeta, LabelMeta]:
+            for metatype in [MetaType.TEMPO, MetaType.DYNAMICS, MetaType.LABEL]:
                 if metalist := metadict.get(metatype, None):
                     content = self._append_single_metadata_type(
                         content, metalist=metalist, **self.template.metaFormatParameters[metatype]
@@ -310,7 +311,7 @@ class PDFGeneratorAgent(Agent):
 
         if not above_notation:
             # Content that should occur after the notation part of the gongan
-            for metatype in [LoopMeta, GoToMeta, SequenceMeta]:
+            for metatype in [MetaType.LOOP, MetaType.GOTO, MetaType.SEQUENCE]:
                 if metalist := metadict.get(metatype, None):
                     if metatype is SequenceMeta:
                         content.append_empty_row(

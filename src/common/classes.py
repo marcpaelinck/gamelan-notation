@@ -3,9 +3,9 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from statistics import mode
-from typing import ClassVar, Optional, override
+from typing import Annotated, ClassVar, Optional, override
 
-from pydantic import BaseModel, Field, computed_field
+from pydantic import AfterValidator, BaseModel, Field, computed_field, field_validator
 
 from src.common.constants import (
     DEFAULT,
@@ -22,7 +22,6 @@ from src.notation2midi.metadata_classes import (
     GonganType,
     GoToMeta,
     MetaData,
-    MetaDataType,
     MetaType,
     SequenceMeta,
     ValidationProperty,
@@ -69,6 +68,16 @@ def explode_list_by_pos(record_list: list[DataRecord], position_title: str) -> l
     Returns: list[DataRecord]:
     """  # 'Explode' the list by position, i.e. repeat each record for each position in its list of positions.
     return [record | {position_title: position} for record in record_list for position in record[position_title]]
+
+
+def convert_to_defaultdict(value: dict) -> defaultdict:
+    if isinstance(value, defaultdict):
+        return value
+    else:
+        return defaultdict(list, value)
+
+
+DefaultDict = Annotated[dict[MetaType, list[MetaData]], AfterValidator(lambda v: defaultdict(list, v))]
 
 
 class Preset(BaseModel, RunSettingsListener):
@@ -251,13 +260,18 @@ class Gongan(BaseModel):
     id: int
     beats: list[Beat] = Field(default_factory=list)
     gongantype: GonganType = GonganType.REGULAR
-    metadata: list[MetaData] = Field(default_factory=list)
+    metadata: DefaultDict = Field(default_factory=lambda: defaultdict(list))
     comments: list[str] = Field(default_factory=list)
     haslabel: bool = False  # Will be set if the gongan has a Label metadata
     _pass_: PassSequence = 0  # Counts the number of times the gongan is passed during generation of MIDI file.
 
-    def get_metadata(self, cls: MetaDataType):
-        return next((meta for meta in self.metadata if isinstance(meta, cls)), None)
+    # @field_validator("metadata", mode="after")
+    # @classmethod
+    # def convert_to_defaultdict(cls, value: dict) -> defaultdict:
+    #     if isinstance(value, defaultdict):
+    #         return value
+    #     else:
+    #         return defaultdict(list, value)
 
 
 @dataclass
@@ -271,20 +285,16 @@ class FlowInfo:
     sequences: list[tuple[Gongan, SequenceMeta]] = field(default_factory=list)
 
 
-@dataclass
-class Score:
+class Score(BaseModel, validate_assignment=True):
     title: str
     settings: RunSettings
     instrument_positions: set[Position] = None
-    gongans: list[Gongan] = field(default_factory=list)
-    global_metadata: list[MetaData] = field(default_factory=list)
-    global_comments: list[str] = field(default_factory=list)
-    flowinfo: FlowInfo = field(default_factory=FlowInfo)
+    gongans: list[Gongan] = Field(default_factory=list)
+    global_metadata: DefaultDict = Field(default_factory=lambda: defaultdict(list))
+    global_comments: list[str] = Field(default_factory=list)
+    flowinfo: FlowInfo = Field(default_factory=FlowInfo)
     midifile_duration: int = None
     part_info: Part = None
-
-    def metadata(self, metatype: MetaType):
-        return [meta for meta in self.global_metadata if meta.metatype is metatype]
 
 
 @dataclass

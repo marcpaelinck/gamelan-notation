@@ -7,7 +7,12 @@ from functools import partial
 from src.common.classes import Gongan
 from src.common.constants import Pitch, Position, Stroke
 from src.common.notes import Note, NoteFactory, Pattern, Tone
-from src.notation2midi.metadata_classes import GonganType, MetaData, MetaDataSwitch
+from src.notation2midi.metadata_classes import (
+    GonganType,
+    MetaData,
+    MetaDataSwitch,
+    MetaType,
+)
 from src.notation2midi.pipeline.parse_notation import PassID
 from src.notation2midi.rules.rule_cast_to_position import RuleCastToPosition
 
@@ -125,9 +130,8 @@ def has_kempli_beat(gongan: Gongan) -> bool:
         bool: True if there is a kempli beat, otherwise False
     """
     return not any(
-        (meta.metatype == "KEMPLI" and meta.status is MetaDataSwitch.OFF)
-        or (meta.metatype == "GONGAN" and meta.type is not GonganType.REGULAR)
-        for meta in gongan.metadata
+        [meta.status is MetaDataSwitch.OFF for meta in gongan.metadata[MetaType.KEMPLI]]
+        or [meta.type is not GonganType.REGULAR for meta in gongan.metadata[MetaType.GONGAN]]
     )
 
 

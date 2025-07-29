@@ -13,7 +13,7 @@ from src.common.constants import DEFAULT, Pitch, Position, Stroke
 from src.common.notes import Pattern
 from src.notation2midi.classes import Agent
 from src.notation2midi.execution.execution import Execution
-from src.notation2midi.metadata_classes import PartMeta
+from src.notation2midi.metadata_classes import MetaType
 from src.notation2midi.midi.midi_track import MidiTrackX, TimeUnit
 from src.settings.classes import PartForm, RunSettings
 from src.settings.constants import MidiNotesFields
@@ -85,13 +85,13 @@ class MidiGeneratorAgent(Agent):
             if all(note.pitch == Pitch.NONE for note in beat.get_notes(position, DEFAULT)):
                 return
             gongan = self.score.gongans[beat.gongan_seq]
-            if partinfo := gongan.get_metadata(PartMeta):
-                if self.part_info.markers.get(partinfo.name, None):
+            if partinfo := gongan.metadata[MetaType.PART]:
+                if self.part_info.markers.get(partinfo[0].name, None):
                     # Return if the part has already been registered
                     return
                 # curr_time = track.current_time_in_millis()
                 curr_time = track.current_millitime
-                self.part_info.markers[partinfo.name] = int(curr_time)
+                self.part_info.markers[partinfo[0].name] = int(curr_time)
 
         track = MidiTrackX(
             position=position,

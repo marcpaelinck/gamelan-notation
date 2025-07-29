@@ -95,7 +95,7 @@ def create_gongan(g_id: int, staves: dict[str, dict[int, list[list[Note]]]], met
         Each measure is a list of Note objects which can be created with the PositionNote class.
     """
     if metadata is None:
-        metadata = []
+        metadata = {}
     nr_beats = max([len(measure) for pass_ in staves.values() for measure in pass_.values()])
     beats = [
         {

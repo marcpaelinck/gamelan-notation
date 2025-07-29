@@ -33,6 +33,7 @@ from src.notation2midi.metadata_classes import (
     LabelMeta,
     LoopMeta,
     MetaData,
+    MetaType,
     PartMeta,
     SequenceMeta,
     TempoMeta,
@@ -322,47 +323,47 @@ class NotationTemplate:
         #            The functions are defined below.
         # before, after: Optional parameters for the `formatter` function.
         self.metaFormatParameters = {
-            PartMeta: {
+            MetaType.PART: {
                 "col_span": -1,
                 "spantype": SpanType.LAST_CELL,
                 "parastyle": self.metadataPartStyle,
                 "formatter": self._simple_formatter_rml_safe,
             },
-            TempoMeta: {
+            MetaType.TEMPO: {
                 "cellnr": "first_beat",
                 "col_span": "beat_count",
                 "spantype": SpanType.RANGE,
                 "parastyle": self.metadataDefaultStyle,
                 "formatter": self._gradual_change_formatter_rml_safe,
             },
-            DynamicsMeta: {
+            MetaType.DYNAMICS: {
                 "cellnr": "first_beat",
                 "col_span": "beat_count",
                 "spantype": SpanType.RANGE,
                 "parastyle": self.metadataDefaultStyle,
                 "formatter": self._gradual_change_formatter_rml_safe,
             },
-            LabelMeta: {
+            MetaType.LABEL: {
                 "cellnr": "beat",
                 # "col_span": -1,
                 # "spantype": SpanType.LAST_CELL,
                 "parastyle": self.metadataLabelStyle,
                 "formatter": self._simple_formatter_rml_safe,
             },
-            LoopMeta: {
+            MetaType.LOOP: {
                 "cellnr": -2,  # right-aligned starting from the last beat. Column -1 is the overflow column.
                 "parastyle": self.metadataGotoStyle,
                 "before": "play ",
                 "after": "X",
                 "formatter": self._simple_formatter_rml_safe,
             },
-            GoToMeta: {
+            MetaType.GOTO: {
                 "cellnr": "from_beat",
                 "parastyle": self.metadataGotoStyle,
                 "formatter": self._list_formatter_rml_safe,
                 "before": "go to ",
             },
-            SequenceMeta: {
+            MetaType.SEQUENCE: {
                 "col_span": -1,
                 "spantype": SpanType.LAST_CELL,
                 "parastyle": self.metadataSequenceStyle,

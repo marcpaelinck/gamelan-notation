@@ -4,6 +4,7 @@ for an example of a notation file.
 Main method: convert_notation_to_midi()
 """
 
+from collections import defaultdict
 from dataclasses import _MISSING_TYPE, asdict
 from typing import override
 
@@ -20,7 +21,6 @@ from src.common.notes import NoteFactory
 # from src.common.rules import RulesEngine
 from src.notation2midi.classes import Agent, MetaDataRecord, NamedIntID
 from src.notation2midi.metadata_classes import (
-    LabelMeta,
     MetaData,
     MetaDataAdapter,
     MetaType,
@@ -132,26 +132,26 @@ class ScoreCreatorAgent(Agent):
 
         return beats
 
-    def _record_to_metadata(self, record_list: list[MetaDataRecord]) -> list[MetaData]:
+    def _record_to_metadata(self, record_list: list[MetaDataRecord]) -> defaultdict[MetaType, list[MetaData]]:
         """Converts a list of MetaDataRecord objects into a list of MetaData objects."""
+        metadata_dict = defaultdict(list)
         if not record_list:
-            return list()
-        metadata_list = []
+            return metadata_dict
         for record in record_list:
-            metadata = MetaDataAdapter.validate_python(
+            metadata: MetaData = MetaDataAdapter.validate_python(
                 {key: val for key, val in asdict(record).items() if not isinstance(val, _MISSING_TYPE)}
             )
-            metadata_list.append(metadata)
-        return metadata_list
+            metadata_dict[metadata.metatype].append(metadata)
+        return metadata_dict
 
     def apply_template(self, beats: dict[int, dict[Position, Measure]], label: str):
         template_gongan = next(
-            (g for g in self.score.gongans if g.get_metadata(LabelMeta) and g.get_metadata(LabelMeta).name == label),
+            (g for g in self.score.gongans if any(lbl.name == label for lbl in g.metadata[MetaType.LABEL])),
             None,
         )
         if not template_gongan:
             raise ValueError(
-                "Template '%s' missing for USE reference. The template should be defined before the USE statement."
+                "Template '%s' is missing for USE reference. The template should be defined before the COPY statement."
             )
         template: dict[int, dict[Position, Measure]] = self.notation.notation_dict[template_gongan.id].copy()[
             ParserTag.BEATS
@@ -184,22 +184,30 @@ class ScoreCreatorAgent(Agent):
             del gongan_info[ParserTag.STAVES]
             # Convert the metadata records to MetaData instances
             try:
-                metadata_list: list[MetaData] = self._record_to_metadata(gongan_info.get(ParserTag.METADATA, []))
+                metadata_dict: dict[MetaType, list[MetaData]] = self._record_to_metadata(
+                    gongan_info.get(ParserTag.METADATA, [])
+                )
             except ValueError as err:
                 self.logerror(str(err))
 
-            # in case of a USE metadata, merge the template gongan data into this gongan data
-            if usemeta := next((meta for meta in metadata_list if meta.metatype is MetaType.COPY), None):
-                gongan_info[ParserTag.BEATS] = self.apply_template(gongan_info[ParserTag.BEATS], usemeta.template)
+            # in case of a COPY metadata, merge the template gongan data into this gongan data
+            if metadata_dict[MetaType.COPY]:
+                gongan_info[ParserTag.BEATS] = self.apply_template(
+                    gongan_info[ParserTag.BEATS], metadata_dict[MetaType.COPY][0].template
+                )
 
             if self.curr_gongan_id == DEFAULT:
                 # Store global metadata and comment. Global gongan does not contain notation.
-                self.score.global_metadata = metadata_list
+                self.score.global_metadata = metadata_dict
                 self.score.global_comments = gongan_info.get(ParserTag.COMMENTS, [])
             else:
                 # Move metadata with scope == SCORE from the current gongan to the global_metadata list.
-                gongan_info[ParserTag.METADATA] = [meta for meta in metadata_list if meta.scope == Scope.GONGAN]
-                self.score.global_metadata.extend([meta for meta in metadata_list if meta.scope == Scope.SCORE])
+                gongan_info[ParserTag.METADATA] = {
+                    mtype: [meta for meta in metalist if meta.scope == Scope.GONGAN]
+                    for mtype, metalist in metadata_dict.items()
+                }
+                for mtype, metalist in metadata_dict.items():
+                    self.score.global_metadata[mtype] += [meta for meta in metalist if meta.scope == Scope.SCORE]
             for self.curr_measure_id, measures in gongan_info[ParserTag.BEATS].items():
                 # Generate measure content: convert NoteRecord objects to NoteSymbol objects.
                 for _, measure in measures.items():
@@ -228,14 +236,21 @@ class ScoreCreatorAgent(Agent):
 
             # Create a new gongan
             if beats or self.curr_gongan_id != DEFAULT:
+                metadata = gongan_info.get(ParserTag.METADATA, {})
                 gongan = Gongan(
                     id=int(self.curr_gongan_id),
                     beats=beats,
-                    metadata=gongan_info.get(ParserTag.METADATA, []) + self.score.global_metadata,
-                    comments=gongan_info.get(ParserTag.COMMENTS, []),
+                    metadata=metadata,
+                    comments=gongan_info.get(ParserTag.COMMENTS, defaultdict()),
                 )
-                self.score.gongans.append(gongan)
+                self.score.gongans.append(gongan)  # pylint: disable=no-member
                 beats = []
+
+    def _add_global_metadata_to_each_gongan(self) -> None:
+        # update each gongan with the score's global metadata
+        for gongan in self.gongan_iterator(self.score):
+            for metatype, global_meta in self.score.global_metadata.items():
+                gongan.metadata[metatype] += global_meta
 
     def _main(self):
         """This method does all the work.
@@ -244,6 +259,7 @@ class ScoreCreatorAgent(Agent):
 
         self.loginfo("input file: %s", self.run_settings.notationfile.part.file)
         self._create_score_object_model()
+        self._add_global_metadata_to_each_gongan()
         self.abort_if_errors()
 
         return self.score

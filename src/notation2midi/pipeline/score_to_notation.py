@@ -49,7 +49,7 @@ class ScoreToNotationAgent(Agent):
             [{InstrumentFields.POSITION: ParserTag.COMMENTS, 1: comment} for comment in gongan.comments]
             + [
                 {InstrumentFields.POSITION: ParserTag.METADATA, 1: metadata.model_dump_notation()}
-                for metadata in gongan.metadata
+                for metadata in gongan.metadata.values()
             ]
             + [
                 {
