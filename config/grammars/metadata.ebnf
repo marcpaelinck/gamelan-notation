@@ -25,12 +25,13 @@ metadata
         sequencemeta |
         suppressmeta |
         tempometa |
+        usemeta |
         validationmeta |
         waitmeta)
   ;
 
 dynamicsmeta = metatype:'DYNAMICS' {'value' '='} abbreviation:strvalue parameters:dynamicsmetaparameters ;
-dynamicsmetaparameters ={[','] @:(beat_count_parm | first_beat_parm | passes_parm | iterations_parm| positions_parm)} ;
+dynamicsmetaparameters ={[','] @:(beat_range_parm | beat_count_parm | first_beat_parm | passes_parm | iterations_parm | positions_parm)} ;
 
 gonganmeta = metatype:'GONGAN' {('type'|'value') '='} type:strvalue ;
     
@@ -61,7 +62,9 @@ suppressmeta = metatype:'SUPPRESS' {('positions'|'value') '='} positions:strlist
 suppressmetaparameters = {[','] @:(beats_parm | passes_parm)} ;
 
 tempometa = metatype:'TEMPO' {'value' '='} value:intvalue  parameters:tempometaparameters ;
-tempometaparameters = {[','] @:(beat_count_parm | first_beat_parm | passes_parm | iterations_parm)} ;
+tempometaparameters = {[','] @:(beat_range_parm | beat_count_parm | first_beat_parm | passes_parm | iterations_parm)} ;
+
+usemeta = metatype:'USE' {('template' | 'value') '='} template:strvalue ;
 
 validationmeta = metatype:'VALIDATION' {('ignore'|'value') '='} (ignore:strlistvalue | ignore+:strvalue) parameters:validationmetaparameters ;
 validationmetaparameters = {[','] @:(beats_parm | scope_parm)} ;
@@ -73,6 +76,7 @@ after_parm = 'after' '=' after:boolvalue;
 beat_count_parm = 'beat_count' '=' beat_count:intvalue;
 beat_parm = 'beat' '=' beat:intvalue;
 beats_parm = ('beat' | 'beats') '=' (beats+:intvalue | beats:intlistvalue);
+beat_range_parm = 'beats' '=' first_beat:intvalue ">" last_beat:intvalue;
 first_beat_parm = ('first_beat' | 'beat') '=' first_beat:intvalue;
 from_beat_parm = 'from_beat' '=' from_beat:intvalue;
 octaves_parm = 'octaves' '=' octaves:intvalue;

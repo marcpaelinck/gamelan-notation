@@ -1,8 +1,15 @@
 # pylint: disable=missing-class-docstring
-from enum import auto
-from typing import Annotated, ClassVar, Literal, Union, override
+from typing import Annotated, Any, ClassVar, Literal, Union, override
 
-from pydantic import BaseModel, Field, TypeAdapter, ValidationInfo, field_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    TypeAdapter,
+    ValidationInfo,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 
 from src.common.constants import GonganType, InstrumentType, NotationEnum, Position
 from src.settings.classes import RunSettings
@@ -46,6 +53,7 @@ class MetaType(NotationEnum):
     SEQUENCE = "SEQUENCE"
     SUPPRESS = "SUPPRESS"
     TEMPO = "TEMPO"
+    COPY = "COPY"
     VALIDATION = "VALIDATION"
     WAIT = "WAIT"
 
@@ -81,6 +89,7 @@ class MetaDataBaseModel(BaseModel, RunSettingsListener):
 class GradualChangeMetadata(MetaDataBaseModel):
     # Generic class that represent a value that can gradually
     # change over a number of beats, such as tempo or dynamics.
+    # 'virtual' field last_beat can be passed as an alternative for beat_count.
     value: int = None
     first_beat: int = 1
     beat_count: int = 0
@@ -91,6 +100,17 @@ class GradualChangeMetadata(MetaDataBaseModel):
     def first_beat_seq(self) -> int:
         # Returns the pythonic sequence id (numbered from 0)
         return self.first_beat - 1
+
+    @model_validator(mode="before")
+    @classmethod
+    def intercept_last_beat(cls, data: Any) -> Any:
+        """Enables to pass last_beat as an argument instead of beat_count"""
+        if "first_beat" in data and "last_beat" in data:
+            if data["last_beat"] >= data["first_beat"]:
+                data["beat_count"] = data["last_beat"] - data["first_beat"] + 1
+            else:
+                raise ValueError("Negative range for gradual %s change" % data["metatype"])
+        return data
 
 
 # THE METADATA CLASSES
@@ -213,6 +233,13 @@ class TempoMeta(GradualChangeMetadata):
     DEFAULTPARAM = "value"
 
 
+class CopyMeta(MetaDataBaseModel):
+    metatype: Literal[MetaType.COPY] = MetaType.COPY
+    template: str
+    DEFAULTPARAM = "template"
+    _processingorder_ = 10
+
+
 class ValidationMeta(MetaDataBaseModel):
     metatype: Literal[MetaType.VALIDATION] = MetaType.VALIDATION
     beats: list[int] = Field(default_factory=list)
@@ -245,6 +272,7 @@ MetaDataType = Union[
     SequenceMeta,
     SuppressMeta,
     TempoMeta,
+    CopyMeta,
     ValidationMeta,
     WaitMeta,
 ]

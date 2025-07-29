@@ -19,7 +19,13 @@ from src.common.notes import NoteFactory
 
 # from src.common.rules import RulesEngine
 from src.notation2midi.classes import Agent, MetaDataRecord, NamedIntID
-from src.notation2midi.metadata_classes import MetaData, MetaDataAdapter, Scope
+from src.notation2midi.metadata_classes import (
+    LabelMeta,
+    MetaData,
+    MetaDataAdapter,
+    MetaType,
+    Scope,
+)
 from src.settings.classes import RunSettings
 
 # pylint incorrectly reports an error when Pydantic fields are pre-assigned with the Field function
@@ -138,6 +144,25 @@ class ScoreCreatorAgent(Agent):
             metadata_list.append(metadata)
         return metadata_list
 
+    def apply_template(self, beats: dict[int, dict[Position, Measure]], label: str):
+        template_gongan = next(
+            (g for g in self.score.gongans if g.get_metadata(LabelMeta) and g.get_metadata(LabelMeta).name == label),
+            None,
+        )
+        if not template_gongan:
+            raise ValueError(
+                "Template '%s' missing for USE reference. The template should be defined before the USE statement."
+            )
+        template: dict[int, dict[Position, Measure]] = self.notation.notation_dict[template_gongan.id].copy()[
+            ParserTag.BEATS
+        ]
+        if not beats:
+            return template
+        if len(template) != len(beats):
+            raise ValueError("USE statement: the number of beats in template '%s' does not match.")
+        merge = {beat_id: template[beat_id] | beats[beat_id] for beat_id in template.keys()}
+        return merge
+
     def _create_score_object_model(self) -> Score:
         """Creates an object model of the notation. The method aggregates each note and the corresponding diacritics
         into a single note object, which will simplify the generation of the MIDI file content.
@@ -158,7 +183,15 @@ class ScoreCreatorAgent(Agent):
             gongan_info[ParserTag.BEATS] = self._staves_to_beats(gongan_info[ParserTag.STAVES])
             del gongan_info[ParserTag.STAVES]
             # Convert the metadata records to MetaData instances
-            metadata_list = self._record_to_metadata(gongan_info.get(ParserTag.METADATA, []))
+            try:
+                metadata_list: list[MetaData] = self._record_to_metadata(gongan_info.get(ParserTag.METADATA, []))
+            except ValueError as err:
+                self.logerror(str(err))
+
+            # in case of a USE metadata, merge the template gongan data into this gongan data
+            if usemeta := next((meta for meta in metadata_list if meta.metatype is MetaType.USE), None):
+                gongan_info[ParserTag.BEATS] = self.apply_template(gongan_info[ParserTag.BEATS], usemeta.template)
+
             if self.curr_gongan_id == DEFAULT:
                 # Store global metadata and comment. Global gongan does not contain notation.
                 self.score.global_metadata = metadata_list
@@ -192,8 +225,9 @@ class ScoreCreatorAgent(Agent):
                     prev_beat.next = new_beat
                     new_beat.prev = prev_beat
                 beats.append(new_beat)
+
             # Create a new gongan
-            if beats:
+            if beats or self.curr_gongan_id != DEFAULT:
                 gongan = Gongan(
                     id=int(self.curr_gongan_id),
                     beats=beats,

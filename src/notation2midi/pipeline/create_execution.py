@@ -6,6 +6,7 @@ from src.notation2midi.classes import Agent
 from src.notation2midi.execution.execution import Execution, Loop
 from src.notation2midi.metadata_classes import (
     AutoKempyungMeta,
+    CopyMeta,
     DynamicsMeta,
     GonganMeta,
     GoToMeta,
@@ -45,6 +46,7 @@ class ExecutionCreatorAgent(Agent):
         return run_settings.options.notation_to_midi
 
     def create_default_gotos(self):
+        """Creates a goto execution from each beat to its 'next' beat (default flow)."""
         for gongan in self.score.gongans:
             for beat in gongan.beats:
                 self.execution.create_default_goto(beat)
@@ -92,7 +94,6 @@ class ExecutionCreatorAgent(Agent):
             )
 
         metadata = gongan.metadata.copy() + self.score.global_metadata
-        haslabel = False  # Will be set to true if the gongan has a metadata Label tag.
         for meta in sorted(metadata, key=lambda x: x.processingorder):
             self.curr_line_nr = meta.line
             match meta:
@@ -103,15 +104,6 @@ class ExecutionCreatorAgent(Agent):
                     else:
                         # Label not yet encountered: store GoTo obect in flowinfo
                         self.score.flowinfo.gotos[meta.label].append((gongan, meta))
-                case LabelMeta():
-                    # Add the label to flowinfo
-                    # TODO move this to Execution
-                    haslabel = True
-                    self.score.flowinfo.labels[meta.name] = gongan.beats[meta.beat_seq]
-                    # Process any GoToMeta pointing to this label
-                    gotometa: GoToMeta
-                    for gongan_, gotometa in self.score.flowinfo.gotos[meta.name]:
-                        process_goto_meta(gongan_, gotometa)
                 case LoopMeta():
                     self.execution.set_loop(
                         gongan.id,
@@ -168,9 +160,11 @@ class ExecutionCreatorAgent(Agent):
                     AutoKempyungMeta()
                     | GonganMeta()
                     | KempliMeta()
+                    | LabelMeta()
                     | OctavateMeta()
                     | PartMeta()
                     | SuppressMeta()
+                    | CopyMeta()
                     | ValidationMeta()
                     | WaitMeta()
                 ):
@@ -180,24 +174,23 @@ class ExecutionCreatorAgent(Agent):
                 case _:
                     raise ValueError("Metadata type %s is not supported." % type(meta).__name__)
 
+    def _propagate_tempo_to_all_beats(self, gongan: Gongan) -> None:
+        """Explicitly set the current tempo for each beat by copying it from its predecessor.
+        This will ensure that a goto to any of these beats will pick up the correct tempo."""
         # TODO Think the following part over. It might cause unexpected results. But omitting it might puzzle the users
         # because then the dynamics and tempo will be taken from whatever gongan precedes the current one.
         # It might be good discipline to always explicitly set dynamics and tempo for gongans that have a label. The application
         # might give a warning if they are missing and suggest to add them.
-        # TODO suppressed because it gives unexpected results
-        if haslabel:
-            # Gongan has one or more Label metadata items: explicitly set the current tempo for each beat by copying it
-            # from its predecessor. This will ensure that a goto to any of these beats will pick up the correct tempo.
-            for beat in gongan.beats:
-                if beat.prev and beat.prev.gongan_id == gongan.id:
-                    if (
-                        not self.execution.dynamics(beat) or not self.execution.dynamics(beat).value_dict
-                    ) and self.execution.dynamics(beat.prev):
-                        self.execution.set_dynamics(beat, self.execution.dynamics(beat.prev).model_copy())
-                    if (
-                        not self.execution.tempo(beat) or not self.execution.tempo(beat).value_dict
-                    ) and self.execution.tempo(beat.prev):
-                        self.execution.set_tempo(beat, self.execution.tempo(beat.prev).model_copy())
+        for beat in gongan.beats:
+            if beat.prev and beat.prev.gongan_id == gongan.id:
+                if (
+                    not self.execution.dynamics(beat) or not self.execution.dynamics(beat).value_dict
+                ) and self.execution.dynamics(beat.prev):
+                    self.execution.set_dynamics(beat, self.execution.dynamics(beat.prev).model_copy())
+                if (
+                    not self.execution.tempo(beat) or not self.execution.tempo(beat).value_dict
+                ) and self.execution.tempo(beat.prev):
+                    self.execution.set_tempo(beat, self.execution.tempo(beat.prev).model_copy())
 
     @override
     def _main(self) -> Execution:
@@ -205,6 +198,8 @@ class ExecutionCreatorAgent(Agent):
 
         for gongan in self.gongan_iterator(self.score):
             self._apply_metadata(gongan)
+            if gongan.haslabel:
+                self._propagate_tempo_to_all_beats(gongan)
         # Process the sequences metadata
         self._process_sequences()
         return self.execution

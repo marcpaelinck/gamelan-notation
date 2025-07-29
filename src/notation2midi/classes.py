@@ -234,6 +234,7 @@ class MetaDataRecord:
     beats: list[int] | _MISSING_TYPE = MISSING
     count: int | _MISSING_TYPE = MISSING
     first_beat: int | _MISSING_TYPE = MISSING
+    last_beat: int | _MISSING_TYPE = MISSING
     frequency: FrequencyType | _MISSING_TYPE = MISSING
     from_beat: int | _MISSING_TYPE = MISSING
     ignore: list[ValidationProperty] | _MISSING_TYPE = MISSING
@@ -247,6 +248,7 @@ class MetaDataRecord:
     scope: Scope | _MISSING_TYPE = MISSING
     seconds: float | _MISSING_TYPE = MISSING
     status: MetaDataSwitch | _MISSING_TYPE = MISSING
+    template: str | _MISSING_TYPE = MISSING
     type: GonganType | _MISSING_TYPE = MISSING
     value: int | list[str] | _MISSING_TYPE = MISSING
 

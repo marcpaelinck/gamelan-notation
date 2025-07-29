@@ -253,6 +253,7 @@ class Gongan(BaseModel):
     gongantype: GonganType = GonganType.REGULAR
     metadata: list[MetaData] = Field(default_factory=list)
     comments: list[str] = Field(default_factory=list)
+    haslabel: bool = False  # Will be set if the gongan has a Label metadata
     _pass_: PassSequence = 0  # Counts the number of times the gongan is passed during generation of MIDI file.
 
     def get_metadata(self, cls: MetaDataType):
