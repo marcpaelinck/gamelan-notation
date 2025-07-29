@@ -25,7 +25,7 @@ metadata
         sequencemeta |
         suppressmeta |
         tempometa |
-        usemeta |
+        copymeta |
         validationmeta |
         waitmeta)
   ;
@@ -64,7 +64,7 @@ suppressmetaparameters = {[','] @:(beats_parm | passes_parm)} ;
 tempometa = metatype:'TEMPO' {'value' '='} value:intvalue  parameters:tempometaparameters ;
 tempometaparameters = {[','] @:(beat_range_parm | beat_count_parm | first_beat_parm | passes_parm | iterations_parm)} ;
 
-usemeta = metatype:'USE' {('template' | 'value') '='} template:strvalue ;
+copymeta = metatype:'COPY' {('template' | 'value') '='} template:strvalue ;
 
 validationmeta = metatype:'VALIDATION' {('ignore'|'value') '='} (ignore:strlistvalue | ignore+:strvalue) parameters:validationmetaparameters ;
 validationmetaparameters = {[','] @:(beats_parm | scope_parm)} ;
