@@ -189,7 +189,7 @@ class ScoreCreatorAgent(Agent):
                 self.logerror(str(err))
 
             # in case of a USE metadata, merge the template gongan data into this gongan data
-            if usemeta := next((meta for meta in metadata_list if meta.metatype is MetaType.USE), None):
+            if usemeta := next((meta for meta in metadata_list if meta.metatype is MetaType.COPY), None):
                 gongan_info[ParserTag.BEATS] = self.apply_template(gongan_info[ParserTag.BEATS], usemeta.template)
 
             if self.curr_gongan_id == DEFAULT:
