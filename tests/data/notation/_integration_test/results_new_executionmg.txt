@@ -1,0 +1,99 @@
+Differences in Bapang Selisir_full_GAMELAN1.txt: --------OK
+     ('DIFF', 'helpinghand', ('hh_timeuntil',)): 6
+     ('DIFF', 'note_off', ('time',)): 1
+     ('NO MATCH NEW', 'end_of_track'): 9
+     ('NO MATCH NEW', 'note_off'): 9
+     ('NO MATCH NEW', 'set_tempo'): 1
+     ('NO MATCH REF', 'end_of_track'): 9
+     ('NO MATCH REF', 'note_off'): 9
+Differences in Cendrawasih_full_GAMELAN1.txt: --------OK
+     No differences
+Differences in Gilak Deng_full_GAMELAN1.txt: --------OK
+     ('DIFF', 'helpinghand', ('hh_timeuntil',)): 103
+     ('DIFF', 'note_off', ('time',)): 2
+     ('NO MATCH NEW', 'end_of_track'): 11
+     ('NO MATCH NEW', 'helpinghand'): 25
+     ('NO MATCH NEW', 'note_off'): 11
+     ('NO MATCH NEW', 'set_tempo'): 9
+     ('NO MATCH REF', 'end_of_track'): 11
+     ('NO MATCH REF', 'helpinghand'): 25
+     ('NO MATCH REF', 'note_off'): 11
+     ('NO MATCH REF', 'set_tempo'): 7
+Differences in Godek Miring_full_GAMELAN1.txt:
+     No differences
+Differences in Janger_full_GAMELAN1.txt: --------OK
+     ('DIFF', 'helpinghand', ('hh_timeuntil',)): 42
+     ('DIFF', 'note_off', ('time',)): 2
+     ('NO MATCH NEW', 'end_of_track'): 9
+     ('NO MATCH NEW', 'helpinghand'): 61
+     ('NO MATCH NEW', 'note_off'): 9
+     ('NO MATCH NEW', 'set_tempo'): 7
+     ('NO MATCH REF', 'end_of_track'): 9
+     ('NO MATCH REF', 'helpinghand'): 61
+     ('NO MATCH REF', 'note_off'): 9
+     ('NO MATCH REF', 'set_tempo'): 5
+Differences in Kahyangan_full_GAMELAN1.txt: --------OK
+     No differences
+Differences in Legong Mahawidya_full_GAMELAN1.txt: --------OK
+     No differences
+Differences in Lengker_full_GAMELAN1.txt: --------OK
+     ('DIFF', 'helpinghand', ('hh_timeuntil',)): 331
+     ('DIFF', 'note_off', ('time',)): 2
+     ('DIFF', 'note_on', ('velocity',)): 408
+     ('DIFF', 'set_tempo', ('tempo',)): 3
+     ('NO MATCH NEW', 'helpinghand'): 30
+     ('NO MATCH NEW', 'set_tempo'): 14
+     ('NO MATCH REF', 'helpinghand'): 30
+     ('NO MATCH REF', 'set_tempo'): 12
+Differences in Margapati_full_GAMELAN1.txt:
+     ('DIFF', 'helpinghand', ('abstime', 'hh_id', 'hh_pitch')): 4
+     ('DIFF', 'helpinghand', ('hh_timeuntil',)): 96
+     ('DIFF', 'note_off', ('time',)): 3
+     ('NO MATCH NEW', 'helpinghand'): 268
+     ('NO MATCH NEW', 'set_tempo'): 3
+     ('NO MATCH REF', 'helpinghand'): 268
+     ('NO MATCH REF', 'set_tempo'): 6
+Differences in Pendet_full_GAMELAN1.txt: --------OK
+     ('DIFF', 'helpinghand', ('hh_timeuntil',)): 6
+     ('DIFF', 'note_off', ('time',)): 1
+     ('NO MATCH REF', 'set_tempo'): 1
+Differences in Puspa Mekar_full_GAMELAN1.txt: --------OK
+     ('DIFF', 'helpinghand', ('hh_timeuntil',)): 197
+     ('DIFF', 'note_off', ('time',)): 3
+     ('NO MATCH NEW', 'helpinghand'): 15
+     ('NO MATCH NEW', 'set_tempo'): 5
+     ('NO MATCH REF', 'helpinghand'): 15
+     ('NO MATCH REF', 'set_tempo'): 2
+Differences in Rejang Dewa_full_GAMELAN1.txt: --------OK
+     ('DIFF', 'helpinghand', ('hh_timeuntil',)): 6
+     ('DIFF', 'note_off', ('time',)): 1
+     ('NO MATCH NEW', 'end_of_track'): 12
+     ('NO MATCH NEW', 'note_off'): 12
+     ('NO MATCH NEW', 'set_tempo'): 1
+     ('NO MATCH REF', 'end_of_track'): 12
+     ('NO MATCH REF', 'note_off'): 12
+Differences in Sekar Gendot_full_GAMELAN1.txt: --------OK
+     ('DIFF', 'helpinghand', ('hh_timeuntil',)): 1416
+     ('DIFF', 'note_off', ('time',)): 2
+     ('DIFF', 'note_on', ('velocity',)): 428
+     ('DIFF', 'set_tempo', ('tempo',)): 1
+     ('NO MATCH NEW', 'helpinghand'): 149
+     ('NO MATCH NEW', 'set_tempo'): 12
+     ('NO MATCH REF', 'helpinghand'): 149
+     ('NO MATCH REF', 'set_tempo'): 10
+Differences in Sinom Ladrang (GK)_full_GAMELAN1.txt:
+     ('DIFF', 'helpinghand', ('hh_timeuntil',)): 744
+     ('DIFF', 'note_off', ('time',)): 3
+     ('DIFF', 'note_on', ('time',)): 1
+     ('NO MATCH NEW', 'helpinghand'): 500
+     ('NO MATCH NEW', 'set_tempo'): 7
+     ('NO MATCH REF', 'helpinghand'): 500
+     ('NO MATCH REF', 'set_tempo'): 9
+Differences in Sinom Ladrang_full_GAMELAN1.txt:
+     ('DIFF', 'helpinghand', ('hh_timeuntil',)): 744
+     ('DIFF', 'note_off', ('time',)): 3
+     ('DIFF', 'note_on', ('time',)): 1
+     ('NO MATCH NEW', 'helpinghand'): 500
+     ('NO MATCH NEW', 'set_tempo'): 7
+     ('NO MATCH REF', 'helpinghand'): 500
+     ('NO MATCH REF', 'set_tempo'): 9

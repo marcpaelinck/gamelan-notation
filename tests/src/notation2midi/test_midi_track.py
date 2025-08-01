@@ -6,7 +6,7 @@ from mido import Message
 
 from src.common.classes import Preset
 from src.common.constants import Position
-from src.notation2midi.execution.execution import Execution
+from src.notation2midi.execution.execution import ExecutionManager
 from src.notation2midi.midi.midi_track import MidiTrackX
 from src.notation2midi.pipeline.score_to_midi import MidiGeneratorAgent
 from src.settings.settings import Settings
@@ -29,7 +29,7 @@ class TestSpecialNotes(BaseUnitTestCase):
         self.run_settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
         position = Position.PEMADE_POLOS
         preset = Preset.get_preset(position)
-        midi_generator = MidiGeneratorAgent(run_settings=self.run_settings, execution=Execution(score=None))
+        midi_generator = MidiGeneratorAgent(run_settings=self.run_settings, execution=ExecutionManager(score=None))
         self.midi_track: MidiTrackX = MidiTrackX(
             position, preset=preset, midi_dict=midi_generator.midi_dict, run_settings=self.run_settings
         )

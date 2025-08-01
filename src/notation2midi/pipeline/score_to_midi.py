@@ -12,7 +12,7 @@ from src.common.classes import Beat, Preset
 from src.common.constants import DEFAULT, Pitch, Position, Stroke
 from src.common.notes import Pattern
 from src.notation2midi.classes import Agent
-from src.notation2midi.execution.execution import Execution
+from src.notation2midi.execution.execution import ExecutionManager
 from src.notation2midi.metadata_classes import MetaType
 from src.notation2midi.midi.midi_track import MidiTrackX, TimeUnit
 from src.settings.classes import PartForm, RunSettings
@@ -27,9 +27,9 @@ class MidiGeneratorAgent(Agent):
     RETURN_TYPE = Agent.InputOutputType.PART
 
     part_info: PartForm = None
-    exec_mgr: Execution = None
+    exec_mgr: ExecutionManager = None
 
-    def __init__(self, run_settings: RunSettings, execution: Execution):
+    def __init__(self, run_settings: RunSettings, execution: ExecutionManager):
         super().__init__(run_settings)
         self.exec_mgr = execution
         self.score = execution.score
@@ -78,7 +78,7 @@ class MidiGeneratorAgent(Agent):
         """
 
         def reset_pass_counters():
-            self.exec_mgr.reset_all_counters()
+            self.exec_mgr.reset_all(position)
 
         def store_part_info(beat: Beat):
             # current_time_in_millis might be incorrect if the beat consists of only silences.
@@ -104,16 +104,9 @@ class MidiGeneratorAgent(Agent):
             track.increase_current_time(self.run_settings.midi.silence_seconds_before_start, TimeUnit.SECOND)
 
         reset_pass_counters()
-        # Temporary fix: create a dummy beat as starting point for the execution.
-        # This enables to call self.exec_mgr.next_beat_in_flow(beat) to select the first beat.
-        # This updates all execution values correctly.
-        beat = Beat(
-            id=0,
-            gongan_id=0,
-            next=self.score.gongans[0].beats[0],
-        )
+
         # Select the first beat.
-        beat = self.exec_mgr.next_beat_in_flow(beat)
+        beat = self.exec_mgr.next_beat_in_flow()
         # beat = self.score.gongans[0].beats[0]
         temp = []
         flow = []
@@ -134,13 +127,14 @@ class MidiGeneratorAgent(Agent):
                     f"loop{self.exec_mgr.loop(beat).counter if self.exec_mgr.loop(beat) else "-"}"
                 )
             # Set new tempo.
-            if new_bpm := self.exec_mgr.get_tempo(beat=beat, curr_tempo=track.current_bpm):
-                track.update_tempo(new_bpm)
+            ## REMOVE: try to emulate error of current version
+            start_bpm, end_bpm = self.exec_mgr.get_tempo_values()
+            if start_bpm:
+                track.update_tempo(start_bpm)
             # Set new dynamics
-            if new_velocity := self.exec_mgr.get_dynamics(
-                beat=beat, position=position, curr_dynamics=track.current_velocity
-            ):
-                track.update_dynamics(new_velocity)
+            start_velocity, end_velocity = self.exec_mgr.get_dynamics_values()
+            if start_velocity:
+                track.update_dynamics(start_velocity)
 
             # Process individual notes.
             try:
@@ -161,7 +155,7 @@ class MidiGeneratorAgent(Agent):
                         track.add_note(pattern_note)
                 else:
                     track.add_note(note)
-            beat = self.exec_mgr.next_beat_in_flow(beat)
+            beat = self.exec_mgr.next_beat_in_flow()
             # TODO GOTO modify, also for freq type
 
         track.finalize()

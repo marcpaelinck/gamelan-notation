@@ -1,4 +1,4 @@
-These modules each perform a step in the notation-to-midi process. The classe in each module is a subclass of the `Agent` class. It contains information about the expected input and the class's output, and it contains a _main method that executes the step's process. The pipeline steps are executed in sequence by the Pipeline class which is created in `src.notation2mid.main`. The sequence should be such that the expected input of each step is available from the output of previous steps in the sequence. Each step tries to complete its process even if errors are encountered. Errors are logged in order to give meaningful information on how to correct them. Errors encountered in a step will cause the entire pipeline to be aborted after the step has completed.
+These modules each perform a step in the notation-to-midi process. The class in each module is a subclass of the `Agent` class. It contains information about the expected input and the class's output, and it contains a _main method that executes the step's process. The pipeline steps are executed in sequence by the Pipeline class which is created in `src.notation2mid.main`. The sequence should be such that the expected input of each step is available from the output of previous steps in the sequence. Each step tries to complete its process even if errors are encountered. Errors are logged in order to give meaningful information on how to correct them. Errors encountered in a step will cause the entire pipeline to be aborted after the step has completed.
 
 | **module** | **class** | **description** | **expected input** | **output**|
 |------------|-----------|-----------------|--------------------|-----------|
@@ -9,7 +9,7 @@ These modules each perform a step in the notation-to-midi process. The classe in
 | create_note_patterns | NotePatternGeneratorAgent |  Creates sequences of Note objects to emulate patterns such as tremolo or norot. | BOUND* `Score` | PATTERN* `Score` |
 | score_postprocessing | ScorePostprocessAgent |  Fills empty and shorthand beats + applies metadata. | PATTERN* `Score` | COMPLETE* `Score` |
 | score_validation | ScoreValidationAgent |  Validates the score and performs corrections if required. | COMPLETE* `Score` | `None` |
-| create_execution | ExecutionCreatorAgent |  Creates a score Execution: the flow (gongan sequence), tempi and dynamics. | COMPLETE* `Score` | `Execution` |
+| create_execution | ExecutionCreatorAgent |  Creates a score Execution containing flow (gongan sequence), tempo and dynamics info. | COMPLETE* `Score` | `Execution` |
 | score_to_midi | MidiGeneratorAgent |  Generates MIDI output. | `RunSettings`, `Execution` | `PART` |
 | score_to_pdf | PDFGeneratorAgent |  Generates a human-readable PDF score. | GENERIC* `Score` | `str` (PDF file name) |
 | score_to_notation | ScoreToNotationAgent |  Generates a corrected and standardized input file. | GENERIC* `Score` | `None` |
