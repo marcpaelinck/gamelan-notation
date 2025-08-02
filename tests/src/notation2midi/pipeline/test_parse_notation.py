@@ -35,7 +35,7 @@ class NotationParserTester(BaseUnitTestCase):
             MetaDataRecord(
                 metatype="DYNAMICS",
                 line=1,
-                abbreviation=DynamicLevel.FORTE,
+                to_abbr=DynamicLevel.FORTE,
             ),
         ],
         [
@@ -43,7 +43,7 @@ class NotationParserTester(BaseUnitTestCase):
             MetaDataRecord(
                 metatype="DYNAMICS",
                 line=1,
-                abbreviation=DynamicLevel.FORTE,
+                to_abbr=DynamicLevel.FORTE,
                 first_beat=13,
                 positions=[
                     Position.PEMADE_POLOS,
@@ -58,7 +58,7 @@ class NotationParserTester(BaseUnitTestCase):
             MetaDataRecord(
                 metatype="DYNAMICS",
                 line=1,
-                abbreviation=DynamicLevel.FORTE,
+                to_abbr=DynamicLevel.FORTE,
                 passes=[4, 8, 12],
                 positions=[
                     Position.PEMADE_POLOS,
@@ -77,7 +77,7 @@ class NotationParserTester(BaseUnitTestCase):
             MetaDataRecord(
                 metatype="DYNAMICS",
                 line=1,
-                abbreviation=DynamicLevel.FORTISSIMO,
+                to_abbr=DynamicLevel.FORTISSIMO,
                 beat_count=8,
                 passes=[3],
                 positions=[
@@ -93,7 +93,7 @@ class NotationParserTester(BaseUnitTestCase):
             MetaDataRecord(
                 metatype="DYNAMICS",
                 line=1,
-                abbreviation=DynamicLevel.FORTISSIMO,
+                to_abbr=DynamicLevel.FORTISSIMO,
                 beat_count=8,
                 passes=[3],
                 positions=[
@@ -109,7 +109,7 @@ class NotationParserTester(BaseUnitTestCase):
             MetaDataRecord(
                 metatype="DYNAMICS",
                 line=1,
-                abbreviation=DynamicLevel.FORTISSIMO,
+                to_abbr=DynamicLevel.FORTISSIMO,
                 first_beat=1,
                 beat_count=8,
                 passes=[3],
@@ -237,19 +237,19 @@ class NotationParserTester(BaseUnitTestCase):
         ],
         [
             "{TEMPO value=100, beat_count=8, pass=[2]}",
-            MetaDataRecord(metatype="TEMPO", line=1, value=100, beat_count=8, passes=[2]),
+            MetaDataRecord(metatype="TEMPO", line=1, to_value=100, beat_count=8, passes=[2]),
         ],
         [
             "{TEMPO value=100,  beat_count=0}",
-            MetaDataRecord(metatype="TEMPO", line=1, value=100, beat_count=0),
+            MetaDataRecord(metatype="TEMPO", line=1, to_value=100, beat_count=0),
         ],
         [
             "{TEMPO 100  beat_count=8, passes=3}",
-            MetaDataRecord(metatype="TEMPO", line=1, value=100, beat_count=8, passes=[3]),
+            MetaDataRecord(metatype="TEMPO", line=1, to_value=100, beat_count=8, passes=[3]),
         ],
         [
             "{TEMPO value=47, passes=[1,2], first_beat=5, beat_count=3}",
-            MetaDataRecord(metatype="TEMPO", line=1, value=47, first_beat=5, beat_count=3, passes=[1, 2]),
+            MetaDataRecord(metatype="TEMPO", line=1, to_value=47, first_beat=5, beat_count=3, passes=[1, 2]),
         ],
         [
             "{VALIDATION ignore=[kempyung], scope=SCORE}",

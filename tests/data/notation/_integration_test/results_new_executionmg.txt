@@ -19,7 +19,7 @@ Differences in Gilak Deng_full_GAMELAN1.txt: --------OK
      ('NO MATCH REF', 'helpinghand'): 25
      ('NO MATCH REF', 'note_off'): 11
      ('NO MATCH REF', 'set_tempo'): 7
-Differences in Godek Miring_full_GAMELAN1.txt:
+Differences in Godek Miring_full_GAMELAN1.txt: --------OK
      No differences
 Differences in Janger_full_GAMELAN1.txt: --------OK
      ('DIFF', 'helpinghand', ('hh_timeuntil',)): 42
@@ -48,9 +48,7 @@ Differences in Lengker_full_GAMELAN1.txt: --------OK
 Differences in Margapati_full_GAMELAN1.txt: --------OK
      No differences
 Differences in Pendet_full_GAMELAN1.txt: --------OK
-     ('DIFF', 'helpinghand', ('hh_timeuntil',)): 6
-     ('DIFF', 'note_off', ('time',)): 1
-     ('NO MATCH REF', 'set_tempo'): 1
+     No differences
 Differences in Puspa Mekar_full_GAMELAN1.txt: --------OK
      ('DIFF', 'helpinghand', ('hh_timeuntil',)): 197
      ('DIFF', 'note_off', ('time',)): 3
@@ -75,19 +73,7 @@ Differences in Sekar Gendot_full_GAMELAN1.txt: --------OK
      ('NO MATCH NEW', 'set_tempo'): 12
      ('NO MATCH REF', 'helpinghand'): 149
      ('NO MATCH REF', 'set_tempo'): 10
-Differences in Sinom Ladrang (GK)_full_GAMELAN1.txt:
-     ('DIFF', 'helpinghand', ('hh_timeuntil',)): 744
-     ('DIFF', 'note_off', ('time',)): 3
-     ('DIFF', 'note_on', ('time',)): 1
-     ('NO MATCH NEW', 'helpinghand'): 500
-     ('NO MATCH NEW', 'set_tempo'): 7
-     ('NO MATCH REF', 'helpinghand'): 500
-     ('NO MATCH REF', 'set_tempo'): 9
-Differences in Sinom Ladrang_full_GAMELAN1.txt:
-     ('DIFF', 'helpinghand', ('hh_timeuntil',)): 744
-     ('DIFF', 'note_off', ('time',)): 3
-     ('DIFF', 'note_on', ('time',)): 1
-     ('NO MATCH NEW', 'helpinghand'): 500
-     ('NO MATCH NEW', 'set_tempo'): 7
-     ('NO MATCH REF', 'helpinghand'): 500
-     ('NO MATCH REF', 'set_tempo'): 9
+Differences in Sinom Ladrang (GK)_full_GAMELAN1.txt: --------OK
+     No differences
+Differences in Sinom Ladrang (GK)_full_GAMELAN1.txt: --------OK
+     No differences

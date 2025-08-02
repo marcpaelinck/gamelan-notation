@@ -253,8 +253,8 @@ class MetaDataRecord:
     value: int | list[str] | _MISSING_TYPE = MISSING
     from_value: int | str | None | _MISSING_TYPE = MISSING
     to_value: int | str | _MISSING_TYPE = MISSING
-    from_abbr: str | _MISSING_TYPE = MISSING
-    to_abbr: str | _MISSING_TYPE = MISSING
+    from_abbr: DynamicLevel | _MISSING_TYPE = MISSING
+    to_abbr: DynamicLevel | _MISSING_TYPE = MISSING
 
     def __init__(self, **kwargs):
         # Ingnore kwargs that are not in the list of fields

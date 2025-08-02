@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 from src.common.classes import Beat, Gongan, Measure
 from src.common.constants import DEFAULT, DynamicLevel, Position
 from src.common.notes import Note
-from src.notation2midi.execution.execution import Dynamics, Score
+from src.notation2midi.execution.execution import GradualChange, Score
 from src.notation2midi.metadata_classes import DynamicsMeta, MetaDataBaseModel, MetaType
 from src.notation2midi.pipeline.create_execution import ExecutionCreatorAgent
 from src.settings.settings import Settings
@@ -47,12 +47,11 @@ def create_beat(beat_id: int = 1, content: dict[PositionNote, list[Note]] = None
 class TestDictToScoreConverter(BaseUnitTestCase):
 
     def setUp(self):
-        pass
+        self.settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
 
     def get_converter_gk(self):
-        settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
         mock_score = MagicMock(spec=Score)
-        mock_score.settings = settings
+        mock_score.settings = self.settings
         mock_score.gongans = {}
         mock_score.global_metadata = []
         return ExecutionCreatorAgent(mock_score)
@@ -82,7 +81,7 @@ class TestDictToScoreConverter(BaseUnitTestCase):
 
     def test_apply_meta(self):
         # Test for _apply_metadata method
-        Settings.get(notation_id="test-gongkebyar", part_id="full")  # Needed to initialize classes
+        # Settings.get(notation_id="test-gongkebyar", part_id="full")  # Needed to initialize classes
         converter = self.get_converter_gk()
         gongan: Gongan = None
         # pylint: disable=unnecessary-lambda-assignment
@@ -94,21 +93,24 @@ class TestDictToScoreConverter(BaseUnitTestCase):
                     {
                         MetaType.DYNAMICS: [
                             DynamicsMeta(
-                                abbreviation=DynamicLevel.PIANISSIMO,
+                                to_abbr=DynamicLevel.PIANISSIMO,
                                 first_beat=1,
                                 positions=[Position.PEMADE_POLOS, Position.PEMADE_SANGSIH],
                             )
                         ]
                     },
                 ),
-                value := lambda: converter.execution_mgr.dynamics(gongan.beats[0]),
-                expected := Dynamics(
-                    value_dict={
-                        (pos, DEFAULT, DEFAULT): gongan.metadata[MetaType.DYNAMICS][0].to_value
-                        for pos in gongan.metadata[MetaType.DYNAMICS][0].positions
-                    },
-                    gradual=False,
-                ),
+                value := lambda: converter.execution_mgr.dynamics_dict[gongan.beats[0].full_id],
+                expected := [
+                    GradualChange(
+                        positions=[Position.PEMADE_POLOS, Position.PEMADE_SANGSIH],
+                        passes=[],
+                        iterations=[],
+                        tot_beats=0,
+                        from_value=None,
+                        to_value=self.settings.midi.dynamics[DynamicLevel.PIANISSIMO],
+                    )
+                ],
             ),
             #     add LoopMeta
             #     add SequenceMeta
