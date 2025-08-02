@@ -144,10 +144,12 @@ class NotationParserAgent(Agent):
         # containing the other parameters + values. E.g.
         # {"meta": "DYNAMICS", "value": "f", "parameters": [{"positions": ["gangsa"]}, {"first_beat": 13}]}
         # We need to flatten this structure before parsing it into a MetaData object.
-        parms = metadict.get("parameters", [])
-        flattened_dict = {k: v for k, v in metadict.items() if k not in ["meta", "parameters"]} | dict(
-            ChainMap(*(parms if isinstance(parms, list) else [parms]))
-        )
+        flattened_dict = metadict
+        for aggr_value in ("parameters", "range_values"):
+            values = metadict.get(aggr_value, [])
+            flattened_dict = {k: v for k, v in flattened_dict.items() if k not in ["meta", aggr_value]} | dict(
+                ChainMap(*(values if isinstance(values, list) else [values]))
+            )
         return flattened_dict
 
     def _replace_metadata_tags_with_positions(self, metadata_list: list[dict]) -> None:
@@ -221,6 +223,9 @@ class NotationParserAgent(Agent):
             return list(range(int(rangestr[0]), int(rangestr[2]) + 1))
         else:
             return list(json.loads(f"[{rangestr}]"))
+
+    def notnone_elements(self, record: dict[str, Any]):
+        return {key: value for key, value in record.items() if value}
 
     @override
     def _main(self, notation: str | None = None) -> NotationDict:
@@ -334,7 +339,9 @@ class NotationParserAgent(Agent):
                 self.logerror(str(err))
                 continue
             try:
-                gongan[ParserTag.METADATA] = [MetaDataRecord(**meta) for meta in gongan[ParserTag.METADATA]]
+                gongan[ParserTag.METADATA] = [
+                    MetaDataRecord(**self.notnone_elements(meta)) for meta in gongan[ParserTag.METADATA]
+                ]
             except ValueError as err:
                 self.logerror(str(err))
                 continue

@@ -28,6 +28,7 @@ midi:
         mp: 65
         p: 45
         pp: 30
+    default_tempo: 60
     default_dynamics: mf
     silence_seconds_before_start: 3 
     silence_seconds_after_end: 10

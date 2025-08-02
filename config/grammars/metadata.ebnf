@@ -30,7 +30,7 @@ metadata
         waitmeta)
   ;
 
-dynamicsmeta = metatype:'DYNAMICS' {'value' '='} abbreviation:strvalue parameters:dynamicsmetaparameters ;
+dynamicsmeta = metatype:'DYNAMICS' {'value' '='} range_values:dynamics_range parameters:dynamicsmetaparameters ;
 dynamicsmetaparameters ={[','] @:(beat_range_parm | beat_count_parm | first_beat_parm | passes_parm | iterations_parm | positions_parm)} ;
 
 gonganmeta = metatype:'GONGAN' {('type'|'value') '='} type:strvalue ;
@@ -61,7 +61,7 @@ sequencemeta = metatype:'SEQUENCE' {'value' '='} value:strlistvalue_multiline ;
 suppressmeta = metatype:'SUPPRESS' {('positions'|'value') '='} positions:strlistvalue  parameters:suppressmetaparameters ;
 suppressmetaparameters = {[','] @:(beats_parm | passes_parm)} ;
 
-tempometa = metatype:'TEMPO' {'value' '='} value:intvalue  parameters:tempometaparameters ;
+tempometa = metatype:'TEMPO' {'value' '='} range_values:tempo_range  parameters:tempometaparameters ;
 tempometaparameters = {[','] @:(beat_range_parm | beat_count_parm | first_beat_parm | passes_parm | iterations_parm)} ;
 
 copymeta = metatype:'COPY' {('template' | 'value') '='} template:strvalue ;
@@ -76,11 +76,16 @@ after_parm = 'after' '=' after:boolvalue;
 beat_count_parm = 'beat_count' '=' beat_count:intvalue;
 beat_parm = 'beat' '=' beat:intvalue;
 beats_parm = ('beat' | 'beats') '=' (beats+:intvalue | beats:intlistvalue);
-beat_range_parm = 'beats' '=' first_beat:intvalue ">" last_beat:intvalue;
+beat_range_parm = 'beats' '=' first_beat:intvalue "->" last_beat:intvalue;
+(* dynamics_range can have format 'p..mf' or 'mf'*)
+dynamics_range = [from_abbr:dynamics_value '->'] to_abbr:dynamics_value;
+dynamics_value = 'pp' | 'p' | 'mp' | 'mf' | 'f' | 'ff';
 first_beat_parm = ('first_beat' | 'beat') '=' first_beat:intvalue;
 from_beat_parm = 'from_beat' '=' from_beat:intvalue;
 octaves_parm = 'octaves' '=' octaves:intvalue;
 passes_parm = ('pass' | 'passes') '=' (passes+:intvalue | passes:intlistvalue);
+(* tempo_range can have format '100150' or '150'*)
+tempo_range = [from_value:intvalue '->'] to_value:intvalue;
 iterations_parm = ('iteration' | 'iterations') '=' (iterations+:intvalue | iterations:intlistvalue);
 positions_parm = ('position' | 'positions') '=' (positions+:strvalue | positions:strlistvalue);
 scope_parm = 'scope' '=' scope:strvalue;

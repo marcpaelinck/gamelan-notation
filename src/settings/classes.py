@@ -281,6 +281,7 @@ class SettingsMidiInfo(BaseModel):
     base_note_time: int  # ticks
     base_notes_per_beat: int
     dynamics: dict[DynamicLevel, int] = Field(default_factory=dict)
+    default_tempo: int
     default_dynamics: DynamicLevel
     silence_seconds_before_start: int  # silence before first note
     silence_seconds_after_end: int  # silence after last note

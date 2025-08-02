@@ -45,14 +45,8 @@ Differences in Lengker_full_GAMELAN1.txt: --------OK
      ('NO MATCH NEW', 'set_tempo'): 14
      ('NO MATCH REF', 'helpinghand'): 30
      ('NO MATCH REF', 'set_tempo'): 12
-Differences in Margapati_full_GAMELAN1.txt:
-     ('DIFF', 'helpinghand', ('abstime', 'hh_id', 'hh_pitch')): 4
-     ('DIFF', 'helpinghand', ('hh_timeuntil',)): 96
-     ('DIFF', 'note_off', ('time',)): 3
-     ('NO MATCH NEW', 'helpinghand'): 268
-     ('NO MATCH NEW', 'set_tempo'): 3
-     ('NO MATCH REF', 'helpinghand'): 268
-     ('NO MATCH REF', 'set_tempo'): 6
+Differences in Margapati_full_GAMELAN1.txt: --------OK
+     No differences
 Differences in Pendet_full_GAMELAN1.txt: --------OK
      ('DIFF', 'helpinghand', ('hh_timeuntil',)): 6
      ('DIFF', 'note_off', ('time',)): 1
@@ -75,7 +69,7 @@ Differences in Rejang Dewa_full_GAMELAN1.txt: --------OK
 Differences in Sekar Gendot_full_GAMELAN1.txt: --------OK
      ('DIFF', 'helpinghand', ('hh_timeuntil',)): 1416
      ('DIFF', 'note_off', ('time',)): 2
-     ('DIFF', 'note_on', ('velocity',)): 428
+     ('DIFF', 'note_on', ('velocity',)): 256
      ('DIFF', 'set_tempo', ('tempo',)): 1
      ('NO MATCH NEW', 'helpinghand'): 149
      ('NO MATCH NEW', 'set_tempo'): 12

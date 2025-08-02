@@ -89,7 +89,8 @@ class GradualChangeMetadata(MetaDataBaseModel):
     # Generic class that represent a value that can gradually
     # change over a number of beats, such as tempo or dynamics.
     # 'virtual' field last_beat can be passed as an alternative for beat_count.
-    value: int = None
+    from_value: int | None = None
+    to_value: int | None = None
     first_beat: int = 1
     beat_count: int = 0
     passes: list[int] = Field(default_factory=list)  # On which pass(es) should goto be performed?
@@ -127,18 +128,20 @@ class DynamicsMeta(GradualChangeMetadata):
     metatype: Literal[MetaType.DYNAMICS] = MetaType.DYNAMICS
     # Currently, an empty list stands for all positions.
     positions: list[Position]  # PositionsFromTag
-    abbreviation: str = ""
+    from_abbr: str = ""
+    to_abbr: str = ""
     DEFAULTPARAM = "abbreviation"
     DYNAMICS: ClassVar[dict[str, int]] = Field(default_factory=dict)
 
-    @field_validator("abbreviation", mode="after")
+    @field_validator("from_abbr", "to_abbr", mode="after")
     @classmethod
     def set_value_after(cls, abbr: int, valinfo: ValidationInfo):
         # Set value to velocity.
         # TODO: This is not very nice code but GradualChangeMetadata expects `value` to be an int.
         # Is there a better way to do this?
         try:
-            valinfo.data["value"] = cls.DYNAMICS[abbr]  # pylint: disable=unsubscriptable-object
+            target_field = "from_value" if valinfo.field_name == "from_abbr" else "to_value"
+            valinfo.data[target_field] = cls.DYNAMICS[abbr]  # pylint: disable=unsubscriptable-object
         except Exception as exc:
             # Should not occur because the validator is called after resolving the other fields
             raise ValueError("illegal value for dynamics: {}".format(abbr) + str(exc)) from exc
