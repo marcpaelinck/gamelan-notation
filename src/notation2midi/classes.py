@@ -3,7 +3,7 @@
 import logging
 import sys
 from dataclasses import _MISSING_TYPE, MISSING, dataclass, fields
-from enum import StrEnum
+from enum import Enum, StrEnum, auto
 from types import UnionType
 from typing import Any, Generator
 
@@ -15,6 +15,7 @@ from src.notation2midi.metadata_classes import (
     FrequencyType,
     GonganType,
     MetaDataSwitch,
+    MetaType,
     Scope,
     ValidationProperty,
 )
@@ -78,7 +79,7 @@ class Agent:
 
     run_settings = None
     curr_gongan_id: int = None
-    curr_measure_id: int = None
+    curr_beat_id: int = None
     curr_position: Position = None
     curr_line_nr: int = None
     log_msgs: dict[int, str] = {logging.ERROR: [], logging.WARNING: []}
@@ -143,7 +144,7 @@ class Agent:
         """
         extra_spaces = " " * (7 - len(logging.getLevelName(level)))
         prefix = (
-            f"{extra_spaces}{self._fmt(self.curr_gongan_id,2)}-{self._fmt(self.curr_measure_id,2)} "
+            f"{extra_spaces}{self._fmt(self.curr_gongan_id,2)}-{self._fmt(self.curr_beat_id,2)} "
             f"|{self._fmt(self.curr_line_nr,4)}| "
         )
         msg = prefix + msg
@@ -175,6 +176,21 @@ class Agent:
     # Use the following generators to iterate through gongans and beats if you
     # want to use the logging methods of this class. This will ensure that the
     # logging is prefixed with the correct gongan id, beat id and line number.
+    class IteratorLevel(Enum):
+        GONGAN = auto()
+        BEAT = auto()
+        POSITION = auto()
+        PASS = auto()
+
+    def reset_counters(self, level: IteratorLevel = IteratorLevel.GONGAN) -> None:
+        if level.value <= self.IteratorLevel.PASS.value:
+            self.curr_line_nr = None
+        if level.value <= self.IteratorLevel.POSITION.value:
+            self.curr_position = None
+        if level.value <= self.IteratorLevel.BEAT.value:
+            self.curr_beat_id = None
+        if level.value <= self.IteratorLevel.GONGAN.value:
+            self.curr_gongan_id = None
 
     def gongan_iterator(self, obj: Score) -> Generator[Gongan, None, None]:
         """Iterates through the gongans of a Score object while setting the curr_gongan_id attribute"""
@@ -182,7 +198,7 @@ class Agent:
             raise AttributeError("base object has no attribute `gongans`")
         for gongan in obj.gongans:
             self.curr_gongan_id = gongan.id
-            self.curr_measure_id = None
+            self.curr_beat_id = None
             yield gongan
 
     def beat_iterator(self, obj: Gongan) -> Generator[Beat, None, None]:
@@ -190,7 +206,7 @@ class Agent:
         if not hasattr(obj, "beats"):
             raise AttributeError("base object has no attribute `beats`")
         for beat in obj.beats:
-            self.curr_measure_id = beat.id
+            self.curr_beat_id = beat.id
             yield beat
 
     def pass_iterator(self, obj: Measure) -> Generator[Measure.Pass, None, None]:
@@ -238,6 +254,7 @@ class MetaDataRecord:
     frequency: FrequencyType | _MISSING_TYPE = MISSING
     from_beat: int | _MISSING_TYPE = MISSING
     ignore: list[ValidationProperty] | _MISSING_TYPE = MISSING
+    include: list[MetaType] | _MISSING_TYPE = MISSING
     instrument: InstrumentType | _MISSING_TYPE = MISSING
     label: str | _MISSING_TYPE = MISSING
     name: str | _MISSING_TYPE = MISSING

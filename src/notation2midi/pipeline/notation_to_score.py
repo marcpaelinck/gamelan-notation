@@ -4,6 +4,7 @@ for an example of a notation file.
 Main method: convert_notation_to_midi()
 """
 
+import copy
 from collections import defaultdict
 from dataclasses import _MISSING_TYPE, asdict
 from typing import override
@@ -21,10 +22,10 @@ from src.common.notes import NoteFactory
 # from src.common.rules import RulesEngine
 from src.notation2midi.classes import Agent, MetaDataRecord, NamedIntID
 from src.notation2midi.metadata_classes import (
+    CopyMeta,
     MetaData,
     MetaDataAdapter,
     MetaType,
-    Scope,
 )
 from src.settings.classes import RunSettings
 
@@ -144,24 +145,52 @@ class ScoreCreatorAgent(Agent):
             metadata_dict[metadata.metatype].append(metadata)
         return metadata_dict
 
-    def apply_template(self, beats: dict[int, dict[Position, Measure]], label: str):
+    def apply_template(self, gongan: dict[ParserTag, dict[int, dict[Position, Measure]]], copymeta: CopyMeta):
+        """Merges the given beats dict with a copy of the beats dict of the template beat given by copymeta"""
+        # Look up the template in the score in order to determine its ID.
         template_gongan = next(
-            (g for g in self.score.gongans if any(lbl.name == label for lbl in g.metadata[MetaType.LABEL])),
+            (g for g in self.score.gongans if any(lbl.name == copymeta.template for lbl in g.metadata[MetaType.LABEL])),
             None,
         )
         if not template_gongan:
             raise ValueError(
-                "Template '%s' is missing for USE reference. The template should be defined before the COPY statement."
+                "Template '%s' is missing for COPY reference. The template should be defined before the COPY statement."
             )
-        template: dict[int, dict[Position, Measure]] = self.notation.notation_dict[template_gongan.id].copy()[
-            ParserTag.BEATS
-        ]
-        if not beats:
-            return template
-        if len(template) != len(beats):
-            raise ValueError("USE statement: the number of beats in template '%s' does not match.")
-        merge = {beat_id: template[beat_id] | beats[beat_id] for beat_id in template.keys()}
-        return merge
+        template_copy = copy.deepcopy(self.notation.notation_dict[template_gongan.id][ParserTag.BEATS])
+        if not gongan[ParserTag.BEATS]:
+            # Assign the template's beats to the gongan
+            gongan[ParserTag.BEATS] = template_copy
+        elif len(template_copy) != len(gongan[ParserTag.BEATS]):
+            raise ValueError(
+                "COPY statement: the number of beats does not match that of template '%s'." % copymeta.template
+            )
+        else:
+            # Update the template's beats with the gongan's beats and assign the result to the gongan.
+            # (i.e. perform merge gongan -> template)
+            for beat_id in template_copy:
+                gongan[ParserTag.BEATS][beat_id] = template_copy[beat_id] | gongan[ParserTag.BEATS][beat_id]
+        if copymeta.include:
+            # Add the requested template's metadata to the gongan
+            for tag in copymeta.include:
+                gongan[ParserTag.METADATA][tag] += template_gongan.metadata[tag]
+
+    def update_line_nr(self):
+        line_nr = 0
+
+        if self.curr_gongan_id:
+            gongan = self.notation.notation_dict[self.curr_gongan_id]
+            if self.curr_beat_id:
+                if self.curr_position:
+                    line_nr = gongan[ParserTag.BEATS][self.curr_beat_id][self.curr_position].passes[DEFAULT].line
+                else:
+                    if gongan[ParserTag.BEATS][self.curr_beat_id]:
+                        line_nr = list(gongan[ParserTag.BEATS][self.curr_beat_id].values())[0].line
+            else:
+                if gongan[ParserTag.METADATA]:
+                    line_nr = gongan[ParserTag.METADATA][0].line
+                elif ParserTag.BEATS in gongan and gongan[ParserTag.BEATS] and gongan[ParserTag.BEATS][0]:
+                    line_nr = list(gongan[ParserTag.BEATS][0].values())[0].line
+        self.curr_line_nr = line_nr
 
     def _create_score_object_model(self) -> Score:
         """Creates an object model of the notation. The method aggregates each note and the corresponding diacritics
@@ -179,6 +208,8 @@ class ScoreCreatorAgent(Agent):
         beats: list[Beat] = []
         measures: dict[Position, Measure]
         for self.curr_gongan_id, gongan_info in self.notation.notation_dict.items():
+            self.reset_counters(Agent.IteratorLevel.BEAT)
+            self.update_line_nr()
             # Transpose the gongan from stave-oriented to beat-oriented
             gongan_info[ParserTag.BEATS] = self._staves_to_beats(gongan_info[ParserTag.STAVES])
             del gongan_info[ParserTag.STAVES]
@@ -189,28 +220,25 @@ class ScoreCreatorAgent(Agent):
                 )
             except ValueError as err:
                 self.logerror(str(err))
-
-            # in case of a COPY metadata, merge the template gongan data into this gongan data
-            if metadata_dict[MetaType.COPY]:
-                gongan_info[ParserTag.BEATS] = self.apply_template(
-                    gongan_info[ParserTag.BEATS], metadata_dict[MetaType.COPY][0].template
-                )
+            gongan_info[ParserTag.METADATA] = metadata_dict
 
             if self.curr_gongan_id == DEFAULT:
                 # Store global metadata and comment. Global gongan does not contain notation.
                 self.score.global_metadata = metadata_dict
                 self.score.global_comments = gongan_info.get(ParserTag.COMMENTS, [])
-            else:
-                # Move metadata with scope == SCORE from the current gongan to the global_metadata list.
-                gongan_info[ParserTag.METADATA] = {
-                    mtype: [meta for meta in metalist if meta.scope == Scope.GONGAN]
-                    for mtype, metalist in metadata_dict.items()
-                }
-                for mtype, metalist in metadata_dict.items():
-                    self.score.global_metadata[mtype] += [meta for meta in metalist if meta.scope == Scope.SCORE]
-            for self.curr_measure_id, measures in gongan_info[ParserTag.BEATS].items():
+
+            # in case of a COPY metadata, merge the template gongan data into this gongan data
+            if gongan_info[ParserTag.METADATA][MetaType.COPY]:
+                try:
+                    self.apply_template(gongan_info, gongan_info[ParserTag.METADATA][MetaType.COPY][0])
+                except ValueError as err:
+                    print(self.curr_gongan_id)
+                    self.logerror(str(err))
+
+            for self.curr_beat_id, measures in gongan_info[ParserTag.BEATS].items():
                 # Generate measure content: convert NoteRecord objects to NoteSymbol objects.
-                for _, measure in measures.items():
+                for self.curr_position, measure in measures.items():
+                    self.update_line_nr()
                     for _, pass_ in measure.passes.items():
                         self.curr_line_nr = pass_.line
                         try:
@@ -222,7 +250,7 @@ class ScoreCreatorAgent(Agent):
 
                 # Create the beat and add it to the list of beats
                 new_beat = Beat(
-                    id=int(self.curr_measure_id),
+                    id=int(self.curr_beat_id),
                     gongan_id=int(self.curr_gongan_id),
                     measures=measures,
                 )

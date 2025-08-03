@@ -9,7 +9,6 @@ from src.common.constants import (
     PassSequence,
     Pitch,
     Position,
-    RuleValue,
     Stroke,
 )
 from src.common.notes import Note, NoteFactory
@@ -91,7 +90,7 @@ class ScorePostprocessAgent(Agent):
                 measure_duration = sum(note.duration for note in notes)
             except ValidationError:
                 self.logerror(
-                    "Could not add rest to beat %s-%s of %s", self.curr_gongan_id, self.curr_measure_id, position
+                    "Could not add rest to beat %s-%s of %s", self.curr_gongan_id, self.curr_beat_id, position
                 )
         # Add an extra rest for any fractional part of the beat's duration
         if measure_duration < duration:
@@ -103,7 +102,7 @@ class ScorePostprocessAgent(Agent):
                 )
             except ValidationError:
                 self.logerror(
-                    "Could not add rest to beat %s-%s of %s", self.curr_gongan_id, self.curr_measure_id, position
+                    "Could not add rest to beat %s-%s of %s", self.curr_gongan_id, self.curr_beat_id, position
                 )
 
     def _complement_shorthand_pokok_measures(self):

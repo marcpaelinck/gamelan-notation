@@ -238,6 +238,7 @@ class TempoMeta(GradualChangeMetadata):
 class CopyMeta(MetaDataBaseModel):
     metatype: Literal[MetaType.COPY] = MetaType.COPY
     template: str
+    include: list[str] = Field(default_factory=list)
     DEFAULTPARAM = "template"
     _processingorder_ = 10
 
