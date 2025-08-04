@@ -1,9 +1,10 @@
+from tkinter import EXTENDED
 from typing import override
 
 from src.common.constants import PatternType, Pitch, Stroke, SustainType
 from src.common.notes import Note, NoteFactory, Pattern, Tone
 from src.notation2midi.patterns.pattern import PatternGenerator
-from src.notation2midi.rules.rule import Instrument
+from src.notation2midi.rules.rule import Instrument, ToneRange
 from src.settings.classes import SettingsPatternInfo
 
 
@@ -22,7 +23,7 @@ class RakePatternGenerator(PatternGenerator):
             if isinstance(note, Pattern) and note.effect in (PatternType.RAKE_LEFT, PatternType.RAKE_RIGHT):
                 # Determine the tones that should be generated
                 pattern: Pattern = note
-                pos_range = Instrument.get_range(position=pattern.position, extended=True)
+                pos_range = Instrument.get_range(position=pattern.position, tonerange=ToneRange.EXTENDED)
                 try:
                     first_note_index = pos_range.index(Tone(pitch=pattern.pitch, octave=pattern.octave))
                 except ValueError as exc:

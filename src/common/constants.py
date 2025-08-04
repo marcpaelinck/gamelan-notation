@@ -162,6 +162,7 @@ class RuleValue(NotationEnum):
     SAME_PITCH_EXTENDED_RANGE = "SAME_PITCH_EXTENDED_RANGE"
     EXACT_KEMPYUNG = "EXACT_KEMPYUNG"
     KEMPYUNG = "KEMPYUNG"
+    BYONG = "BYONG"
 
 
 class Position(NotationEnum):

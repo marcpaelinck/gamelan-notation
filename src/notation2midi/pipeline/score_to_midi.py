@@ -14,7 +14,7 @@ from src.common.notes import Pattern
 from src.notation2midi.classes import Agent
 from src.notation2midi.execution.execution import ExecutionManager
 from src.notation2midi.metadata_classes import MetaType
-from src.notation2midi.midi.midi_track import MidiTrackX, TimeUnit
+from src.notation2midi.midi.midi_track import BeatInfo, MidiTrackX, TimeUnit
 from src.settings.classes import PartForm, RunSettings
 from src.settings.constants import MidiNotesFields
 
@@ -126,15 +126,18 @@ class MidiGeneratorAgent(Agent):
                     f"beat {beat.full_id} pass{self.exec_mgr.goto(beat).counter} "
                     f"loop{self.exec_mgr.loop(beat).counter if self.exec_mgr.loop(beat) else "-"}"
                 )
-            # Set new tempo.
-            ## REMOVE: try to emulate error of current version
+            # Set new beat info.
             start_bpm, end_bpm = self.exec_mgr.get_tempo_values()
-            if start_bpm:
-                track.update_tempo(start_bpm)
-            # Set new dynamics
             start_velocity, end_velocity = self.exec_mgr.get_dynamics_values()
-            if start_velocity:
-                track.update_dynamics(start_velocity)
+            beat_info = BeatInfo(
+                fullid=beat.full_id,
+                start_bpm=start_bpm,
+                end_bpm=end_bpm,
+                start_velocity=start_velocity,
+                end_velocity=end_velocity,
+                duration=beat.duration,
+            )
+            track.set_beat_info(beat_info)
 
             # Process individual notes.
             try:

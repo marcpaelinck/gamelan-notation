@@ -176,11 +176,12 @@ def equivalent(note1: Note, note2: Note, positions: list[Position], metadata: Me
         bool: True if the notes are equivalent
     """
     if note2.is_melodic():
-        tone2cast: Tone = RuleCastToPosition.cast_to_position(
+        transformation = RuleCastToPosition.cast_to_position(
             note=note2, position=note1.position, all_positions=positions, metadata=metadata
         )
-        if not tone2cast:
+        if not transformation:
             return False
+        tone2cast: Tone = transformation.tone
         try:
             note2cast = NoteFactory.clone_note(
                 note2, pitch=tone2cast.pitch, octave=tone2cast.octave, position=note1.position

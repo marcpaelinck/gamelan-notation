@@ -1,5 +1,6 @@
 import math
 from collections import defaultdict
+from dataclasses import dataclass
 from typing import Any
 
 from src.common.classes import Measure
@@ -11,13 +12,22 @@ from src.common.constants import (
     RuleCondition,
     RuleType,
     RuleValue,
+    Stroke,
 )
 from src.common.notes import GenericNote, Note, NoteFactory, Pattern, Tone
 from src.notation2midi.metadata_classes import MetaData, MetaDataSwitch, MetaType
-from src.notation2midi.rules.rule import Instrument, Rule, RuleDefinition
+from src.notation2midi.rules.rule import Instrument, Rule, RuleDefinition, ToneRange
 from src.settings.classes import RunSettings
 from src.settings.constants import ModifiersFields, RuleFields
 from src.settings.settings import RunSettingsListener
+
+
+@dataclass
+class Transformation:
+    """Placeholder for the transformation parameters when casting a note"""
+
+    tone: Tone
+    effect: Stroke | PatternType
 
 
 class RuleCastToPosition(Rule, RunSettingsListener):
@@ -98,7 +108,12 @@ class RuleCastToPosition(Rule, RunSettingsListener):
 
     @classmethod
     def get_kempyung_tones_within_range(
-        cls, tone: Tone, position, extended_range: bool = False, exact_octave_match: bool = True, inverse: bool = False
+        cls,
+        tone: Tone,
+        position,
+        tonerange: ToneRange,
+        exact_octave_match: bool = True,
+        inverse: bool = False,
     ) -> list[Tone]:
         """Returns all the tones with the kempyung pitch of the given tone and which lie in
         the position's range.
@@ -106,7 +121,7 @@ class RuleCastToPosition(Rule, RunSettingsListener):
         Args:
             tone (Tone): reference tone.
             position (_type_): position which determines the range.
-            extended_range (bool, optional): if True, the extended range should be used, otherwise the 'regular' range. Defaults to False.
+            tonerange (ToneRange): the range type that should be considered.
             exact_octave_match (bool, optional): If True, returns only the tone that lies within an octave above the reference note. Defaults to True.
             inverse (bool, optional): Return the inverse kempyung (the tone for which the given tone is a kempyung tone)
 
@@ -121,7 +136,7 @@ class RuleCastToPosition(Rule, RunSettingsListener):
         k_list = [
             Tone(pitch=kempyung_pitch, octave=octave)
             for octave in try_octaves
-            if Tone(pitch=kempyung_pitch, octave=octave) in Instrument.get_range(position, extended_range)
+            if Tone(pitch=kempyung_pitch, octave=octave) in Instrument.get_range(position, tonerange=tonerange)
             and (
                 not exact_octave_match
                 or 0 < inv * Instrument.interval(tone, Tone(pitch=kempyung_pitch, octave=octave)) < oct_interval
@@ -189,7 +204,7 @@ class RuleCastToPosition(Rule, RunSettingsListener):
         all_positions: set[Position],
         metadata: defaultdict[MetaType, list[MetaData]],
         inverse: bool = False,
-    ) -> Tone | None:
+    ) -> Transformation:
         """Returns the equivalent tone for `position`, given that the same notation is common for `all_positions`.
         This method uses instrument rules that describe how to interpret a common notation line for multiple
         positions.
@@ -212,7 +227,7 @@ class RuleCastToPosition(Rule, RunSettingsListener):
 
         # Rules only apply to melodic pitches.
         if not note.is_melodic():
-            return note.to_tone()
+            return Transformation(tone=note.to_tone(), effect=note.effect)
 
         rule = (
             [RuleValue.SAME_TONE_EXTENDED]
@@ -230,34 +245,48 @@ class RuleCastToPosition(Rule, RunSettingsListener):
                     rule.remove(RuleValue.EXACT_KEMPYUNG)
 
         tone = note.to_tone()
+        effect = note.effect
         for action in rule:
             match action:
                 case RuleValue.SAME_TONE:
                     # retain pitch and octave
-                    tones = Instrument.get_tones_within_range(tone, position, extended_range=False, match_octave=True)
+                    tones = Instrument.get_tones_sorted_by_distance(
+                        tone, position, tonerange=ToneRange.REGULAR, match_octave=True
+                    )
                 case RuleValue.SAME_TONE_EXTENDED:
                     # retain pitch and octave
-                    tones = Instrument.get_tones_within_range(tone, position, extended_range=True, match_octave=True)
+                    tones = Instrument.get_tones_sorted_by_distance(
+                        tone, position, tonerange=ToneRange.EXTENDED, match_octave=True
+                    )
                 case RuleValue.SAME_PITCH:
                     # retain pitch, select octave within instrument's range
-                    tones = Instrument.get_tones_within_range(tone, position, extended_range=False, match_octave=False)
+                    tones = Instrument.get_tones_sorted_by_distance(
+                        tone, position, tonerange=ToneRange.REGULAR, match_octave=False
+                    )
                 case RuleValue.SAME_PITCH_EXTENDED_RANGE:
                     # retain pitch, select octave within instrument's extended range
-                    tones = Instrument.get_tones_within_range(tone, position, extended_range=True, match_octave=False)
+                    tones = Instrument.get_tones_sorted_by_distance(
+                        tone, position, tonerange=ToneRange.EXTENDED, match_octave=False
+                    )
                 case RuleValue.EXACT_KEMPYUNG:
                     # select kempyung tone that lies immediately above the given tone
                     tones = cls.get_kempyung_tones_within_range(
-                        tone, position, extended_range=False, exact_octave_match=True, inverse=inverse
+                        tone, position, tonerange=ToneRange.REGULAR, exact_octave_match=True, inverse=inverse
                     )
                 case RuleValue.KEMPYUNG:
                     # select kempyung pitch that lies within instrument's range
                     tones = cls.get_kempyung_tones_within_range(
-                        tone, position, extended_range=False, exact_octave_match=False, inverse=inverse
+                        tone, position, tonerange=ToneRange.REGULAR, exact_octave_match=False, inverse=inverse
                     )
+                case RuleValue.BYONG:
+                    tones = [Tone(pitch=Pitch.BYONG, octave=None)]
+                    effect = Stroke.OPEN
                 case _:
                     raise ValueError("Unknown action %s" % action)
             if tones:
-                return Tone(pitch=tones[0].pitch, octave=tones[0].octave, transformation=action)
+                return Transformation(
+                    tone=Tone(pitch=tones[0].pitch, octave=tones[0].octave, transformation=action), effect=effect
+                )
         raise ValueError("Could not assign %s to position %s" % (tone, position))
 
     def to_bound_notes(
@@ -265,21 +294,22 @@ class RuleCastToPosition(Rule, RunSettingsListener):
     ):
         bound_notes: list[Note | Pattern] = []
         for genericnote in notes:
-            tone = self.cast_to_position(
+            transformation = self.cast_to_position(
                 note=genericnote,
                 position=position,
                 all_positions=all_positions,
                 metadata=metadata,
             )
+            tone = transformation.tone
             bound_note = NoteFactory.create_note(
                 position=position,
                 pitch=tone.pitch if tone else Pitch.NONE,
                 octave=tone.octave if tone else None,
-                effect=genericnote.effect,
+                effect=transformation.effect,
                 note_value=genericnote.note_value,
                 transformation=tone.transformation,
             )
-            if isinstance(genericnote.effect, PatternType):
+            if isinstance(transformation.effect, PatternType):
                 bound_note = Pattern(
                     position=position,
                     symbol=bound_note.symbol,

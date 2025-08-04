@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from statistics import mode
 from typing import Annotated, ClassVar, Optional, override
 
-from pydantic import AfterValidator, BaseModel, Field, computed_field, field_validator
+from pydantic import AfterValidator, BaseModel, Field, computed_field
 
 from src.common.constants import (
     DEFAULT,

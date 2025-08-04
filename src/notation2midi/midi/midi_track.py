@@ -3,12 +3,14 @@ It is used by the MidiGenerator (score_to_midi module).
 """
 
 import json
+import math
 from collections import defaultdict
 from enum import Enum
-from typing import override
+from typing import ClassVar, override
 
 from mido import Message, MetaMessage, MidiTrack, bpm2tempo
 from mido.messages import BaseMessage
+from pydantic import BaseModel
 
 from src.common.classes import Preset
 from src.common.constants import InstrumentType, Pitch, Position, Stroke, SustainType
@@ -23,6 +25,49 @@ class TimeUnit(Enum):  # pylint: disable=missing-class-docstring
     TICK = 1
     NOTE = 2
     SECOND = 3
+
+
+class BeatInfo(BaseModel):
+    UPDATEFREQ: ClassVar[int] = 24
+    fullid: str
+    start_bpm: int
+    end_bpm: int
+    start_velocity: int
+    end_velocity: int
+    duration: float
+    start_ticktime: int = 0
+    end_ticktime: int = 0
+    update_times: list[int] = []
+
+    def next_update_time(self, curr_time: int, include_curr: bool = False) -> int | None:
+        """Returns the next time when gradual tempi and dynamics should be updated.
+        Args:
+            curr_time: current ticktime
+            include_curr: if true, the current time is returned if it matches an update time.
+        Returns:
+            int: next update time in ticktime
+        """
+        updatetime = (
+            self.start_ticktime + math.ceil((curr_time - self.start_ticktime) / self.UPDATEFREQ) * self.UPDATEFREQ
+        )
+        if not include_curr and updatetime == curr_time:
+            updatetime += self.UPDATEFREQ
+        return updatetime if updatetime <= self.start_ticktime else None
+
+    def get_change_fraction(self, ticktime: int):
+        past_update_times = [t for t in self.update_times if t <= ticktime]
+        if past_update_times:
+            last_update_time = past_update_times[-1]
+            return self.update_times.index(last_update_time) / len(self.update_times)
+        return 0
+
+    def tempo(self, ticktime: int):
+        frac = self.get_change_fraction(ticktime)
+        return self.start_bpm + int(frac * (self.end_bpm - self.start_bpm))
+
+    def velocity(self, ticktime: int):
+        frac = self.get_change_fraction(ticktime)
+        return self.start_velocity + int(frac * (self.end_velocity - self.start_velocity))
 
 
 class MidiTrackX(MidiTrack):
@@ -53,6 +98,7 @@ class MidiTrackX(MidiTrack):
     last_hh_millitime: int = 0  # idem for the most recent helpinghand message in the queue
     current_bpm: int = 0
     current_velocity: int
+    current_beat: BeatInfo
     TEMPO_TRACK_NAME = Position.KEMPLI.value  # Track that will hold the tempo MetaMessages.
     # Tempo changes need only to be set in one track because this is a type 1 MIDI file which synchronizes all tracks.
 
@@ -99,11 +145,16 @@ class MidiTrackX(MidiTrack):
         self.port = preset.port
         self.bank = preset.bank
         self.preset = preset.preset
+        self.current_beat = None
         self.current_velocity = run_settings.midi.dynamics[run_settings.midi.default_dynamics]
         self.msg_id = 0
         # unique id for helpinghand messages
         self.set_bank_and_preset()
-        self.update_tempo(60)  # set default tempo, needed for initial silence
+        self.current_bpm = 0
+        # Dummy beat info needed for initial silence
+        self.current_beat = BeatInfo(
+            fullid="0-0", start_bpm=60, end_bpm=60, start_velocity=0, end_velocity=0, duration=0, update_times=[0]
+        )
         self.last_helpinghand_msg = self._append_helpinghand_message()
         self.first_helpinghand_msg = self.last_helpinghand_msg
         self.midi_dict = midi_dict
@@ -151,40 +202,43 @@ class MidiTrackX(MidiTrack):
         """Returns the total tick time in the track's message list."""
         return sum(msg.time for msg in self)
 
-    def update_tempo(self, new_bpm: int, debug: bool = False):
-        """Checks if the tempo of the current beat differs from the current tempo
-        and appends a new tempo message if this is the case.
+    def set_beat_info(self, beat_info: BeatInfo):
+        """Updates the information about the current beat."""
+        beat_info.start_ticktime = self.current_ticktime
+        tick_duration = self.units_to_ticks(beat_info.duration, TimeUnit.NOTE)
+        beat_info.end_ticktime = beat_info.start_ticktime + tick_duration
+        # TODO revert this: temporary fix for integration test.
+        # beat_info.update_times = [beat_info.start_ticktime]
+        beat_info.update_times = [
+            beat_info.start_ticktime + t * BeatInfo.UPDATEFREQ
+            for t in range(int(tick_duration / BeatInfo.UPDATEFREQ) + 1)
+        ]
+        self.current_beat = beat_info
+        self.update_gradual_change_values(self.current_ticktime)
 
-        Args:
-            new_bpm (int): _description_
-            add_metamessage (bool): add a metamessage. If False, the current_bpm will be updated
-                                    but no metamessage will be added to the track.
-            debug (bool, optional): _description_. Defaults to False.
-        """
-        if debug:
-            logger.info(
-                "     midi_track: request received to change bpm to %s, current bpm=%s", new_bpm, self.current_bpm
-            )
-        if new_bpm != self.current_bpm:
-            # Store all tempo messages in one channel. The 'safest' track is the KEMPLI track.
-            # In other tracks tempo messages can cause an incorrect duration of grace notes at the beginning of a beat.
-            if self.name == MidiTrackX.TEMPO_TRACK_NAME:
-                if debug:
-                    logger.info("                 setting metamessage with new tempo %s", new_bpm)
-                self.append(
-                    MetaMessage(
-                        "set_tempo",
-                        tempo=bpm2tempo(new_bpm),
-                        time=(self.current_ticktime - self.ticktime_last_message),
+    def update_gradual_change_values(self, new_ticktime: int):
+        """Updates the tempo and dynamics values. Appends all necessary tempo messages for the period
+        until the new tick time"""
+        # Determine the update moments
+        if not self.current_beat:
+            return
+        update_times = [t for t in self.current_beat.update_times if self.current_ticktime <= t <= new_ticktime]
+        for tick_time in update_times:
+            new_bpm = self.current_beat.tempo(ticktime=tick_time)
+            new_velocity = self.current_beat.velocity(ticktime=tick_time)
+            # If the tempo has changed, append a new tempo message.
+            if new_bpm != self.current_bpm:
+                # Store all tempo messages in one channel. The 'safest' track is the KEMPLI track.
+                # In other tracks tempo messages can cause an incorrect duration of grace notes at the beginning of a beat.
+                if self.name == MidiTrackX.TEMPO_TRACK_NAME:
+                    self.append(
+                        MetaMessage(
+                            "set_tempo", tempo=bpm2tempo(new_bpm), time=(tick_time - self.ticktime_last_message)
+                        )
                     )
-                )
-
-            self.current_bpm = new_bpm
-
-    def update_dynamics(self, new_velocity):
-        """Updates the current dynamics value"""
-        if new_velocity != self.current_velocity:
-            self.current_velocity = new_velocity
+                self.current_bpm = new_bpm
+            if new_velocity != self.current_velocity:
+                self.current_velocity = new_velocity
 
     def units_to_ticks(self, value: int, unit: TimeUnit) -> int:
         "Converts a value from the given unit to ticks"
@@ -211,7 +265,9 @@ class MidiTrackX(MidiTrack):
 
     def increase_current_time(self, value: int, unit: TimeUnit) -> None:
         """Increases the 'current' time"""
+        self.update_gradual_change_values(self.current_ticktime)
         tick_time = self.units_to_ticks(value, unit)
+        self.update_gradual_change_values(self.current_ticktime + tick_time)
         self.current_ticktime += tick_time
         self.current_millitime += tick_time * 60000 / (self.current_bpm * self.run_settings.midi.PPQ)
 

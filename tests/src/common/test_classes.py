@@ -18,7 +18,7 @@ from src.notation2midi.metadata_classes import (
     ValidationMeta,
     ValidationProperty,
 )
-from src.notation2midi.rules.rule import Instrument
+from src.notation2midi.rules.rule import Instrument, ToneRange
 from src.notation2midi.rules.rule_cast_to_position import RuleCastToPosition
 from src.settings.constants import NoteFields
 from src.settings.settings import Settings
@@ -167,9 +167,12 @@ class ToneTester(BaseUnitTestCase):
         self.load_settings_gk()
         for tone, position, expected in self.tone_range_data:
             with self.subTest(tone=tone, position=position):
-                for i, (extended_range, match_octave) in enumerate(product([True, False], [True, False])):
+                for i, (extended_range, match_octave) in enumerate(
+                    product([ToneRange.EXTENDED, ToneRange.REGULAR], [True, False])
+                ):
                     self.assertEqual(
-                        Instrument.get_tones_within_range(tone, position, extended_range, match_octave), expected[i]
+                        Instrument.get_tones_sorted_by_distance(tone, position, extended_range, match_octave),
+                        expected[i],
                     )
 
 
@@ -194,7 +197,9 @@ class RuleTester(BaseUnitTestCase):
 
     def test_get_kempyung_tones(self):
         for tone, position, expected in self.kempyung_tone_data:
-            for i, (extended_range, exact_match) in enumerate(product([True, False], [True, False])):
+            for i, (extended_range, exact_match) in enumerate(
+                product([ToneRange.EXTENDED, ToneRange.REGULAR], [True, False])
+            ):
                 with self.subTest(tone=tone, position=position, extended_range=extended_range, exact_match=exact_match):
                     self.assertEqual(
                         RuleCastToPosition.get_kempyung_tones_within_range(tone, position, extended_range, exact_match),
@@ -685,9 +690,9 @@ class RuleTester(BaseUnitTestCase):
             with self.subTest(nr=counter, note=note, position=position, all_positions=all_positions):
                 cast_tone = RuleCastToPosition.cast_to_position(
                     note=note, position=position, all_positions=all_positions, metadata=autokempyung_on_meta
-                )
+                ).tone
                 self.assertEqual(cast_tone, expected0)
                 cast_tone = RuleCastToPosition.cast_to_position(
                     note=note, position=position, all_positions=all_positions, metadata=autokempyung_off_meta
-                )
+                ).tone
                 self.assertEqual(cast_tone, expected1)

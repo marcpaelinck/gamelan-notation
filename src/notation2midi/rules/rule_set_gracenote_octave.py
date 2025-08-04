@@ -3,7 +3,7 @@ from src.common.constants import Position, Stroke
 from src.common.notes import GenericNote, NoteFactory, Tone
 from src.notation2midi.metadata_classes import MetaData
 from src.notation2midi.patterns.tremolo_pattern import TremoloPatternGenerator
-from src.notation2midi.rules.rule import Instrument, Rule
+from src.notation2midi.rules.rule import Instrument, Rule, ToneRange
 
 
 class RuleSetGracenoteOctave(Rule):
@@ -27,7 +27,11 @@ class RuleSetGracenoteOctave(Rule):
                     raise ValueError(
                         "Grace note not followed by melodic note in %s" % TremoloPatternGenerator.notes_to_str(notes)
                     )
-                tones = Instrument.get_tones_within_range(note.to_tone(), position=position, match_octave=False)
+                # The note has not been cast to the position's range yet, so the next note's octave could be any
+                # octave within the instrument group's range.
+                tones = Instrument.get_tones_sorted_by_distance(
+                    note.to_tone(), tonerange=ToneRange.INSTRUMENT, position=position, match_octave=False
+                )
                 # pylint: disable=cell-var-from-loop
                 nearest = sorted(tones, key=lambda x: abs(Instrument.interval(x, nextnote.to_tone())))[0]
                 # pylint: enable=cell-var-from-loop
