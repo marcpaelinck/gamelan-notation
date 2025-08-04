@@ -139,6 +139,7 @@ class ScoreCreatorAgent(Agent):
         if not record_list:
             return metadata_dict
         for record in record_list:
+            self.curr_line_nr = record.line
             metadata: MetaData = MetaDataAdapter.validate_python(
                 {key: val for key, val in asdict(record).items() if not isinstance(val, _MISSING_TYPE)}
             )

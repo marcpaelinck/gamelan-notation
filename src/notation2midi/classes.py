@@ -249,6 +249,8 @@ class MetaDataRecord:
     beat_count: int | _MISSING_TYPE = MISSING
     beats: list[int] | _MISSING_TYPE = MISSING
     count: int | _MISSING_TYPE = MISSING
+    explicit_gradual_beat: bool | _MISSING_TYPE = MISSING
+    explicit_gradual_value: bool | _MISSING_TYPE = MISSING
     first_beat: int | _MISSING_TYPE = MISSING
     last_beat: int | _MISSING_TYPE = MISSING
     frequency: FrequencyType | _MISSING_TYPE = MISSING

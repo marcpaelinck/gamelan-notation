@@ -1,5 +1,5 @@
 # pylint: disable=missing-class-docstring
-from typing import Annotated, Any, ClassVar, Literal, Union, override
+from typing import Annotated, Any, ClassVar, Literal, Self, Union, override
 
 from pydantic import (
     BaseModel,
@@ -10,7 +10,13 @@ from pydantic import (
     model_validator,
 )
 
-from src.common.constants import GonganType, InstrumentType, NotationEnum, Position
+from src.common.constants import (
+    DynamicLevel,
+    GonganType,
+    InstrumentType,
+    NotationEnum,
+    Position,
+)
 from src.settings.classes import RunSettings
 from src.settings.settings import RunSettingsListener
 from src.settings.utils import tag_to_position_dict
@@ -89,28 +95,63 @@ class GradualChangeMetadata(MetaDataBaseModel):
     # Generic class that represent a value that can gradually
     # change over a number of beats, such as tempo or dynamics.
     # 'virtual' field last_beat can be passed as an alternative for beat_count.
+    explicit_gradual_beat: bool = False  # Explicit gradual change format beat1->beat2 in notation.
+    explicit_gradual_value: bool = False  # Explicit gradual change format ->value or value1->value2 in notation.
     from_value: int | None = None
-    to_value: int | None = None
+    to_value: int
     first_beat: int = 1
-    beat_count: int = 0
+    last_beat: int | None = None
+    beat_count: int | None = None
     passes: list[int] = Field(default_factory=list)  # On which pass(es) should goto be performed?
     iterations: list[int] = Field(default_factory=list)  # On which iteration(s) should goto be performed?
+
+    @property
+    def explicit_gradual(self) -> bool:
+        return self.explicit_gradual_beat or self.explicit_gradual_value
 
     @property
     def first_beat_seq(self) -> int:
         # Returns the pythonic sequence id (numbered from 0)
         return self.first_beat - 1
 
-    @model_validator(mode="before")
-    @classmethod
-    def intercept_last_beat(cls, data: Any) -> Any:
-        """Enables to pass last_beat as an argument instead of beat_count"""
-        if "first_beat" in data and "last_beat" in data:
-            if data["last_beat"] >= data["first_beat"]:
-                data["beat_count"] = data["last_beat"] - data["first_beat"] + 1
+    @model_validator(mode="after")
+    def validate_and_set_beat_count(self) -> Self:
+        """Determines the value of beat_count if it is missing.
+        Takes into account that last_beat can be passed as an argument instead of beat_count.
+        Also takes into account that both beat_count and last_beat are missing: in that
+        case, a gradual change over one beat is assumed."""
+        if self.explicit_gradual_beat:
+            # first_beat and last_beat are given
+            if self.last_beat >= self.first_beat:
+                self.beat_count = self.last_beat - self.first_beat + 1
             else:
-                raise ValueError("Negative range for gradual %s change" % data["metatype"])
-        return data
+                raise ValueError("Negative beat range for gradual %s change" % self.metatype)
+
+        if self.beat_count is None:
+            if self.last_beat is None:
+                if self.from_value is None:
+                    if self.explicit_gradual:
+                        # gradual change over one beat
+                        self.beat_count = 1
+                    else:
+                        # immediate change
+                        self.beat_count = 0
+                else:
+                    # Gradual change with only first_beat value given: assume that the gradual change duration is one beat.
+                    self.last_beat = self.first_beat
+                    self.beat_count = 1
+            else:
+                # both first_beat and last_beat have a value. Check for invalid values and set beat_count accordingly.
+                if self.beat_count is not None and self.beat_count != self.last_beat - self.first_beat + 1:
+                    raise ValueError("%s: 'beat_count' and beat range are contradictory. Remove one." % self.metatype)
+                if self.last_beat >= self.first_beat:
+                    self.beat_count = self.last_beat - self.first_beat + 1
+                else:
+                    raise ValueError("Negative range for gradual %s change" % self.metatype)
+        if self.beat_count is None:
+            raise ValueError("Unexpected error interpreting %s change." % self.metatype)
+
+        return self
 
 
 # THE METADATA CLASSES
@@ -128,24 +169,27 @@ class DynamicsMeta(GradualChangeMetadata):
     metatype: Literal[MetaType.DYNAMICS] = MetaType.DYNAMICS
     # Currently, an empty list stands for all positions.
     positions: list[Position]  # PositionsFromTag
-    from_abbr: str = ""
-    to_abbr: str = ""
+    from_abbr: str = DynamicLevel
+    to_abbr: str = DynamicLevel
     DEFAULTPARAM = "abbreviation"
     DYNAMICS: ClassVar[dict[str, int]] = Field(default_factory=dict)
 
-    @field_validator("from_abbr", "to_abbr", mode="after")
+    @model_validator(mode="before")
     @classmethod
-    def set_value_after(cls, abbr: int, valinfo: ValidationInfo):
-        # Set value to velocity.
-        # TODO: This is not very nice code but GradualChangeMetadata expects `value` to be an int.
+    def set_values(cls, data: Any) -> Any:
+        # Set from_value and to_value.
+        # TODO: This is not very nice code but GradualChangeMetadata expects `from_value` and `to_value` to be int.
         # Is there a better way to do this?
-        try:
-            target_field = "from_value" if valinfo.field_name == "from_abbr" else "to_value"
-            valinfo.data[target_field] = cls.DYNAMICS[abbr]  # pylint: disable=unsubscriptable-object
-        except Exception as exc:
-            # Should not occur because the validator is called after resolving the other fields
-            raise ValueError("illegal value for dynamics: {}".format(abbr) + str(exc)) from exc
-        return abbr
+        if isinstance(data, dict):
+            try:
+                for abbr_field, value_field in [("from_abbr", "from_value"), ("to_abbr", "to_value")]:
+                    if abbr_field in data:
+                        # cast dynamics abbreviation to its velocity equivalent.
+                        data[value_field] = cls.DYNAMICS[data[abbr_field]]
+            except Exception as exc:
+                # Should only if cls.DYNAMICS does not contain all possible DynamicLevel values
+                raise ValueError("No velocity known for dynamics: %s" % (data[abbr_field]) + str(exc)) from exc
+        return data
 
     @classmethod
     def cls_initialize(cls, run_settings: RunSettings):
