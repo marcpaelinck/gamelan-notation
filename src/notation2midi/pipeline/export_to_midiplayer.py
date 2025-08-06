@@ -110,13 +110,13 @@ class MidiPlayerUpdatePartAgent(MidiPlayerUpdateAgentModel):
         self._update_instrument_info(content)
 
         # If info is already present, replace it.
-        song_title = self.run_settings.notationfile.title
+        song_title = self.run_settings.notation_settings.title
         player_song: Song = next((song_ for song_ in content.songs if song_.title == song_title), None)
         if not player_song:
             # TODO create components of Song
             content.songs.append(
                 player_song := Song(
-                    title=self.run_settings.notationfile.title,
+                    title=self.run_settings.notation_settings.title,
                     instrumentgroup=self.run_settings.instrumentgroup,
                     display=True,
                     pfd=None,
@@ -168,7 +168,7 @@ class MidiPlayerUpdatePdfAgent(MidiPlayerUpdateAgentModel):
         return (
             run_settings.options.notation_to_midi.is_production_run
             and run_settings.options.notation_to_midi.save_pdf_notation
-            and run_settings.part_id == run_settings.notationfile.generate_pdf_part_id
+            and run_settings.part_id == run_settings.notation_settings.generate_pdf_part_id
         )
 
     @override
@@ -178,7 +178,7 @@ class MidiPlayerUpdatePdfAgent(MidiPlayerUpdateAgentModel):
             self.run_settings.midiplayer.folder, self.run_settings.midiplayer.contentfile
         )
         # Check if song info is already present in the content file
-        song_title = self.run_settings.notationfile.title
+        song_title = self.run_settings.notation_settings.title
         player_song: Song = next((song_ for song_ in content.songs if song_.title == song_title), None)
         if player_song:
             player_song.pdf = self.pdf_file
@@ -188,7 +188,7 @@ class MidiPlayerUpdatePdfAgent(MidiPlayerUpdateAgentModel):
             # TODO create components of Song
             content.songs.append(
                 player_song := Song(
-                    title=self.run_settings.notationfile.title,
+                    title=self.run_settings.notation_settings.title,
                     instrumentgroup=self.run_settings.instrumentgroup,
                     display=True,
                     pfd=self.pdf_file,

@@ -146,7 +146,7 @@ class NotationTemplate:
 
     def __init__(self, run_settings: RunSettings):
         self.run_settings = run_settings
-        self.title = self.run_settings.notationfile.title
+        self.title = self.run_settings.notation_settings.title
         self.filepath = self.run_settings.pdf_out_filepath
         self.datestamp = self.run_settings.notation_datetime.strftime(run_settings.pdf_converter.version_fmt).lower()
         self.current_tempo = -1

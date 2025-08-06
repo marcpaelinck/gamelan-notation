@@ -49,10 +49,21 @@ patterns:
         number_of_notes: 8   # This number will be truncated if there are less notes until the the beginning/end of the instrument's range.
         duration_in_basenotes: .5 # Must be <=1. Should ideally be a fixed time in (milli-)seconds. Not implemented yet due to dependency of tempo.
 notation:
+    # Formatting for version id, using last modification date of the input file.
+    version_fmt: "%d-%b-%Y"
+    # folder_in can contain separate subfolders (e.g. for each composition)
+    folder_in: ./tests/data/notation/_integration_test/notations
+    folder_out_prod: ./data/midiplayer
+    midi_out_file_pattern: !!str "{inputfilename}_{midiversion}.mid"
+    pdf_out_file_pattern: !!str "{inputfilename}.pdf"
+    # part for which to generate a PDF notation document
+    generate_pdf_part_id: full
+    notation_extension: .tsv
+    entire_piece_partname: FULL
     gongantypes_without_kempli: [KEBYAR, GINEMAN, GENDERAN]
 font:
     folder: ./config/font
-    file: balimusic5font.tsv
+    font_file: balimusic5font.tsv
     ttf_file: bali-music-5.ttf
     modifier_file: modifiers.tsv
 grammar:

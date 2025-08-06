@@ -81,7 +81,7 @@ class ScorePostprocessAgent(Agent):
         if int(duration - measure_duration) >= 1:
             try:
                 fill_content = [filler.model_copy() for count in range(int(duration - len(notes)))]
-                if self.score.settings.notationfile.beat_at_end:
+                if self.score.settings.notation_settings.beat_at_end:
                     fill_content.extend(notes)
                     notes.clear()
                     notes.extend(fill_content)
@@ -436,7 +436,7 @@ class ScorePostprocessAgent(Agent):
         self._complement_shorthand_pokok_measures()
         # Add blank measures for all other omitted instruments
         self._add_missing_measures(add_kempli=False)
-        if self.run_settings.notationfile.beat_at_end:
+        if self.run_settings.notation_settings.beat_at_end:
             # This enables correct processing of metadata
             self._move_beat_to_start()
         for gongan in self.gongan_iterator(self.score):

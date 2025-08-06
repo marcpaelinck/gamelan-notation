@@ -5,7 +5,7 @@ from src.common.constants import PatternType, Pitch, Stroke, SustainType
 from src.common.notes import Note, NoteFactory, Pattern, Tone
 from src.notation2midi.patterns.pattern import PatternGenerator
 from src.notation2midi.rules.rule import Instrument, ToneRange
-from src.settings.classes import SettingsPatternInfo
+from src.settings.classes import ConfigPatternInfo
 
 
 class RakePatternGenerator(PatternGenerator):
@@ -17,7 +17,7 @@ class RakePatternGenerator(PatternGenerator):
     @override
     def create_pattern(self, notes: list[Note]) -> None:
         """Generates the rake left and rake right patterns."""
-        rakesettings: SettingsPatternInfo.RakeInfo = self.patternsettings.rake
+        rakesettings: ConfigPatternInfo.RakeInfo = self.patternsettings.rake
 
         for note in notes:
             if isinstance(note, Pattern) and note.effect in (PatternType.RAKE_LEFT, PatternType.RAKE_RIGHT):

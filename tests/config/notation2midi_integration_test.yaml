@@ -7,7 +7,7 @@ options:
   validate_settings : true
   notation_to_midi:
     is_production_run: false
-    runtype: RUN_ALL
+    runtype: RUN_INTEGRATION_TEST
     detailed_validation_logging : false
     autocorrect : true
     save_corrected_to_file : false

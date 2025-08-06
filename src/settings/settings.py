@@ -63,8 +63,8 @@ class Settings:
 
         logger.info(
             "Loading run settings for composition %s - %s",
-            cls.RUN_SETTINGS.notationfile.title,
-            cls.RUN_SETTINGS.notationfile.part.name,
+            notation_id,
+            part_id,
         )
 
         for listener in cls.RUN_SETTINGS_LISTENERS:
@@ -90,7 +90,5 @@ class Settings:
 
 if __name__ == "__main__":
     # For testing
-    settings = Settings.get("godekmiring", "kawitan")
-    for notation in settings.configdata.notationfiles.values():
-        notation.folder_out_nonprod = "./tests/data/notation/_integration_test_small/"
-    print(settings.notationfile)
+    settings = Settings.get("bapang selisir gk", "FULL")
+    print(settings.notation_settings)

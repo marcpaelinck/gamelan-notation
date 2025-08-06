@@ -34,9 +34,9 @@ class MidiGeneratorAgent(Agent):
         self.exec_mgr = execution
         self.score = execution.score
         self.part_info = PartForm(
-            part=self.run_settings.notationfile.part.name,
+            part=self.run_settings.part_id,
             file=self.run_settings.midi_out_file,
-            loop=self.run_settings.notationfile.part.loop,
+            loop=self.run_settings.part_id in self.run_settings.notation_settings.loop,
         )
         self.midi_dict: dict[tuple[Pitch, int, Stroke], set[int]] = {
             (
@@ -100,7 +100,7 @@ class MidiGeneratorAgent(Agent):
             run_settings=self.run_settings,
         )
         # Add silence before the start of the piece, except if the piece should be played in a loop.
-        if not self.run_settings.notationfile.part.loop:
+        if not self.run_settings.loop:
             track.increase_current_time(self.run_settings.midi.silence_seconds_before_start, TimeUnit.SECOND)
 
         reset_pass_counters()
@@ -202,7 +202,7 @@ class MidiGeneratorAgent(Agent):
         for position in sorted(self.score.instrument_positions, key=lambda x: x.sequence):
             track = self._notation_to_track(position)
             midifile.tracks.append(track)
-        if not self.run_settings.notationfile.part.loop:
+        if not self.run_settings.loop:
             self._add_attenuation_time(midifile.tracks, seconds=self.run_settings.midi.silence_seconds_after_end)
         self.score.midifile_duration = int(midifile.length * 1000)
 

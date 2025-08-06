@@ -3,7 +3,7 @@ from typing import override
 from src.common.constants import PatternType, Stroke
 from src.common.notes import Note, NoteFactory, Pattern
 from src.notation2midi.patterns.pattern import PatternGenerator
-from src.settings.classes import SettingsPatternInfo
+from src.settings.classes import ConfigPatternInfo
 
 
 class TremoloPatternGenerator(PatternGenerator):
@@ -27,7 +27,7 @@ class TremoloPatternGenerator(PatternGenerator):
         Returns:
             list[Note]: The resulting notes
         """
-        tremolo: SettingsPatternInfo.TremoloInfo = self.patternsettings.tremolo
+        tremolo: ConfigPatternInfo.TremoloInfo = self.patternsettings.tremolo
         curr_noteseq = 0
 
         while curr_noteseq < len(notes):

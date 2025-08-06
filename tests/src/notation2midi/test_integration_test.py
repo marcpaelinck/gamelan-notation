@@ -23,23 +23,23 @@ class IntegrationTester(BaseUnitTestCase):
             run_settings (RunSettings): _description_
             notations (list[str]): _description_
         """
-        output_ditr = "./tests/data/notation/_integration_test_small/output"
-        for notation_id, notation in run_settings.configdata.notationfiles.items():
+        output_dict = "./tests/data/notation/_integration_test_small/output"
+        for notation_id, notation in run_settings.notation_settings_dict.items():
             if notation_id in notations:
-                notation.folder_out_nonprod = output_ditr
-                notation.include_in_run_types = [RunType.RUN_ALL]
+                run_settings = Settings.get(notation_id=notation_id, part_id="FULL")
+                notation.include_in_run_types = [RunType.RUN_INTEGRATION_TEST]
             else:
                 notation.include_in_run_types = []
         # Remove existing content from the output file
-        for filename in os.listdir(output_ditr):
-            file_path = os.path.join(output_ditr, filename)
+        for filename in os.listdir(output_dict):
+            file_path = os.path.join(output_dict, filename)
             if os.path.isfile(file_path):
                 os.remove(file_path)
 
     #######################################################################################################################################################
     RUN_INTEGRATION_TEST = False  # <== SET TO True TO RUN THIS TEST (0.5 MIN. OR MORE RUNTIME)
     RUN_SMALL_TEST = False  # <== a small test will only run the given titles and save the results in "./tests/data/notation/_integration_test_small/output"
-    SMALL_TEST_NOTATIONS = ["gilakdeng"]
+    SMALL_TEST_NOTATIONS = ["gilak deng"]
     #######################################################################################################################################################
 
     @pytest.mark.skipif(RUN_INTEGRATION_TEST is False, reason="Set RUN_INTEGRATION_TEST=True to run the test")
@@ -61,9 +61,9 @@ class IntegrationTester(BaseUnitTestCase):
         run_settings = Settings.get(
             notation_id="integration_test_small" if self.RUN_SMALL_TEST else "integration_test", part_id="dummy"
         )
-        reference_dict = run_settings.notationfile.folder_in
+        run_settings.options.notation_to_midi.runtype = RunType.RUN_INTEGRATION_TEST
+        reference_dict = run_settings.notation_settings.folder_in
         compare_dict = run_settings.folder_out
-        run_settings.options.notation_to_midi.runtype = RunType.RUN_ALL
         if self.RUN_SMALL_TEST:
             self.run_test_small(run_settings=run_settings, notations=self.SMALL_TEST_NOTATIONS)
         main()  # Converts the notations whose setting `include_in_run_types` contains value RUN_ALL.

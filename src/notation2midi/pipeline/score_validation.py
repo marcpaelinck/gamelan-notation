@@ -342,7 +342,7 @@ class ScoreValidationAgent(Agent):
 
             invalids, corrected, ignored = self._unequal_measure_lengths(
                 gongan,
-                beat_at_end=self.score.settings.notationfile.beat_at_end,
+                beat_at_end=self.score.settings.notation_settings.beat_at_end,
                 autocorrect=autocorrect,
             )
 
@@ -357,7 +357,7 @@ class ScoreValidationAgent(Agent):
 
             if (
                 self.score.settings.instrumentgroup == InstrumentGroup.GONG_KEBYAR
-                and self.score.settings.notationfile.autocorrect_kempyung
+                and self.score.settings.notation_settings.autocorrect_kempyung
             ):
                 invalids, corrected, ignored = self._incorrect_kempyung(gongan, autocorrect=autocorrect)
                 remaining_incorrect_kempyung.extend(invalids)

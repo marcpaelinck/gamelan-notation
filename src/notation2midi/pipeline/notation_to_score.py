@@ -66,7 +66,7 @@ class ScoreCreatorAgent(Agent):
         self.default_velocity = self.run_settings.midi.dynamics[self.run_settings.midi.default_dynamics]
 
         self.score = Score(
-            title=self.run_settings.notationfile.title,
+            title=self.run_settings.notation_settings.title,
             settings=notation.settings,
             instrument_positions=self._get_all_positions(notation.notation_dict),
         )
@@ -286,7 +286,6 @@ class ScoreCreatorAgent(Agent):
         All settings are read from the (YAML) settings files.
         """
 
-        self.loginfo("input file: %s", self.run_settings.notationfile.part.file)
         self._create_score_object_model()
         self._add_global_metadata_to_each_gongan()
         self.abort_if_errors()

@@ -34,7 +34,6 @@ from src.common.logger import Logging
 from src.settings.constants import (
     ENV_VAR_CONFIG_PATH,
     ENV_VAR_N2M_SETTINGS_PATH,
-    ENV_VAR_NOTATIONS_PATH,
     EffectsFields,
     FontFields,
     InstrumentFields,
@@ -167,7 +166,7 @@ DATA = {
     "font": {
         "section": "font",
         "folder": "folder",
-        "filename": "file",
+        "filename": "font_file",
         "formats": {
             FontFields.PITCH: ([Pitch], Pitch.NONE),
             FontFields.OCTAVE: ([], None),
@@ -252,13 +251,15 @@ class Content(BaseModel):
 class RunType(StrEnum):
     RUN_SINGLE = "RUN_SINGLE"
     RUN_ALL = "RUN_ALL"
+    RUN_INTEGRATION_TEST = "RUN_INTEGRATION_TEST"
 
 
-class SettingsInstrumentInfo(BaseModel):
+class ConfigInstrumentInfo(BaseModel):
     folder: str
     instruments_file: str
     tags_file: str
     rules_file: str
+    effects_file: str
     shorthand_notation: list[Position]
 
     @property
@@ -270,7 +271,7 @@ class SettingsInstrumentInfo(BaseModel):
         return os.path.join(self.folder, self.tags_file)
 
 
-class SettingsMidiInfo(BaseModel):
+class ConfigMidiInfo(BaseModel):
     # Implementation of tremolo notes. First two parameters are in 1/base_note_time. E.g. if base_note_time=24, then 24 is a standard note duration.
 
     folder: str
@@ -295,7 +296,7 @@ class SettingsMidiInfo(BaseModel):
         return os.path.join(self.folder, self.presets_file)
 
 
-class SettingsPatternInfo(BaseModel):
+class ConfigPatternInfo(BaseModel):
 
     class TremoloInfo(BaseModel):
         notes_per_quarternote: int  # should be a divisor of base_note_time
@@ -314,25 +315,22 @@ class SettingsPatternInfo(BaseModel):
     rake: RakeInfo
 
 
-class SettingsFontInfo(BaseModel):
+class ConfigFontInfo(BaseModel):
     folder: str
-    file: str
+    font_file: str
+    modifier_file: str
     ttf_file: str | None
 
     @property
-    def filepath(self):
-        return os.path.join(self.folder, self.file)
+    def font_filepath(self):
+        return os.path.join(self.folder, self.font_file)
 
     @property
     def ttf_filepath(self):
         return os.path.join(self.folder, self.ttf_file)
 
 
-class SettingsNotationInfo(BaseModel):
-    gongantypes_without_kempli: list[GonganType]
-
-
-class SettingsGrammarInfo(BaseModel):
+class ConfigGrammarInfo(BaseModel):
 
     folder: str
     notationfile: str
@@ -357,12 +355,12 @@ class SettingsGrammarInfo(BaseModel):
         return os.path.normpath(os.path.abspath(os.path.join(os.path.expanduser(self.folder), self.fontfile)))
 
 
-class SettingsSampleInfo(BaseModel):
+class ConfigSampleInfo(BaseModel):
     folder: str
     subfolder: str
 
 
-class SettingsSoundfontInfo(BaseModel):
+class ConfigSoundfontInfo(BaseModel):
     folder: str
     path_to_viena_app: str
     definition_file_out: str = None
@@ -383,13 +381,13 @@ class SettingsSoundfontInfo(BaseModel):
         ]
 
 
-class SettingsMidiPlayerInfo(BaseModel):
+class ConfigMidiPlayerInfo(BaseModel):
     folder: str
     contentfile: str
     helpinghand: list[Position] = None
 
 
-class SettingsPdfConverterInfo(BaseModel):
+class ConfigPdfConverterInfo(BaseModel):
     folder: str
     fonts: dict[str, str] = Field(default_factory=dict)
     version_fmt: str
@@ -397,31 +395,60 @@ class SettingsPdfConverterInfo(BaseModel):
     omit_octave_diacritics: list[Position]
 
 
-class SettingsNotationFilesInfo(BaseModel):
-    class NotationPart(BaseModel):
-        name: str
-        file: str
-        loop: bool
-
-    title: str
-    subfolder: str
-    instrumentgroup: InstrumentGroup
-    fontversion: NotationFontVersion
-    parts: dict[str, NotationPart] = Field(default_factory=dict)
+class ConfigNotationInfo(BaseModel):
     version_fmt: str
+    # folder_in can contain separate subfolders (e.g. for each composition)
     folder_in: str
-    folder_out_nonprod: str
     folder_out_prod: str
+    notation_extension: str
+    gongantypes_without_kempli: list[GonganType]
+    entire_piece_partname: str
     midi_out_file_pattern: str
     pdf_out_file_pattern: str
-    # IDs of the parts for which to generate a PDF notation document
     generate_pdf_part_id: str
+
+
+# class ConfigNotationFilesInfo(BaseModel):
+#     class NotationPart(BaseModel):
+#         name: str
+#         file: str
+#         loop: bool
+
+#     title: str
+#     subfolder: str
+#     instrumentgroup: InstrumentGroup
+#     fontversion: NotationFontVersion
+#     parts: dict[str, NotationPart] = Field(default_factory=dict)
+#     version_fmt: str
+#     folder_in: str
+#     folder_out_nonprod: str
+#     folder_out_prod: str
+#     midi_out_file_pattern: str
+#     pdf_out_file_pattern: str
+#     # IDs of the parts for which to generate a PDF notation document
+#     generate_pdf_part_id: str
+#     beat_at_end: bool
+#     autocorrect_kempyung: bool
+#     # run types that should include this composition
+#     include_in_run_types: list[RunType] = Field(default_factory=list)
+#     include_in_production_run: bool
+#     part: NotationPart = None
+
+
+class NotationSettings(BaseModel):
+    title: str
+    input_filename_pattern: str
+    instrumentgroup: InstrumentGroup
+    fontversion: NotationFontVersion
+    folder_in: str = None  # if None, the default folder from the config will be used
+    folder_out_nonprod: str = None  # if None, the same folder as folder_in will be used
+    parts: list[str]
+    loop: list[str] = Field(default_factory=list)
     beat_at_end: bool
     autocorrect_kempyung: bool
     # run types that should include this composition
     include_in_run_types: list[RunType] = Field(default_factory=list)
     include_in_production_run: bool
-    part: NotationPart = None
 
 
 class SettingsOptions(BaseModel):
@@ -474,17 +501,17 @@ class Data(BaseModel):
 
 
 class ConfigData(BaseModel):
-    instruments: SettingsInstrumentInfo
-    midi: SettingsMidiInfo
-    patterns: SettingsPatternInfo
-    font: SettingsFontInfo
-    notation: SettingsNotationInfo
-    grammar: SettingsGrammarInfo
-    samples: SettingsSampleInfo
-    soundfont: SettingsSoundfontInfo
-    midiplayer: SettingsMidiPlayerInfo
-    pdf_converter: SettingsPdfConverterInfo
-    notationfiles: dict[str, SettingsNotationFilesInfo] = Field(default_factory=dict)
+    instruments: ConfigInstrumentInfo
+    midi: ConfigMidiInfo
+    patterns: ConfigPatternInfo
+    font: ConfigFontInfo
+    notation: ConfigNotationInfo
+    grammar: ConfigGrammarInfo
+    samples: ConfigSampleInfo
+    soundfont: ConfigSoundfontInfo
+    midiplayer: ConfigMidiPlayerInfo
+    pdf_converter: ConfigPdfConverterInfo
+    # notationfiles: dict[str, ConfigNotationFilesInfo] = Field(default_factory=dict)
 
 
 class RunSettings(BaseModel):
@@ -495,6 +522,7 @@ class RunSettings(BaseModel):
     midiversion: str | None = None
     notation_id: str | None = None
     part_id: str | None = None
+    notation_settings_dict: dict[str, NotationSettings] = Field(default_factory=dict)
     options: SettingsOptions
     configdata: ConfigData
     data: Data = None
@@ -503,63 +531,90 @@ class RunSettings(BaseModel):
         """Initializes an instance and populates it from the config/settings yaml files in the settings folder."""
         settings = self._load_run_settings()
         super().__init__(**settings)  # pylint: disable=not-a-mapping
+        self.read_notation_settings()
 
     @property
-    def notationfile(self) -> SettingsNotationFilesInfo:
-        notation = self.configdata.notationfiles[self.notation_id]
-        return notation.model_copy(update={"part": notation.parts[self.part_id]})
+    def notation_settings(self) -> NotationSettings:
+        return self.notation_settings_dict[self.notation_id]
 
     @property
-    def midi(self) -> SettingsMidiInfo:
+    def midi(self) -> ConfigMidiInfo:
         return self.configdata.midi
 
     @property
-    def patterns(self) -> SettingsPatternInfo:
+    def patterns(self) -> ConfigPatternInfo:
         return self.configdata.patterns
 
     @property
-    def font(self) -> SettingsFontInfo:
+    def font(self) -> ConfigFontInfo:
         return self.configdata.font
 
     @property
-    def grammar(self) -> SettingsGrammarInfo:
+    def grammar(self) -> ConfigGrammarInfo:
         return self.configdata.grammar
 
     @property
-    def midiplayer(self) -> SettingsMidiPlayerInfo:
+    def midiplayer(self) -> ConfigMidiPlayerInfo:
         return self.configdata.midiplayer
 
     @property
-    def pdf_converter(self) -> SettingsPdfConverterInfo:
+    def pdf_converter(self) -> ConfigPdfConverterInfo:
         return self.configdata.pdf_converter
 
     @property
     def instrumentgroup(self) -> InstrumentGroup:
-        return self.notationfile.instrumentgroup
+        return self.notation_settings.instrumentgroup
 
     @property
     def fontversion(self) -> NotationFontVersion:
-        return self.notationfile.fontversion
+        return self.notation_settings.fontversion
 
     @property
     def midi_out_file(self) -> str:
-        return self.notationfile.midi_out_file_pattern.format(title=self.notationfile.title, part_id=self.part_id)
+        inputfilename = os.path.splitext(os.path.basename(self.notation_filepath))[0]
+        return self.configdata.notation.midi_out_file_pattern.format(
+            inputfilename=inputfilename, midiversion=self.configdata.midi.midiversion
+        )
 
     @property
     def pdf_out_file(self) -> str:
-        return self.notationfile.pdf_out_file_pattern.format(title=self.notationfile.title, part_id=self.part_id)
+        inputfilename = os.path.splitext(os.path.basename(self.notation_filepath))[0]
+        return self.configdata.notation.pdf_out_file_pattern.format(inputfilename=inputfilename)
 
     @property
     def folder_out(self) -> str:
         return (
-            self.notationfile.folder_out_prod
+            self.configdata.notation.folder_out_prod
             if self.options.notation_to_midi.is_production_run
-            else self.notationfile.folder_out_nonprod
+            else (
+                self.notation_settings.folder_out_nonprod
+                if self.notation_settings.folder_out_nonprod
+                else (
+                    self.configdata.notation.folder_in
+                    if self.options.notation_to_midi.runtype is RunType.RUN_INTEGRATION_TEST
+                    else "/".join([self.configdata.notation.folder_in, self.notation_id])
+                )
+            )
         )
 
     @property
     def notation_filepath(self) -> str:
-        return os.path.join(self.notationfile.folder_in, self.notationfile.parts[self.part_id].file)
+        if self.options.notation_to_midi.runtype is RunType.RUN_INTEGRATION_TEST:
+            template_path: str = "/".join(
+                [
+                    self.configdata.notation.folder_in,
+                    self.notation_settings.input_filename_pattern,
+                ]
+            )
+        else:
+            template_path: str = "/".join(
+                [
+                    self.configdata.notation.folder_in,
+                    self.notation_id,
+                    self.notation_settings.input_filename_pattern,
+                ]
+            )
+        return template_path.replace("{part}", self.part_id.upper())
 
     @property
     def midi_out_filepath(self) -> str:
@@ -583,8 +638,12 @@ class RunSettings(BaseModel):
         """Returns the last modification date of the input file"""
         notation_dt = self.notation_datetime
         if notation_dt:
-            return notation_dt.strftime(self.notationfile.version_fmt).lower()
+            return notation_dt.strftime(self.notation_settings.version_fmt).lower()
         return ""
+
+    @property
+    def loop(self) -> bool:
+        return self.part_id.upper() in self.notation_settings.loop
 
     def _post_process(self, subdict: dict[str, Any], run_settings_dict: dict[str, Any] = None, curr_path: list = None):
         """This function enables references to yaml key values using ${<yaml_path>} notation.
@@ -637,8 +696,9 @@ class RunSettings(BaseModel):
         """
         with open(filepath, "r", encoding="utf-8") as settingsfile:
             return yaml.load(settingsfile, yaml.Loader)
+        x = 1
 
-    def _read_data(self, settings_dict: dict, group: InstrumentGroup, specs: dict) -> dict[str, list[dict[str, str]]]:
+    def _read_data(self, settings_dict: dict, specs: dict) -> dict[str, list[dict[str, str]]]:
         """Reads multiple data files into table-like dict structures. Columns that appear in the 'format' section
         of the specs will be formatted accordingly.
         Args:
@@ -697,6 +757,28 @@ class RunSettings(BaseModel):
             return False
         return True
 
+    def read_notation_settings(self):
+        """Reads notation_settings for all notations."""
+
+        if self.options.notation_to_midi.runtype is RunType.RUN_INTEGRATION_TEST:
+            # Expecting a single folder containing all input files and a single settings file
+            notations_filepath = os.path.join(self.configdata.notation.folder_in, "settings.yaml")
+            if os.path.exists(notations_filepath):
+                settings_dict_json = self._read_settings(notations_filepath)
+                for notation_id, notation_info in settings_dict_json.items():
+                    self.notation_settings_dict[notation_id] = NotationSettings(**notation_info)
+            else:
+                raise FileNotFoundError("settings.yaml file not found in integration test folder")
+        else:
+            notations = {f.name: f.path for f in os.scandir(self.configdata.notation.folder_in) if f.is_dir()}
+
+            for notation_id, subfolder_path in notations.items():
+                notations_filepath = os.path.join(subfolder_path, "settings.yaml")
+                if os.path.exists(notations_filepath):
+                    self.notation_settings_dict[notation_id] = NotationSettings(
+                        **self._read_settings(notations_filepath)
+                    )
+
     def _load_run_settings(self):
         """Retrieves the run settings from the run settings yaml file, enriched with information
         from the data information yaml file.
@@ -712,25 +794,13 @@ class RunSettings(BaseModel):
             RunSettings: settings object
         """
         config_filepath = os.getenv(ENV_VAR_CONFIG_PATH)
-        notations_filepath = os.getenv(ENV_VAR_NOTATIONS_PATH)
+        # notations_filepath = os.getenv(ENV_VAR_NOTATIONS_PATH)
         settings_data_dict = self._read_settings(config_filepath)
-        notations_data_dict = self._read_settings(notations_filepath)
-        settings_data_dict |= notations_data_dict
-        # update each notation entry with the default settings
-        for key, notation_entry in settings_data_dict[Yaml.NOTATIONFILES].items():
-            if key == Yaml.DEFAULTS:
-                continue
-            settings_data_dict[Yaml.NOTATIONFILES][key] = (
-                settings_data_dict[Yaml.NOTATIONFILES][Yaml.DEFAULTS] | notation_entry
-            )
-        del settings_data_dict[Yaml.NOTATIONFILES][Yaml.DEFAULTS]
         settings_data_dict = self._post_process(settings_data_dict)
 
         settings_filepath = os.getenv(ENV_VAR_N2M_SETTINGS_PATH)
         run_settings_dict = self._read_settings(settings_filepath)
         run_settings_dict[Yaml.CONFIGDATA] = settings_data_dict
-        notation_id = run_settings_dict[Yaml.NOTATION_ID]
-        group = run_settings_dict[Yaml.CONFIGDATA][Yaml.NOTATIONFILES][notation_id][Yaml.INSTRUMENTGROUP]
-        run_settings_dict[Yaml.DATA] = self._read_data(settings_data_dict, group=group, specs=DATA)
+        run_settings_dict[Yaml.DATA] = self._read_data(settings_data_dict, specs=DATA)
 
         return run_settings_dict

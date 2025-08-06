@@ -80,7 +80,7 @@ class PDFGeneratorAgent(Agent):
     def run_condition_satisfied(cls, run_settings: RunSettings):
         return (
             run_settings.options.notation_to_midi.save_pdf_notation
-            and run_settings.part_id == run_settings.notationfile.generate_pdf_part_id
+            and run_settings.part_id == run_settings.configdata.notation.generate_pdf_part_id
         )
 
     def _append_single_metadata_type(

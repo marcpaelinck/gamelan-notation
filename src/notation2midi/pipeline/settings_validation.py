@@ -31,7 +31,7 @@ class SettingsValidationAgent(Agent):
         values for fields `pitch` and `modifier`.
         """
         groupby = [FontFields.PITCH, FontFields.MODIFIER]
-        font_df = pd.read_csv(self.run_settings.configdata.font.filepath, sep="\t", quoting=csv.QUOTE_NONE)[
+        font_df = pd.read_csv(self.run_settings.configdata.font.font_filepath, sep="\t", quoting=csv.QUOTE_NONE)[
             groupby + [FontFields.SYMBOL]
         ]
         duplicates = font_df[font_df.duplicated(groupby, keep=False)].groupby(groupby)[FontFields.SYMBOL].apply(list)

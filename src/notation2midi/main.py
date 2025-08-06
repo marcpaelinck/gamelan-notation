@@ -47,7 +47,7 @@ def run_pipeline(run_settings: RunSettings):
     Args:
         run_settings (RunSettings): Settings and configuration.
     """
-    logger.open_logging(f"{run_settings.notationfile.title} - {run_settings.notationfile.part.name}")
+    logger.open_logging(f"{run_settings.notation_settings.title} - {run_settings.part_id}")
     pipeline = PipeLine(run_settings=run_settings, pipe=PIPE)
     pipeline.execute()
 
@@ -65,13 +65,13 @@ def run_multiple_pipelines(run_settings: RunSettings):
     # their include_in_run_types and include_in_production_run attributes.
     notation_list = [
         (notation_key, notation_info)
-        for notation_key, notation_info in run_settings.configdata.notationfiles.items()
+        for notation_key, notation_info in run_settings.notation_settings_dict.items()
         if runtype in notation_info.include_in_run_types
         and (not is_production_run or notation_info.include_in_production_run)
     ]
     # Run the pipeline for each part of each song.
     for notation_key, notation_info in notation_list:
-        for part_key, _ in notation_info.parts.items():
+        for part_key in notation_info.parts:
             run_settings = Settings.get(notation_id=notation_key, part_id=part_key)
             run_pipeline(run_settings)
 
@@ -82,7 +82,7 @@ def main():
     if not run_settings.options.notation_to_midi.is_production_run or askyesno(
         "Warning", "Running production version. Continue?"
     ):
-        if run_settings.options.notation_to_midi.runtype is RunType.RUN_ALL:
+        if run_settings.options.notation_to_midi.runtype in [RunType.RUN_ALL, RunType.RUN_INTEGRATION_TEST]:
             run_multiple_pipelines(run_settings)
         else:
             run_pipeline(run_settings)
