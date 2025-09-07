@@ -135,14 +135,14 @@ notationfiles:
                 name: entire piece
                 file: Janger.tsv
                 loop: false
-    kahyangan:
-        title: Kahyangan
+    kahayangan:
+        title: Kahayangan
         subfolder: _integration_test/notations
         folder_out_nonprod: ./tests/data/notation/_integration_test/output
         parts:
             full:
                 name: entire piece
-                file: Kahyangan_font5.tsv
+                file: Kahayangan_font5.tsv
                 loop: false
     legongmahawidya:
         title: Legong Mahawidya

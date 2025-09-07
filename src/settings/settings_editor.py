@@ -102,9 +102,6 @@ def create_menu():
         label="detailed validation logging",
         value=run_settings.options.notation_to_midi.detailed_validation_logging,
     )
-    _, autocorrect = add_item(
-        ItemType.BOOL, label="autocorrect", value=run_settings.options.notation_to_midi.autocorrect
-    )
 
     # Run the application
     root.mainloop()
@@ -116,7 +113,6 @@ def create_menu():
     print(f"save_midifile: {save_midifile.get()}")
     print(f"save_corrected: {save_corrected.get()}")
     print(f"detailed_val_logging: {detailed_val_logging.get()}")
-    print(f"autocorrect notation: {autocorrect.get()}")
 
 
 if __name__ == "__main__":

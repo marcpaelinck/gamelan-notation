@@ -64,16 +64,15 @@ def run_multiple_pipelines(run_settings: RunSettings):
     # Create a list of the notation entries that should be processed, based on
     # their include_in_run_types and include_in_production_run attributes.
     notation_list = [
-        (notation_key, notation_info)
-        for notation_key, notation_info in run_settings.notation_settings_dict.items()
+        (notation_id, part_id)
+        for (notation_id, part_id), notation_info in run_settings.notation_settings_dict.items()
         if runtype in notation_info.include_in_run_types
         and (not is_production_run or notation_info.include_in_production_run)
     ]
     # Run the pipeline for each part of each song.
-    for notation_key, notation_info in notation_list:
-        for part_key in notation_info.parts:
-            run_settings = Settings.get(notation_id=notation_key, part_id=part_key)
-            run_pipeline(run_settings)
+    for notation_id, part_id in notation_list:
+        run_settings = Settings.get(notation_id=notation_id, part_id=part_id)
+        run_pipeline(run_settings)
 
 
 def main():

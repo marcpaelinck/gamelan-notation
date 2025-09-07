@@ -32,7 +32,7 @@ class ScoreValidationTester(BaseUnitTestCase):
 
     def test_incorrect_kempyung(self):
         validator = ScoreValidationAgent(self.sample_gk_score)
-        invalids, corrected, ignored = validator._incorrect_kempyung(self.sample_gk_score.gongans[0], autocorrect=True)
+        invalids, corrected, ignored = validator._incorrect_kempyung(self.sample_gk_score.gongans[0])
 
         self.assertEqual(len(invalids), 0)
         self.assertEqual(len(corrected), 1)

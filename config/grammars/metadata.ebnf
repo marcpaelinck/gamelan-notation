@@ -38,12 +38,12 @@ dynamicsmetaparameters ={[','] @:(beat_range_parm | beat_count_parm | first_beat
 gonganmeta = metatype:'GONGAN' {('type'|'value') '='} type:strvalue ;
     
 gotometa = metatype:'GOTO' {('label'|'value') '='} label:alphanumvalue parameters:gotometaparameters ;
-gotometaparameters = parameters:{[','] @:(from_beat_parm | passes_parm)} ;
-    
-kemplimeta = metatype:'KEMPLI' {('status'|'value') '='} status:strvalue parameters:kemplimetaparameters ;
+gotometaparameters = {[','] @:(from_beat_parm | passes_parm)} ;
+
+kemplimeta = metatype:'KEMPLI' {('status'|'value') '='} status:alphavalue parameters:kemplimetaparameters ;
 kemplimetaparameters = {[','] @:(beats_parm | scope_parm)} ;
 
-autokempyungmeta = metatype:'AUTOKEMPYUNG' {('status'|'value') '='} status:strvalue parameters:autokempyungmetaparameters ;
+autokempyungmeta = metatype:'AUTOKEMPYUNG' {('status'|'value') '='} status:alphavalue parameters:autokempyungmetaparameters ;
 autokempyungmetaparameters = {[','] @:(scope_parm | positions_parm)} ;
 
 labelmeta = metatype:'LABEL' {('name'|'value') '='} name:alphanumvalue parameters:labelmetaparameters ;
@@ -75,34 +75,17 @@ waitmetaparameters = {[','] @:(after_parm | passes_parm)};
 after_parm = 'after' '=' after:boolvalue;
 beat_count_parm = 'beat_count' '=' beat_count:intvalue;
 beat_parm = 'beat' '=' beat:intvalue;
-beats_parm = ('beat' | 'beats') '=' (beats+:intvalue | beats:intlistvalue);
-beat_range_parm = ('beat' | 'beats') '=' first_beat:intvalue [("->" explicit_gradual_beat:`true`) last_beat:intvalue] ;
+beats_parm = ('beats' | 'beat') '=' (beats+:intvalue | beats:intlistvalue);
+beat_range_parm = ('beats' | 'beat') '=' first_beat:intvalue [("->" explicit_gradual_beat:`true`) last_beat:intvalue] ;
 (* dynamics_range can have format 'mf', 'p->mf' or '->mf' *)
 dynamics_range = [from_abbr:dynamics_value "->" explicit_gradual_value:`true` | "->" explicit_gradual_value:`true`] to_abbr:dynamics_value;
 dynamics_value = 'pp' | 'p' | 'mp' | 'mf' | 'f' | 'ff';
 first_beat_parm = ('first_beat' | 'beat') '=' first_beat:intvalue;
 from_beat_parm = 'from_beat' '=' from_beat:intvalue;
 octaves_parm = 'octaves' '=' octaves:intvalue;
-passes_parm = ('pass' | 'passes') '=' (passes+:intvalue | passes:intlistvalue);
+passes_parm = ('passes' | 'pass') '=' (passes+:intvalue | passes:intlistvalue);
 (* tempo_range can have format '150', '100->150' or '->150' *)
 tempo_range = [from_value:intvalue "->" explicit_gradual_value:`true` | "->" explicit_gradual_value:`true`] to_value:intvalue;
-iterations_parm = ('iteration' | 'iterations') '=' (iterations+:intvalue | iterations:intlistvalue);
-positions_parm = ('position' | 'positions') '=' (positions+:strvalue | positions:strlistvalue);
+iterations_parm = ('iterations' | 'iteration') '=' (iterations+:intvalue | iterations:intlistvalue);
+positions_parm = ('positions' | 'position') '=' (positions+:strvalue | positions:strlistvalue);
 scope_parm = 'scope' '=' scope:strvalue;
-
-strvalue = (nqstrvalue | sqstrvalue | dqstrvalue) ;
-nqstrvalue = /[a-zA-Z_][\w\-]*/ ;      (* unquoted string *)
-sqstrvalue = /'([a-zA-Z_][\w\- ]*)'/ ; (* single-quoted string *)
-dqstrvalue = /"([a-zA-Z_][\w\- ]*)"/ ; (* double-quoted string *)
-alphanumvalue = (nqalphanumvalue | sqalphanumvalue | dqalphanumvalue) ;
-nqalphanumvalue = /[\d\w\+\-\\&]+/ ;      (* unquoted string *)
-sqalphanumvalue = /'([\d\w\+\-\\& ]+)'/ ; (* single-quoted string *)
-dqalphanumvalue = /"([\d\w\+\-\\& ]+)"/ ; (* double-quoted string *)
-numvalue = intvalue | floatvalue ;
-intvalue = /\d+/ ;
-floatvalue = /\d+\.{0,1}\d*/ ;
-boolvalue = 'true' | 'false' ;
-strlistvalue = '[' @+:strvalue {',' @+:strvalue}* ']' ;
-sp_nl = /(?m)[ \t\n\r]*/ ;  (* Extended space, including new line. (?m) allows multiline parsing. Default is single line *)
-strlistvalue_multiline = '[' @+:strvalue {sp_nl ',' sp_nl @+:strvalue}* sp_nl ']' ;
-intlistvalue = '[' @+:intvalue {',' @+:intvalue}* ']' ;

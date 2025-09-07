@@ -139,10 +139,11 @@ class NotationParserAgent(Agent):
                 pickle.dump(grammar_model, picklefile)
         return grammar_model
 
-    def _flatten_meta(self, metadict: dict) -> dict:
+    @classmethod
+    def _flatten_meta(cls, metadict: dict) -> dict:
         # The json_dict contains the first parameter and its value, and a key "parameters" with a list of dicts
         # containing the other parameters + values. E.g.
-        # {"meta": "DYNAMICS", "value": "f", "parameters": [{"positions": ["gangsa"]}, {"first_beat": 13}]}
+        # {"meta": "DYNAMICS", "value": "f", "parameters": {"positions": ["gangsa"], "first_beat": 13}
         # We need to flatten this structure before parsing it into a MetaData object.
         flattened_dict = metadict
         for aggr_value in ("parameters", "range_values"):

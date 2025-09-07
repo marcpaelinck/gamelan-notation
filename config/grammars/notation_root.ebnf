@@ -9,8 +9,6 @@ start
     ;
 
 nobrace = /[^\{\}]+/ ;
-eol = /\n/ | /\r\n/ | $ ;
-tab = /\t/ ;
 emptyline = {tab} eol;
 nonspacechars = /[^\s]*/ ;
 comment = /[^\r\n]+/ ; 
@@ -19,7 +17,8 @@ comment = /[^\r\n]+/ ;
    All other metadata lines should either immediately precede or
    immediately follow a gongan *)
 
-notation =  {emptyline}*
+notation =  notationinfo
+            {emptyline}*
             unbound:(unbound_elements | {})
             gongans:{gongan}+
             ;
@@ -54,8 +53,10 @@ stave_line = position:tag measures:{measure_with_tab} {tab} eol ;
 (*tag = tag:/(?!comment|metadata)\w[\w\- \/]*/ pass:(/:(\d+)/ | `-1`); *)
 tag = tag:/(?!comment|metadata\t)\w[\w\ \/\+]*/ pass:(/:(\d+-?\d*)/ | `-1`);
 
-(* `note` is defined in font5.metadata *)
+(* `note` is defined in font5.ebnf *)
 measure_with_tab = tab @:{note};
 
+#include :: "./gamelan-notation/config/grammars/notationinfo.ebnf"
 #include :: "./gamelan-notation/config/grammars/metadata.ebnf"
 #include :: "./gamelan-notation/config/grammars/font5.ebnf"
+#include :: "./gamelan-notation/config/grammars/valuetypes.ebnf"

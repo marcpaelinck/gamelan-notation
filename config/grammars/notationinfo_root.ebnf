@@ -1,0 +1,15 @@
+(**
+This grammar is used to parse the INFO line of a notation file separately.
+**)
+@@grammar :: NOTATIONINFO 
+
+@@whitespace :: /[ ]+/ 
+@@parseinfo :: False
+
+start
+    =
+    notationinfo $
+    ;
+
+#include :: "./gamelan-notation/config/grammars/notationinfo.ebnf"
+#include :: "./gamelan-notation/config/grammars/valuetypes.ebnf"

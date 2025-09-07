@@ -13,7 +13,6 @@ ordered_fields = [
     "loop",
     "input_filename_pattern",
     "beat_at_end",
-    "autocorrect_kempyung",
     "include_in_run_types",
     "include_in_production_run",
 ]
@@ -21,7 +20,7 @@ ordered_fields = [
 
 def update_all_folder_settings(data_folder: str):
     """updates settings.yaml for each folder in the given data_folder"""
-    notations = {os.path.basename(p): p for p in glob.glob(data_folder + "/*")}
+    notations = {os.path.basename(p): p for p in glob.glob(data_folder + "/*") if os.path.isdir(p)}
 
     for notation, n_path in notations.items():
         if not os.path.exists(n_path + "/settings.yaml"):
@@ -58,6 +57,84 @@ def update_all_folder_settings(data_folder: str):
 
         with open(n_path + "/settings.yaml", "w", encoding="utf-8") as outfile:
             yaml.dump(settings, outfile, default_flow_style=False, sort_keys=False)
+
+
+def add_info_to_notations(data_folder: str):
+    """adds an INFO metadata to the beginning of each notation file"""
+    # Collect all notation files having a part indicator in the name and not containing the word 'skip'
+    notation_dict = {}
+
+    def n(key: str):
+        value = notation_dict.get(key, None)
+        if isinstance(value, str) and " " in value:
+            value = '"' + value + '"'
+        if isinstance(value, bool):
+            value = str(value).lower()
+        return value
+
+    fmt = (
+        "{{INFO notation={notation} part={part} "
+        "title={title} instrumentgroup={instrumentgroup} "
+        "font={font} production={production} "
+        "loop={loop} beat_at_end={beat_at_end}}}"
+    )
+
+    matchpart = re.compile(r"\[(?P<part>[\w ]+)\]")
+    notations = {
+        os.path.basename(folder): [
+            path
+            for path in glob.glob(folder + "/*.tsv")
+            if not ("skip" in path) and not ("_OLD" in path) and matchpart.search(path)
+        ]
+        for folder in glob.glob(data_folder + "/*")
+        if os.path.isdir(folder)
+    }
+    # Create a list of records containing the notation and part information and file path.
+    notations = [
+        {"notation": folder, "part": matchpart.search(path).group("part"), "path": path}
+        for folder, paths in notations.items()
+        for path in paths
+    ]
+
+    defaults = {"production": True, "loop": False, "beat_at_end": False}
+    for notation_dict in notations:
+        shutil.copy(notation_dict["path"].replace(".tsv", "_OLD.tsv"), notation_dict["path"])
+        with open(os.path.dirname(notation_dict["path"]) + "/settings.yaml", "r", encoding="utf-8") as settingsfile:
+            settings = yaml.safe_load(settingsfile)
+        notation_dict |= defaults | settings
+        with open(notation_dict["path"], "r", encoding="utf-8") as notationfile:
+            notation_content = notationfile.read()
+        notation_content = (
+            fmt.format(
+                notation=n("notation"),
+                part=n("part"),
+                title=n("title"),
+                instrumentgroup=n("instrumentgroup"),
+                font=n("fontversion"),
+                production=n("production"),
+                loop="false" if n("part") == "full" else "true",
+                beat_at_end=n("beat_at_end"),
+            )
+            + "\n"
+            + notation_content
+        )
+        with open(notation_dict["path"], "w", encoding="utf-8") as notationfile:
+            notation_content = notationfile.write(notation_content)
+
+        print(
+            fmt.format(
+                notation=n("notation"),
+                part=n("part"),
+                title=n("title"),
+                instrumentgroup=n("instrumentgroup"),
+                font=n("fontversion"),
+                production=n("production"),
+                loop="false" if n("part") == "full" else "true",
+                beat_at_end=n("beat_at_end"),
+            )
+        )
+
+    x = 1
 
 
 def create_integration_test_settings(data_folder: str, unittest_folder: str):
@@ -99,6 +176,6 @@ def rename_all():
 
 
 if __name__ == "__main__":
-    rename_all()
+    add_info_to_notations("./data/notation")
     # update_all_folder_settings("./data/notation")
     # create_integration_test_settings("./data/notation", "./tests/data/notation/_integration_test/notations")

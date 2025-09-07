@@ -1,6 +1,7 @@
 import logging
 import math
 from itertools import product
+from tkinter import OFF
 from typing import Any, override
 
 from src.common.classes import Beat, Gongan, Score
@@ -16,7 +17,12 @@ from src.common.constants import (
 )
 from src.common.notes import Note, NoteFactory
 from src.notation2midi.classes import Agent
-from src.notation2midi.metadata_classes import GonganType, MetaType, ValidationProperty
+from src.notation2midi.metadata_classes import (
+    GonganType,
+    MetaDataSwitch,
+    MetaType,
+    ValidationProperty,
+)
 from src.settings.classes import RunSettings
 from src.settings.font_to_valid_notes import ValidNoteGenerator
 
@@ -47,12 +53,11 @@ class ScoreValidationAgent(Agent):
     def run_condition_satisfied(cls, run_settings: RunSettings):
         return run_settings.options.notation_to_midi
 
-    def _invalid_beat_lengths(self, gongan: Gongan, autocorrect: bool) -> tuple[list[tuple[BeatId, Duration]]]:
+    def _invalid_beat_lengths(self, gongan: Gongan) -> tuple[list[tuple[BeatId, Duration]]]:
         """Checks the length of beats in "regular" gongans. The length should be a power of 2.
 
         Args:
             gongan (Gongan): the gongan to check
-            autocorrect (bool): if True, an attempt will be made to correct the beat length (currently not effective)
 
         Returns:
             tuple[list[tuple[BeatId, Duration]]]: list of remaining invalid beats and of corrected beats.
@@ -69,15 +74,11 @@ class ScoreValidationAgent(Agent):
                 invalids.append((beat.full_id, beat.duration))
         return invalids, corrected, ignored
 
-    def _unequal_measure_lengths(
-        self, gongan: Gongan, beat_at_end: bool, autocorrect: bool
-    ) -> tuple[list[tuple[BeatId, Duration]]]:
+    def _unequal_measure_lengths(self, gongan: Gongan, beat_at_end: bool) -> tuple[list[tuple[BeatId, Duration]]]:
         """Checks that the measure lengths of the individual instrument in each beat of the given gongan are all equal.
 
         Args:
             gongan (Gongan): the gongan to check
-            autocorrect (bool): if True, an attempt will be made to correct the measure lengths of specific instruments (pokok, gongs and kempli)
-                        In most scores, the notation of these instruments is simplified by omitting dashes (extensions) after each long note.
             filler (Note): Note representing the extension of the preceding note with duration 1 (a dash in the notation)
 
         Returns:
@@ -99,7 +100,7 @@ class ScoreValidationAgent(Agent):
                 if measure.duration != beat.duration
             }
             if unequal_lengths:
-                if autocorrect:
+                if not ValidationProperty.MEASURE_LENGTH in beat.validation_ignore:
                     # Autocorrection is performed using beat.duration as a reference,
                     #  which is the mode (= most occurring duration) of all measure durations.
                     corrected_positions = dict()
@@ -140,12 +141,11 @@ class ScoreValidationAgent(Agent):
                     )
         return invalids, corrected, ignored
 
-    def _out_of_range(self, gongan: Gongan, autocorrect: bool) -> tuple[list[str, list[Note]]]:
+    def _out_of_range(self, gongan: Gongan) -> tuple[list[str, list[Note]]]:
         """Checks that the notes of each instrument matches the instrument's range.
 
         Args:
             gongan (Gongan): the gongan to check
-            autocorrect (bool): if True, an attempt will be made to correct notes that are out of range (currently not effective)
 
         Returns:
             tuple[list[tuple[BeatId, Duration]]]: list of remaining beats containing incorrect notes and of corrected beats.
@@ -193,7 +193,6 @@ class ScoreValidationAgent(Agent):
     def _incorrect_kempyung(
         self,
         gongan: Gongan,
-        autocorrect: bool,
     ) -> list[tuple[BeatId, tuple[Position, Position]]]:
         # TODO: currently only works for gong kebyar, not for semar pagulingan
 
@@ -205,7 +204,7 @@ class ScoreValidationAgent(Agent):
                 )
             )
 
-        valid_note_generator = ValidNoteGenerator(self.run_settings) if autocorrect else None
+        valid_note_generator = ValidNoteGenerator(self.run_settings)
         invalids = []
         corrected = []
         ignored = []
@@ -235,7 +234,7 @@ class ScoreValidationAgent(Agent):
                         orig_sangsih_str = "".join((n.symbol for n in beat.get_notes(sangsih, DEFAULT)))
                         # Check for incorrect sangsih values.
                         # When autocorrecting, run the code a second time to check for remaining errors.
-                        iterations = [1, 2] if autocorrect else [1]
+                        iterations = [1, 2]
                         for iteration in iterations:
                             notepairs = note_pairs(beat, (polos, sangsih))
                             for seq, (polosnote, sangsihnote) in enumerate(notepairs):
@@ -246,7 +245,7 @@ class ScoreValidationAgent(Agent):
                                     and not (sangsihnote.pitch, sangsihnote.octave)
                                     == kempyung_dict[(polosnote.pitch, polosnote.octave)]
                                 ):
-                                    if autocorrect and iteration == 2:
+                                    if iteration == 2:  # TODO autocorrect is always False here
                                         correct_pitch, correct_octave = kempyung_dict[
                                             (polosnote.pitch, polosnote.octave)
                                         ]
@@ -326,7 +325,6 @@ class ScoreValidationAgent(Agent):
         remaining_incorrect_ubitan = []
         # pylint: enable=unused-variable
 
-        autocorrect = self.score.settings.options.notation_to_midi.autocorrect
         detailed_logging = self.score.settings.options.notation_to_midi.detailed_validation_logging
 
         if self.score.settings.instrumentgroup != InstrumentGroup.GONG_KEBYAR:
@@ -335,7 +333,7 @@ class ScoreValidationAgent(Agent):
         gongan: Gongan
         for gongan in self.gongan_iterator(self.score):
             # Determine if the beat duration is a power of 2 (ignore kebyar)
-            invalids, corrected, ignored = self._invalid_beat_lengths(gongan, autocorrect)
+            invalids, corrected, ignored = self._invalid_beat_lengths(gongan)
             remaining_bad_beat_lengths.extend(invalids)
             corrected_beat_lengths.extend(corrected)
             ignored_beat_lengths.extend(ignored)
@@ -343,14 +341,13 @@ class ScoreValidationAgent(Agent):
             invalids, corrected, ignored = self._unequal_measure_lengths(
                 gongan,
                 beat_at_end=self.score.settings.notation_settings.beat_at_end,
-                autocorrect=autocorrect,
             )
 
             remaining_bad_measure_lengths.extend(invalids)
             corrected_measure_lengths.extend(corrected)
             ignored_measure_lengths.extend(ignored)
 
-            invalids, corrected, ignored = self._out_of_range(gongan, autocorrect=autocorrect)
+            invalids, corrected, ignored = self._out_of_range(gongan)
             remaining_note_out_of_range.extend(invalids)
             corrected_note_out_of_range.extend(corrected)
             ignored_note_out_of_range.extend(corrected)
@@ -359,7 +356,7 @@ class ScoreValidationAgent(Agent):
                 self.score.settings.instrumentgroup == InstrumentGroup.GONG_KEBYAR
                 and self.score.settings.notation_settings.autocorrect_kempyung
             ):
-                invalids, corrected, ignored = self._incorrect_kempyung(gongan, autocorrect=autocorrect)
+                invalids, corrected, ignored = self._incorrect_kempyung(gongan)
                 remaining_incorrect_kempyung.extend(invalids)
                 corrected_invalid_kempyung.extend(corrected)
                 ignored_invalid_kempyung.extend(ignored)
@@ -367,9 +364,9 @@ class ScoreValidationAgent(Agent):
         self.curr_gongan_id = None
         self.curr_beat_id = None
 
-        def log_list(loglevel: callable, title: str, list: list[Any]) -> None:
+        def log_list(loglevel: callable, title: str, thelist: list[Any]) -> None:
             loglevel(title)
-            for element in list:
+            for element in thelist:
                 loglevel(f"    {str(element)}")
 
         def log_results(
@@ -427,11 +424,11 @@ class ScoreValidationAgent(Agent):
             remaining_note_out_of_range,
         )
         global_kempyung_ignore = any(
-            (
-                meta
-                for meta in self.score.global_metadata[MetaType.VALIDATION]
-                if ValidationProperty.KEMPYUNG in meta.ignore
-            )
+            meta
+            for meta in self.score.global_metadata[MetaType.VALIDATION]
+            if ValidationProperty.KEMPYUNG in meta.ignore
+        ) or any(
+            meta for meta in self.score.global_metadata[MetaType.AUTOKEMPYUNG] if meta.status is MetaDataSwitch.OFF
         )
         log_results(
             "ALL KEMPYUNG PARTS ARE CORRECT",

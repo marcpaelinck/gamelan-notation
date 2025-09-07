@@ -168,7 +168,7 @@ class MidiPlayerUpdatePdfAgent(MidiPlayerUpdateAgentModel):
         return (
             run_settings.options.notation_to_midi.is_production_run
             and run_settings.options.notation_to_midi.save_pdf_notation
-            and run_settings.part_id == run_settings.notation_settings.generate_pdf_part_id
+            and run_settings.part_id == run_settings.configdata.notation.generate_pdf_part_id
         )
 
     @override

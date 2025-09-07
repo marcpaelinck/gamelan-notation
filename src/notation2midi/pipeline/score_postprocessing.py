@@ -333,8 +333,11 @@ class ScorePostprocessAgent(Agent):
             self.curr_line_nr = meta.line
             match meta:
                 case AutoKempyungMeta():
-                    # This metadata item is used in RulesEngine.cast_to_position to select the correct casting method.
-                    continue
+                    # Kempyung validation should be skipped
+                    # TODO Currently the validation is suppressed for ALL positions. Add a list of positions to beat.validation_ignore.
+                    if meta.status is MetaDataSwitch.OFF:
+                        for beat in gongan.beats:
+                            beat.validation_ignore.append(ValidationProperty.KEMPYUNG)
                 case GonganMeta():
                     # TODO: how to safely synchronize all instruments starting from next regular gongan?
                     gongan.gongantype = meta.type

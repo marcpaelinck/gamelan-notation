@@ -36,7 +36,7 @@ class MidiGeneratorAgent(Agent):
         self.part_info = PartForm(
             part=self.run_settings.part_id,
             file=self.run_settings.midi_out_file,
-            loop=self.run_settings.part_id in self.run_settings.notation_settings.loop,
+            loop=self.run_settings.notation_settings.loop,
         )
         self.midi_dict: dict[tuple[Pitch, int, Stroke], set[int]] = {
             (

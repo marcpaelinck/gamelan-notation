@@ -64,14 +64,25 @@ notation:
     # folder_in can contain separate subfolders (e.g. for each composition)
     folder_in: ./data/notation
     folder_out_prod: ./data/midiplayer
-    midi_out_file_pattern: !!str "{inputfilename}_{midiversion}.mid"
+    input_filename_pattern: "{notation_id} [{part_id}].tsv"
+    midi_out_file_pattern: !!str "{inputfilename} {midiversion}.mid"
     pdf_out_file_pattern: !!str "{inputfilename}.pdf"
     # part for which to generate a PDF notation document
     generate_pdf_part_id: full
     notation_extension: .tsv
-    entire_piece_partname: FULL
+    entire_piece_partname: full
     gongantypes_without_kempli: [KEBYAR, GINEMAN, GENDERAN]
-    # Default settings, can be overruled in input subfolder
+    defaults:
+        # Default settings can be overruled in input subfolder
+        parts:  # dict key -> part name to be displayed in app dropdown
+        - full
+        loop: []
+        beat_at_end: false
+        autocorrect_kempyung: true
+        include_in_run_types:
+        - RUN_SINGLE
+        - RUN_ALL
+        include_in_production_run: true
 font:
     folder: ./config/font
     font_file: balimusic5font.tsv
@@ -79,7 +90,8 @@ font:
     modifier_file: modifiers.tsv
 grammar:
     folder: ./config/grammars
-    notationfile: notation.ebnf
+    notationfile: notation_root.ebnf
+    notationinfofile: notationinfo_root.ebnf
     metadatafile: metadata.ebnf
     picklefile: notation_model.pickle
     fontfile: font5.ebnf

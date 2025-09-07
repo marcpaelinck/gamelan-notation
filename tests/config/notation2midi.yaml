@@ -9,7 +9,6 @@ options:
     is_production_run: false
     runtype: RUN_SINGLE
     detailed_validation_logging : false
-    autocorrect : true
     save_corrected_to_file : false
     save_midifile : true
     save_pdf_notation: false

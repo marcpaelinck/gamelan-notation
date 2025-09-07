@@ -126,7 +126,6 @@ class InstrumentTag(BaseModel, RunSettingsListener):
 
     tag: str
     positions: list[Position]
-    autocorrect: bool = False  # Indicates that parser should try to octavate to match the position's range.
 
     _TAG_TO_INSTRUMENTTAG_LIST: ClassVar[dict[str, "InstrumentTag"]]
     _TAG_SEPARATORS: ClassVar[str] = r"/|-|\||,|, "  # expected separators when tags are combined, e.g. ga

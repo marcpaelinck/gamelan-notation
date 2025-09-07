@@ -13,12 +13,16 @@ from src.notation2midi.metadata_classes import (
     KempliMeta,
     LabelMeta,
     LoopMeta,
+    MetaDataSwitch,
+    MetaType,
     OctavateMeta,
     PartMeta,
+    Scope,
     SequenceMeta,
     SuppressMeta,
     TempoMeta,
     ValidationMeta,
+    ValidationProperty,
     WaitMeta,
 )
 from src.settings.classes import RunSettings
