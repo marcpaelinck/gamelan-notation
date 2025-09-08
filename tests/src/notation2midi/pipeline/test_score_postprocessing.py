@@ -1,14 +1,7 @@
 from unittest.mock import MagicMock
 
 from src.common.classes import Beat, Gongan, Measure
-from src.common.constants import (
-    DEFAULT,
-    GonganType,
-    InstrumentType,
-    Pitch,
-    Position,
-    RuleValue,
-)
+from src.common.constants import DEFAULT, GonganType, InstrumentType, Pitch, Position
 from src.common.notes import Note, NoteFactory
 from src.notation2midi.execution.execution import Score
 from src.notation2midi.metadata_classes import (
@@ -124,7 +117,7 @@ class TestTScorePostprocessAgent(BaseUnitTestCase):
         pass
 
     def get_converter_gk(self):
-        run_settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
+        run_settings = Settings.get(notation_id="sinom ladrang gk", part_id="full")
         score = get_score(run_settings)
         return ScorePostprocessAgent(score)
 
@@ -211,7 +204,7 @@ class TestTScorePostprocessAgent(BaseUnitTestCase):
 
     def test_apply_meta(self):
         # Test for _apply_metadata method
-        Settings.get(notation_id="test-gongkebyar", part_id="full")  # Needed to initialize classes
+        Settings.get(notation_id="sinom ladrang gk", part_id="full")  # Needed to initialize classes
         converter = self.get_converter_gk()
         gongan: Gongan = None
         # pylint: disable=unnecessary-lambda-assignment

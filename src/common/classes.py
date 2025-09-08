@@ -212,7 +212,8 @@ class Beat(BaseModel):
     prev: Optional["Beat"] = Field(default=None, repr=False)  # previous beat in the score
     next: Optional["Beat"] = Field(default=None, repr=False)  # next beat in the score
     has_kempli_beat: bool = True
-    validation_ignore: list[ValidationProperty] = Field(default_factory=list)
+    # validation_ignore: list[ValidationProperty] = Field(default_factory=list)
+    validation_ignore: dict[ValidationProperty, list[Position]] = Field(default_factory=dict)
 
     @computed_field
     @property

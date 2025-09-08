@@ -2,7 +2,7 @@ import os
 from typing import override
 
 from src.notation2midi.classes import Agent
-from src.settings.classes import Content, PartForm, RunSettings, Song
+from src.settings.classes import Content, PartForm, RunSettings, RunType, Song
 from src.settings.constants import PresetsFields
 from src.settings.utils import pretty_compact_json
 
@@ -96,7 +96,7 @@ class MidiPlayerUpdatePartAgent(MidiPlayerUpdateAgentModel):
     @classmethod
     def run_condition_satisfied(cls, run_settings: RunSettings):
         return (
-            run_settings.options.notation_to_midi.is_production_run
+            run_settings.options.notation_to_midi.run_type is RunType.PRODUCTION
             and run_settings.options.notation_to_midi.save_midifile
         )
 
@@ -166,7 +166,7 @@ class MidiPlayerUpdatePdfAgent(MidiPlayerUpdateAgentModel):
     @classmethod
     def run_condition_satisfied(cls, run_settings: RunSettings):
         return (
-            run_settings.options.notation_to_midi.is_production_run
+            run_settings.options.notation_to_midi.run_type is RunType.PRODUCTION
             and run_settings.options.notation_to_midi.save_pdf_notation
             and run_settings.part_id == run_settings.configdata.notation.generate_pdf_part_id
         )

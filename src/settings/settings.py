@@ -61,14 +61,16 @@ class Settings:
         if part_id:
             cls.RUN_SETTINGS.part_id = part_id
 
-        logger.info(
-            "Loading run settings for composition %s - %s",
-            notation_id,
-            part_id,
-        )
+        if cls.RUN_SETTINGS.notation_id and cls.RUN_SETTINGS.part_id:
+            # Run the methods that listen to settings changes
+            logger.info(
+                "Loading run settings for composition %s - %s",
+                notation_id,
+                part_id,
+            )
 
-        for listener in cls.RUN_SETTINGS_LISTENERS:
-            listener(cls.RUN_SETTINGS)
+            for listener in cls.RUN_SETTINGS_LISTENERS:
+                listener(cls.RUN_SETTINGS)
 
         return cls.RUN_SETTINGS
 

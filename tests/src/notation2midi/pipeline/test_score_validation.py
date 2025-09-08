@@ -15,7 +15,7 @@ class ScoreValidationTester(BaseUnitTestCase):
 
     def setUp(self):
         # Create a sample gongan with one incorrect beat (PEMADE and SANGSIH are the same) and one correct beat
-        self.settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
+        self.settings = Settings.get(notation_id="sinom ladrang gk", part_id="full")
         P = PositionNote(Position.PEMADE_POLOS)
         S = PositionNote(Position.PEMADE_SANGSIH)
 

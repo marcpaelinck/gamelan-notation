@@ -1,4 +1,4 @@
-	{AUTOKEMPYUNG off scope=SCORE}
+{INFO notation=test_beat_at_end part=full title=Pendet instrumentgroup=GONG_KEBYAR font=BaliMusic5 run_types=[INTEGRATION_TEST] loop=false beat_at_end=true}
 
 comment	Kempli beat at end of each measure (gong at end of gongan)
 metadata	{KEMPLI status=off}

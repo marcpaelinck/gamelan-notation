@@ -17,7 +17,7 @@ from tests.src.utils_for_tests import PositionNote, create_gongan
 class ScoreToNotationTester(BaseUnitTestCase):
 
     def setUp(self):
-        settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
+        settings = Settings.get(notation_id="sinom ladrang gk", part_id="full")
         self.score = MagicMock(spec=Score)
         self.score.settings = settings
         self.symbol_to_note_lookup = {(note.position, note.symbol): note for note in NoteFactory.VALID_NOTES}

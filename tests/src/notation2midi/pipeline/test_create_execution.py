@@ -47,7 +47,7 @@ def create_beat(beat_id: int = 1, content: dict[PositionNote, list[Note]] = None
 class TestDictToScoreConverter(BaseUnitTestCase):
 
     def setUp(self):
-        self.settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
+        self.settings = Settings.get(notation_id="sinom ladrang gk", part_id="full")
 
     def get_converter_gk(self):
         mock_score = MagicMock(spec=Score)
@@ -81,7 +81,7 @@ class TestDictToScoreConverter(BaseUnitTestCase):
 
     def test_apply_meta(self):
         # Test for _apply_metadata method
-        # Settings.get(notation_id="test-gongkebyar", part_id="full")  # Needed to initialize classes
+        # Settings.get(notation_id="sinom ladrang gk", part_id="full")  # Needed to initialize classes
         converter = self.get_converter_gk()
         gongan: Gongan = None
         # pylint: disable=unnecessary-lambda-assignment

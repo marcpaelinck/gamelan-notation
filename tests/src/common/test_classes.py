@@ -15,8 +15,6 @@ from src.notation2midi.metadata_classes import (
     AutoKempyungMeta,
     MetaDataSwitch,
     MetaType,
-    ValidationMeta,
-    ValidationProperty,
 )
 from src.notation2midi.rules.rule import Instrument, ToneRange
 from src.notation2midi.rules.rule_cast_to_position import RuleCastToPosition
@@ -29,9 +27,9 @@ class ValidNoteTester(BaseUnitTestCase):
 
     def load_settings(self, group: InstrumentGroup) -> dict:
         if group is InstrumentGroup.GONG_KEBYAR:
-            composition = "test-gongkebyar"
+            composition = "sinom ladrang gk"
         elif group is InstrumentGroup.SEMAR_PAGULINGAN:
-            composition = "test-semarpagulingan"
+            composition = "sinom ladrang sp"
         else:
             raise ValueError(f"invalid instrument group {group}")
         return Settings.get(notation_id=composition, part_id="full")
@@ -145,11 +143,11 @@ class ToneTester(BaseUnitTestCase):
 
     def load_settings_sp(self):
         # Create mock notation and converter for semar pagulingan score
-        Settings.get(notation_id="test-semarpagulingan", part_id="full")
+        Settings.get(notation_id="sinom ladrang sp", part_id="full")
 
     def load_settings_gk(self):
         # Create mock notation and converter for gong kebyar score with beat at end
-        Settings.get(notation_id="test-gongkebyar", part_id="full")
+        Settings.get(notation_id="sinom ladrang gk", part_id="full")
 
     # fmt: off
     tone_range_data = [
@@ -180,7 +178,7 @@ class RuleTester(BaseUnitTestCase):
 
     def setUp(self):
         # Create mock notation and converter for gong kebyar score with beat at end
-        Settings.get(notation_id="test-gongkebyar", part_id="full")
+        Settings.get(notation_id="sinom ladrang gk", part_id="full")
 
     # fmt: off
     kempyung_tone_data = [

@@ -209,10 +209,12 @@ class ScoreValidationAgent(Agent):
         corrected = []
         ignored = []
         for beat in self.beat_iterator(gongan):
-            if ValidationProperty.KEMPYUNG in beat.validation_ignore:
-                ignored.append(f"BEAT {beat.full_id} skipped due to override")
-                continue
             for polos, sangsih in self.POSITIONS_VALIDATE_AND_CORRECT_KEMPYUNG:
+                if ValidationProperty.KEMPYUNG in beat.validation_ignore and (
+                    not (positions := beat.validation_ignore[ValidationProperty.KEMPYUNG]) or sangsih in positions
+                ):
+                    ignored.append(f"BEAT {beat.full_id} {sangsih} skipped due to override")
+                    continue
                 instrumentrange = [
                     (pitch, octave)
                     for (pitch, octave, stroke) in NoteFactory.get_all_p_o_e(polos)
@@ -352,10 +354,7 @@ class ScoreValidationAgent(Agent):
             corrected_note_out_of_range.extend(corrected)
             ignored_note_out_of_range.extend(corrected)
 
-            if (
-                self.score.settings.instrumentgroup == InstrumentGroup.GONG_KEBYAR
-                and self.score.settings.notation_settings.autocorrect_kempyung
-            ):
+            if self.score.settings.instrumentgroup == InstrumentGroup.GONG_KEBYAR:
                 invalids, corrected, ignored = self._incorrect_kempyung(gongan)
                 remaining_incorrect_kempyung.extend(invalids)
                 corrected_invalid_kempyung.extend(corrected)
@@ -427,8 +426,8 @@ class ScoreValidationAgent(Agent):
             meta
             for meta in self.score.global_metadata[MetaType.VALIDATION]
             if ValidationProperty.KEMPYUNG in meta.ignore
-        ) or any(
-            meta for meta in self.score.global_metadata[MetaType.AUTOKEMPYUNG] if meta.status is MetaDataSwitch.OFF
+            # ) or any(
+            #     meta for meta in self.score.global_metadata[MetaType.AUTOKEMPYUNG] if meta.status is MetaDataSwitch.OFF
         )
         log_results(
             "ALL KEMPYUNG PARTS ARE CORRECT",

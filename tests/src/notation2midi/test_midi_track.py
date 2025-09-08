@@ -26,7 +26,7 @@ def setUpModule():
 class TestSpecialNotes(BaseUnitTestCase):
     def setUp(self):
         """Creates a MidiTrackX instance"""
-        self.run_settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
+        self.run_settings = Settings.get(notation_id="sinom ladrang gk", part_id="full")
         position = Position.PEMADE_POLOS
         preset = Preset.get_preset(position)
         midi_generator = MidiGeneratorAgent(run_settings=self.run_settings, execution=ExecutionManager(score=None))

@@ -58,16 +58,15 @@ def run_multiple_pipelines(run_settings: RunSettings):
     Args:
         run_settings (RunSettings): list of (composition, part) pairs
     """
-    runtype = run_settings.options.notation_to_midi.runtype
-    is_production_run = run_settings.options.notation_to_midi.is_production_run
+    run_type = run_settings.options.notation_to_midi.run_type
 
     # Create a list of the notation entries that should be processed, based on
-    # their include_in_run_types and include_in_production_run attributes.
+    # their run_types.
     notation_list = [
         (notation_id, part_id)
         for (notation_id, part_id), notation_info in run_settings.notation_settings_dict.items()
-        if runtype in notation_info.include_in_run_types
-        and (not is_production_run or notation_info.include_in_production_run)
+        if run_type in notation_info.run_types
+        and (notation_id == run_settings.notation_id or not run_settings.notation_id)
     ]
     # Run the pipeline for each part of each song.
     for notation_id, part_id in notation_list:
@@ -78,13 +77,16 @@ def run_multiple_pipelines(run_settings: RunSettings):
 def main():
     logger.open_logging("NOTATION2MIDI")
     run_settings = Settings.get()
-    if not run_settings.options.notation_to_midi.is_production_run or askyesno(
+    if not run_settings.options.notation_to_midi.run_type is RunType.PRODUCTION or askyesno(
         "Warning", "Running production version. Continue?"
     ):
-        if run_settings.options.notation_to_midi.runtype in [RunType.RUN_ALL, RunType.RUN_INTEGRATION_TEST]:
-            run_multiple_pipelines(run_settings)
-        else:
+        if run_settings.notation_id and run_settings.part_id:
             run_pipeline(run_settings)
+        elif run_settings.options.notation_to_midi.run_type is RunType.INTEGRATION_TEST or askyesno(
+            "Warning",
+            f"Processing all notation files{" for " + run_settings.notation_id if run_settings.notation_id else ""}. Continue?",
+        ):
+            run_multiple_pipelines(run_settings)
     logger.close_logging()
 
 

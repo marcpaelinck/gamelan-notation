@@ -26,15 +26,20 @@ start  = "{"  @:metadata "}"  $  ;
 
 class NotationParserTester(BaseUnitTestCase):
     def setUp(self):
-        self.run_settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
+        self.run_settings = Settings.get(notation_id="sinom ladrang gk", part_id="full")
         self.parser = NotationParserAgent(self.run_settings)
+
+    info_statement = (
+        '{INFO notation="parser test" part=full title="test" instrumentgroup=GONG_KEBYAR font=BaliMusic5 '
+        "run_types=[UNIT_TEST] loop=false beat_at_end=false}\n"
+    )
 
     metadata = [
         [
             "{DYNAMICS value=f}",
             MetaDataRecord(
                 metatype="DYNAMICS",
-                line=1,
+                line=2,
                 to_abbr=DynamicLevel.FORTE,
             ),
         ],
@@ -42,7 +47,7 @@ class NotationParserTester(BaseUnitTestCase):
             "{DYNAMICS value=f, first_beat=13, positions=[gangsa]}",
             MetaDataRecord(
                 metatype="DYNAMICS",
-                line=1,
+                line=2,
                 to_abbr=DynamicLevel.FORTE,
                 first_beat=13,
                 positions=[
@@ -57,7 +62,7 @@ class NotationParserTester(BaseUnitTestCase):
             "{DYNAMICS value=f, positions=[gangsa, reyong], passes=[4, 8, 12]}",
             MetaDataRecord(
                 metatype="DYNAMICS",
-                line=1,
+                line=2,
                 to_abbr=DynamicLevel.FORTE,
                 passes=[4, 8, 12],
                 positions=[
@@ -76,7 +81,7 @@ class NotationParserTester(BaseUnitTestCase):
             "{DYNAMICS value=ff,  beat_count=8, pass=[3], positions=[gangsa]}",
             MetaDataRecord(
                 metatype="DYNAMICS",
-                line=1,
+                line=2,
                 to_abbr=DynamicLevel.FORTISSIMO,
                 beat_count=8,
                 passes=[3],
@@ -92,7 +97,7 @@ class NotationParserTester(BaseUnitTestCase):
             "{DYNAMICS ff  beat_count=8, pass=3, position=gangsa}",
             MetaDataRecord(
                 metatype="DYNAMICS",
-                line=1,
+                line=2,
                 to_abbr=DynamicLevel.FORTISSIMO,
                 beat_count=8,
                 passes=[3],
@@ -108,7 +113,7 @@ class NotationParserTester(BaseUnitTestCase):
             "{DYNAMICS value=ff first_beat=1 beat_count=8 pass=[3] positions=[gangsa]}",
             MetaDataRecord(
                 metatype="DYNAMICS",
-                line=1,
+                line=2,
                 to_abbr=DynamicLevel.FORTISSIMO,
                 first_beat=1,
                 beat_count=8,
@@ -121,51 +126,51 @@ class NotationParserTester(BaseUnitTestCase):
                 ],
             ),
         ],
-        ["{GONGAN type=gineman}", MetaDataRecord(metatype="GONGAN", line=1, type=GonganType.GINEMAN)],
-        ["{GONGAN kebyar}", MetaDataRecord(metatype="GONGAN", line=1, type=GonganType.KEBYAR)],
+        ["{GONGAN type=gineman}", MetaDataRecord(metatype="GONGAN", line=2, type=GonganType.GINEMAN)],
+        ["{GONGAN kebyar}", MetaDataRecord(metatype="GONGAN", line=2, type=GonganType.KEBYAR)],
         [
             "{GOTO label=D, passes=[3]}",
-            MetaDataRecord(metatype="GOTO", line=1, label="D", passes=[3]),
+            MetaDataRecord(metatype="GOTO", line=2, label="D", passes=[3]),
         ],
         [
             "{GOTO label=KAWITAN_ANGSEL, passes=[2,4]}",
-            MetaDataRecord(metatype="GOTO", line=1, label="KAWITAN_ANGSEL", passes=[2, 4]),
+            MetaDataRecord(metatype="GOTO", line=2, label="KAWITAN_ANGSEL", passes=[2, 4]),
         ],
         [
             "{GOTO label=END_PENGAWAK, passes=3}",
-            MetaDataRecord(metatype="GOTO", line=1, label="END_PENGAWAK", passes=[3]),
+            MetaDataRecord(metatype="GOTO", line=2, label="END_PENGAWAK", passes=[3]),
         ],
         [
             "{GOTO PENGAWAK_ANGSEL2, passes=[6, 12]}",
-            MetaDataRecord(metatype="GOTO", line=1, label="PENGAWAK_ANGSEL2", passes=[6, 12]),
+            MetaDataRecord(metatype="GOTO", line=2, label="PENGAWAK_ANGSEL2", passes=[6, 12]),
         ],
         [
             "{KEMPLI status=off, beats=[14,15,16]}",
-            MetaDataRecord(metatype="KEMPLI", line=1, status=MetaDataSwitch.OFF, beats=[14, 15, 16]),
+            MetaDataRecord(metatype="KEMPLI", line=2, status=MetaDataSwitch.OFF, beats=[14, 15, 16]),
         ],
         [
             "{KEMPLI status=on, beat=1}",
-            MetaDataRecord(metatype="KEMPLI", line=1, status=MetaDataSwitch.ON, beats=[1]),
+            MetaDataRecord(metatype="KEMPLI", line=2, status=MetaDataSwitch.ON, beats=[1]),
         ],
         [
             "{KEMPLI off beats=14}",
-            MetaDataRecord(metatype="KEMPLI", line=1, status=MetaDataSwitch.OFF, beats=[14]),
+            MetaDataRecord(metatype="KEMPLI", line=2, status=MetaDataSwitch.OFF, beats=[14]),
         ],
-        ["{LABEL name=D}", MetaDataRecord(metatype="LABEL", line=1, name="D")],
-        ["{LABEL END_PENGAWAK}", MetaDataRecord(metatype="LABEL", line=1, name="END_PENGAWAK")],
-        ["{PART name=batel}", MetaDataRecord(metatype="PART", line=1, name="batel")],
+        ["{LABEL name=D}", MetaDataRecord(metatype="LABEL", line=2, name="D")],
+        ["{LABEL END_PENGAWAK}", MetaDataRecord(metatype="LABEL", line=2, name="END_PENGAWAK")],
+        ["{PART name=batel}", MetaDataRecord(metatype="PART", line=2, name="batel")],
         [
             '{PART name="Pengecet part 2"}',
-            MetaDataRecord(metatype="PART", line=1, name="Pengecet part 2"),
+            MetaDataRecord(metatype="PART", line=2, name="Pengecet part 2"),
         ],
-        ["{PART batel}", MetaDataRecord(metatype="PART", line=1, name="batel")],
-        ["{REPEAT count=5}", MetaDataRecord(metatype="REPEAT", line=1, count=5)],
-        ["{REPEAT 3}", MetaDataRecord(metatype="REPEAT", line=1, count=3)],
+        ["{PART batel}", MetaDataRecord(metatype="PART", line=2, name="batel")],
+        ["{REPEAT count=5}", MetaDataRecord(metatype="REPEAT", line=2, count=5)],
+        ["{REPEAT 3}", MetaDataRecord(metatype="REPEAT", line=2, count=3)],
         [
             "{SEQUENCE value=[K_REGULAR, K_ANGSEL1, K_ANGSEL1, K_ANGSEL2, K_REGULAR, K_ANGSEL2, K_REGULAR, K_ANGSEL3, K_REGULAR, K_REGULAR, K_FINAL]}",
             MetaDataRecord(
                 metatype="SEQUENCE",
-                line=1,
+                line=2,
                 value=[
                     "K_REGULAR",
                     "K_ANGSEL1",
@@ -185,7 +190,7 @@ class NotationParserTester(BaseUnitTestCase):
             "{SEQUENCE [PENG1,PENG2, PENG1, PENG2, PENG3, PENG4, PENG3, PENG4, PENG1, PENG2, FINAL]}",
             MetaDataRecord(
                 metatype="SEQUENCE",
-                line=1,
+                line=2,
                 value=[
                     "PENG1",
                     "PENG2",
@@ -205,7 +210,7 @@ class NotationParserTester(BaseUnitTestCase):
             '{SUPPRESS positions=["gangsa p", "gangsa s"], beats=[2,3,4,5,6,7,8], passes=[1, 2,3]}',
             MetaDataRecord(
                 metatype="SUPPRESS",
-                line=1,
+                line=2,
                 positions=[
                     Position.PEMADE_POLOS,
                     Position.KANTILAN_POLOS,
@@ -220,7 +225,7 @@ class NotationParserTester(BaseUnitTestCase):
             "{SUPPRESS [reyong, gangsa] beat=[1, 2], pass=1}",
             MetaDataRecord(
                 metatype="SUPPRESS",
-                line=1,
+                line=2,
                 positions=[
                     Position.REYONG_1,
                     Position.REYONG_2,
@@ -237,37 +242,38 @@ class NotationParserTester(BaseUnitTestCase):
         ],
         [
             "{TEMPO value=100, beat_count=8, pass=[2]}",
-            MetaDataRecord(metatype="TEMPO", line=1, to_value=100, beat_count=8, passes=[2]),
+            MetaDataRecord(metatype="TEMPO", line=2, to_value=100, beat_count=8, passes=[2]),
         ],
         [
             "{TEMPO value=100,  beat_count=0}",
-            MetaDataRecord(metatype="TEMPO", line=1, to_value=100, beat_count=0),
+            MetaDataRecord(metatype="TEMPO", line=2, to_value=100, beat_count=0),
         ],
         [
             "{TEMPO 100  beat_count=8, passes=3}",
-            MetaDataRecord(metatype="TEMPO", line=1, to_value=100, beat_count=8, passes=[3]),
+            MetaDataRecord(metatype="TEMPO", line=2, to_value=100, beat_count=8, passes=[3]),
         ],
         [
             "{TEMPO value=47, passes=[1,2], first_beat=5, beat_count=3}",
-            MetaDataRecord(metatype="TEMPO", line=1, to_value=47, first_beat=5, beat_count=3, passes=[1, 2]),
+            MetaDataRecord(metatype="TEMPO", line=2, to_value=47, first_beat=5, beat_count=3, passes=[1, 2]),
         ],
         [
             "{VALIDATION ignore=[kempyung], scope=SCORE}",
-            MetaDataRecord(metatype="VALIDATION", scope=Scope.SCORE, line=1, ignore=[ValidationProperty.KEMPYUNG]),
+            MetaDataRecord(metatype="VALIDATION", scope=Scope.SCORE, line=2, ignore=[ValidationProperty.KEMPYUNG]),
         ],
         [
             '{VALIDATION ["beat-duration"]}',
-            MetaDataRecord(metatype="VALIDATION", line=1, ignore=[ValidationProperty.BEAT_DURATION]),
+            MetaDataRecord(metatype="VALIDATION", line=2, ignore=[ValidationProperty.BEAT_DURATION]),
         ],
-        ["{WAIT seconds=3}", MetaDataRecord(metatype="WAIT", line=1, seconds=3.0)],
-        ["{WAIT 2.25}", MetaDataRecord(metatype="WAIT", line=1, seconds=2.25)],
+        ["{WAIT seconds=3}", MetaDataRecord(metatype="WAIT", line=2, seconds=3.0)],
+        ["{WAIT 2.25}", MetaDataRecord(metatype="WAIT", line=2, seconds=2.25)],
     ]
 
     def test_parse_metadata(self):
         for metanotation, expected in self.metadata:
             with self.subTest(notation=metanotation):
                 gongan = "ugal\t\n"  # need to append dummy gongan to create valid notation
-                notation = self.parser._main(notation="metadata\t" + metanotation + "\n\n" + gongan)
+                notation_str = self.info_statement + "metadata\t" + metanotation + "\n\n" + gongan
+                notation = self.parser._main(notation=notation_str)
                 self.assertEqual(notation.notation_dict[-1][ParserTag.METADATA][0], expected)
 
     # Tests for range_str_to_list

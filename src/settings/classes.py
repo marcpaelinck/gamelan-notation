@@ -250,9 +250,11 @@ class Content(BaseModel):
 
 
 class RunType(StrEnum):
-    RUN_SINGLE = "RUN_SINGLE"
-    RUN_ALL = "RUN_ALL"
-    RUN_INTEGRATION_TEST = "RUN_INTEGRATION_TEST"
+    DEBUG = "DEBUG"
+    PRODUCTION = "PRODUCTION"
+    UNIT_TEST = "UNIT_TEST"
+    INTEGRATION_TEST = "INTEGRATION_TEST"
+    INTEGRATION_TEST_SMALL = "INTEGRATION_TEST_SMALL"
 
 
 class ConfigInstrumentInfo(BaseModel):
@@ -402,8 +404,8 @@ class ConfigPdfConverterInfo(BaseModel):
 
 
 class ConfigNotationInfo(BaseModel):
-    # folder_in can contain separate subfolders (e.g. for each composition)
-    folder_in: str
+    # root_folder_in can contain separate subfolders (e.g. for each composition)
+    root_folder_in: str
     folder_out_prod: str
     notation_extension: str
     gongantypes_without_kempli: list[GonganType]
@@ -412,7 +414,13 @@ class ConfigNotationInfo(BaseModel):
     midi_out_file_pattern: str
     pdf_out_file_pattern: str
     generate_pdf_part_id: str
-    defaults: dict = Field(default_factory=dict)
+
+
+class ConfigUnittestInfo(BaseModel):
+    folder_in_integration_test: str
+    folder_out_integration_test: str
+    folder_out_integration_test_small: str
+    folder_reference_integration_test: str
 
 
 class NotationSettings(BaseModel):
@@ -422,30 +430,24 @@ class NotationSettings(BaseModel):
     instrumentgroup: InstrumentGroup
     fontversion: NotationFontVersion
     filename: str
-    folder_in: str
+    folder_in: str  # relative path to (sub)folder containing the notation file
     folder_out_nonprod: str = None  # if None, the same folder as folder_in will be used
     loop: bool
     beat_at_end: bool
-    include_in_production_run: bool
-    # discard the following attributes
-    include_in_run_types: list[RunType] = Field(default_factory=list)
-    autocorrect_kempyung: bool
-    parts: list[str]
+    run_types: list[RunType] = Field(default_factory=list)
 
 
 class SettingsOptions(BaseModel):
     class NotationToMidiOptions(BaseModel):
-        runtype: RunType
+        run_type: RunType
         detailed_validation_logging: bool
         save_corrected_to_file: bool
         save_pdf_notation: bool
         save_midifile: bool
-        is_production_run: bool
-        is_integration_test: bool = False
 
         @property
         def update_midiplayer_content(self) -> bool:
-            return self.is_production_run
+            return self.run_type is RunType.PRODUCTION
 
     class SoundfontOptions(BaseModel):
         run: bool
@@ -487,6 +489,7 @@ class ConfigData(BaseModel):
     patterns: ConfigPatternInfo
     font: ConfigFontInfo
     notation: ConfigNotationInfo
+    unittest: ConfigUnittestInfo | None
     grammar: ConfigGrammarInfo
     samples: ConfigSampleInfo
     soundfont: ConfigSoundfontInfo
@@ -516,7 +519,7 @@ class RunSettings(BaseModel):
 
     @property
     def notation_settings(self) -> NotationSettings:
-        return self.notation_settings_dict[self.notation_id, self.part_id]
+        return self.notation_settings_dict.get((self.notation_id, self.part_id), None)  # pylint: : disable=no-member
 
     @property
     def midi(self) -> ConfigMidiInfo:
@@ -563,16 +566,33 @@ class RunSettings(BaseModel):
         return self.configdata.notation.pdf_out_file_pattern.format(inputfilename=inputfilename)
 
     @property
+    def folder_in(self) -> str:
+        return (
+            self.configdata.notation.root_folder_in
+            if self.options.notation_to_midi.run_type in [RunType.PRODUCTION, RunType.DEBUG, RunType.UNIT_TEST]
+            else (
+                self.configdata.unittest.folder_in_integration_test
+                if self.options.notation_to_midi.run_type in [RunType.INTEGRATION_TEST, RunType.INTEGRATION_TEST_SMALL]
+                else None
+            )
+        )
+
+    @property
     def folder_out(self) -> str:
         return (
             self.configdata.notation.folder_out_prod
-            if self.options.notation_to_midi.is_production_run
+            if self.options.notation_to_midi.run_type is RunType.PRODUCTION
             else (
                 self.notation_settings.folder_out_nonprod
-                or (
-                    self.configdata.notation.folder_in
-                    if self.options.notation_to_midi.runtype is RunType.RUN_INTEGRATION_TEST
-                    else self.notation_settings.folder_in
+                if self.notation_settings and self.options.notation_to_midi.run_type is RunType.DEBUG
+                else (
+                    self.configdata.unittest.folder_out_integration_test
+                    if self.options.notation_to_midi.run_type is RunType.INTEGRATION_TEST
+                    else (
+                        self.configdata.unittest.folder_out_integration_test_small
+                        if self.options.notation_to_midi.run_type is RunType.INTEGRATION_TEST_SMALL
+                        else self.notation_settings.folder_in if self.notation_settings else None
+                    )
                 )
             )
         )
@@ -612,7 +632,7 @@ class RunSettings(BaseModel):
 
     def _post_process(self, subdict: dict[str, Any], run_settings_dict: dict[str, Any] = None, curr_path: list = None):
         """This function enables references to yaml key values using ${<yaml_path>} notation.
-        e.g.: ${notations.defaults.include_in_production_run}
+        e.g.: ${notation.root_folder_in}
         The function substitutes these references with the corresponding yaml settings values.
         Does not (yet) implement usage of references within a list structure.
 
@@ -721,38 +741,13 @@ class RunSettings(BaseModel):
             return False
         return True
 
-    def read_notation_settings_old(self):
-        """Reads notation_settings for all notations."""
-
-        if self.options.notation_to_midi.runtype is RunType.RUN_INTEGRATION_TEST:
-            # Expecting a single folder containing all input files and a single settings file
-            notations_filepath = os.path.join(self.configdata.notation.folder_in, "settings.yaml")
-            if os.path.exists(notations_filepath):
-                settings_dict_json = self._read_settings(notations_filepath)
-                for notation_id, notation_info in settings_dict_json.items():
-                    self.notation_settings_dict[notation_id] = NotationSettings(**notation_info)
-            else:
-                raise FileNotFoundError("settings.yaml file not found in integration test folder")
-        else:
-            notations = {f.name: f.path for f in os.scandir(self.configdata.notation.folder_in) if f.is_dir()}
-
-            for notation_id, subfolder_path in notations.items():
-                notations_filepath = os.path.join(subfolder_path, "settings.yaml")
-                if os.path.exists(notations_filepath):
-                    # Merge default settings with notation-specific settings
-                    self.notation_settings_dict[notation_id] = NotationSettings(
-                        **(self.configdata.notation.defaults | self._read_settings(notations_filepath))
-                    )
-
     def read_notation_settings(self):
         """Populates the self.notation_settings_dict by processing the INFO statement of each notation file
         that is found in self.configdata.notation.folder_in and all of its subfolders."""
 
         # Make a list of file paths to all notation files (*.tsv) found in self.configdata.notation.folder_in
         # and all its subfolders
-        folders = [self.configdata.notation.folder_in] + [
-            f.path for f in os.scandir(self.configdata.notation.folder_in) if f.is_dir()
-        ]
+        folders = [self.folder_in] + [f.path for f in os.scandir(self.folder_in) if f.is_dir()]
         notation_paths = sum(
             [
                 [(folder, f.name) for f in os.scandir(folder) if f.is_file() and f.name.endswith(".tsv")]
@@ -761,7 +756,8 @@ class RunSettings(BaseModel):
             [],
         )
 
-        # Search pattern for the INFO statement that should occur at the beginning of a notation file.
+        # Search pattern for the INFO statement that should occur at the beginning of each notation file
+        # that should be processed.
         info_pattern = re.compile(r"\{INFO.*\}")
 
         # Process the INFO statement of each notation file. Skip files missing an INFO statement or
@@ -775,15 +771,11 @@ class RunSettings(BaseModel):
                 content = notation_file.read()
                 if match := info_pattern.search(content):
                     notation_info = grammar.parse(match.group(0))
-                    # Flatten the notation info structure: move the parameters under the 'parameters' key
+                    # Flatten the notation info structure: move the content of the 'parameters' key
                     # to the top level of the dict structure.
                     list(map(lambda x: notation_info.update(x), notation_info["parameters"]))
                     notation_settings = NotationSettings(
-                        **(
-                            self.configdata.notation.defaults
-                            | notation_info
-                            | {"folder_in": folder, "filename": filename}
-                        )
+                        **(notation_info | {"folder_in": folder, "filename": filename})
                     )
                     self.notation_settings_dict[notation_settings.notation_id, notation_settings.part_id] = (
                         notation_settings
@@ -804,7 +796,6 @@ class RunSettings(BaseModel):
             RunSettings: settings object
         """
         config_filepath = os.getenv(ENV_VAR_CONFIG_PATH)
-        # notations_filepath = os.getenv(ENV_VAR_NOTATIONS_PATH)
         settings_data_dict = self._read_settings(config_filepath)
         settings_data_dict = self._post_process(settings_data_dict)
 

@@ -79,13 +79,9 @@ def create_menu():
     _, runtype = add_item(
         ItemType.DROPDOWN,
         label="Runtype",
-        value=run_settings.options.notation_to_midi.runtype,
+        value=run_settings.options.notation_to_midi.run_type,
         values=[item.value for item in RunType],
     )
-    _, production = add_item(
-        ItemType.BOOL, label="Production", value=run_settings.options.notation_to_midi.is_production_run
-    )
-
     _, save_pdf = add_item(
         ItemType.BOOL, label="create pdf notation", value=run_settings.options.notation_to_midi.save_pdf_notation
     )
@@ -108,7 +104,6 @@ def create_menu():
     print(notation.get())
     print(part.get())
     print(runtype.get())
-    print(f"production: {production.get()}")
     print(f"save_pdf: {save_pdf.get()}")
     print(f"save_midifile: {save_midifile.get()}")
     print(f"save_corrected: {save_corrected.get()}")

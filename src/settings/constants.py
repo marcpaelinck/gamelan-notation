@@ -6,7 +6,6 @@ from src.common.constants import NotationEnum
 
 # Names of the environment variables in the .env and .env.test files
 ENV_VAR_CONFIG_PATH = "GAMELAN_NOTATION_CONFIG_PATH"
-ENV_VAR_NOTATIONS_PATH = "GAMELAN_NOTATION_NOTATIONDOCS_PATH"
 ENV_VAR_N2M_SETTINGS_PATH = "GAMELAN_NOTATION_N2M_SETTINGS_PATH"
 ENV_VAR_SETTINGS_DATA_FOLDER = "GAMELAN_NOTATION_SETTINGS_DATA_FOLDER"
 
@@ -177,7 +176,7 @@ class Yaml(SStrEnum):
     OPTIONS = "options"
     NOTATION_TO_MIDI = "notation_to_midi"
     NOTATION_SETTINGS = "notation_settings"
-    RUNTYPE = "runtype"
+    RUN_TYPE = "run_type"
     COMPOSITION = "composition"
     NOTATION_ID = "notation_id"
     PART_ID = "part_id"

@@ -337,7 +337,7 @@ class ScorePostprocessAgent(Agent):
                     # TODO Currently the validation is suppressed for ALL positions. Add a list of positions to beat.validation_ignore.
                     if meta.status is MetaDataSwitch.OFF:
                         for beat in gongan.beats:
-                            beat.validation_ignore.append(ValidationProperty.KEMPYUNG)
+                            beat.validation_ignore[ValidationProperty.KEMPYUNG] = meta.positions
                 case GonganMeta():
                     # TODO: how to safely synchronize all instruments starting from next regular gongan?
                     gongan.gongantype = meta.type
@@ -401,7 +401,8 @@ class ScorePostprocessAgent(Agent):
                     pass
                 case ValidationMeta():
                     for beat in [b for b in gongan.beats if b.id in meta.beats] or gongan.beats:
-                        beat.validation_ignore.extend(meta.ignore)
+                        for ignore in meta.ignore:
+                            beat.validation_ignore[ignore] = self.score.instrument_positions
                 case WaitMeta():
                     # Add a beat with silences at the end of the gongan.
                     # The beat's bpm is set to 60 for easy calculation.
@@ -412,7 +413,7 @@ class ScorePostprocessAgent(Agent):
                         prev=lastbeat,
                         next=lastbeat.next,
                         has_kempli_beat=False,
-                        validation_ignore=[ValidationProperty.BEAT_DURATION],
+                        validation_ignore={ValidationProperty.BEAT_DURATION: self.score.instrument_positions},
                     )
                     if lastbeat.next:
                         # modify the default next and prev pointes

@@ -86,7 +86,7 @@ class TestDictToScoreConverter(BaseUnitTestCase):
         pass
 
     def get_converter_gk(self):
-        settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
+        settings = Settings.get(notation_id="sinom ladrang gk", part_id="full")
         mock_notation = MagicMock(spec=Notation)
         mock_notation.settings = settings
         mock_notation.notation_dict = get_notation()

@@ -13,8 +13,7 @@ ordered_fields = [
     "loop",
     "input_filename_pattern",
     "beat_at_end",
-    "include_in_run_types",
-    "include_in_production_run",
+    "run_types",
 ]
 
 
@@ -75,7 +74,7 @@ def add_info_to_notations(data_folder: str):
     fmt = (
         "{{INFO notation={notation} part={part} "
         "title={title} instrumentgroup={instrumentgroup} "
-        "font={font} production={production} "
+        "font={font} runtypes={runtypes} "
         "loop={loop} beat_at_end={beat_at_end}}}"
     )
 
@@ -96,7 +95,7 @@ def add_info_to_notations(data_folder: str):
         for path in paths
     ]
 
-    defaults = {"production": True, "loop": False, "beat_at_end": False}
+    defaults = {"runtypes": ["DEBUG", "PRODUCTION"], "loop": False, "beat_at_end": False}
     for notation_dict in notations:
         shutil.copy(notation_dict["path"].replace(".tsv", "_OLD.tsv"), notation_dict["path"])
         with open(os.path.dirname(notation_dict["path"]) + "/settings.yaml", "r", encoding="utf-8") as settingsfile:
@@ -111,7 +110,7 @@ def add_info_to_notations(data_folder: str):
                 title=n("title"),
                 instrumentgroup=n("instrumentgroup"),
                 font=n("fontversion"),
-                production=n("production"),
+                runtypes=n("runtypes"),
                 loop="false" if n("part") == "full" else "true",
                 beat_at_end=n("beat_at_end"),
             )
@@ -128,7 +127,7 @@ def add_info_to_notations(data_folder: str):
                 title=n("title"),
                 instrumentgroup=n("instrumentgroup"),
                 font=n("fontversion"),
-                production=n("production"),
+                runtypes=n("runtypes"),
                 loop="false" if n("part") == "full" else "true",
                 beat_at_end=n("beat_at_end"),
             )

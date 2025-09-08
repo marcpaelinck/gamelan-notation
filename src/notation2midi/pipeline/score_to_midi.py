@@ -15,7 +15,7 @@ from src.notation2midi.classes import Agent
 from src.notation2midi.execution.execution import ExecutionManager
 from src.notation2midi.metadata_classes import MetaType
 from src.notation2midi.midi.midi_track import BeatInfo, MidiTrackX, TimeUnit
-from src.settings.classes import PartForm, RunSettings
+from src.settings.classes import PartForm, RunSettings, RunType
 from src.settings.constants import MidiNotesFields
 
 
@@ -114,9 +114,11 @@ class MidiGeneratorAgent(Agent):
             if not temp or (beat.gongan_id != temp[-1].gongan_id) or (beat.id <= temp[-1].id):
                 temp.append(beat)
                 flow.append(beat.gongan_id)
-            # self.loginfo(f"beat={beat.full_id}")
             # Add a marker with the beat full_id for easier debugging when running the integration test.
-            if self.run_settings.options.notation_to_midi.is_integration_test:
+            if self.run_settings.options.notation_to_midi.run_type in [
+                RunType.INTEGRATION_TEST,
+                RunType.INTEGRATION_TEST_SMALL,
+            ]:
                 track.marker(f"b_{beat.full_id}")
             # If a new part is encountered, store timestamp and name in the midiplayer_data section of the score
             store_part_info(beat)

@@ -30,11 +30,11 @@ class TestUtils(BaseUnitTestCase):
     """Test case for the src.notation2midi.score2notation.utils module"""
 
     def setUp(self):
-        self.settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
+        self.settings = Settings.get(notation_id="sinom ladrang gk", part_id="full")
 
     @classmethod
     def mock_score(cls):
-        settings = Settings.get(notation_id="test-gongkebyar", part_id="full")
+        settings = Settings.get(notation_id="sinom ladrang gk", part_id="full")
         mock_score = MagicMock(spec=Score, settings=settings)
         return mock_score
 
