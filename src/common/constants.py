@@ -68,7 +68,7 @@ class NotationEnum(StrEnum):
         return cls[value] if value in cls else notfoundval
 
     @classmethod
-    def __get_pydantic_core_schema__(cls, source_type, handler):
+    def __get_pydantic_core_schema__(cls, source_type, handler):  # pylint: disable=unused-argument
         # Create a schema that checks for valid names or values
         return core_schema.union_schema(
             [
