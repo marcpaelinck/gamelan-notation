@@ -17,7 +17,7 @@ from src.notation2midi.metadata_classes import DynamicsMeta, TempoMeta
 
 class Flow(BaseModel):
     """Generic class that describes the sequence in which beats should be executed.
-    The cycle variable enables to define cyclic flows, such as 'go to beat x on every third pass'"""
+    The cycle variable enables to define cyclic flows, such as 'go to beat x on every third pass.'"""
 
     MAXCYCLE: ClassVar[int] = 99  # Maximum value for a cycle
     cycle: int = MAXCYCLE  # Determines when counter should be reset

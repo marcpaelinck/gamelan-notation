@@ -582,7 +582,7 @@ class RunSettings(BaseModel):
             self.configdata.notation.folder_out_prod
             if self.options.notation_to_midi.run_type is RunType.PRODUCTION
             else (
-                self.notation_settings.folder_out_nonprod
+                self.notation_settings.folder_out_nonprod or self.notation_settings.folder_in
                 if self.notation_settings and self.options.notation_to_midi.run_type is RunType.DEBUG
                 else (
                     self.configdata.unittest.folder_out_integration_test

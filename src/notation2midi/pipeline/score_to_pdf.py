@@ -30,13 +30,13 @@ from src.notation2midi.metadata_classes import (
     SequenceMeta,
     TempoMeta,
 )
-from src.notation2midi.pipeline.parse_notation import PassID
-from src.notation2midi.score2notationutils.formatting import (
+from src.notation2midi.pdf.formatting import (
     NotationTemplate,
     RowType,
     SpanType,
     TableContent,
 )
+from src.notation2midi.pipeline.parse_notation import PassID
 from src.notation2midi.score2notationutils.utils import (
     aggregate_positions,
     clean_staves,
@@ -206,18 +206,17 @@ class PDFGeneratorAgent(Agent):
 
             span = None
             if span_range[0] != span_range[1]:
+                # Create a span command for metadata spanning more than one beat
                 span = ("SPAN", (span_range[0], len(content.data)), (span_range[1], len(content.data)))
 
-            # Add dots if necessary for metadata spanning more than one beat
-            if span_range[0] != span_range[1]:
+            # Add dots to the metadata text so that it spans over the entire column range,
+            # but only if the column range was not extended to accommodate the text.
+            dots = ""
+            if span_range == col_range:
                 freespace = span_width(*span_range) - textwidth - delta
                 if getattr(meta, "beat_count", None) and meta.beat_count > 1 and freespace > 0:
                     nrdots = int(freespace / stringWidth("." * 10, parastyle.fontName, parastyle.fontSize) * 10)
                     dots = "." * nrdots
-                else:
-                    dots = ""
-            else:
-                dots = ""
 
             # Determine the required cell height
             available_width = sum(all_colwidths[c] for c in range(span_range[0], span_range[1] + 1))
@@ -289,10 +288,6 @@ class PDFGeneratorAgent(Agent):
             gongan (Gongan): the gongan to which the metadata belongs
             above_notation (bool): Selects which metadata to generate
         """
-        metaclasses = {meta.__class__ for meta in gongan.metadata}
-        metadict = {
-            metaclass: [meta for meta in gongan.metadata if meta.__class__ == metaclass] for metaclass in metaclasses
-        }
         if above_notation:
             # Content that should occur before the notation part of the gongan
             # still to add: SuppressMeta
@@ -304,7 +299,7 @@ class PDFGeneratorAgent(Agent):
             content = self._append_comments(content, gongan.comments)
 
             for metatype in [MetaType.TEMPO, MetaType.DYNAMICS, MetaType.LABEL]:
-                if metalist := metadict.get(metatype, None):
+                if metalist := gongan.metadata.get(metatype, None):
                     content = self._append_single_metadata_type(
                         content, metalist=metalist, **self.template.metaFormatParameters[metatype]
                     )
@@ -312,7 +307,7 @@ class PDFGeneratorAgent(Agent):
         if not above_notation:
             # Content that should occur after the notation part of the gongan
             for metatype in [MetaType.LOOP, MetaType.GOTO, MetaType.SEQUENCE]:
-                if metalist := metadict.get(metatype, None):
+                if metalist := gongan.metadata.get(metatype, None):
                     if metatype is SequenceMeta:
                         content.append_empty_row(
                             col_span=[1, -1], rowtype=RowType.EMPTY, parastyle=self.template.basicparaStyle
