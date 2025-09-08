@@ -19,17 +19,7 @@ from src.common.constants import Modifier, Position
 from src.common.notes import Note
 from src.notation2midi.classes import Agent
 from src.notation2midi.execution.execution import Score
-from src.notation2midi.metadata_classes import (
-    DynamicsMeta,
-    GoToMeta,
-    LabelMeta,
-    LoopMeta,
-    MetaData,
-    MetaType,
-    PartMeta,
-    SequenceMeta,
-    TempoMeta,
-)
+from src.notation2midi.metadata_classes import MetaData, MetaType
 from src.notation2midi.pipeline.parse_notation import PassID
 from src.notation2midi.score2notationutils.formatting import (
     NotationTemplate,
@@ -313,7 +303,7 @@ class PDFGeneratorAgent(Agent):
             # Content that should occur after the notation part of the gongan
             for metatype in [MetaType.LOOP, MetaType.GOTO, MetaType.SEQUENCE]:
                 if metalist := metadict.get(metatype, None):
-                    if metatype is SequenceMeta:
+                    if metatype is MetaType.SEQUENCE:
                         content.append_empty_row(
                             col_span=[1, -1], rowtype=RowType.EMPTY, parastyle=self.template.basicparaStyle
                         )  # add an empty row as a separator

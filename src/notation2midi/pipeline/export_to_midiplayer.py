@@ -29,7 +29,25 @@ class MidiPlayerUpdateAgentModel(Agent):
             playercontent (Content): content that should be saved to the config file.
             filename (str, optional): name of the config file. Defaults to None.
         """
+        # Sort the songs and parts lists
         playercontent.songs = sorted(playercontent.songs, key=lambda s: s.title)
+        part_order = (
+            "full",
+            "intro",
+            "reyong intro",
+            "kawitan",
+            "kawitan angsel",
+            "pepeson",
+            "pengawak",
+            "pengawak reyong",
+            "pengecet",
+            "pengecet1",
+            "pengecet2",
+            "pekaad",
+        )
+        for song in playercontent.songs:
+            song.parts = sorted(song.parts, key=lambda x: 99 if x.part not in part_order else part_order.index(x.part))
+
         contentfilepath = os.path.join(datafolder, filename)
         tempfilepath = os.path.join(datafolder, "_" + filename)
         try:
@@ -197,7 +215,6 @@ class MidiPlayerUpdatePdfAgent(MidiPlayerUpdateAgentModel):
             )
             self.loginfo("New song %s created for MIDI player content", player_song.title)
 
-        content.songs = sorted(content.songs, key=lambda s: s.title)
         self._save_midiplayer_content(
             content, self.run_settings.midiplayer.folder, self.run_settings.midiplayer.contentfile
         )

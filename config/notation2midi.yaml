@@ -3,19 +3,19 @@
 # The settings below (except for options) refer to values in the data.yaml file.
 # Leave `notation_id` blank to process all notation files.
 # Leave `part_id` blank to process all notation files with the given notation_id.
-notation_id: legong mahawidya gk
-part_id: 
+notation_id: 
+part_id: full
 options:
   debug_logging: false
   notation_to_midi:
     # runtype: DEBUG - output is saved in the subfolder of the `notation` data folder specified in config.yaml.
     #          PRODUCTION  - output is saved in the `midiplayer` data folder and the `content.json` file is updated.
     #          INTEGRATION_TEST - should only be used in the unit test environment
-    run_type: DEBUG
-    detailed_validation_logging : true
+    run_type: PRODUCTION
+    detailed_validation_logging : false
     # `save_corrected_to_file`: true - saves a new version of the input file after processing it. Will include autocorrections.
     save_corrected_to_file : false
-    save_pdf_notation: false
-    save_midifile : false
+    save_pdf_notation: true
+    save_midifile : true
     # If update_midiplayer_content==true, MIDI file is saved in midiplayer folder and content.json file is updated.
     # This setting is only effective if the runtype is RUN_ALL.
