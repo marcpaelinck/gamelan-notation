@@ -316,10 +316,6 @@ class MidiTrackX(MidiTrack):
             pitch = first_msg_json["pitch"]
             octave = first_msg_json["octave"]
             time_until = first_msg_json["timeuntil"] + int(self.current_millitime - self.last_hh_millitime)
-            # else:
-            #     pitch = "NONE"
-            #     octave = 0
-            #     time_until = 0
         else:
             pitch = note.pitch
             octave = note.octave

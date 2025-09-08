@@ -89,7 +89,6 @@ class MidiGeneratorAgent(Agent):
                 if self.part_info.markers.get(partinfo[0].name, None):
                     # Return if the part has already been registered
                     return
-                # curr_time = track.current_time_in_millis()
                 curr_time = track.current_millitime
                 self.part_info.markers[partinfo[0].name] = int(curr_time)
 
@@ -107,7 +106,6 @@ class MidiGeneratorAgent(Agent):
 
         # Select the first beat.
         beat = self.exec_mgr.next_beat_in_flow()
-        # beat = self.score.gongans[0].beats[0]
         temp = []
         flow = []
         while beat:

@@ -34,7 +34,6 @@ def create_soundfont_definition_file(run_settings: RunSettings) -> None:
         for instrument in InstrumentType
     }
 
-    # workbook = SoundfontWorkbook(midi_dict=midi_dict, preset_dict=preset_dict, settings=run_settings)
     sf_file = SoundfontTextfile(midi_dict=instrument_to_midi_dict, settings=run_settings)
     sf_file.create_soundfont_definition()
     filepath = sf_file.save()

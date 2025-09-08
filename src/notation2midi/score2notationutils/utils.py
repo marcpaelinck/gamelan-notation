@@ -45,7 +45,6 @@ def measure_to_str_rml_safe(
     if not notes:
         return ""
     notechars = html.escape("".join(format_symbol(note) for note in notes))
-    # notechars = notechars.replace("[]", "&lbrack;").replace("]", "&rbrack;")
     return notechars
 
 

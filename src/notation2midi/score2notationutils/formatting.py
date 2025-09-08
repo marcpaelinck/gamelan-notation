@@ -432,7 +432,6 @@ class NotationTemplate:
             data=content.data,
             colWidths=content.colwidths,
             style=content.style,
-            # rowHeights=[self.table_row_height * lines + 2 * self.cell_padding_TB for lines in content.rowheights],
             rowHeights=content.rowheights,
             splitByRow=False,  # dont'split the table over multiple pages
             hAlign="LEFT",  # align table with the left margin

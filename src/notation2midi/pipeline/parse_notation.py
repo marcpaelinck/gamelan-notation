@@ -363,14 +363,6 @@ class NotationParserAgent(Agent):
                     stave[key] = stave.pop(key)
                 # remove superfluous key
                 del stave[ParserTag.STAVES]
-                # Parse and cast the measures into UnboundNote objects
-                # TODO: it would be better to only parse the mearsures into character groups, each
-                # representing a single note, and to leave the casting into Notes for the score creator.
-                # parsed_measures = []
-                # for self.curr_measure_id, measure in enumerate(stave[ParserTag.MEASURES], start=1):
-                #     normalized_measure = [self.sorted_chars(note_chars) for note_chars in measure]
-                #     parsed_measures.append(normalized_measure, stave[ParserTag.POSITION])
-                # stave[ParserTag.MEASURES] = parsed_measures
 
         self.abort_if_errors()
         notation = Notation(notation_dict=notation_dict, settings=self.run_settings)

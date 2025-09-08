@@ -275,7 +275,7 @@ def parse_metadata(meta: str):
     # Capture the fieldname, value pairs
     groups = [match.captures(i) for i, reg in enumerate(match.regs) if i > 0 and reg != (-1, -1)]
 
-    # Quote non=numeric values
+    # Quote non-numeric values
     nonnumeric = r'"([^"]+)"|(\w*[A-Za-z_ ]\w*\b)'
     pv = regex.compile(nonnumeric)
 

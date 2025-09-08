@@ -46,9 +46,6 @@ def update_all_folder_settings(data_folder: str):
             print(f"{notation} had duplicates: {','.join(duplicates)}")
             continue
 
-        # input_full = next((f for f in valid_inputfiles if "[FULL]" in f), None)
-        # settings["input_filename_pattern"] = input_full.replace("[FULL]", r"[{part}]")
-        # settings["loop"] = [part for part in list(part_count.keys()) if part != "FULL"]
         settings["parts"] = [part for part in list(part_count.keys())]
 
         # Sort the keys

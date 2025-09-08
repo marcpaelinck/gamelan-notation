@@ -81,7 +81,6 @@ class TestDictToScoreConverter(BaseUnitTestCase):
 
     def test_apply_meta(self):
         # Test for _apply_metadata method
-        # Settings.get(notation_id="sinom ladrang gk", part_id="full")  # Needed to initialize classes
         converter = self.get_converter_gk()
         gongan: Gongan = None
         # pylint: disable=unnecessary-lambda-assignment

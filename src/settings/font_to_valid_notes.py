@@ -152,7 +152,6 @@ class ValidNoteGenerator:
                                 octave=octave,
                                 effect=effect,
                                 note_value=note_value,
-                                # modifier=Modifier.NONE,
                             ).model_dump()
                         )
 

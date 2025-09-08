@@ -63,7 +63,7 @@ class ExecutionCreatorAgent(Agent):
         if cycle:
             self.execution_mgr.goto(frombeat).cycle = cycle
 
-    def _process_sequences(self):
+    def _process_sequence_metadata(self):
         """Translates the labels of the SEQUENCE metadata into goto directives in the respective beats."""
         for initial_gongan, sequence in self.score.flowinfo.sequences:
             gongan = initial_gongan
@@ -71,8 +71,6 @@ class ExecutionCreatorAgent(Agent):
                 from_beat = gongan.beats[-1]  # Sequence always links last beat to first beat of next gongan in the list
                 to_beat = self.score.flowinfo.labels[label]
                 # TODO GOTO modify, also for frequency = ALWAYS
-                # TODO GOTO remove next line
-                # pass_nr = max([p for p in from_beat.flow.goto.keys()] or [0]) + 1  # Select next available pass
                 # Select next available pass
                 goto = self.execution_mgr.goto(from_beat)
                 pass_nr = goto.max_passnr + 1
@@ -145,32 +143,11 @@ class ExecutionCreatorAgent(Agent):
                 case _:
                     raise ValueError("Metadata type %s is not supported." % type(meta).__name__)
 
-    # def _propagate_tempo_to_all_beats(self, gongan: Gongan) -> None:
-    #     """Explicitly set the current tempo for each beat by copying it from its predecessor.
-    #     This will ensure that a goto to any of these beats will pick up the correct tempo."""
-    #     # TODO Think the following part over. It might cause unexpected results. But omitting it might puzzle the users
-    #     # because then the dynamics and tempo will be taken from whatever gongan precedes the current one.
-    #     # It might be good discipline to always explicitly set dynamics and tempo for gongans that have a label. The application
-    #     # might give a warning if they are missing and suggest to add them.
-    #     for beat in gongan.beats:
-    #         if beat.prev and beat.prev.gongan_id == gongan.id:
-    #             if (
-    #                 not self.execution_mgr.dynamics(beat) or not self.execution_mgr.dynamics(beat).value_dict
-    #             ) and self.execution_mgr.dynamics(beat.prev):
-    #                 self.execution_mgr.set_dynamics(beat, self.execution_mgr.dynamics(beat.prev).model_copy())
-    #             if (
-    #                 not self.execution_mgr.tempo(beat) or not self.execution_mgr.tempo(beat).value_dict
-    #             ) and self.execution_mgr.tempo(beat.prev):
-    #                 self.execution_mgr.set_tempo(beat, self.execution_mgr.tempo(beat.prev).model_copy())
-
     @override
     def _main(self) -> ExecutionManager:
         self.create_default_gotos()
 
         for gongan in self.gongan_iterator(self.score):
             self._apply_metadata(gongan)
-            # if gongan.haslabel:
-            # self._propagate_tempo_to_all_beats(gongan)
-        # Process the sequences metadata
-        self._process_sequences()
+        self._process_sequence_metadata()
         return self.execution_mgr

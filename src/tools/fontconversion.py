@@ -313,10 +313,5 @@ XL_SAVEFOLDERPATH = (
     "C:/Users/marcp/Documents/administratie/_VRIJETIJD_REIZEN/Gamelangroepen/Studiemateriaal/Muzieknotatie/balimusic5"
 )
 if __name__ == "__main__":
-    # substitutefont_tsv_file(
-    #     filepath=os.path.join(TSV_SETTING.datapath, TSV_SETTING.infilename),
-    #     savepath=os.path.join(TSV_SETTING.datapath, "Margapati reyong_font5.tsv"),
-    #     symbolreplacetablepath=SYMBOLREPLACETABLEPATH,
-    # )
     result = get_files_with_symbols(XL_FOLDERPATH, ["1", "2", "3", "5", "6", "7"])
     pprint(result)

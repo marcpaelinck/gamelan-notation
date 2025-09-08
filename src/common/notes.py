@@ -133,10 +133,6 @@ class NoteFactory(BaseModel, RunSettingsListener):
             (n.position, n.pitch, n.octave, n.effect, n.note_value): n for n in cls.VALID_NOTES
         }
         cls._SYMBOL_TO_GENERICNOTE = {n.symbol: n for n in cls.VALID_GENERICNOTES}
-        # cls._CHAR_TO_PITCH_NOTEVALUE_MODIFIER = {
-        #     char[FontFields.SYMBOL]: (char[FontFields.PITCH], char[FontFields.NOTE_VALUE], char[FontFields.MODIFIER])
-        #     for char in run_settings.data.font
-        # }
 
     @classmethod
     def genericnote_from_notesymbol(cls, notesymbol: str) -> GenericNote:

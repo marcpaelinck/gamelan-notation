@@ -495,7 +495,6 @@ class ConfigData(BaseModel):
     soundfont: ConfigSoundfontInfo
     midiplayer: ConfigMidiPlayerInfo
     pdf_converter: ConfigPdfConverterInfo
-    # notationfiles: dict[str, ConfigNotationFilesInfo] = Field(default_factory=dict)
 
 
 class RunSettings(BaseModel):

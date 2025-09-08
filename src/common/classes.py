@@ -130,11 +130,6 @@ class InstrumentTag(BaseModel, RunSettingsListener):
     _TAG_TO_INSTRUMENTTAG_LIST: ClassVar[dict[str, "InstrumentTag"]]
     _TAG_SEPARATORS: ClassVar[str] = r"/|-|\||,|, "  # expected separators when tags are combined, e.g. ga
 
-    # @field_validator("positions", mode="before")
-    # @classmethod
-    # def validate_pos(cls, value):  # pylint: disable=missing-function-docstring
-    #     return string_to_enum_list(value, Position)
-
     @classmethod
     @override
     def cls_initialize(cls, run_settings: RunSettings):
@@ -212,7 +207,6 @@ class Beat(BaseModel):
     prev: Optional["Beat"] = Field(default=None, repr=False)  # previous beat in the score
     next: Optional["Beat"] = Field(default=None, repr=False)  # next beat in the score
     has_kempli_beat: bool = True
-    # validation_ignore: list[ValidationProperty] = Field(default_factory=list)
     validation_ignore: dict[ValidationProperty, list[Position]] = Field(default_factory=dict)
 
     @computed_field
@@ -264,14 +258,6 @@ class Gongan(BaseModel):
     comments: list[str] = Field(default_factory=list)
     haslabel: bool = False  # Will be set if the gongan has a Label metadata
     _pass_: PassSequence = 0  # Counts the number of times the gongan is passed during generation of MIDI file.
-
-    # @field_validator("metadata", mode="after")
-    # @classmethod
-    # def convert_to_defaultdict(cls, value: dict) -> defaultdict:
-    #     if isinstance(value, defaultdict):
-    #         return value
-    #     else:
-    #         return defaultdict(list, value)
 
 
 @dataclass

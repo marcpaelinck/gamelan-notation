@@ -66,5 +66,4 @@ class RulesAgent(Agent):
                             all_positions=measure.all_positions,
                             metadata=gongan.metadata,
                         )
-                        # pass_.notes = bound_notes
         return self.score
