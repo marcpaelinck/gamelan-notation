@@ -5,7 +5,7 @@ symbol	unicode	symbol_description	balifont_symbol_description	pitch	octave	note_
 ,	0x002c	comma	dot under combined note character	NONE			OCTAVE_0	sets octave of combined note to 0
 -	0x002d	hyphen	dash	EXTENSION		1.0	NONE	extends note duration
 .	0x002e	period	dot	SILENCE		1.0	NONE	silence (muted note) open
-/	0x002f	forward slash	slash right of char (combining)	NONE		1.0	ABBREVIATE	abbreviates precceding note
+/	0x002f	forward slash	slash right of char (combining)	NONE		1.0	ABBREVIATE	abbreviates preceding note
 0	0x0030	digit 0	serifless n	CUNG		1.0	NONE	kendang cung (wadon)
 8	0x0038	digit 8	k	KA		1.0	NONE	kendang ka (wadon)
 9	0x0039	digit 9	d	DE		1.0	NONE	kendang dé (wadon)

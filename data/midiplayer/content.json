@@ -23,6 +23,10 @@
                                 {"part": "kotekan", "file": "gilak deng [kotekan] GAMELAN1.mid", "loop": true, "markers": {}}
                         ]
                 }, 
+                {"title": "Gilak Penutup", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "gilak penutup [full].pdf", "notation_version": "09-sep-2025", "parts": [
+                                {"part": "full", "file": "gilak penutup [full] GAMELAN1.mid", "loop": false, "markers": {}}
+                        ]
+                }, 
                 {"title": "Godek Miring GK", "instrumentgroup": "GONG_KEBYAR", "display": true, "pdf": "godek miring gk [full].pdf", "notation_version": "08-sep-2025", "parts": [
                                 {"part": "full", "file": "godek miring gk [full] GAMELAN1.mid", "loop": false, "markers": {}}
                         ]
