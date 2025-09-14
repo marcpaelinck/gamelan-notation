@@ -1,4 +1,5 @@
 # pylint: disable=missing-module-docstring,missing-class-docstring
+from doctest import UnexpectedException
 from enum import StrEnum, auto
 from typing import Any, TypeVar
 
@@ -200,6 +201,35 @@ class Position(NotationEnum):
     @property
     def shortcode(self):
         return self.value.replace("_POLOS", "_P").replace("_SANGSIH", "_S").replace("WAYANG", "").replace("RAMBAT", "")
+
+
+class PositionGroup(NotationEnum):
+    """Possible aggregations for (PDF) notation output."""
+
+    GANGSA_P = "GANGSA_P"
+    GANGSA_S = "GANGSA_S"
+    GANGSA = "GANGSA"
+    REYONG_13 = "REYONG_13"
+    REYONG_24 = "REYONG_24"
+    REYONG = "REYONG"
+
+    @property
+    def positions(self):
+        match self:
+            case PositionGroup.GANGSA_P:
+                return [Position.PEMADE_POLOS, Position.KANTILAN_POLOS]
+            case PositionGroup.GANGSA_S:
+                return [Position.PEMADE_SANGSIH, Position.KANTILAN_SANGSIH]
+            case PositionGroup.GANGSA:
+                return PositionGroup.GANGSA_P.positions + PositionGroup.GANGSA_S.positions
+            case PositionGroup.REYONG_13:
+                return [Position.REYONG_1, Position.REYONG_3]
+            case PositionGroup.REYONG_24:
+                return [Position.REYONG_2, Position.REYONG_4]
+            case PositionGroup.REYONG:
+                return PositionGroup.REYONG_13.positions + PositionGroup.REYONG_24.positions
+            case _:
+                raise ValueError("Unexpected value %s", self.value)  # pylint: disable=raising-format-tuple
 
 
 class Pitch(NotationEnum):

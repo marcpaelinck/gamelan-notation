@@ -5,7 +5,7 @@ import re
 from functools import partial
 
 from src.common.classes import Gongan
-from src.common.constants import Pitch, Position, Stroke
+from src.common.constants import Pitch, Position, PositionGroup, Stroke
 from src.common.notes import Note, NoteFactory, Pattern, Tone
 from src.notation2midi.metadata_classes import (
     GonganType,
@@ -240,33 +240,34 @@ def aggregate_positions(gongan: Gongan) -> dict[tuple[Position, PassID], str]:
         if is_silent(gongan, position, passid):
             del pos_pass_tags[position, passid]
 
-    def try_to_aggregate_pos(positions: list[Position], passid: PassID, aggregate_tag: str) -> bool:
+    def try_to_aggregate_pos(group: PositionGroup, passid: PassID) -> bool:
         """Determines if the notation is identical for all of the given positions for the given pass.
         In that case, updates the pos_pass_tags dict.
         Args:
-            positions (list[Position]): positions for which to aggregate the notation.
+            pos_group (PositionGroup): positions for which to aggregate the notation.
             passid (PassID): the pass for which to aggregate the positions.
-            aggregate_tag (str): the instrument tag that should be used for the aggregated notation.
         Returns:
             bool: True if aggregation is possible.
         """
         # Check if all positions occur in the gongan after removing empty staves
-        if not all((pos, passid) in pos_pass_tags.keys() for pos in positions):
+        if not all((pos.value, passid) in pos_pass_tags.keys() for pos in group.positions):
             return False
         # Determine if all measures of the given positions are equivalent
-        comparator = partial(equivalent, positions=positions, metadata=gongan.metadata)
+        comparator = partial(equivalent, positions=group.positions, metadata=gongan.metadata)
         all_positions_have_same_notation = all(
             all(
-                compare(beat.get_notes(pos, passid), beat.get_notes(positions[0], passid), comparator)
+                compare(beat.get_notes(pos, passid), beat.get_notes(group.positions[0], passid), comparator)
                 for beat in gongan.beats
             )
-            for pos in positions
+            for pos in group.positions
         )
         if all_positions_have_same_notation:
             # Set the tag of the first position as the aggregate tag.
-            pos_pass_tags[positions[0], passid] = aggregate_tag + (f":{int(passid)}" if passid > 0 else "")
+            pos_pass_tags[group.positions[0], passid] = group.value + (f":{int(passid)}" if passid > 0 else "")
             # Delete all other positions in the pos_tags dict.
-            keys_to_delete = [(pos, pid) for pos, pid in pos_pass_tags.keys() if pos in positions[1:] and pid == passid]
+            keys_to_delete = [
+                (pos, pid) for pos, pid in pos_pass_tags.keys() if pos in group.positions[1:] and pid == passid
+            ]
             for pos, pid in keys_to_delete:
                 del pos_pass_tags[pos, passid]
             return True
@@ -308,22 +309,22 @@ def aggregate_positions(gongan: Gongan) -> dict[tuple[Position, PassID], str]:
 
     # Define the possible combinations of positions for which aggregation should be considered.
     # pylint: disable = invalid-name
-    GANGSA_P = [Position.PEMADE_POLOS, Position.KANTILAN_POLOS]
-    GANGSA_S = [Position.PEMADE_SANGSIH, Position.KANTILAN_SANGSIH]
-    GANGSA = GANGSA_P + GANGSA_S
-    REYONG_13 = [Position.REYONG_1, Position.REYONG_3]
-    REYONG_24 = [Position.REYONG_2, Position.REYONG_4]
-    REYONG = REYONG_13 + REYONG_24
+    # GANGSA_P = [Position.PEMADE_POLOS, Position.KANTILAN_POLOS]
+    # GANGSA_S = [Position.PEMADE_SANGSIH, Position.KANTILAN_SANGSIH]
+    # GANGSA = GANGSA_P + GANGSA_S
+    # REYONG_13 = [Position.REYONG_1, Position.REYONG_3]
+    # REYONG_24 = [Position.REYONG_2, Position.REYONG_4]
+    # REYONG = REYONG_13 + REYONG_24
     # pylint: enable = invalid-name
     passids = set(pid for _, pid in pos_pass_combis)
     # Try aggregating on the highest level first.
     for passid in passids:
-        if not try_to_aggregate_pos(GANGSA, passid, "GANGSA"):
-            try_to_aggregate_pos(GANGSA_P, passid, "GANGSA_P")
-            try_to_aggregate_pos(GANGSA_S, passid, "GANGSA_S")
-        if not try_to_aggregate_pos(REYONG, passid, "REYONG"):
-            try_to_aggregate_pos(REYONG_13, passid, "REYONG_13")
-            try_to_aggregate_pos(REYONG_24, passid, "REYONG_24")
+        if not try_to_aggregate_pos(PositionGroup.GANGSA, passid):
+            try_to_aggregate_pos(PositionGroup.GANGSA_P, passid)
+            try_to_aggregate_pos(PositionGroup.GANGSA_S, passid)
+        if not try_to_aggregate_pos(PositionGroup.REYONG, passid):
+            try_to_aggregate_pos(PositionGroup.REYONG_13, passid)
+            try_to_aggregate_pos(PositionGroup.REYONG_24, passid)
 
     # Aggregate similar passes
     aggregate_passes()

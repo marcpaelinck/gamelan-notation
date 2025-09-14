@@ -1,4 +1,4 @@
-"""Generates a midi file based on an Execution object."""
+"""Generates a json file based on an Execution object."""
 
 import sys
 from typing import override
@@ -16,7 +16,7 @@ from src.settings.classes import PartForm, RunSettings, RunType
 from src.settings.constants import MidiNotesFields
 
 
-class MidiGeneratorAgent(Agent):
+class JsonGeneratorAgent(Agent):
     """This Parser creates a MIDI file based on a Score objects."""
 
     LOGGING_MESSAGE = "EXPORTING MIDI FILE"

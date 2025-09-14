@@ -48,11 +48,17 @@ class Flow(BaseModel):
 
 
 class GoTo(Flow):
+    """Flow from the current beat to another beat which is not in the
+    default flow. Corresponds with a GOTO metadata item."""
+
     def next_beat(self) -> Beat:
         return self.to_beat_dict.get(self.counter, self.to_beat_dict.get(DEFAULT, None))
 
 
 class Loop(Flow):
+    """Flow from the last beat of a gongan back to the first beat.
+    Corresponds with a LOOP metadata item."""
+
     @property
     def to_beat(self):
         return self.to_beat_dict.get(DEFAULT, None)
@@ -74,9 +80,10 @@ class GradualChangeStatus:
 
 
 class GradualChange(BaseModel):
-    """Generic class that describes the gradual change of a musical expression value (tempo, dynamics) over multiple beats.
-    Each instance of this class corresponds with a TEMPO or DYNAMICS metadata item.
-    With a value of zero for tot_beats this class acts as an immediate (non-gradual) tempo or dynamics change."""
+    """Generic class that describes the gradual change of a musical expression value (tempo, dynamics)
+    over one or more beats. Each instance of this class corresponds with a TEMPO or DYNAMICS metadata item.
+    Assigning a value of zero to `tot_beats` corresponds with an immediate (non-gradual) tempo or dynamics change.
+    at the beginning of the current beat."""
 
     positions: list[Position] = Field(default_factory=list)  # positions for which the instruction applies.
     passes: list[int] = Field(default_factory=list)
