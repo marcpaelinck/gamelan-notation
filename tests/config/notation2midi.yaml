@@ -10,6 +10,7 @@ options:
     detailed_validation_logging : false
     save_corrected_to_file : false
     save_midifile : true
+    save_jsonfile : true
     save_pdf_notation: false
 
     

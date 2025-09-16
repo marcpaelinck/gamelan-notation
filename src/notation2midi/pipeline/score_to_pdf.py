@@ -20,13 +20,13 @@ from src.common.notes import Note
 from src.notation2midi.classes import Agent
 from src.notation2midi.execution.execution import Score
 from src.notation2midi.metadata_classes import MetaData, MetaType
-from src.notation2midi.pipeline.parse_notation import PassID
-from src.notation2midi.score2notationutils.formatting import (
+from src.notation2midi.pdf.formatting import (
     NotationTemplate,
     RowType,
     SpanType,
     TableContent,
 )
+from src.notation2midi.pipeline.parse_notation import PassID
 from src.notation2midi.score2notationutils.utils import (
     aggregate_positions,
     clean_staves,

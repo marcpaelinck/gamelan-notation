@@ -11,6 +11,7 @@ These modules each perform a step in the notation-to-midi process. The class in 
 | score_validation | ScoreValidationAgent |  Validates the score and performs corrections if required. | COMPLETE* `Score` | `None` |
 | create_execution | ExecutionCreatorAgent |  Creates a score Execution containing flow (gongan sequence), tempo and dynamics info. | COMPLETE* `Score` | `Execution` |
 | score_to_midi | MidiGeneratorAgent |  Generates MIDI output. | `RunSettings`, `Execution` | `PART` |
+| score_to_json | JsonGeneratorAgent |  Generates JSON output for Laras. | `RunSettings`, `Execution` | `None` |
 | score_to_pdf | PDFGeneratorAgent |  Generates a human-readable PDF score. | GENERIC* `Score` | `str` (PDF file name) |
 | score_to_notation | ScoreToNotationAgent |  Generates a corrected and standardized input file. | GENERIC* `Score` | `None` |
 | export_to_midiplayer | MidiPlayerUpdatePartAgent, MidiPlayerUpdatePdfAgent |  Updates the JSON settings file of the Front End application. | `RunSettings`, `Part`, `str` (PDF file name) | `None` |
@@ -18,6 +19,6 @@ These modules each perform a step in the notation-to-midi process. The class in 
 |*||
 |-|-|
 | GENERIC `Score` |  `Score` object containing GenericNote objects. These are notes that have not yet been converted to the corresponding notes of specific instrument positions. (see BOUND `Score`) |
-| BOUND `Score` |  GENERIC `Score` object containing (bound) Note objects which are linked to a specific instrument position. E.g. generic DENG1 (deng with octave 1) translates to bound DENG0 for reyong position 1, to DENG1 for reyong position 2 and to DENG2 for reyong position 4. |
+| BOUND `Score` |  `Score` object containing Note objects which are assigned (bound) to a specific instrument position. The distinction between generic and bound notes is made because the application allows  multiple instruments to share the same notation (this is called _unisono_ notation). For example, in unisono notation the generic note DENG1 (deng with octave 1) translates to bound DENG0 for for reyong position 1, to DENG1 for calung and kantilan polos, to DING2 for reyong position 3 and kantilan sangsih and to DENG2 for reyong position 4. |
 | PATTERN `Score` |  BOUND `Score` object where shorthand notation for patterns such as tremolo and norot have been elaborated to individual Note objects. |
 | COMPLETE `Score` |  PATTERN `Score` object in which all instruments occur in each beat (which includes 'empty' measures for instruments that have no notation for that beat), and in which all metadata has been applied. |

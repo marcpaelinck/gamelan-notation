@@ -14,6 +14,7 @@ from src.notation2midi.pipeline.notation_to_score import ScoreCreatorAgent
 from src.notation2midi.pipeline.parse_notation import NotationParserAgent
 from src.notation2midi.pipeline.pipeline import PipeLine
 from src.notation2midi.pipeline.score_postprocessing import ScorePostprocessAgent
+from src.notation2midi.pipeline.score_to_json import JsonGeneratorAgent
 from src.notation2midi.pipeline.score_to_midi import MidiGeneratorAgent
 from src.notation2midi.pipeline.score_to_notation import ScoreToNotationAgent
 from src.notation2midi.pipeline.score_to_pdf import PDFGeneratorAgent
@@ -34,6 +35,7 @@ PIPE = [
     ScoreValidationAgent,  # Validates the score and performs corrections if required.
     ExecutionCreatorAgent,  # Creates a score Execution: the flow (gongan sequence), tempi and dynamics.
     MidiGeneratorAgent,  # Generates MIDI output.
+    JsonGeneratorAgent,  # Generates JSON output.
     PDFGeneratorAgent,  # Generates a human-readable PDF score.
     ScoreToNotationAgent,  # Generates a corrected and standardized input file.
     MidiPlayerUpdatePartAgent,  # Updates the JSON settings file of the Front End application.

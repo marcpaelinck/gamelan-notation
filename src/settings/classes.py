@@ -412,6 +412,7 @@ class ConfigNotationInfo(BaseModel):
     entire_piece_partname: str
     input_filename_pattern: str
     midi_out_file_pattern: str
+    json_out_file_pattern: str
     pdf_out_file_pattern: str
     generate_pdf_part_id: str
 
@@ -444,6 +445,7 @@ class SettingsOptions(BaseModel):
         save_corrected_to_file: bool
         save_pdf_notation: bool
         save_midifile: bool
+        save_jsonfile: bool
 
         @property
         def update_midiplayer_content(self) -> bool:
@@ -560,6 +562,11 @@ class RunSettings(BaseModel):
         )
 
     @property
+    def json_out_file(self) -> str:
+        inputfilename = os.path.splitext(os.path.basename(self.notation_filepath))[0]
+        return self.configdata.notation.json_out_file_pattern.format(inputfilename=inputfilename)
+
+    @property
     def pdf_out_file(self) -> str:
         inputfilename = os.path.splitext(os.path.basename(self.notation_filepath))[0]
         return self.configdata.notation.pdf_out_file_pattern.format(inputfilename=inputfilename)
@@ -603,6 +610,10 @@ class RunSettings(BaseModel):
     @property
     def midi_out_filepath(self) -> str:
         return os.path.join(self.folder_out, self.midi_out_file)
+
+    @property
+    def json_out_filepath(self) -> str:
+        return os.path.join(self.folder_out, self.json_out_file)
 
     @property
     def pdf_out_filepath(self) -> str:

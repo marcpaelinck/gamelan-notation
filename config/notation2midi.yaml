@@ -15,7 +15,8 @@ options:
     detailed_validation_logging : false
     # `save_corrected_to_file`: true - saves a new version of the input file after processing it. Will include autocorrections.
     save_corrected_to_file : false
-    save_pdf_notation: true
-    save_midifile : true
+    save_pdf_notation: false
+    save_midifile : false
+    save_jsonfile : true
     # If update_midiplayer_content==true, MIDI file is saved in midiplayer folder and content.json file is updated.
     # This setting is only effective if the runtype is RUN_ALL.

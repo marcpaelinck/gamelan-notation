@@ -56,6 +56,7 @@ notation:
     folder_out_prod: ./data/midiplayer
     input_filename_pattern: "{notation_id} [{part_id}].tsv"
     midi_out_file_pattern: !!str "{inputfilename}_{midiversion}.mid"
+    json_out_file_pattern: !!str "{inputfilename}.json"
     pdf_out_file_pattern: !!str "{inputfilename}.pdf"
     # part for which to generate a PDF notation document
     generate_pdf_part_id: full
