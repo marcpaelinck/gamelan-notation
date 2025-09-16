@@ -54,7 +54,6 @@ notation:
     # folder_in can contain separate subfolders (e.g. for each composition)
     root_folder_in: ./tests/data/notation/unit_tests
     folder_out_prod: ./data/midiplayer
-    input_filename_pattern: "{notation_id} [{part_id}].tsv"
     midi_out_file_pattern: !!str "{inputfilename}_{midiversion}.mid"
     json_out_file_pattern: !!str "{inputfilename}.json"
     pdf_out_file_pattern: !!str "{inputfilename}.pdf"

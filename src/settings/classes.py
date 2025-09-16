@@ -410,7 +410,6 @@ class ConfigNotationInfo(BaseModel):
     notation_extension: str
     gongantypes_without_kempli: list[GonganType]
     entire_piece_partname: str
-    input_filename_pattern: str
     midi_out_file_pattern: str
     json_out_file_pattern: str
     pdf_out_file_pattern: str

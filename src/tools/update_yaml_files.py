@@ -11,7 +11,6 @@ ordered_fields = [
     "fontversion",
     "parts",
     "loop",
-    "input_filename_pattern",
     "beat_at_end",
     "run_types",
 ]

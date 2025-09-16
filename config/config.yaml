@@ -61,10 +61,9 @@ patterns:
 notation:
     # Formatting for version id, using last modification date of the input file.
     version_fmt: "%d-%b-%Y"
-    # folder_in can contain separate subfolders (e.g. for each composition)
+    # root_folder_in can contain separate subfolders (e.g. for each composition)
     root_folder_in: ./data/notation
     folder_out_prod: ./data/midiplayer
-    input_filename_pattern: "{notation_id} [{part_id}].tsv"
     midi_out_file_pattern: !!str "{inputfilename} {midiversion}.mid"
     json_out_file_pattern: !!str "{inputfilename}.json"
     pdf_out_file_pattern: !!str "{inputfilename}.pdf"
