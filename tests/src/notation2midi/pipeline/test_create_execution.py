@@ -4,9 +4,13 @@ from unittest.mock import MagicMock
 from src.common.classes import Beat, Gongan, Measure
 from src.common.constants import DEFAULT, DynamicLevel, Position
 from src.common.notes import Note
-from src.notation2midi.execution.execution import GradualChange, Score
-from src.notation2midi.metadata_classes import DynamicsMeta, MetaDataBaseModel, MetaType
-from src.notation2midi.pipeline.create_execution import ExecutionCreatorAgent
+from src.notationparser.execution.execution import GradualChange, Score
+from src.notationparser.metadata_classes import (
+    DynamicsMeta,
+    MetaDataBaseModel,
+    MetaType,
+)
+from src.notationparser.pipeline.create_execution import ExecutionCreatorAgent
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
 from tests.src.utils_for_tests import PositionNote

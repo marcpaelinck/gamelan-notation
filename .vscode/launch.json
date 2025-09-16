@@ -8,7 +8,7 @@
             "name": "Debugger: Main",
             "type": "debugpy",
             "cwd": "${workspaceFolder}",
-            "module": "src.notation2midi.main",
+            "module": "src.notationparser.main",
             "request": "launch",
             "env": {
                 "PYTHONPATH": "${workspaceRoot}"

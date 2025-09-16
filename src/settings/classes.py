@@ -34,7 +34,7 @@ from src.common.constants import (
 from src.common.logger import Logging
 from src.settings.constants import (
     ENV_VAR_CONFIG_PATH,
-    ENV_VAR_N2M_SETTINGS_PATH,
+    ENV_VAR_NOTATIONPARSER_SETTINGS_PATH,
     EffectsFields,
     FontFields,
     InstrumentFields,
@@ -809,7 +809,7 @@ class RunSettings(BaseModel):
         settings_data_dict = self._read_settings(config_filepath)
         settings_data_dict = self._post_process(settings_data_dict)
 
-        settings_filepath = os.getenv(ENV_VAR_N2M_SETTINGS_PATH)
+        settings_filepath = os.getenv(ENV_VAR_NOTATIONPARSER_SETTINGS_PATH)
         run_settings_dict = self._read_settings(settings_filepath)
         run_settings_dict[Yaml.CONFIGDATA] = settings_data_dict
         run_settings_dict[Yaml.DATA] = self._read_data(settings_data_dict, specs=DATA)

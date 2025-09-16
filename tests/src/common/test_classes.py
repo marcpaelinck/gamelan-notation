@@ -11,13 +11,13 @@ from src.common.constants import (
     Stroke,
 )
 from src.common.notes import GenericNote, Note, NoteFactory, Tone
-from src.notation2midi.metadata_classes import (
+from src.notationparser.metadata_classes import (
     AutoKempyungMeta,
     MetaDataSwitch,
     MetaType,
 )
-from src.notation2midi.rules.rule import Instrument, ToneRange
-from src.notation2midi.rules.rule_cast_to_position import RuleCastToPosition
+from src.notationparser.rules.rule import Instrument, ToneRange
+from src.notationparser.rules.rule_cast_to_position import RuleCastToPosition
 from src.settings.constants import NoteFields
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase

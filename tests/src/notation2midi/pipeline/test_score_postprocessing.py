@@ -3,8 +3,8 @@ from unittest.mock import MagicMock
 from src.common.classes import Beat, Gongan, Measure
 from src.common.constants import DEFAULT, GonganType, InstrumentType, Pitch, Position
 from src.common.notes import Note, NoteFactory
-from src.notation2midi.execution.execution import Score
-from src.notation2midi.metadata_classes import (
+from src.notationparser.execution.execution import Score
+from src.notationparser.metadata_classes import (
     GonganMeta,
     KempliMeta,
     MetaDataBaseModel,
@@ -12,7 +12,7 @@ from src.notation2midi.metadata_classes import (
     MetaType,
     OctavateMeta,
 )
-from src.notation2midi.pipeline.score_postprocessing import ScorePostprocessAgent
+from src.notationparser.pipeline.score_postprocessing import ScorePostprocessAgent
 from src.settings.classes import RunSettings
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase

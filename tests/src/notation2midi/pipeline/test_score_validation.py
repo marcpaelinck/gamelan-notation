@@ -1,8 +1,8 @@
 # pylint: disable=missing-module-docstring, missing-class-docstring, missing-function-docstring, line-too-long, invalid-name
 
 from src.common.constants import DEFAULT, Position
-from src.notation2midi.execution.execution import Score
-from src.notation2midi.pipeline.score_validation import ScoreValidationAgent
+from src.notationparser.execution.execution import Score
+from src.notationparser.pipeline.score_validation import ScoreValidationAgent
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
 from tests.src.utils_for_tests import PositionNote, create_gongan

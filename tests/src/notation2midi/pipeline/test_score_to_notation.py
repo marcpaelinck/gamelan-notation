@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 from src.common.classes import Score
 from src.common.constants import DEFAULT, Position
 from src.common.notes import NoteFactory
-from src.notation2midi.pipeline.score_to_notation import ScoreToNotationAgent
+from src.notationparser.pipeline.score_to_notation import ScoreToNotationAgent
 from src.settings.constants import InstrumentFields
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase

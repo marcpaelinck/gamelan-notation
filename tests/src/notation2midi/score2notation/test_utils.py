@@ -4,13 +4,13 @@ from unittest.mock import MagicMock
 from src.common.classes import Gongan
 from src.common.constants import Position, Stroke
 from src.common.notes import NoteFactory
-from src.notation2midi.execution.execution import Score
-from src.notation2midi.metadata_classes import (
+from src.notationparser.execution.execution import Score
+from src.notationparser.metadata_classes import (
     AutoKempyungMeta,
     MetaDataSwitch,
     MetaType,
 )
-from src.notation2midi.score2notationutils.utils import (
+from src.notationparser.score2notationutils.utils import (
     aggregate_positions,
     clean_staves,
     has_kempli_beat,
@@ -27,7 +27,7 @@ from tests.src.utils_for_tests import PositionNote, create_gongan
 
 
 class TestUtils(BaseUnitTestCase):
-    """Test case for the src.notation2midi.score2notation.utils module"""
+    """Test case for the src.notationparser.score2notation.utils module"""
 
     def setUp(self):
         self.settings = Settings.get(notation_id="sinom ladrang gk", part_id="full")

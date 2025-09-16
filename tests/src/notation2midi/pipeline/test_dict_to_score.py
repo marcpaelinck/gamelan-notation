@@ -4,10 +4,10 @@ from unittest.mock import MagicMock
 from src.common.classes import Beat, Measure, Notation
 from src.common.constants import DEFAULT, ParserTag, Position
 from src.common.notes import Note
-from src.notation2midi.classes import MetaDataRecord
-from src.notation2midi.execution.execution import Score
-from src.notation2midi.metadata_classes import MetaDataSwitch
-from src.notation2midi.pipeline.notation_to_score import ScoreCreatorAgent
+from src.notationparser.classes import MetaDataRecord
+from src.notationparser.execution.execution import Score
+from src.notationparser.metadata_classes import MetaDataSwitch
+from src.notationparser.pipeline.notation_to_score import ScoreCreatorAgent
 from src.settings.settings import Settings
 from tests.conftest import BaseUnitTestCase
 from tests.src.utils_for_tests import PositionNote

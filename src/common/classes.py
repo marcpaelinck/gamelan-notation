@@ -18,7 +18,7 @@ from src.common.constants import (
     RuleType,
 )
 from src.common.notes import GenericNote, Note
-from src.notation2midi.metadata_classes import (
+from src.notationparser.metadata_classes import (
     GonganType,
     GoToMeta,
     MetaData,

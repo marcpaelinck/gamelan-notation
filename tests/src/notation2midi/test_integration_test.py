@@ -3,7 +3,7 @@ import unittest
 
 import pytest
 
-from src.notation2midi.main import main
+from src.notationparser.main import main
 from src.settings.classes import RunSettings, RunType
 from src.settings.settings import Settings
 from src.tools.compare import compare_all
@@ -14,7 +14,7 @@ class IntegrationTester(BaseUnitTestCase):
     """Integration tests, run separately."""
 
     def setUp(self):
-        os.environ["GAMELAN_NOTATION_N2M_SETTINGS_PATH"] = "./tests/config/notation2midi_integration_test.yaml"
+        os.environ["GAMELAN_NOTATION_PARSER_SETTINGS_PATH"] = "./tests/config/notationparser_integration_test.yaml"
 
     def clear_small_test_output_folder(self, run_settings: RunSettings):
         """Removes previous output from the small test output folder"""
@@ -36,7 +36,7 @@ class IntegrationTester(BaseUnitTestCase):
         """
         NOTE: this test typically takes between 30 seconds and a minute to run if the test succeeds. However the
         duration can increase to several minutes if the test fails.
-        1. Runs the src.notation2midi.main.main() function for all notations marked RUN_ALL in
+        1. Runs the src.notationparser.main.main() function for all notations marked RUN_ALL in
            tests/config/config.yaml and saves the MIDI files in the `data/notation/_integration_test/output` folder.
         2. Creates a text version of each MIDI file in the same folder.
         3. Compares these with the corresponding files in the `reference` folder and saves a report
