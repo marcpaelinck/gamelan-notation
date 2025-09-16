@@ -60,7 +60,6 @@ class JsonGeneratorAgent(Agent):
             # Set new beat info.
             start_bpm, end_bpm = self.exec_mgr.get_tempo_values()
             start_velocity, end_velocity = self.exec_mgr.get_dynamics_values()
-            dynamics_change_pos = self.exec_mgr.get_dynamics_change().positions
             beat_info = BeatInfo(
                 fullid=beat.full_id,
                 start_bpm=start_bpm,
@@ -68,7 +67,6 @@ class JsonGeneratorAgent(Agent):
                 start_velocity=start_velocity,
                 end_velocity=end_velocity,
                 duration=beat.duration,
-                positions=dynamics_change_pos,
             )
             json_dict.append_beat_info(beat, beat_info)
 

@@ -26,7 +26,6 @@ class BeatInfo(BaseModel):
     start_velocity: int
     end_velocity: int
     duration: float
-    positions: list[Position]
 
 
 class NoIndent(object):
@@ -111,7 +110,7 @@ class JsonCreator(dict):
             "title": beat_info.fullid,
             "tempo": NoIndent((beat_info.start_bpm, beat_info.end_bpm)),
             "volume": NoIndent((self.velocity2db(beat_info.start_velocity), self.velocity2db(beat_info.end_velocity))),
-            "positions": NoIndent(([pos.value for pos in beat_info.positions])),
+            # "positions": NoIndent(([pos.value for pos in beat_info.positions])),
             "data": [
                 NoIndent(
                     {
