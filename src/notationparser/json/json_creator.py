@@ -23,8 +23,8 @@ class BeatInfo(BaseModel):
     fullid: str
     start_bpm: int
     end_bpm: int
-    start_velocity: int
-    end_velocity: int
+    start_velocities: dict[Position, int]
+    end_velocities: dict[Position, int]
     duration: float
 
 
@@ -109,13 +109,15 @@ class JsonCreator(dict):
             "id": self.current_beat_id,
             "title": beat_info.fullid,
             "tempo": NoIndent((beat_info.start_bpm, beat_info.end_bpm)),
-            "volume": NoIndent((self.velocity2db(beat_info.start_velocity), self.velocity2db(beat_info.end_velocity))),
-            # "positions": NoIndent(([pos.value for pos in beat_info.positions])),
             "data": [
                 NoIndent(
                     {
                         "label": pos,
                         "value": ([note.symbol.replace("-", " ") for note in measure.passes[-1].notes]),
+                        "volume": (
+                            self.velocity2db(beat_info.start_velocities[pos]),
+                            self.velocity2db(beat_info.end_velocities[pos]),
+                        ),
                     }
                 )
                 for pos, measure in beat.measures.items()

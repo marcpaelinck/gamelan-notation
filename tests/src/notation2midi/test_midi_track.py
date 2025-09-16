@@ -1,10 +1,11 @@
 """Tests that grace notes are processed correctly by the MidiTrackX class"""
 
 import os
+from unittest.mock import MagicMock
 
 from mido import Message
 
-from src.common.classes import Preset
+from src.common.classes import Preset, Score
 from src.common.constants import Position
 from src.notationparser.execution.execution import ExecutionManager
 from src.notationparser.midi.midi_track import MidiTrackX
@@ -29,10 +30,26 @@ class TestSpecialNotes(BaseUnitTestCase):
         self.run_settings = Settings.get(notation_id="sinom ladrang gk", part_id="full")
         position = Position.PEMADE_POLOS
         preset = Preset.get_preset(position)
-        midi_generator = MidiGeneratorAgent(run_settings=self.run_settings, execution=ExecutionManager(score=None))
+        midi_generator = MidiGeneratorAgent(
+            run_settings=self.run_settings, execution=ExecutionManager(score=self.get_score(self.run_settings))
+        )
         self.midi_track: MidiTrackX = MidiTrackX(
             position, preset=preset, midi_dict=midi_generator.midi_dict, run_settings=self.run_settings
         )
+
+    def get_score(self, settings):
+        mock_score = MagicMock(spec=Score)
+        mock_score.settings = settings
+        mock_score.gongans = {}
+        mock_score.global_metadata = []
+        mock_score.instrument_positions = {
+            Position.PEMADE_POLOS,
+            Position.PEMADE_SANGSIH,
+            Position.JEGOGAN,
+            Position.CALUNG,
+            Position.KEMPLI,
+        }
+        return mock_score
 
     def test_process_grace_note_with_preceding_rest_or_note(self):
         """Note duration should be half the value of the previous note or rest,

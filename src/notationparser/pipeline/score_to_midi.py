@@ -74,9 +74,6 @@ class MidiGeneratorAgent(Agent):
             MidiTrack: MIDI track for the instrument.
         """
 
-        def reset_pass_counters():
-            self.exec_mgr.reset_all(position)
-
         def store_part_info(beat: Beat):
             # current_time_in_millis might be incorrect if the beat consists of only silences.
             if all(note.pitch == Pitch.NONE for note in beat.get_notes(position, DEFAULT)):
@@ -99,7 +96,8 @@ class MidiGeneratorAgent(Agent):
         if not self.run_settings.loop:
             track.increase_current_time(self.run_settings.midi.silence_seconds_before_start, TimeUnit.SECOND)
 
-        reset_pass_counters()
+        # Reset execution manager to start state
+        self.exec_mgr.reset()
 
         # Select the first beat.
         beat = self.exec_mgr.next_beat_in_flow()
@@ -125,7 +123,7 @@ class MidiGeneratorAgent(Agent):
                 )
             # Set new beat info.
             start_bpm, end_bpm = self.exec_mgr.get_tempo_values()
-            start_velocity, end_velocity = self.exec_mgr.get_dynamics_values()
+            start_velocity, end_velocity = self.exec_mgr.get_dynamics_values()[position]
             beat_info = BeatInfo(
                 fullid=beat.full_id,
                 start_bpm=start_bpm,

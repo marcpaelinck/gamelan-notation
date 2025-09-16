@@ -45,8 +45,7 @@ class JsonGeneratorAgent(Agent):
         json_dict.add_title(self.score.title)
         json_dict.add_composer("")
 
-        for position in self.score.instrument_positions:
-            self.exec_mgr.reset_all(position)
+        self.exec_mgr.reset()
 
         # Select the first beat.
         beat = self.exec_mgr.next_beat_in_flow()
@@ -59,13 +58,15 @@ class JsonGeneratorAgent(Agent):
 
             # Set new beat info.
             start_bpm, end_bpm = self.exec_mgr.get_tempo_values()
-            start_velocity, end_velocity = self.exec_mgr.get_dynamics_values()
+            velocities_dict = self.exec_mgr.get_dynamics_values()
+            start_velocities = {pos: startval for pos, (startval, _) in velocities_dict.items()}
+            end_velocities = {pos: endval for pos, (_, endval) in velocities_dict.items()}
             beat_info = BeatInfo(
                 fullid=beat.full_id,
                 start_bpm=start_bpm,
                 end_bpm=end_bpm,
-                start_velocity=start_velocity,
-                end_velocity=end_velocity,
+                start_velocities=start_velocities,
+                end_velocities=end_velocities,
                 duration=beat.duration,
             )
             json_dict.append_beat_info(beat, beat_info)

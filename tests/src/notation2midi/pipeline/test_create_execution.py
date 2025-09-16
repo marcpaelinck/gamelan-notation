@@ -58,6 +58,13 @@ class TestDictToScoreConverter(BaseUnitTestCase):
         mock_score.settings = self.settings
         mock_score.gongans = {}
         mock_score.global_metadata = []
+        mock_score.instrument_positions = {
+            Position.PEMADE_POLOS,
+            Position.PEMADE_SANGSIH,
+            Position.JEGOGAN,
+            Position.CALUNG,
+            Position.KEMPLI,
+        }
         return ExecutionCreatorAgent(mock_score)
 
     def create_gongan_with_metadata(self, gongan_id: int, meta_dict: dict[MetaType, MetaDataBaseModel]):

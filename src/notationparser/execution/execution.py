@@ -99,7 +99,7 @@ class GradualChange(BaseModel):
         """Returns True if the combination of arguments matches this GradualChange's fields.
         If a function argument is None, the matching field should be an empty list."""
         return (
-            (position in self.positions or (position is None and not self.positions))
+            (position in self.positions or not self.positions)
             and (pass_nr in self.passes or (pass_nr is None and not self.passes))
             and (iteration_nr in self.iterations or (iteration_nr is None and not self.iterations))
         )
@@ -169,14 +169,18 @@ class ExecutionManager:
 
     score: Score
     curr_beat: Beat = None
-    curr_position: Position = None
     goto_dict: dict[BeatID, GoTo] = field(default_factory=dict)
     loop_dict: dict[GonganID, Loop] = field(default_factory=dict)
     dynamics_dict: dict[BeatID, list[GradualChange]] = field(default_factory=lambda: defaultdict(list))
     tempo_dict: dict[BeatID, list[GradualChange]] = field(default_factory=lambda: defaultdict(list))
-    active_dynamics: GradualChange | None = None
+    active_dynamics: dict[Position, GradualChange | None] = field(default_factory=dict)
     active_tempo: GradualChange | None = None
     pattern_dict: dict[str, list[Note]] = field(default_factory=dict)
+    all_positions: list[Position] = field(default_factory=list)
+
+    def __post_init__(self):
+        self.all_positions = list(self.score.instrument_positions)
+        self.active_dynamics = {position: [] for position in self.all_positions}
 
     def create_default_goto(self, beat: Beat) -> GoTo:
         self.goto_dict[beat.full_id] = GoTo(from_beat=beat, to_beat_dict={DEFAULT: beat.next})
@@ -234,45 +238,60 @@ class ExecutionManager:
         )
         self.dynamics_dict[beat.full_id].append(dynamics)
 
-    def initialize_gradual_change(self, initial_value: int) -> GradualChange:
-        """Creates an initial active musical expression for the score's execution, with the given initial value."""
-        gradual_change = GradualChange(tot_beats=0, from_value=initial_value, to_value=initial_value)
-        gradual_change.status = GradualChangeStatus(end_value=initial_value)
-        return gradual_change
+    def initialize_gradual_changes(self) -> GradualChange:
+        """Creates an initial active musical expression for the score's execution, with a default value."""
+        default_tempo = self.score.settings.midi.default_tempo
+        self.active_tempo = GradualChange(
+            tot_beats=0,
+            from_value=default_tempo,
+            to_value=default_tempo,
+            status=GradualChangeStatus(end_value=default_tempo),
+        )
+        default_dynamics = self.score.settings.midi.dynamics[self.score.settings.midi.default_dynamics]
+        for position in self.all_positions:
+            self.active_dynamics[position] = GradualChange(
+                tot_beats=0,
+                from_value=default_dynamics,
+                to_value=default_dynamics,
+                status=GradualChangeStatus(end_value=default_dynamics),
+            )
 
     def update_gradual_change_status(self, change_type: MusicalExpressionType) -> None:
         """Updates the status values for the given musical expression type"""
         # Check if a new GradualChange is effective for the current beat, pass and loop.
-        matching_value = None
+        positions = [None] if change_type is self.MusicalExpressionType.TEMPO else self.all_positions
         gradual_change_list = self.tempo_dict if change_type is self.MusicalExpressionType.TEMPO else self.dynamics_dict
-        for pos_, pass_, iter_ in (
-            (po, pa, it)
-            for po in (self.curr_position, None)
-            for pa in (self.get_curr_pass(self.curr_beat), None)
-            for it in (self.get_curr_iteration(self.curr_beat), None)
-        ):
-            matching_value = next(
-                (d for d in gradual_change_list[self.curr_beat.full_id] if d.matches(pos_, pass_, iter_)),
-                None,
-            )
-            if matching_value:
-                break
+        for position in positions:
+            matching_value = None
+            for pass_, iter_ in (
+                (pa, it)
+                for pa in (self.get_curr_pass(self.curr_beat), None)
+                for it in (self.get_curr_iteration(self.curr_beat), None)
+            ):
+                matching_value = next(
+                    (d for d in gradual_change_list[self.curr_beat.full_id] if d.matches(position, pass_, iter_)),
+                    None,
+                )
+                if matching_value:
+                    break
 
-        # Determine the current active GradualChange
-        active_change = self.active_tempo if change_type is self.MusicalExpressionType.TEMPO else self.active_dynamics
-        if matching_value and matching_value != active_change:
-            # New tempo or dynamics applies.
-            # Copy the current tempo or dynamics value to initialize the new GradualChange.
-            current_value = active_change.status.end_value
-            active_change.clear_status()
-            # Set the new GradualChange as the active one.
-            active_change = matching_value
-            active_change.initialize_status(initial_value=current_value)
-        active_change.next_step()
-        if change_type is self.MusicalExpressionType.TEMPO:
-            self.active_tempo = active_change
-        else:
-            self.active_dynamics = active_change
+            # Determine the current active GradualChange
+            active_change = (
+                self.active_tempo if change_type is self.MusicalExpressionType.TEMPO else self.active_dynamics[position]
+            )
+            if matching_value and matching_value != active_change:
+                # New tempo or dynamics applies.
+                # Copy the current tempo or dynamics value to initialize the new GradualChange.
+                current_value = active_change.status.end_value
+                active_change.clear_status()
+                # Set the new GradualChange as the active one.
+                active_change = matching_value.model_copy()
+                active_change.initialize_status(initial_value=current_value)
+            active_change.next_step()
+            if change_type is self.MusicalExpressionType.TEMPO:
+                self.active_tempo = active_change
+            else:
+                self.active_dynamics[position] = active_change
 
     def get_curr_pass(self, beat: Beat) -> int:
         return self.goto(beat).counter
@@ -282,17 +301,13 @@ class ExecutionManager:
             return self.loop(beat).counter
         return DEFAULT
 
-    def reset_all(self, position: Position):
+    def reset(self):
         """Resets all GoTo and Loop counters"""
         for goto in self.goto_dict.values():
             goto.reset_counter()
         for loop in self.loop_dict.values():
             loop.reset_counter()
-        self.curr_position = position
-        self.active_tempo = self.initialize_gradual_change(self.score.settings.midi.default_tempo)
-        self.active_dynamics = self.initialize_gradual_change(
-            self.score.settings.midi.dynamics[self.score.settings.midi.default_dynamics]
-        )
+        self.initialize_gradual_changes()
 
     def next_beat_in_flow(self) -> Beat:
         """Determines the next beat, based on flow information and the current status
@@ -350,6 +365,13 @@ class ExecutionManager:
         """Returns the tempo for the given beat."""
         return (self.active_tempo.status.start_value, self.active_tempo.status.end_value)
 
-    def get_dynamics_values(self) -> tuple[int, int]:
-        """Returns the dynamics for the given beat and position."""
-        return (self.active_dynamics.status.start_value, self.active_dynamics.status.end_value)
+    def get_dynamics_values(self) -> dict[tuple[int, int]]:
+        """Returns a dict mapping each position to the start and end dynamics values
+        for the current beat/pass/iteration combination."""
+        return {
+            position: (
+                self.active_dynamics[position].status.start_value,
+                self.active_dynamics[position].status.end_value,
+            )
+            for position in self.active_dynamics
+        }
