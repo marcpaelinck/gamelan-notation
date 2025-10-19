@@ -77,8 +77,8 @@ beat_count_parm = 'beat_count' '=' beat_count:intvalue;
 beat_parm = 'beat' '=' beat:intvalue;
 beats_parm = ('beats' | 'beat') '=' (beats+:intvalue | beats:intlistvalue);
 beat_range_parm = ('beats' | 'beat') '=' first_beat:intvalue [("->" explicit_gradual_beat:`true`) last_beat:intvalue] ;
-(* dynamics_range can have format 'mf', 'p->mf' or '->mf' *)
 cycle_parm = 'cycle' '=' cycle:intvalue;
+(* dynamics_range can have format 'mf', 'p->mf' or '->mf' *)
 dynamics_range = [from_abbr:dynamics_value "->" explicit_gradual_value:`true` | "->" explicit_gradual_value:`true`] to_abbr:dynamics_value;
 dynamics_value = 'pp' | 'p' | 'mp' | 'mf' | 'f' | 'ff';
 first_beat_parm = ('first_beat' | 'beat') '=' first_beat:intvalue;

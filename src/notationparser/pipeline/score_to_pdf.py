@@ -279,10 +279,10 @@ class PDFGeneratorAgent(Agent):
             gongan (Gongan): the gongan to which the metadata belongs
             above_notation (bool): Selects which metadata to generate
         """
-        metaclasses = {meta.__class__ for meta in gongan.metadata}
-        metadict = {
-            metaclass: [meta for meta in gongan.metadata if meta.__class__ == metaclass] for metaclass in metaclasses
-        }
+        # metaclasses = {meta.__class__ for meta in gongan.metadata}
+        # metadict = {
+        #     metaclass: [meta for meta in gongan.metadata if meta.__class__ == metaclass] for metaclass in metaclasses
+        # }
         if above_notation:
             # Content that should occur before the notation part of the gongan
             # still to add: SuppressMeta
@@ -294,7 +294,7 @@ class PDFGeneratorAgent(Agent):
             content = self._append_comments(content, gongan.comments)
 
             for metatype in [MetaType.TEMPO, MetaType.DYNAMICS, MetaType.LABEL]:
-                if metalist := metadict.get(metatype, None):
+                if metalist := gongan.metadata[metatype]:
                     content = self._append_single_metadata_type(
                         content, metalist=metalist, **self.template.metaFormatParameters[metatype]
                     )
@@ -302,7 +302,7 @@ class PDFGeneratorAgent(Agent):
         if not above_notation:
             # Content that should occur after the notation part of the gongan
             for metatype in [MetaType.LOOP, MetaType.GOTO, MetaType.SEQUENCE]:
-                if metalist := metadict.get(metatype, None):
+                if metalist := gongan.metadata[metatype]:
                     if metatype is MetaType.SEQUENCE:
                         content.append_empty_row(
                             col_span=[1, -1], rowtype=RowType.EMPTY, parastyle=self.template.basicparaStyle

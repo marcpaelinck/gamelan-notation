@@ -164,7 +164,7 @@ class DynamicsMeta(GradualChangeMetadata):
     positions: list[Position]  # PositionsFromTag
     from_abbr: str = DynamicLevel
     to_abbr: str = DynamicLevel
-    DEFAULTPARAM = "abbreviation"
+    DEFAULTPARAM = "to_abbr"
     DYNAMICS: ClassVar[dict[str, int]] = Field(default_factory=dict)
 
     @model_validator(mode="before")
@@ -269,7 +269,7 @@ class SuppressMeta(MetaDataBaseModel):
 
 class TempoMeta(GradualChangeMetadata):
     metatype: Literal[MetaType.TEMPO] = MetaType.TEMPO
-    DEFAULTPARAM = "value"
+    DEFAULTPARAM = "to_value"
 
 
 class CopyMeta(MetaDataBaseModel):
