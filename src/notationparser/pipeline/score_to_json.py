@@ -40,10 +40,12 @@ class JsonGeneratorAgent(Agent):
             JsonCreator: dict containing the score information.
         """
 
-        json_dict = JsonCreator(run_settings=self.run_settings)
-
-        json_dict.add_title(self.score.title)
-        json_dict.add_composer("")
+        json_creator = JsonCreator(
+            title=self.score.title,
+            composer="",
+            run_settings=self.run_settings,
+            instrument_positions=self.score.instrument_positions,
+        )
 
         self.exec_mgr.reset()
 
@@ -69,11 +71,11 @@ class JsonGeneratorAgent(Agent):
                 end_velocities=end_velocities,
                 duration=beat.duration,
             )
-            json_dict.append_beat_info(beat, beat_info)
+            json_creator.append_beat_info(beat, beat_info)
 
             beat = self.exec_mgr.next_beat_in_flow()
 
-        return json_dict
+        return json_creator
 
     @override
     def _main(self) -> bool:
