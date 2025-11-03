@@ -19,6 +19,7 @@ from src.settings.utils import tag_to_position_dict
 class MetaDataSwitch(NotationEnum):
     OFF = "off"
     ON = "on"
+    DOUBLE = "double"
 
 
 class FrequencyType(NotationEnum):
@@ -213,6 +214,7 @@ class KempliMeta(MetaDataBaseModel):
     metatype: Literal[MetaType.KEMPLI] = MetaType.KEMPLI
     status: MetaDataSwitch
     beats: list[int] = Field(default_factory=list)
+    passes: list[int] = Field(default_factory=list)
     scope: Scope = Scope.GONGAN
     DEFAULTPARAM = "status"
 
@@ -275,7 +277,7 @@ class TempoMeta(GradualChangeMetadata):
 class CopyMeta(MetaDataBaseModel):
     metatype: Literal[MetaType.COPY] = MetaType.COPY
     template: str
-    include: list[str] = Field(default_factory=list)
+    include: list[MetaType] = Field(default_factory=list)
     DEFAULTPARAM = "template"
     _processingorder_ = 10
 

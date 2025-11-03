@@ -41,7 +41,7 @@ gotometa = metatype:'GOTO' {('label'|'value') '='} label:alphanumvalue parameter
 gotometaparameters = {[','] @:(from_beat_parm | passes_parm | cycle_parm)} ;
 
 kemplimeta = metatype:'KEMPLI' {('status'|'value') '='} status:alphavalue parameters:kemplimetaparameters ;
-kemplimetaparameters = {[','] @:(beats_parm | scope_parm)} ;
+kemplimetaparameters = {[','] @:(beats_parm | scope_parm | passes_parm)} ;
 
 autokempyungmeta = metatype:'AUTOKEMPYUNG' {('status'|'value') '='} status:alphavalue parameters:autokempyungmetaparameters ;
 autokempyungmetaparameters = {[','] @:(scope_parm | positions_parm)} ;

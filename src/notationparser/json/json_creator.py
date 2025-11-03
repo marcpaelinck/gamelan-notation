@@ -75,6 +75,17 @@ class CompactEncoder(json.JSONEncoder):
         return json_repr
 
 
+def roundoff(value: float) -> float | int:
+    # Rounds off with as little decimals as possible without loss, but with a maximum of 3
+    rounded = 0
+    rounded3 = round(value, 3)
+    for decimals in range(4):
+        rounded = round(value, decimals)
+        if int(rounded * pow(10, decimals)) == rounded3 * pow(10, decimals):
+            break
+    return int(rounded) if decimals == 0 else rounded
+
+
 class JNote(BaseModel):
     s: str  # note symbol (characters)
     t: float | int  # trigger time in 4n values
@@ -83,15 +94,8 @@ class JNote(BaseModel):
     _sustain: bool = False
 
     @field_serializer("t", "d", when_used="always")
-    def roundoff(self, value: float) -> float | int:
-        # Rounds off with as little decimals as possible without loss, but with a maximum of 3
-        rounded = 0
-        rounded3 = round(value, 3)
-        for decimals in range(4):
-            rounded = round(value, decimals)
-            if int(rounded * pow(10, decimals)) == rounded3 * pow(10, decimals):
-                break
-        return int(rounded) if decimals == 0 else rounded
+    def round(self, value: float) -> float | int:
+        return roundoff(value)
 
     def update_duration(self, new_value: float):
         self.n = new_value
@@ -125,13 +129,35 @@ class JNote(BaseModel):
             return True
 
 
+class JSymbol(BaseModel):
+    s: str  # note symbol (characters)
+    t: float | int  # trigger time in 4n values
+    d: float | int  # sustain duration
+
+    @field_serializer("t", "d", when_used="always")
+    def round(self, value: float) -> float | int:
+        return roundoff(value)
+
+
 class JStave(BaseModel):
     position: str
     velocity: list[float, float]
-    value: list[JNote]
+    notes: list[JNote]
+    notation: list[JSymbol]
 
 
 class JSection(BaseModel):
+    # Corresponds with a beat
+    id: int
+    title: str
+    starttime: float
+    duration: float
+    tempo: list[int, int]
+    data: list[JStave]
+
+
+class JSystem(BaseModel):
+    # Corresponds with a gongan
     id: int
     title: str
     starttime: float
@@ -201,6 +227,14 @@ class JsonCreator:
                 )
             return notes
 
+    def notes_to_notation(self, position: Position, notes: list[Note | Pattern]) -> list[JSymbol]:
+        curr_time = self.timelines[position]
+        jsymbols = []
+        for note in notes:
+            jsymbols.append(JSymbol(s=note.symbol, t=curr_time, d=note.duration))
+            curr_time += note.duration
+        return jsymbols
+
     def group_silences(self, position: Position) -> callable:
 
         def group_silences_for_pos(reduced: list[JNote], note: JNote) -> list[JNote]:
@@ -242,7 +276,8 @@ class JsonCreator:
             data=[  # NoIndent
                 JStave(
                     position=pos,
-                    value=self.aggregate(
+                    notation=self.notes_to_notation(position=pos, notes=measure.passes[-1].notes),
+                    notes=self.aggregate(
                         sum((self.note_to_jnotes(note) for note in measure.passes[-1].notes), []), position=pos
                     ),
                     velocity=(

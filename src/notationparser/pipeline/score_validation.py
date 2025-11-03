@@ -242,7 +242,10 @@ class ScoreValidationAgent(Agent):
                             for seq, (polosnote, sangsihnote) in enumerate(notepairs):
                                 # Check kempyung.
                                 if (
-                                    polosnote.is_melodic()
+                                    # Do not autocorrect patterns
+                                    isinstance(polosnote, Note)
+                                    and isinstance(sangsihnote, Note)
+                                    and polosnote.is_melodic()
                                     and sangsihnote.is_melodic()
                                     and not (sangsihnote.pitch, sangsihnote.octave)
                                     == kempyung_dict[(polosnote.pitch, polosnote.octave)]
