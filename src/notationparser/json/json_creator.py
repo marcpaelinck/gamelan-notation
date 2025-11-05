@@ -14,9 +14,13 @@ from src.common.classes import Beat
 from src.common.constants import Position, SustainType
 from src.common.logger import Logging
 from src.common.notes import Note, Pattern
-from src.settings.classes import RunSettings, RunType
+from src.settings.classes import RunSettings
 
 logger = Logging.get_logger(__name__)
+
+
+class GonganInfo(BaseModel):
+    id: int
 
 
 class BeatInfo(BaseModel):
@@ -106,6 +110,7 @@ class JNote(BaseModel):
         """Updates the start time and duration of the note. This has currently only
         effect for grace notes which uses half of the duration of the previous note
         or rest with a maximum of 0.5 units.
+        When this method is called, a grace note has duration 0.
         Returns:
             bool: True if the timeline should be updated with the note's duration
         """
@@ -117,9 +122,9 @@ class JNote(BaseModel):
             else:
                 self.update_duration(min((currtime - prevnote.t) / 2, max_duration))
                 # Correct the duration of the previous note if necessary
-                overlap = prevnote.n + self.n - (currtime - prevnote.t)
-                if overlap > 0:
-                    self.update_duration(prevnote.n - overlap)
+                # overlap = prevnote.n + self.n - (currtime - prevnote.t)  # always equals prevnote.n
+                # if overlap > 0:
+                prevnote.update_duration(prevnote.n - self.n)
             # Grace selfs have been converted to 'regular' selfs, so remove capitalization.
             self.t = currtime - self.n
             self.s = self.s.lower()
@@ -140,7 +145,6 @@ class JSymbol(BaseModel):
 
 
 class JStave(BaseModel):
-    position: str
     velocity: list[float, float]
     notes: list[JNote]
     notation: list[JSymbol]
@@ -149,21 +153,10 @@ class JStave(BaseModel):
 class JSection(BaseModel):
     # Corresponds with a beat
     id: int
-    title: str
     starttime: float
     duration: float
     tempo: list[int, int]
-    data: list[JStave]
-
-
-class JSystem(BaseModel):
-    # Corresponds with a gongan
-    id: int
-    title: str
-    starttime: float
-    duration: float
-    tempo: list[int, int]
-    data: list[JStave]
+    staves: dict[str, JStave]
 
     # Add field serializers for more compact layout of JSON output
 
@@ -171,15 +164,23 @@ class JSystem(BaseModel):
     def serialize_tempo(self, tempo: list[int, int]):
         return NoIndent(tempo)
 
-    @field_serializer("data", when_used="always")
-    def serialize_data(self, data: list[JStave]):
-        return [NoIndent(stave.model_dump(exclude_defaults=True)) for stave in data]
+    @field_serializer("staves", when_used="always")
+    def serialize_data(self, data: dict[str, JStave]):
+        return {pos: NoIndent(stave.model_dump(exclude_defaults=True)) for pos, stave in data.items()}
+
+
+class JSystem(BaseModel):
+    # Corresponds with a gongan
+    id: int
+    starttime: float
+    duration: float
+    sections: list[JSection]
 
 
 class JScore(BaseModel):
     title: str
     composer: str
-    sections: list[JSection]
+    systems: list[JSystem]
 
 
 class JsonCreator:
@@ -192,10 +193,9 @@ class JsonCreator:
     def __init__(self, title: str, composer: str, run_settings: RunSettings, instrument_positions: set[Position]):
         super().__init__()
         self.run_settings = run_settings
-        self.current_beat_id = 0
         self.timelines: dict[Position, int] = {pos: 0 for pos in instrument_positions}
         self.last_notes: dict[Position, JNote | None] = {pos: None for pos in instrument_positions}
-        self.jscore = JScore(title=title, composer=composer, sections=[])
+        self.jscore = JScore(title=title, composer=composer, systems=[])
         # Dummy beat info needed for initial silence
 
     def note_to_jnotes(self, note: Note | Pattern) -> list[JNote]:
@@ -264,18 +264,15 @@ class JsonCreator:
     def velocity2frac(self, velocity: int) -> float:
         return round(velocity / 127, 2)
 
-    def append_beat_info(self, beat: Beat, beat_info: BeatInfo):
+    def append_beat_info(self, beat: Beat, beat_info: BeatInfo, new_system: JSystem | None):
         """Appends a beat to the JSON structure."""
-        self.current_beat_id += 1
         jsection = JSection(
-            id=self.current_beat_id,
-            title=beat_info.fullid,
+            id=beat.id,
             starttime=round(max(self.timelines.values()), 3),
             duration=beat_info.duration,
             tempo=(beat_info.start_bpm, beat_info.end_bpm),  # NoIndent
-            data=[  # NoIndent
-                JStave(
-                    position=pos,
+            staves={
+                pos: JStave(  # NoIndent
                     notation=self.notes_to_notation(position=pos, notes=measure.passes[-1].notes),
                     notes=self.aggregate(
                         sum((self.note_to_jnotes(note) for note in measure.passes[-1].notes), []), position=pos
@@ -286,16 +283,22 @@ class JsonCreator:
                     ),
                 )
                 for pos, measure in beat.measures.items()
-            ],
+            },
         )
-        self.jscore.sections.append(jsection)
+        if new_system:
+            self.jscore.systems.append(new_system)
+            new_system.starttime = jsection.starttime
+
+        self.jscore.systems[-1].sections.append(jsection)
+        self.jscore.systems[-1].duration += beat.duration
 
     def save_to_json(self):
         """Saves the JSONized score to file. The file is saved in compact form for production."""
         indent = None
         dictized = self.jscore.model_dump()
-        if self.run_settings.options.notation_to_midi.run_type is not RunType.PRODUCTION:
-            indent = 4
+        # if self.run_settings.options.notation_to_midi.run_type is not RunType.PRODUCTION:
+        # indent = 4
+        indent = 4
         jsonized = json.dumps(dictized, indent=indent, cls=CompactEncoder)
         with open(self.run_settings.json_out_filepath, "w", encoding="UTF-8") as outfile:
             outfile.writelines(jsonized)

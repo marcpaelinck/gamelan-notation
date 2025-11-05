@@ -24,6 +24,7 @@ from src.notationparser.metadata_classes import (
     LabelMeta,
     LoopMeta,
     MetaDataSwitch,
+    MetaDataType,
     MetaType,
     OctavateMeta,
     PartMeta,
@@ -443,6 +444,10 @@ class ScorePostprocessAgent(Agent):
                         lastbeat.next.prev = waitbeat
                         lastbeat.next = waitbeat
                         # move goto pointers to the end of the wait beat
+                        # TODO The following is not correct: bpm for the wait measure is not changed to 60.
+                        #      Two possible solutions:
+                        #      1. Temporarily change bpm value (best done by ExecutionManager)
+                        #      2. Determine current bpm and correct duration accordingly (not easily done here).
                     duration = round(4 * meta.seconds)  # 4 notes per bpm unit and bpm=60 => 4 notes per second.
                     waitbeat.measures = self._create_rest_measures(
                         prev_beat=lastbeat, positions=list(lastbeat.measures.keys()), duration=duration

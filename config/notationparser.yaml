@@ -3,7 +3,7 @@
 # The settings below (except for options) refer to values in the data.yaml file.
 # Leave `notation_id` blank to process all notation files.
 # Leave `part_id` blank to process all notation files with the given notation_id.
-notation_id: gilak penutup
+notation_id: legong mahawidya gk
 part_id: full
 options:
   debug_logging: false

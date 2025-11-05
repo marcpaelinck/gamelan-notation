@@ -96,8 +96,8 @@ class GradualChangeMetadata(MetaDataBaseModel):
     first_beat: int = 1
     last_beat: int | None = None
     beat_count: int | None = None
-    passes: list[int] = Field(default_factory=list)  # On which pass(es) should goto be performed?
-    iterations: list[int] = Field(default_factory=list)  # On which iteration(s) should goto be performed?
+    passes: list[int] = Field(default_factory=list)  # On which pass(es) should change be effective?
+    iterations: list[int] = Field(default_factory=list)  # On which iteration(s) should change be effective?
 
     @property
     def explicit_gradual(self) -> bool:
