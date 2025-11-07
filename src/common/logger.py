@@ -73,10 +73,10 @@ class CustomLogger:
         self.logger.info(msg, *args, **kwargs)
 
     def warning(self, msg: object, *args, **kwargs):
-        self.logger.info(msg, *args, **kwargs)
+        self.logger.warning(msg, *args, **kwargs)
 
     def error(self, msg: object, *args, **kwargs):
-        self.logger.info(msg, *args, **kwargs)
+        self.logger.error(msg, *args, **kwargs)
 
     def log_progress(self, message=""):
         """Logs the provided message and appends a dot, overwriting the previous line."""

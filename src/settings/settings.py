@@ -2,6 +2,7 @@
 Functions for importing and validating the run settings.
 """
 
+import sys
 from typing import Callable
 
 from src.common.logger import Logging
@@ -60,6 +61,12 @@ class Settings:
             cls.RUN_SETTINGS.notation_id = notation_id
         if part_id:
             cls.RUN_SETTINGS.part_id = part_id
+
+        if not (cls.RUN_SETTINGS.notation_id, cls.RUN_SETTINGS.part_id) in cls.RUN_SETTINGS.notation_settings_dict:
+            logger.error(
+                "Notation='%s' part='%s' not found." % (cls.RUN_SETTINGS.notation_id, cls.RUN_SETTINGS.part_id)
+            )
+            sys.exit()
 
         if cls.RUN_SETTINGS.notation_id and cls.RUN_SETTINGS.part_id:
             # Run the methods that listen to settings changes
