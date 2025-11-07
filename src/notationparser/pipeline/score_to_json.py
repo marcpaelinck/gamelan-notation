@@ -13,7 +13,7 @@ class JsonGeneratorAgent(Agent):
 
     LOGGING_MESSAGE = "EXPORTING JSON FILE"
     EXPECTED_INPUT_TYPES = (Agent.InputOutputType.RUNSETTINGS, Agent.InputOutputType.EXECUTION)
-    RETURN_TYPE = Agent.InputOutputType.PART
+    RETURN_TYPE = None
 
     part_info: PartForm = None
     exec_mgr: ExecutionManager = None
@@ -95,11 +95,6 @@ class JsonGeneratorAgent(Agent):
         score_dict = self._notation_to_dict()
         score_dict.save_to_json()
         self.logger.info("File saved as %s", self.run_settings.json_out_filepath)
-
-        if self.has_errors:
-            return False
-
-        return True
 
 
 if __name__ == "__main__":
