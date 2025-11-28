@@ -298,15 +298,16 @@ class WaitMeta(MetaDataBaseModel):
         default_factory=lambda: list(range(99, -1))
     )  # On which pass(es) should goto be performed? Default is all passes.
     # TODO: devise a more elegant way to express this, e.g. with "ALL" value.
-    DEFAULTPARAM = None
+    DEFAULTPARAM = "seconds"
 
 
 MetaDataType = Union[
+    AutoKempyungMeta,
+    CopyMeta,
     DynamicsMeta,
     GonganMeta,
     GoToMeta,
     KempliMeta,
-    AutoKempyungMeta,
     LabelMeta,
     LoopMeta,
     OctavateMeta,
@@ -314,7 +315,6 @@ MetaDataType = Union[
     SequenceMeta,
     SuppressMeta,
     TempoMeta,
-    CopyMeta,
     ValidationMeta,
     WaitMeta,
 ]

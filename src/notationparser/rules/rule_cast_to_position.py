@@ -240,9 +240,7 @@ class RuleCastToPosition(Rule, RunSettingsListener):
         # Check metadata that affects the rule and modify the rule accordingly
         for meta in metadata[MetaType.AUTOKEMPYUNG]:
             if meta.status == MetaDataSwitch.OFF and (not meta.positions or position in meta.positions):
-                if RuleValue.EXACT_KEMPYUNG in rule:
-                    rule = rule.copy()
-                    rule.remove(RuleValue.EXACT_KEMPYUNG)
+                rule = [val for val in rule if val not in [RuleValue.EXACT_KEMPYUNG, RuleValue.KEMPYUNG]]
 
         tone = note.to_tone()
         effect = note.effect
@@ -281,6 +279,9 @@ class RuleCastToPosition(Rule, RunSettingsListener):
                 case RuleValue.BYONG:
                     tones = [Tone(pitch=Pitch.BYONG, octave=None)]
                     effect = Stroke.OPEN
+                case RuleValue.SILENCE:
+                    tones = [Tone(pitch=Pitch.SILENCE, octave=None)]
+                    effect = Stroke.NONE
                 case _:
                     raise ValueError("Unknown action %s" % action)
             if tones:

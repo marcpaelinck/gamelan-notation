@@ -164,6 +164,7 @@ class RuleValue(NotationEnum):
     EXACT_KEMPYUNG = "EXACT_KEMPYUNG"
     KEMPYUNG = "KEMPYUNG"
     BYONG = "BYONG"
+    SILENCE = "SILENCE"
 
 
 class Position(NotationEnum):

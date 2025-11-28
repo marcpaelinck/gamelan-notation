@@ -10,11 +10,7 @@ from src.settings.classes import RunSettings
 
 
 class NotePatternGeneratorAgent(Agent):
-    """Parser that converts notation documents into a hierarchical dict structure. It uses the
-    Tatsu library in combination with ebnf grammar files.
-    The parser has no 'knowledge' about the instruments and idiom of the music. It only checks the
-    basic structure of the notation as described in the grammar files and reports any syntax error.
-    """
+    """Creates sequences of Note objects to emulate patterns such as tremolo or norot."""
 
     LOGGING_MESSAGE = "GENERATING NOTE PATTERNS"
     EXPECTED_INPUT_TYPES = (Agent.InputOutputType.BOUNDSCORE,)

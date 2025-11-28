@@ -60,7 +60,7 @@ repeatmeta = metatype:'REPEAT' {('count'|'value') '='} count:intvalue ;
     
 sequencemeta = metatype:'SEQUENCE' {'value' '='} value:strlistvalue_multiline ;
     
-suppressmeta = metatype:'SUPPRESS' {('positions'|'value') '='} positions:strlistvalue  parameters:suppressmetaparameters ;
+suppressmeta = metatype:'SUPPRESS' {('positions'|'value') '='} (positions+:strvalue | positions:strlistvalue)  parameters:suppressmetaparameters ;
 suppressmetaparameters = {[','] @:(beats_parm | passes_parm)} ;
 
 tempometa = metatype:'TEMPO' {'value' '='} range_values:tempo_range  parameters:tempometaparameters ;

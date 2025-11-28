@@ -69,6 +69,7 @@ def run_multiple_pipelines(run_settings: RunSettings):
         for (notation_id, part_id), notation_info in run_settings.notation_settings_dict.items()
         if run_type in notation_info.run_types
         and (notation_id == run_settings.notation_id or not run_settings.notation_id)
+        and (part_id == run_settings.part_id or not run_settings.part_id)
     ]
     # Run the pipeline for each part of each song.
     for notation_id, part_id in notation_list:
@@ -86,7 +87,7 @@ def main():
             run_pipeline(run_settings)
         elif run_settings.options.notation_to_midi.run_type is RunType.INTEGRATION_TEST or askyesno(
             "Warning",
-            f"Processing all notation files{" for " + run_settings.notation_id if run_settings.notation_id else ""}. Continue?",
+            f"Processing multiple notation files:\nnotation_id= {run_settings.notation_id}, part_id={run_settings.part_id}. \nContinue?",
         ):
             run_multiple_pipelines(run_settings)
     logger.close_logging()

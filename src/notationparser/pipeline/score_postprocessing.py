@@ -24,7 +24,6 @@ from src.notationparser.metadata_classes import (
     LabelMeta,
     LoopMeta,
     MetaDataSwitch,
-    MetaDataType,
     MetaType,
     OctavateMeta,
     PartMeta,

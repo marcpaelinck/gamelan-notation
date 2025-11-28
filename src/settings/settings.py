@@ -62,7 +62,11 @@ class Settings:
         if part_id:
             cls.RUN_SETTINGS.part_id = part_id
 
-        if not (cls.RUN_SETTINGS.notation_id, cls.RUN_SETTINGS.part_id) in cls.RUN_SETTINGS.notation_settings_dict:
+        if (
+            notation_id
+            and part_id
+            and not (cls.RUN_SETTINGS.notation_id, cls.RUN_SETTINGS.part_id) in cls.RUN_SETTINGS.notation_settings_dict
+        ):
             logger.error(
                 "Notation='%s' part='%s' not found." % (cls.RUN_SETTINGS.notation_id, cls.RUN_SETTINGS.part_id)
             )

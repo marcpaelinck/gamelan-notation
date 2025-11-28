@@ -89,7 +89,7 @@ The data consists of two files.
 | `positions`\* | To be used if the note can not be played by all positions of the instrument, e.g. in case of a reyong. Should otherwise be left empty. |
 | `pitch`\* | The name of the note or sound |
 | `octave`\* | The octave relative to the instrument's range. |
-| `stroke`\* | The stthe type of stroke. |
+| `stroke`\* | The type of stroke. |
 | `remark` | (optional) |
 | `midinote` | Integer MIDI note value  |
 | `sample`| Name of the (.mp3) audio file containing the sound for the note. |
