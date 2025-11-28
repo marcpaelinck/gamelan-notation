@@ -5,6 +5,7 @@ from typing import override
 from src.notationparser.classes import Agent
 from src.notationparser.execution.execution import ExecutionManager
 from src.notationparser.json.json_creator import BeatInfo, JsonCreator, JSystem
+from src.notationparser.metadata_classes import MetaType
 from src.settings.classes import PartForm, RunSettings
 
 
@@ -27,6 +28,11 @@ class JsonGeneratorAgent(Agent):
             file=self.run_settings.midi_out_file,
             loop=self.run_settings.notation_settings.loop,
         )
+        self._unique_id = 0
+
+    def unique_id(self):
+        self._unique_id += 1
+        return self._unique_id
 
     @override
     @classmethod
@@ -59,7 +65,10 @@ class JsonGeneratorAgent(Agent):
             system = None
             if (beat.gongan_id != prev_gongan_id) or (beat.id <= prev_beat_id):
                 gongan = self.exec_mgr.score.gongans[beat.gongan_seq]
-                system = JSystem(id=gongan.id, starttime=0, duration=0, sections=[])
+                part = gongan.metadata[MetaType.PART][0].name if gongan.metadata[MetaType.PART] else None
+                system = JSystem(
+                    id=(self.unique_id()), gongan=gongan.id, starttime=0, duration=0, part=part, sections=[]
+                )
 
             # Set new beat info.
             start_bpm, end_bpm = self.exec_mgr.get_tempo_values()

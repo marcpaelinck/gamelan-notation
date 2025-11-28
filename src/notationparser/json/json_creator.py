@@ -172,8 +172,10 @@ class JSection(BaseModel):
 class JSystem(BaseModel):
     # Corresponds with a gongan
     id: int
+    gongan: int
     starttime: float
     duration: float
+    part: str | None = None
     sections: list[JSection]
 
 
@@ -241,7 +243,8 @@ class JsonCreator:
             pos = position
             prevnote = reduced[-1] if reduced else None
             reduced_cpy = reduced.copy()
-            if note.s not in [".", " "]:
+            silences = [".", " "]
+            if not any(note.s.startswith(char) for char in silences):
                 update_timeline = note.update_times(prevnote, self.timelines[pos])
                 if update_timeline:
                     self.timelines[pos] += note.n
