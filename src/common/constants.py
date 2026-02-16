@@ -263,6 +263,9 @@ class Pitch(NotationEnum):
     STRIKE = "STRIKE"
     STRIKE2 = "STRIKE2"
     TONG = "TONG"
+    TENG = "TENG"
+    L = "L"  # Left shadow tone (kendang)
+    R = "R"  # Right shadow tone (kendang)
     EXTENSION = "EXTENSION"
     SILENCE = "SILENCE"
     NONE = "NONE"
@@ -275,7 +278,9 @@ class Stroke(NotationEnum):
     GRACE_NOTE = "GRACE_NOTE"
     KAPAK = "KAPAK"
     DETUT = "DETUT"
+    TONGTENG = "TONGTENG"
     CUNGKUNG = "CUNGKUNG"
+    LR = "LR"
     NONE = "NONE"
 
 

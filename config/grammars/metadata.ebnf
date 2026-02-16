@@ -33,7 +33,7 @@ metadata
 copymeta = metatype:'COPY' {('template' | 'value') '='} template:strvalue ['include' '=' include:strlistvalue];
 
 dynamicsmeta = metatype:'DYNAMICS' {'value' '='} range_values:dynamics_range parameters:dynamicsmetaparameters ;
-dynamicsmetaparameters ={[','] @:(beat_range_parm | beat_count_parm | first_beat_parm | passes_parm | iterations_parm | positions_parm)} ;
+dynamicsmetaparameters ={[','] @:(beat_range_parm | beat_count_parm | first_beat_parm | passes_parm | cycle_parm | iterations_parm | positions_parm)} ;
 
 gonganmeta = metatype:'GONGAN' {('type'|'value') '='} type:strvalue ;
     
@@ -64,7 +64,7 @@ suppressmeta = metatype:'SUPPRESS' {('positions'|'value') '='} (positions+:strva
 suppressmetaparameters = {[','] @:(beats_parm | passes_parm)} ;
 
 tempometa = metatype:'TEMPO' {'value' '='} range_values:tempo_range  parameters:tempometaparameters ;
-tempometaparameters = {[','] @:(beat_range_parm | beat_count_parm | first_beat_parm | passes_parm | iterations_parm)} ;
+tempometaparameters = {[','] @:(beat_range_parm | beat_count_parm | first_beat_parm | passes_parm | iterations_parm | cycle_parm)} ;
 
 validationmeta = metatype:'VALIDATION' {('ignore'|'value') '='} (ignore:strlistvalue | ignore+:strvalue) parameters:validationmetaparameters ;
 validationmetaparameters = {[','] @:(beats_parm | scope_parm)} ;

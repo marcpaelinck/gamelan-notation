@@ -97,6 +97,7 @@ class GradualChangeMetadata(MetaDataBaseModel):
     last_beat: int | None = None
     beat_count: int | None = None
     passes: list[int] = Field(default_factory=list)  # On which pass(es) should change be effective?
+    cycle: int = 99
     iterations: list[int] = Field(default_factory=list)  # On which iteration(s) should change be effective?
 
     @property
@@ -163,8 +164,8 @@ class DynamicsMeta(GradualChangeMetadata):
     metatype: Literal[MetaType.DYNAMICS] = MetaType.DYNAMICS
     # Currently, an empty list stands for all positions.
     positions: list[Position]  # PositionsFromTag
-    from_abbr: str = DynamicLevel
-    to_abbr: str = DynamicLevel
+    from_abbr: str = ""
+    to_abbr: str = ""
     DEFAULTPARAM = "to_abbr"
     DYNAMICS: ClassVar[dict[str, int]] = Field(default_factory=dict)
 

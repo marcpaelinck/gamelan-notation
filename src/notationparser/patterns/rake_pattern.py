@@ -1,4 +1,3 @@
-from tkinter import EXTENDED
 from typing import override
 
 from src.common.constants import PatternType, Pitch, Stroke, SustainType

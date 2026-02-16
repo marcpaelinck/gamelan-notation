@@ -4,7 +4,8 @@ from typing import override
 
 from src.notationparser.classes import Agent
 from src.notationparser.execution.execution import ExecutionManager
-from src.notationparser.json.json_creator import JsonCreator
+from src.notationparser.json.json_creator_old import BeatInfo, JsonCreator, JSystem
+from src.notationparser.metadata_classes import MetaType
 from src.settings.classes import PartForm, RunSettings
 
 
@@ -46,14 +47,48 @@ class JsonGeneratorAgent(Agent):
         """
 
         json_creator = JsonCreator(
-            pscore=self.exec_mgr.score,
+            title=self.score.title,
+            composer="",
             run_settings=self.run_settings,
+            instrument_positions=self.score.instrument_positions,
         )
 
-        # Select the first beat.
+        self.exec_mgr.reset()
 
-        for gongan in self.exec_mgr.score.gongans:
-            json_creator.append_system_info(gongan)
+        # Select the first beat.
+        beat = self.exec_mgr.next_beat_in_flow()
+        prev_gongan_id = -1
+        prev_beat_id = -1
+
+        while beat:
+            # if not temp or (beat.gongan_id != temp[-1].gongan_id) or (beat.id <= temp[-1].id):
+            system = None
+            if (beat.gongan_id != prev_gongan_id) or (beat.id <= prev_beat_id):
+                gongan = self.exec_mgr.score.gongans[beat.gongan_seq]
+                part = gongan.metadata[MetaType.PART][0].name if gongan.metadata[MetaType.PART] else None
+                system = JSystem(
+                    id=(self.unique_id()), gongan=gongan.id, starttime=0, duration=0, part=part, sections=[]
+                )
+
+            # Set new beat info.
+            start_bpm, end_bpm = self.exec_mgr.get_tempo_values()
+            velocities_dict = self.exec_mgr.get_dynamics_values()
+            start_velocities = {pos: startval for pos, (startval, _) in velocities_dict.items()}
+            end_velocities = {pos: endval for pos, (_, endval) in velocities_dict.items()}
+            beat_info = BeatInfo(
+                fullid=beat.full_id,
+                start_bpm=start_bpm,
+                end_bpm=end_bpm,
+                start_velocities=start_velocities,
+                end_velocities=end_velocities,
+                duration=beat.duration,
+            )
+            json_creator.append_beat_info(beat, beat_info, system)
+
+            prev_gongan_id = beat.gongan_id
+            prev_beat_id = beat.id
+
+            beat = self.exec_mgr.next_beat_in_flow()
 
         return json_creator
 
