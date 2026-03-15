@@ -41,7 +41,7 @@ class ExecutionItemBase(BaseModel):
     type: str
     seqId: int | None  # Sequence in the list of Execution items. Used by the item editor.
     passes: list[int] | None  # Pass ints for which the item applies
-    each: bool | None  # undefined: no condition. false: item applies to listed passes only.
+    eachpass: bool | None  # undefined: no condition. false: item applies to listed passes only.
     #  true: item applies to every nth pass (n in passes list), e.g. every 3rd & 4th pass.
     tooltip: str
     tooltipshort: str

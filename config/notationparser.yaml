@@ -3,7 +3,7 @@
 # The settings below (except for options) refer to values in the data.yaml file.
 # Leave `notation_id` or `part_id` blank to process multiple notation files.
 # Leave `part_id` blank to process all notation files with the given notation_id.
-notation_id: topeng tua
+notation_id: legong dwi
 part_id: full
 options:
   debug_logging: false
@@ -11,7 +11,7 @@ options:
     # runtype: DEBUG - output is saved in the subfolder of the `notation` data folder specified in config.yaml.
     #          PRODUCTION  - output is saved in the `midiplayer` data folder and the `content.json` file is updated.
     #          INTEGRATION_TEST - should only be used in the unit test environment
-    run_type: PRODUCTION
+    run_type: DEBUG
     detailed_validation_logging: false
     # `save_corrected_to_file`: true - saves a new version of the input file after processing it. Will include autocorrections.
     save_corrected_to_file: false

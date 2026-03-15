@@ -83,7 +83,7 @@ class JsonCreator:
                     type="goto",
                     seqId=seqId,
                     passes=item.passes or None,
-                    each=item.cycle < 99 if item.passes else None,
+                    eachpass=item.cycle < 99 if item.passes else None,
                     targetname=item.label,
                     targetuuid=self.labeldict[item.label],
                     tooltip="",
@@ -99,7 +99,7 @@ class JsonCreator:
                     type="loop",
                     seqId=seqId,
                     passes=None,
-                    each=None,
+                    eachpass=None,
                     count=item.count,
                     tooltip="",
                     tooltipshort="",
@@ -116,7 +116,7 @@ class JsonCreator:
                     seqId=seqId,
                     passes=item.passes or None,
                     loops=item.iterations or None,
-                    each=item.cycle < 99 if item.passes else None,
+                    eachpass=item.cycle < 99 if item.passes else None,
                     fromDynamics=(
                         (item.from_abbr.name if isinstance(item.from_abbr, DynamicLevel) else item.from_abbr)
                         if item.from_abbr
@@ -144,7 +144,7 @@ class JsonCreator:
                     seqId=seqId,
                     passes=item.passes or None,
                     loops=item.iterations or None,
-                    each=item.cycle < 99 if item.passes else None,
+                    eachpass=item.cycle < 99 if item.passes else None,
                     fromValue=int(item.from_value) if item.from_value is not None else None,
                     toValue=int(item.to_value),
                     fromSection=item.first_beat if item.last_beat else None,
