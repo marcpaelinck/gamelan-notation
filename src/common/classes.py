@@ -279,6 +279,7 @@ class FlowInfo:
 
 class Score(BaseModel, validate_assignment=True):
     title: str
+    composer: str = ""
     settings: RunSettings
     instrument_positions: set[Position] = None
     gongans: list[Gongan] = Field(default_factory=list)

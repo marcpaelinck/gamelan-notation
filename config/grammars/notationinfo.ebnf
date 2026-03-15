@@ -1,9 +1,10 @@
 notationinfo = {tab} "{" ~ @:infometa "}" {tab} eol ;
 
 infometa = metatype:'INFO' {('notation_id' | 'notation' | 'id') '='} notation_id:alphanumvalue parameters:infometaparameters ;
-infometaparameters = {[','] @:(part_id_parm | title_parm | instrumenttype_parm | font_parm | run_types_parm | loop_parm | beat_at_end_parm)} ;
+infometaparameters = {[','] @:(part_id_parm | title_parm | composer_parm | instrumenttype_parm | font_parm | run_types_parm | loop_parm | beat_at_end_parm)} ;
 
 beat_at_end_parm = 'beat_at_end' '=' beat_at_end:boolvalue;
+composer_parm = 'composer' '=' composer:strvalue ;
 font_parm = 'font' '=' fontversion:strvalue;
 instrumenttype_parm = ('instrumenttype' | 'instrumentgroup' | 'instruments') '=' instrumentgroup:alphanumvalue;
 loop_parm = 'loop' '=' loop:boolvalue;
