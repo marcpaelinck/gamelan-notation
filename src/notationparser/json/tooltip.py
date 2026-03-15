@@ -68,8 +68,8 @@ def executionItemTooltip(item: ExecutionItem, length: str) -> str:
     # Compose the long tooltip version
     if not nbrOfPasses:
         return instruction
-    if nbrOfPasses and not item.eachpass:
+    if nbrOfPasses and not item.nthpass:
         return f"{instruction} {passcondition} {'passes' if nbrOfPasses > 1  else  'pass'} {toText(item.passes)}"
-    if nbrOfPasses and item.eachpass:
+    if nbrOfPasses and item.nthpass:
         return f"{instruction} {passcondition} every {toText(sortedPasses, True)} {'passes' if nbrOfPasses > 1 else 'pass'}"
     return "Invalid combination: missing one or more pass numbers."
