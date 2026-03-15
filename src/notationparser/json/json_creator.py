@@ -49,7 +49,7 @@ class JsonCreator:
         self.score = Score(
             uuid=str(uuid4()),
             title=pscore.title,
-            composer="",
+            composer=pscore.composer,
             instrumenttype=self.run_settings.instrumentgroup,
             # pylint: disable=protected-access
             # pylint: disable=no-member
@@ -149,7 +149,7 @@ class JsonCreator:
                     toValue=int(item.to_value),
                     fromSection=item.first_beat if item.last_beat else None,
                     toSection=item.last_beat if item.last_beat else item.first_beat,
-                    isGradual=(item.from_value is not None or item.last_beat is not None),
+                    isGradual=(item.explicit_gradual or item.from_value is not None or item.last_beat is not None),
                     tooltip="",
                     tooltipshort="",
                 )

@@ -67,6 +67,7 @@ class ScoreCreatorAgent(Agent):
 
         self.score = Score(
             title=self.run_settings.notation_settings.title,
+            composer=self.run_settings.notation_settings.composer,
             settings=notation.settings,
             instrument_positions=self._get_all_positions(notation.notation_dict),
         )
