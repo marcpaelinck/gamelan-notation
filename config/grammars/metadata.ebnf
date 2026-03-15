@@ -30,7 +30,7 @@ metadata
         waitmeta)
   ;
 
-copymeta = metatype:'COPY' {('template' | 'value') '='} template:strvalue ['include' '=' include:strlistvalue];
+copymeta = metatype:'COPY' {('template' | 'value') '='} template:strvalue ['include' '=' (include+:strvalue | include:strlistvalue)];
 
 dynamicsmeta = metatype:'DYNAMICS' {'value' '='} range_values:dynamics_range parameters:dynamicsmetaparameters ;
 dynamicsmetaparameters ={[','] @:(beat_range_parm | beat_count_parm | first_beat_parm | passes_parm | cycle_parm | iterations_parm | positions_parm)} ;
