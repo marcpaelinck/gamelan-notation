@@ -427,6 +427,7 @@ class NotationSettings(BaseModel):
     notation_id: str
     part_id: str
     title: str
+    composer: str
     instrumentgroup: InstrumentGroup
     fontversion: NotationFontVersion
     filename: str
