@@ -62,7 +62,9 @@ class LoopItem(ExecutionItemBase):
 
 class ExpressionItemBase(ExecutionItemBase):
     type: str
-    loops: list[int] | None  # In case the System has a LoopItem, specifies for which iterations the expression applies.
+    iterations: (
+        list[int] | None
+    )  # In case the System has a LoopItem, specifies for which iterations the expression applies.
     isGradual: bool | None  # True: the expression value should increase / decrease over one or more Section.
     fromSection: (
         int | None

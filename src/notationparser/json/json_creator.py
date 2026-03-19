@@ -115,7 +115,7 @@ class JsonCreator:
                     type="dynamics",
                     seqId=seqId,
                     passes=item.passes or None,
-                    loops=item.iterations or None,
+                    iterations=item.iterations or None,
                     nthpass=item.cycle < 99 if item.passes else None,
                     fromDynamics=(
                         (item.from_abbr.name if isinstance(item.from_abbr, DynamicLevel) else item.from_abbr)
@@ -143,7 +143,7 @@ class JsonCreator:
                     type="tempo",
                     seqId=seqId,
                     passes=item.passes or None,
-                    loops=item.iterations or None,
+                    iterations=item.iterations or None,
                     nthpass=item.cycle < 99 if item.passes else None,
                     fromValue=int(item.from_value) if item.from_value is not None else None,
                     toValue=int(item.to_value),

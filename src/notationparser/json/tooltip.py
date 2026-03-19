@@ -9,7 +9,7 @@ from src.notationparser.json.types import (
 
 
 def toOrdinal(val: int) -> str:
-    return "1st" if val == 1 else "2nd" if val == 2 else "3rd" if val == 3 else f"${val}th"
+    return "1st" if val == 1 else "2nd" if val == 2 else "3rd" if val == 3 else f"{val}th"
 
 
 def toText(values: list[int] | None, ordinal: bool = False) -> str:
@@ -29,21 +29,22 @@ def executionItemTooltip(item: ExecutionItem, length: str) -> str:
     nbrOfPasses = len(item.passes) if item.passes else 0
     # maxPassNr = not item.passes ? 0 : Math.max(...item.passes)
     sortedPasses = sorted(item.passes) if item.passes else []
+    sortedIterations = sorted(item.iterations) if hasattr(item, "iterations") and item.iterations else []
     # Create components for the values to return.
     instruction: str = ""
-    passcondition: str = ""
+    preposition: str = ""
     shortTooltip: str = ""
     match item.type:
         case "goto":
             item = cast(GotoItem, item)
             shortTooltip = item.targetname
             instruction = f"go to {item.targetname}"
-            passcondition = "after"
+            preposition = "after"
         case "loop":
             item = cast(LoopItem, item)
             shortTooltip = f"{item.count}X"
             instruction = f"play {item.count}X"
-            passcondition = "on"
+            preposition = "on"
         case "tempo" | "dynamics":
             item = cast(DynamicsItem, item)
             current = "current " if length == "long" else ""
@@ -60,16 +61,23 @@ def executionItemTooltip(item: ExecutionItem, length: str) -> str:
                 shortTooltip
                 + f" beat {('1→' if not item.fromSection else f'{item.fromSection}→') if multipleSections else ''}{item.toSection}"
             )
-            passcondition = "on"
+            preposition = "on"
 
     if length == "short":
         return shortTooltip
 
+    loopcondition = ""
+    andloopcondition = ""
+    if sortedIterations:
+        loopcond = f"{toText(sortedIterations, True)} {'iteration' if len(sortedIterations)==1 else 'iterations'}"
+        loopcondition = " " + preposition + " " + loopcond
+        andloopcondition = ", " + loopcond
+
     # Compose the long tooltip version
     if not nbrOfPasses:
-        return instruction
+        return f"{instruction}{loopcondition}"
     if nbrOfPasses and not item.nthpass:
-        return f"{instruction} {passcondition} {'passes' if nbrOfPasses > 1  else  'pass'} {toText(item.passes)}"
+        return f"{instruction} {preposition} {'passes' if nbrOfPasses > 1  else  'pass'} {toText(item.passes)}{andloopcondition}"
     if nbrOfPasses and item.nthpass:
-        return f"{instruction} {passcondition} every {toText(sortedPasses, True)} {'passes' if nbrOfPasses > 1 else 'pass'}"
+        return f"{instruction} {preposition} every {toText(sortedPasses, True)} {'passes' if nbrOfPasses > 1 else 'pass'}{andloopcondition}"
     return "Invalid combination: missing one or more pass numbers."
