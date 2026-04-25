@@ -22,11 +22,6 @@ class MetaDataSwitch(NotationEnum):
     DOUBLE = "double"
 
 
-class FrequencyType(NotationEnum):
-    ONCE = "once"
-    ALWAYS = "always"
-
-
 class ValidationProperty(NotationEnum):
     BEAT_DURATION = "beat-duration"
     MEASURE_LENGTH = "measure-length"
@@ -143,6 +138,9 @@ class GradualChangeMetadata(MetaDataBaseModel):
                     self.beat_count = self.last_beat - self.first_beat + 1
                 else:
                     raise ValueError("Negative range for gradual %s change" % self.metatype)
+        else:
+            if self.beat_count > 0 and self.last_beat is None:
+                self.last_beat = self.first_beat + self.beat_count - (1 if self.beat_count else 0)
         if self.beat_count is None:
             raise ValueError("Unexpected error interpreting %s change." % self.metatype)
 
@@ -237,7 +235,8 @@ class LabelMeta(MetaDataBaseModel):
 class LoopMeta(MetaDataBaseModel):
     metatype: Literal[MetaType.LOOP] = MetaType.LOOP
     count: int = 1
-    frequency: FrequencyType = FrequencyType.ALWAYS  # FrequencyType.ONCE: only first pass
+    passes: list[int] = Field(default_factory=list)  # On which pass(es) should goto be performed?
+    cycle: int = 99
     DEFAULTPARAM = "count"
 
 
@@ -258,13 +257,12 @@ class PartMeta(MetaDataBaseModel):
 class SequenceMeta(MetaDataBaseModel):
     metatype: Literal[MetaType.SEQUENCE] = MetaType.SEQUENCE
     value: list[str] = Field(default_factory=list)
-    frequency: FrequencyType = FrequencyType.ALWAYS
     DEFAULTPARAM = "value"
 
 
 class SuppressMeta(MetaDataBaseModel):
     metatype: Literal[MetaType.SUPPRESS] = MetaType.SUPPRESS
-    positions: list[Position]  # PositionsFromTag
+    positions: list[Position] = Field(default_factory=list)  # PositionsFromTag
     passes: list[int] = Field(default_factory=list)
     beats: list[int] = Field(default_factory=list)
     DEFAULTPARAM = "positions"
@@ -294,7 +292,6 @@ class ValidationMeta(MetaDataBaseModel):
 class WaitMeta(MetaDataBaseModel):
     metatype: Literal[MetaType.WAIT] = MetaType.WAIT
     seconds: float = None
-    after: bool = True
     passes: list[int] = Field(
         default_factory=lambda: list(range(99, -1))
     )  # On which pass(es) should goto be performed? Default is all passes.

@@ -3,107 +3,119 @@
 # The folder and file names in the `instruments`, `midi`, `font`, `grammar` and `pdf_converter` sections refer to subfolders of the `settings` folder.
 # All other sections refer to subfolders and files in the `data` folder.
 
-instruments: 
-    folder: ./config/instruments
-    instruments_file: instruments.tsv
-    tags_file: instrumenttags.tsv
-    rules_file: rules.tsv
-    effects_file: effects.tsv
-    # shorthand_notation: instruments for which silence and extension symbols may be omitted
-    shorthand_notation: [UGAL, CALUNG, PENYACAH, JEGOGAN, GONGS, KEMPLI]
+instruments:
+  folder: ./config/instruments
+  instruments_file: instruments.tsv
+  tags_file: instrumenttags.tsv
+  rules_file: rules.tsv
+  effects_file: effects.tsv
+  # shorthand_notation: instruments for which silence and extension symbols may be omitted
+  shorthand_notation: [UGAL, CALUNG, PENYACAH, JEGOGAN, GONGS, KEMPLI]
 midi:
-    folder: ./config/midi
-    midi_definition_file: gamelan_midinotes1.tsv
-    presets_file: gamelan_presets1.tsv
-    midiversion: GAMELAN1
-    # PPQ (pulses per quarternote) and base_note_time in MIDI ticks. Beat is MIDI beat, not kempli beat.
-    # beat indication (BPM) in notations should be expressed in MIDI beats.
-    PPQ: 96
-    base_note_time: 24
-    base_notes_per_beat: 4
-    dynamics:
-        ff: 127
-        f: 105
-        mf: 85
-        mp: 65
-        p: 45
-        pp: 30
-    default_tempo: 60
-    default_dynamics: mf
-    silence_seconds_before_start: 3 
-    silence_seconds_after_end: 10
+  folder: ./config/midi
+  midi_definition_file: gamelan_midinotes1.tsv
+  presets_file: gamelan_presets1.tsv
+  midiversion: GAMELAN1
+  # PPQ (pulses per quarternote) and base_note_time in MIDI ticks. Beat is MIDI beat, not kempli beat.
+  # beat indication (BPM) in notations should be expressed in MIDI beats.
+  PPQ: 96
+  base_note_time: 24
+  base_notes_per_beat: 4
+  dynamics:
+    ff: 127
+    f: 105
+    mf: 85
+    mp: 65
+    p: 45
+    pp: 30
+  default_tempo: 60
+  default_dynamics: mf
+  silence_seconds_before_start: 3
+  silence_seconds_after_end: 10
 patterns:
-    tremolo:
-        # notes_per_quarternote -  tremolo frequency (number of beats per time unit). Should be a divisor of base_note_time.
-        # The tremolo respects the note duration, i.e. a tremolo of one base note will last for `base_note_time` duration.
-        # The duration of the tremolo can be extended by adding consecutive tremolo notes. This will not alter the tremolo frequency.
-        # ACCELERATING TREMOLO
-        # The duration and beat frequencies of this type of tremolo is currently fixed and is independent of the number of base notes.
-        # The effect of two consecutive tremolo notes is that these notes will be alternated throughout the pattern.
-        # e.g. consecutive acc tremolo notes DONG and DENG will result in a pattern DONG-DENG-DONG-DENG etc. with as many notes as the 
-        # length of `accelerating_pattern`. The total duration will be the same as the duration of a single acc tremolo note.
-        # accelerating_pattern - relative duration of the notes in midi ticks. E.g. if base_note_time=24, then 24 is a standard note duration.
-        #                        The list should contain an even number of values so that alternating note patterns end on the second note.
-        # accelerating_velocity - Relative velocity value (0-1) for each note. The number of values should match that of `accelerating_pattern`.
-        notes_per_quarternote: 3
-        accelerating_pattern: [48, 40, 32, 26, 22, 18, 14, 10, 10, 10, 10, 10]
-        accelerating_velocity: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5]
-    rake:
-        # A base note has a duration of 24 MIDI ticks, and each note of the pattern should last for an integer number of ticks.
-        # This means that (24/number_of_notes)*duration_in_basenotes should yield an (almost) integer value. This is necessary
-        # to ensure that the track synchronization is not disrupted.
-        # If the end of the instrument's range is reached before the entire pattern could be generated, rests will be generated for the
-        # remaining pattern notes.
-        # Examples of valid value pairs: (6, .5), (8, .667), (12, 1.0). In case of a gangsa with 10 keys the last pattern in these examples
-        # -if started on the first key- will generate 10 notes of 2 ticks each and two rests also of 2 ticks each.
-        number_of_notes: 8   # This number will be truncated if there are less notes until the the beginning/end of the instrument's range.
-        duration_in_basenotes: .667 # Must be <=1. Should ideally be a fixed time in (milli-)seconds. Not implemented yet due to dependency of tempo.
+  tremolo:
+    # notes_per_quarternote -  tremolo frequency (number of beats per time unit). Should be a divisor of base_note_time.
+    # The tremolo respects the note duration, i.e. a tremolo of one base note will last for `base_note_time` duration.
+    # The duration of the tremolo can be extended by adding consecutive tremolo notes. This will not alter the tremolo frequency.
+    # ACCELERATING TREMOLO
+    # The duration and beat frequencies of this type of tremolo is currently fixed and is independent of the number of base notes.
+    # The effect of two consecutive tremolo notes is that these notes will be alternated throughout the pattern.
+    # e.g. consecutive acc tremolo notes DONG and DENG will result in a pattern DONG-DENG-DONG-DENG etc. with as many notes as the
+    # length of `accelerating_pattern`. The total duration will be the same as the duration of a single acc tremolo note.
+    # accelerating_pattern - relative duration of the notes in midi ticks. E.g. if base_note_time=24, then 24 is a standard note duration.
+    #                        The list should contain an even number of values so that alternating note patterns end on the second note.
+    # accelerating_velocity - Relative velocity value (0-1) for each note. The number of values should match that of `accelerating_pattern`.
+    notes_per_quarternote: 3
+    accelerating_pattern: [48, 40, 32, 26, 22, 18, 14, 10, 10, 10, 10, 10]
+    accelerating_velocity:
+      [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5]
+  rake:
+    # A base note has a duration of 24 MIDI ticks, and each note of the pattern should last for an integer number of ticks.
+    # This means that (24/number_of_notes)*duration_in_basenotes should yield an (almost) integer value. This is necessary
+    # to ensure that the track synchronization is not disrupted.
+    # If the end of the instrument's range is reached before the entire pattern could be generated, rests will be generated for the
+    # remaining pattern notes.
+    # Examples of valid value pairs: (6, .5), (8, .667), (12, 1.0). In case of a gangsa with 10 keys the last pattern in these examples
+    # -if started on the first key- will generate 10 notes of 2 ticks each and two rests also of 2 ticks each.
+    number_of_notes: 8 # This number will be truncated if there are less notes until the the beginning/end of the instrument's range.
+    duration_in_basenotes: .667 # Must be <=1. Should ideally be a fixed time in (milli-)seconds. Not implemented yet due to dependency of tempo.
 notation:
-    # Formatting for version id, using last modification date of the input file.
-    version_fmt: "%d-%b-%Y"
-    # root_folder_in can contain separate subfolders (e.g. for each composition)
-    root_folder_in: ./data/notation
-    folder_out_prod: ./data/midiplayer
-    midi_out_file_pattern: !!str "{inputfilename} {midiversion}.mid"
-    json_out_file_pattern: !!str "{inputfilename}.json"
-    pdf_out_file_pattern: !!str "{inputfilename}.pdf"
-    # part for which to generate a PDF notation document
-    generate_pdf_part_id: full
-    notation_extension: .tsv
-    entire_piece_partname: full
-    gongantypes_without_kempli: [KEBYAR, GINEMAN, GENDERAN]
-unittest: null
-    # unittest not used here. See tests/config folder.
+  # Formatting for version id, using last modification date of the input file.
+  version_fmt: "%d-%b-%Y"
+  # root_folder_in can contain separate subfolders (e.g. for each composition)
+  root_folder_in: ./data/notation
+  folder_out_prod: ./data/midiplayer
+  folder_out_tabuh: C:/Users/marcp/Documents/administratie/_VRIJETIJD_REIZEN/Scripts-Programmas/JavaScriptProjects/tabuh-studio/test/scoreparsers/notationParser/data/tabuh-notation
+  midi_out_file_pattern: !!str "{inputfilename} {midiversion}.mid"
+  json_out_file_pattern: !!str "{inputfilename}.json"
+  pdf_out_file_pattern: !!str "{inputfilename}.pdf"
+  # part for which to generate a PDF notation document
+  generate_pdf_part_id: full
+  notation_extension: .tsv
+  entire_piece_partname: full
+  gongantypes_without_kempli: [KEBYAR, GINEMAN, GENDERAN]
+unittest:
+  null
+  # unittest not used here. See tests/config folder.
 font:
-    folder: ./config/font
-    font_file: balimusic5font.tsv
-    ttf_file: bali-music-5.ttf
-    modifier_file: modifiers.tsv
+  folder: ./config/font
+  font_file: balimusic5font.tsv
+  ttf_file: bali-music-5.ttf
+  modifier_file: modifiers.tsv
 grammar:
-    folder: ./config/grammars
-    notationfile: notation_root.ebnf
-    notationinfofile: notationinfo_root.ebnf
-    metadatafile: metadata.ebnf
-    picklefile: notation_model.pickle
-    fontfile: font5.ebnf
+  folder: ./config/grammars
+  notationfile: notation_root.ebnf
+  notationinfofile: notationinfo_root.ebnf
+  metadatafile: metadata.ebnf
+  picklefile: notation_model.pickle
+  fontfile: font5.ebnf
 pdf_converter:
-    folder: ./config/pdf_converter
-    # Date format in PDF document header
-    version_fmt: "%d-%b-%Y"
-    fonts:
-        Courier New: COUR.TTF
-        Arial: ARIBLK.TTF
-        BaliMusic5: bali-music-5.ttf
-    notation_webpage: https://swarasanti.nl/music-notation/
-    # Do not print octave diacritics, as they are redundant for these positions
-    omit_octave_diacritics: [REYONG_1, REYONG_2, REYONG_3, REYONG_4]
+  folder: ./config/pdf_converter
+  # Date format in PDF document header
+  version_fmt: "%d-%b-%Y"
+  fonts:
+    Courier New: COUR.TTF
+    Arial: ARIBLK.TTF
+    BaliMusic5: bali-music-5.ttf
+  notation_webpage: https://swarasanti.nl/music-notation/
+  # Do not print octave diacritics, as they are redundant for these positions
+  omit_octave_diacritics: [REYONG_1, REYONG_2, REYONG_3, REYONG_4]
 samples:
-    folder: ./data/samples
-    subfolder: gamelan
+  folder: ./data/samples
+  subfolder: gamelan
 soundfont:
-    folder: ./data/soundfont
-    path_to_viena_app: C:/Program Files/Viena/Viena64.exe
+  folder: ./data/soundfont
+  path_to_viena_app: C:/Program Files/Viena/Viena64.exe
 midiplayer:
-    folder: ./data/midiplayer
-    contentfile: content.json
-    helpinghand: [CALUNG, PENYACAH, JEGOGAN, PEMADE_POLOS, PEMADE_SANGSIH, KANTILAN_POLOS, KANTILAN_SANGSIH, UGAL] # Animate panggul.
+  folder: ./data/midiplayer
+  contentfile: content.json
+  helpinghand: [
+      CALUNG,
+      PENYACAH,
+      JEGOGAN,
+      PEMADE_POLOS,
+      PEMADE_SANGSIH,
+      KANTILAN_POLOS,
+      KANTILAN_SANGSIH,
+      UGAL,
+    ] # Animate panggul.

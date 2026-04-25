@@ -252,6 +252,7 @@ class Content(BaseModel):
 class RunType(StrEnum):
     DEBUG = "DEBUG"
     PRODUCTION = "PRODUCTION"
+    TABUH_TEST = "TABUH_TEST"
     UNIT_TEST = "UNIT_TEST"
     INTEGRATION_TEST = "INTEGRATION_TEST"
     INTEGRATION_TEST_SMALL = "INTEGRATION_TEST_SMALL"
@@ -407,6 +408,7 @@ class ConfigNotationInfo(BaseModel):
     # root_folder_in can contain separate subfolders (e.g. for each composition)
     root_folder_in: str
     folder_out_prod: str
+    folder_out_tabuh: str
     notation_extension: str
     gongantypes_without_kempli: list[GonganType]
     entire_piece_partname: str
@@ -434,6 +436,7 @@ class NotationSettings(BaseModel):
     folder_in: str  # relative path to (sub)folder containing the notation file
     folder_out_nonprod: str = None  # if None, the same folder as folder_in will be used
     loop: bool
+    display: bool = True
     beat_at_end: bool
     run_types: list[RunType] = Field(default_factory=list)
 
@@ -575,7 +578,8 @@ class RunSettings(BaseModel):
     def folder_in(self) -> str:
         return (
             self.configdata.notation.root_folder_in
-            if self.options.notation_to_midi.run_type in [RunType.PRODUCTION, RunType.DEBUG, RunType.UNIT_TEST]
+            if self.options.notation_to_midi.run_type
+            in [RunType.PRODUCTION, RunType.DEBUG, RunType.TABUH_TEST, RunType.UNIT_TEST]
             else (
                 self.configdata.unittest.folder_in_integration_test
                 if self.options.notation_to_midi.run_type in [RunType.INTEGRATION_TEST, RunType.INTEGRATION_TEST_SMALL]
@@ -592,12 +596,16 @@ class RunSettings(BaseModel):
                 self.notation_settings.folder_out_nonprod or self.notation_settings.folder_in
                 if self.notation_settings and self.options.notation_to_midi.run_type is RunType.DEBUG
                 else (
-                    self.configdata.unittest.folder_out_integration_test
-                    if self.options.notation_to_midi.run_type is RunType.INTEGRATION_TEST
+                    self.configdata.notation.folder_out_tabuh
+                    if self.options.notation_to_midi.run_type is RunType.TABUH_TEST
                     else (
-                        self.configdata.unittest.folder_out_integration_test_small
-                        if self.options.notation_to_midi.run_type is RunType.INTEGRATION_TEST_SMALL
-                        else None
+                        self.configdata.unittest.folder_out_integration_test
+                        if self.options.notation_to_midi.run_type is RunType.INTEGRATION_TEST
+                        else (
+                            self.configdata.unittest.folder_out_integration_test_small
+                            if self.options.notation_to_midi.run_type is RunType.INTEGRATION_TEST_SMALL
+                            else None
+                        )
                     )
                 )
             )

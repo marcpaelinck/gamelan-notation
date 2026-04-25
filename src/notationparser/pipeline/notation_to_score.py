@@ -157,6 +157,7 @@ class ScoreCreatorAgent(Agent):
         if not template_gongan:
             raise ValueError(
                 "Template '%s' is missing for COPY reference. The template should be defined before the COPY statement."
+                % copymeta.template
             )
         template_copy = copy.deepcopy(self.notation.notation_dict[template_gongan.id][ParserTag.BEATS])
         if not gongan[ParserTag.BEATS]:

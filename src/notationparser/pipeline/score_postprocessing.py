@@ -436,6 +436,7 @@ class ScorePostprocessAgent(Agent):
                         prev=lastbeat,
                         next=lastbeat.next,
                         has_kempli_beat=False,
+                        is_waitmeta_beat=True,
                         validation_ignore={ValidationProperty.BEAT_DURATION: self.score.instrument_positions},
                     )
                     if lastbeat.next:

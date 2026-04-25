@@ -49,7 +49,8 @@ autokempyungmetaparameters = {[','] @:(scope_parm | positions_parm)} ;
 labelmeta = metatype:'LABEL' {('name'|'value') '='} name:alphanumvalue parameters:labelmetaparameters ;
 labelmetaparameters = {[','] @:beat_parm} ;
     
-loopmeta = metatype:'LOOP' {('count'|'value') '='} count:intvalue ;
+loopmeta = metatype:'LOOP' {('count'|'value') '='} count:intvalue parameters:loopmetaparameters;
+loopmetaparameters = {[','] @:(passes_parm)} ;
     
 octavatemeta = metatype:'OCTAVATE' {('instrument'|'value') '='} instrument:strvalue parameters:octavatemetaparameters ;
 octavatemetaparameters = {[','] @:(octaves_parm | scope_parm)} ;

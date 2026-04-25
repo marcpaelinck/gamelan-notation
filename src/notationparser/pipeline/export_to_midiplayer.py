@@ -136,11 +136,17 @@ class MidiPlayerUpdatePartAgent(MidiPlayerUpdateAgentModel):
                 player_song := Song(
                     title=self.run_settings.notation_settings.title,
                     instrumentgroup=self.run_settings.instrumentgroup,
-                    display=True,
+                    display=self.run_settings.notation_settings.display,
                     pfd=None,
                 )
             )
             self.loginfo("New song %s created for MIDI player content", player_song.title)
+        else:
+            # Update the song info with the info that was read from the notation file
+            player_song.title = self.run_settings.notation_settings.title
+            player_song.instrumentgroup = self.run_settings.instrumentgroup
+            player_song.display = self.run_settings.notation_settings.display
+            player_song.notation_version = self.run_settings.notation_version
 
         # pylint: disable=not-an-iterable
         # pylint gets confused by assignment of Field() to Pydantic member Song.parts
@@ -208,7 +214,7 @@ class MidiPlayerUpdatePdfAgent(MidiPlayerUpdateAgentModel):
                 player_song := Song(
                     title=self.run_settings.notation_settings.title,
                     instrumentgroup=self.run_settings.instrumentgroup,
-                    display=True,
+                    display=self.run_settings.notation_settings.display,
                     pfd=self.pdf_file,
                     notation_version=self.run_settings.notation_version,
                 )

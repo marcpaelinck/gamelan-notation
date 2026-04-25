@@ -213,6 +213,7 @@ class Beat(BaseModel):
     next: Optional["Beat"] = Field(default=None, repr=False)  # next beat in the score
     has_kempli_beat: bool = True
     kempli_status: MetaDataSwitch = MetaDataSwitch.ON
+    is_waitmeta_beat: bool = False
     validation_ignore: dict[ValidationProperty, list[Position]] = Field(default_factory=dict)
 
     @computed_field

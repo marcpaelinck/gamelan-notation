@@ -24,6 +24,7 @@ class Flow(BaseModel):
     from_beat: Beat
     # Contains the next beat as a function of the pass sequence number.
     to_beat_dict: dict[PassSequence, Beat | None] = Field(default_factory=dict)
+    passes: list[int] = Field(default_factory=list)
     counter: int = 0
 
     def reset_counter(self) -> None:
@@ -205,7 +206,10 @@ class ExecutionManager:
 
     def loop(self, beat: Beat, create_if_none: bool = False) -> Loop | None:
         """Returns the Loop object for the beat or None"""
+        curr_pass = self.get_curr_pass(beat)
         loop = self.loop_dict.get(beat.gongan_id, None)
+        if loop and loop.passes and curr_pass not in loop.passes:
+            loop = None
         if not loop and create_if_none:
             loop = Loop()
             self.loop_dict[beat.gongan_id] = loop

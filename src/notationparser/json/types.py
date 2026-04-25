@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, RootModel, field_serializer
 
 from src.common.constants import Position
 from src.notationparser.json.compact_encoder import Compact
+from src.notationparser.metadata_classes import MetaDataSwitch
 
 
 class GonganInfo(BaseModel):
@@ -39,7 +40,7 @@ UUID = str
 # Base class
 class ExecutionItemBase(BaseModel):
     type: str
-    seqId: int | None  # Sequence in the list of Execution items. Used by the item editor.
+    seqId: int = 0  # Sequence in the list of Execution items. Used by the item editor.
     passes: list[int] | None  # Pass ints for which the item applies
     nthpass: bool | None  # undefined: no condition. false: item applies to listed passes only.
     #  true: item applies to every nth pass (n in passes list), e.g. every 3rd & 4th pass.
@@ -60,6 +61,32 @@ class LoopItem(ExecutionItemBase):
     count: int  # Total int of times to play the System consecutively.
 
 
+# Enables to repeat the current System.
+class WaitItem(ExecutionItemBase):
+    type: str = "wait"
+    seconds: float  # Number of seconds to wait.
+
+
+class SequenceItem(ExecutionItemBase):
+    type: str = "sequence"
+    labels: list[str] = Field(default_factory=list)  # sequence of gongan labels
+    uuids: list[UUID] = Field(default_factory=list)  # uuids of the gongans in the sequence
+
+
+class KempliItem(ExecutionItemBase):
+    type: str = "kempli"
+    value: MetaDataSwitch
+    beats: list[int] | None
+    iterations: list[int] | None
+
+
+class SuppressItem(ExecutionItemBase):
+    type: str = "suppress"
+    positions: list[Position] = Field(default_factory=list)
+    beats: list[int] | None
+    iterations: list[int] | None
+
+
 class ExpressionItemBase(ExecutionItemBase):
     type: str
     iterations: (
@@ -69,10 +96,10 @@ class ExpressionItemBase(ExecutionItemBase):
     fromSection: (
         int | None
     )  # If isGradual==true: Gradual change starts at the beginning of this Section. Otherwise undefined.
-    toSection: int  # If isGradual==true: the gradual change should continue until the end of this section.
+    section: int  # If isGradual==true: the gradual change should continue until the end of this section.
     # Otherwise the gradual change should be effective immediately at the start of this section.
     fromValue: float | None  # If isGradual==true: starting value of the gradual change. Otherwise undefined.
-    toValue: float  # If isGradual==true: end value of the gradual change. Otherwise: new immediate value.
+    value: float  # If isGradual==true: end value of the gradual change. Otherwise: new immediate value.
 
 
 class TempoItem(ExpressionItemBase):
@@ -82,11 +109,11 @@ class TempoItem(ExpressionItemBase):
 class DynamicsItem(ExpressionItemBase):
     type: str = "dynamics"
     fromDynamics: str | None  # If isGradual==true: starting value for gradual change. Otherwise undefined.
-    toDynamics: str  # If isGradual==true: end value of the gradual change. Otherwise: new immediate value.
+    dynamics: str  # If isGradual==true: end value of the gradual change. Otherwise: new immediate value.
     positions: list[str]
 
 
-ExecutionItem = Union[GotoItem, LoopItem, TempoItem, DynamicsItem]
+ExecutionItem = Union[GotoItem, LoopItem, WaitItem, TempoItem, DynamicsItem, SequenceItem, KempliItem, SuppressItem]
 
 
 class Measure(BaseModel):
@@ -111,7 +138,7 @@ class System(BaseModel):
     loop: LoopItem | None = None
     copyfrom: str | None = None  # label or id of copied system
     copyfromkey: UUID | None = None  # uuid copied system
-    grouped: list[str] = (
+    editorGroup: list[str] = (
         []
     )  # positions that are/were grouped in the editor for simultaneous editing using casting rules.
 

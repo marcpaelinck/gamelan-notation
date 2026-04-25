@@ -12,7 +12,6 @@ from src.common.constants import DynamicLevel, InstrumentType, Position
 from src.common.logger import Logging
 from src.notationparser.execution.execution import Score
 from src.notationparser.metadata_classes import (
-    FrequencyType,
     GonganType,
     MetaDataSwitch,
     MetaType,
@@ -254,7 +253,6 @@ class MetaDataRecord:
     explicit_gradual_value: bool | _MISSING_TYPE = MISSING
     first_beat: int | _MISSING_TYPE = MISSING
     last_beat: int | _MISSING_TYPE = MISSING
-    frequency: FrequencyType | _MISSING_TYPE = MISSING
     from_beat: int | _MISSING_TYPE = MISSING
     ignore: list[ValidationProperty] | _MISSING_TYPE = MISSING
     include: list[MetaType] | _MISSING_TYPE = MISSING

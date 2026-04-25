@@ -66,7 +66,6 @@ class ExecutionCreatorAgent(Agent):
             for label in sequence.value:
                 from_beat = gongan.beats[-1]  # Sequence always links last beat to first beat of next gongan in the list
                 to_beat = self.score.flowinfo.labels[label]
-                # TODO GOTO modify, also for frequency = ALWAYS
                 # Select next available pass
                 goto = self.execution_mgr.goto(from_beat)
                 pass_nr = goto.max_passnr + 1
@@ -104,7 +103,12 @@ class ExecutionCreatorAgent(Agent):
                 case LoopMeta():
                     self.execution_mgr.set_loop(
                         gongan.id,
-                        Loop(from_beat=gongan.beats[-1], to_beat_dict={DEFAULT: gongan.beats[0]}, cycle=meta.count),
+                        Loop(
+                            from_beat=gongan.beats[-1],
+                            to_beat_dict={DEFAULT: gongan.beats[0]},
+                            cycle=meta.count,
+                            passes=meta.passes or [],
+                        ),
                     )
                 case SequenceMeta():
                     self.score.flowinfo.sequences.append((gongan, meta))

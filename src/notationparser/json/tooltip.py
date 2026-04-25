@@ -45,21 +45,27 @@ def executionItemTooltip(item: ExecutionItem, length: str) -> str:
             shortTooltip = f"{item.count}X"
             instruction = f"play {item.count}X"
             preposition = "on"
+        case "wait":
+            seconds = int(item.seconds) if item.seconds == int(item.seconds) else item.seconds
+            shortTooltip = f"{seconds} sec."
+            instruction = f"wait {seconds} {'seconds' if item.seconds>1 else 'second'}"
+            preposition = "after"
         case "tempo" | "dynamics":
             item = cast(DynamicsItem, item)
-            current = "current " if length == "long" else ""
+            current = "current" if length == "long" else ""
             itemtype = f"{item.type} " if length == "long" else ""
             if item.type == "tempo":
-                isGradual = item.isGradual and item.fromValue != item.toValue
-                shortTooltip = f"{itemtype}{(f'{current}→' if not item.fromValue else f'{item.fromValue}→') if isGradual else ''}{int(item.toValue)} BPM"
+                isGradual = item.isGradual and item.fromValue != item.value
+                shortTooltip = f"{itemtype}{(f'{current}→' if not item.fromValue else f'{int(item.fromValue)}→') if isGradual else ''}{int(item.value)} BPM"
             else:
-                isGradual = item.isGradual and item.fromDynamics != item.toDynamics
-                shortTooltip = f"{itemtype}{(f'{current}→' if not item.fromDynamics else f'{item.fromDynamics}→') if isGradual else ''}{item.toDynamics}"
+                isGradual = item.isGradual and item.fromDynamics != item.dynamics
+                shortTooltip = f"{itemtype}{(f'{current}→' if not item.fromDynamics else f'{item.fromDynamics}→') if isGradual else ''}{item.dynamics}"
 
-            multipleSections = item.isGradual and item.fromSection != item.toSection
-            instruction = (
-                shortTooltip
-                + f" beat {('1→' if not item.fromSection else f'{item.fromSection}→') if multipleSections else ''}{item.toSection}"
+            multipleSections = item.isGradual and item.fromSection != item.section
+            instruction = shortTooltip + (
+                f" beat {('1→' if not item.fromSection else f'{item.fromSection}→') if multipleSections else ''}{item.section}"
+                if item.section > 1 or isGradual
+                else ""
             )
             preposition = "on"
 
