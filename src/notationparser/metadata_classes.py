@@ -265,6 +265,7 @@ class SuppressMeta(MetaDataBaseModel):
     positions: list[Position] = Field(default_factory=list)  # PositionsFromTag
     passes: list[int] = Field(default_factory=list)
     beats: list[int] = Field(default_factory=list)
+    cycle: int = 99
     DEFAULTPARAM = "positions"
 
 
